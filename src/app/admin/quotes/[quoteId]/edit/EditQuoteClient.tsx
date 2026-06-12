@@ -429,6 +429,67 @@ export default function EditQuoteClient({
     priorOverrides?.truck ? priorOverrides.truck.to : "",
   );
 
+  // ── Labour-only fields ────────────────────────────────────
+  // Hydrated from factors_applied so editing a labour-only quote is a
+  // true round-trip — was missing entirely before, which meant the
+  // operator could only edit address/access/date and lost every other
+  // labour scope decision on regenerate. Mirrors the create form
+  // (QuoteFormClient line 10302+).
+  const [labourJobCategory, setLabourJobCategory] = useState<string>(
+    typeof factors.labour_job_category === "string"
+      ? factors.labour_job_category
+      : "",
+  );
+  const [labourDescription, setLabourDescription] = useState<string>(
+    typeof factors.labour_description === "string"
+      ? factors.labour_description
+      : "",
+  );
+  const [labourComplexity, setLabourComplexity] = useState<
+    "standard" | "moderate" | "complex"
+  >(() => {
+    const v = factors.labour_complexity;
+    return v === "moderate" || v === "complex" ? v : "standard";
+  });
+  const [labourWeightClass, setLabourWeightClass] = useState<
+    "standard" | "heavy" | "very_heavy"
+  >(() => {
+    const v = factors.labour_weight_class;
+    return v === "heavy" || v === "very_heavy" ? v : "standard";
+  });
+  const [labourCrewSize, setLabourCrewSize] = useState<number>(() => {
+    const v = factors.labour_crew_size;
+    return typeof v === "number" && v >= 1 && v <= 5 ? v : 2;
+  });
+  const [labourHours, setLabourHours] = useState<number>(() => {
+    const v = factors.labour_hours;
+    return typeof v === "number" && v >= 1 && v <= 8 ? v : 3;
+  });
+  const [labourTruckRequired, setLabourTruckRequired] = useState<boolean>(
+    factors.labour_truck_required === true,
+  );
+  const [labourVisits, setLabourVisits] = useState<number>(
+    factors.labour_visits === 2 ? 2 : 1,
+  );
+  const [labourWeekend, setLabourWeekend] = useState<boolean>(
+    factors.labour_weekend === true,
+  );
+  const [labourAfterHours, setLabourAfterHours] = useState<boolean>(
+    factors.labour_after_hours === true,
+  );
+  const [labourSecondVisitDate, setLabourSecondVisitDate] = useState<string>(
+    typeof factors.labour_second_visit_date === "string"
+      ? factors.labour_second_visit_date
+      : "",
+  );
+  const [labourStorageNeeded, setLabourStorageNeeded] = useState<boolean>(
+    factors.labour_storage_needed === true,
+  );
+  const [labourStorageWeeks, setLabourStorageWeeks] = useState<number>(() => {
+    const v = factors.labour_storage_weeks;
+    return typeof v === "number" && v >= 1 && v <= 52 ? v : 1;
+  });
+
   // ── Per-tier price override ──────────────────────────────
   // Operators set absolute prices for one or more tiers (e.g. match a
   // competitor on Estate without dropping Essential/Signature). Pre-
@@ -881,10 +942,11 @@ export default function EditQuoteClient({
         payload.tier_price_overrides = cleanedOverrides;
       }
     }
-    // Coordinator global pre-tax override (separate field). Only sent
-    // when a positive number is entered AND a reason is provided —
-    // server validates the same rule but skipping invalid input here
-    // keeps the payload clean.
+    // Coordinator global pre-tax override (separate field). Renders for
+    // every service type now — labour-only, office, single-item,
+    // specialty, white-glove all use custom_price and the operator
+    // needs a direct way to set it. Only sent when a positive number
+    // is entered AND a reason is provided.
     if (quotePreTaxOverride.trim()) {
       const n = parseFloat(quotePreTaxOverride.replace(/[^0-9.]/g, ""));
       if (
@@ -918,6 +980,30 @@ export default function EditQuoteClient({
     }
     if (serviceType !== "white_glove" && moveSize) {
       payload.move_size = moveSize;
+    }
+
+    // ── Labour-only scope ──
+    // Mirror create form's serialization shape (QuoteFormClient line 4953+)
+    // so the engine receives the same field names it does on create.
+    if (serviceType === "labour_only") {
+      payload.labour_job_category = labourJobCategory || undefined;
+      payload.labour_description = labourDescription.trim() || undefined;
+      payload.labour_complexity =
+        labourComplexity !== "standard" ? labourComplexity : undefined;
+      payload.labour_weight_class =
+        labourWeightClass !== "standard" ? labourWeightClass : undefined;
+      payload.labour_crew_size = labourCrewSize;
+      payload.labour_hours = labourHours;
+      payload.labour_truck_required = labourTruckRequired;
+      payload.labour_visits = labourVisits;
+      payload.labour_weekend = labourWeekend || undefined;
+      payload.labour_after_hours = labourAfterHours || undefined;
+      payload.labour_second_visit_date =
+        labourVisits >= 2 ? labourSecondVisitDate || undefined : undefined;
+      payload.labour_storage_needed = labourStorageNeeded;
+      payload.labour_storage_weeks = labourStorageNeeded
+        ? labourStorageWeeks
+        : undefined;
     }
 
     if (serviceType === "office_move") {
@@ -1084,6 +1170,22 @@ export default function EditQuoteClient({
     tierPriceOverrides,
     quotePreTaxOverride,
     quotePreTaxOverrideReason,
+    // Labour-only scope inputs. Without these in the dep array the
+    // fingerprint never registers changes to labour fields and the
+    // Save buttons stay disabled while the operator edits them.
+    labourJobCategory,
+    labourDescription,
+    labourComplexity,
+    labourWeightClass,
+    labourCrewSize,
+    labourHours,
+    labourTruckRequired,
+    labourVisits,
+    labourWeekend,
+    labourAfterHours,
+    labourSecondVisitDate,
+    labourStorageNeeded,
+    labourStorageWeeks,
   ]);
 
   // After multi-stop rows load, capture baseline so we do not call pricing until the user changes scope.
@@ -1870,6 +1972,278 @@ export default function EditQuoteClient({
             )}
           </EditSection>
         )}
+
+        {/* ── Labour service scope ──
+            Mirrors every field from the create form's labour_only block
+            (QuoteFormClient line 10302+). Hydrated from
+            oq.factors_applied so re-quote is a true round-trip — was
+            missing entirely before, which is why the labour-only edit
+            page was just addresses + access + date. */}
+        {serviceType === "labour_only" && (
+          <EditSection
+            eyebrow="Scope"
+            title="Labour service details"
+            defaultOpen={true}
+            summary={
+              labourJobCategory || labourDescription
+                ? `${labourJobCategory || "—"} · ${labourCrewSize}-person crew × ${labourHours}h`
+                : "Set job category, crew, hours"
+            }
+          >
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div>
+                  <label className={labelClass}>Job Category</label>
+                  <select
+                    value={labourJobCategory}
+                    onChange={(e) => setLabourJobCategory(e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">Select category…</option>
+                    <option value="assembly">Furniture Assembly &amp; Setup</option>
+                    <option value="rearrange">In-Home Rearrangement</option>
+                    <option value="debris_removal">Debris &amp; Packaging Removal</option>
+                    <option value="appliance">Appliance Placement</option>
+                    <option value="staging">Home Staging</option>
+                    <option value="tv_mounting">TV Mounting &amp; Setup</option>
+                    <option value="other">Other / Custom</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Description of Work *</label>
+                  <textarea
+                    value={labourDescription}
+                    onChange={(e) => setLabourDescription(e.target.value)}
+                    rows={2}
+                    placeholder="Rearrange living room furniture, assemble new bookshelf…"
+                    className={`${inputClass} resize-none`}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div>
+                  <label className={labelClass}>Scope Complexity</label>
+                  <select
+                    value={labourComplexity}
+                    onChange={(e) =>
+                      setLabourComplexity(
+                        e.target.value as "standard" | "moderate" | "complex",
+                      )
+                    }
+                    className={inputClass}
+                  >
+                    <option value="standard">Standard — clear access, light furniture</option>
+                    <option value="moderate">Moderate — some heavy items, stairs, tight spaces</option>
+                    <option value="complex">Complex — heavy items, multiple floors, high assembly</option>
+                  </select>
+                  <p className="text-[10px] text-[var(--tx3)] mt-0.5">
+                    Moderate +25% · Complex +50%
+                  </p>
+                </div>
+                <div>
+                  <label className={labelClass}>Item Weight Class</label>
+                  <select
+                    value={labourWeightClass}
+                    onChange={(e) =>
+                      setLabourWeightClass(
+                        e.target.value as "standard" | "heavy" | "very_heavy",
+                      )
+                    }
+                    className={inputClass}
+                  >
+                    <option value="standard">Standard — typical household furniture</option>
+                    <option value="heavy">Heavy — appliances, gym equipment, safes</option>
+                    <option value="very_heavy">Very Heavy — piano, commercial equipment</option>
+                  </select>
+                  <p className="text-[10px] text-[var(--tx3)] mt-0.5">
+                    Heavy +20% · Very Heavy +45%
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div>
+                  <label className={labelClass}>Crew Size</label>
+                  <select
+                    value={labourCrewSize}
+                    onChange={(e) => setLabourCrewSize(Number(e.target.value))}
+                    className={inputClass}
+                  >
+                    {[1, 2, 3, 4, 5].map((c) => (
+                      <option key={c} value={c}>
+                        {c}-Person Crew
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Estimated Hours</label>
+                  <select
+                    value={labourHours}
+                    onChange={(e) => setLabourHours(Number(e.target.value))}
+                    className={inputClass}
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((h) => (
+                      <option key={h} value={h}>
+                        {h === 8 ? "Full day (8h)" : `${h} hour${h > 1 ? "s" : ""}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Truck Required</label>
+                  <select
+                    value={labourTruckRequired ? "yes" : "no"}
+                    onChange={(e) =>
+                      setLabourTruckRequired(e.target.value === "yes")
+                    }
+                    className={inputClass}
+                  >
+                    <option value="no">No truck</option>
+                    <option value="yes">Yes, truck needed</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Number of Visits</label>
+                  <select
+                    value={labourVisits}
+                    onChange={(e) => setLabourVisits(Number(e.target.value))}
+                    className={inputClass}
+                  >
+                    <option value={1}>1 visit</option>
+                    <option value={2}>2 visits (return)</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={labourWeekend}
+                    onChange={(e) => setLabourWeekend(e.target.checked)}
+                    className="accent-[var(--admin-primary-fill)] w-3.5 h-3.5"
+                  />
+                  <span className="text-[11px] text-[var(--tx2)]">
+                    Weekend surcharge
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={labourAfterHours}
+                    onChange={(e) => setLabourAfterHours(e.target.checked)}
+                    className="accent-[var(--admin-primary-fill)] w-3.5 h-3.5"
+                  />
+                  <span className="text-[11px] text-[var(--tx2)]">
+                    After-hours multiplier
+                  </span>
+                </label>
+              </div>
+              {labourVisits >= 2 && (
+                <div>
+                  <label className={labelClass}>Second Visit Date</label>
+                  <input
+                    type="date"
+                    value={labourSecondVisitDate}
+                    onChange={(e) => setLabourSecondVisitDate(e.target.value)}
+                    className={`${inputClass} w-48`}
+                  />
+                </div>
+              )}
+              <div className="rounded-lg border border-[var(--brd)] px-3 py-2.5 space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={labourStorageNeeded}
+                    onChange={(e) =>
+                      setLabourStorageNeeded(e.target.checked)
+                    }
+                    className="accent-[var(--gold)] w-3.5 h-3.5"
+                  />
+                  <span className="text-[11px] text-[var(--tx2)]">
+                    Storage needed between visits?
+                  </span>
+                </label>
+                {labourStorageNeeded && (
+                  <div className="pl-5">
+                    <label className={labelClass}>
+                      Estimated storage duration (weeks)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={52}
+                      value={labourStorageWeeks}
+                      onChange={(e) =>
+                        setLabourStorageWeeks(
+                          Math.max(1, Number(e.target.value) || 1),
+                        )
+                      }
+                      className={`${inputClass} w-28`}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </EditSection>
+        )}
+
+        {/* ── Direct price override (universal) ──
+            Every service type uses some form of pricing — tier-based for
+            local_move / long_distance, custom_price for everything else.
+            Until this block landed there was NO way to set a price
+            directly on labour-only / office / single-item / specialty /
+            white-glove quotes from the edit page. Now there is. */}
+        {serviceType !== "local_move" &&
+          serviceType !== "long_distance" &&
+          serviceType !== "b2b_delivery" && (
+            <EditSection
+              eyebrow="Pricing"
+              title="Direct price override"
+              defaultOpen={!!quotePreTaxOverride.trim()}
+              hasChanges={!!quotePreTaxOverride.trim()}
+              summary={
+                quotePreTaxOverride.trim()
+                  ? `Override active: $${quotePreTaxOverride}`
+                  : "Engine-priced · open to set a fixed pre-tax total"
+              }
+            >
+              <div className="space-y-2">
+                <p className="text-[11px] text-[var(--tx2)] leading-snug">
+                  Sets a fixed pre-tax total that bypasses the engine.
+                  Reason required when an amount is entered. The engine
+                  still runs to compute downstream metadata (truck,
+                  crew, etc.) but the headline price uses this number.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelClass}>Override amount ($)</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={quotePreTaxOverride}
+                      onChange={(e) => setQuotePreTaxOverride(e.target.value)}
+                      placeholder="Leave blank for engine price"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>
+                      Reason (required if overriding)
+                    </label>
+                    <input
+                      type="text"
+                      value={quotePreTaxOverrideReason}
+                      onChange={(e) =>
+                        setQuotePreTaxOverrideReason(e.target.value)
+                      }
+                      placeholder="e.g. Loyalty discount, competitive match…"
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+              </div>
+            </EditSection>
+          )}
 
         {/* ── Per-tier price override + global coordinator override ──
             Same UX as the create form (admin/quotes/new). Wrapped in
