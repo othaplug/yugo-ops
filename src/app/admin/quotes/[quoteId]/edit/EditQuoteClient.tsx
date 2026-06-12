@@ -3,12 +3,8 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   ArrowsClockwise as RefreshCw,
-  PaperPlaneTilt as Send,
   CheckCircle,
-  CircleNotch as Loader2,
-  TrendUp as TrendingUp,
 } from "@phosphor-icons/react";
 import InventoryInput, {
   type InventoryItemEntry,
@@ -21,16 +17,17 @@ import {
   getVisibleAddons,
   ESTATE_ADDON_UI_LINES,
 } from "@/lib/quotes/addon-visibility";
-import {
-  quoteDetailDateLabel,
-  quoteFormServiceDateLabel,
-} from "@/lib/quotes/quote-field-labels";
-import { serviceTypeDisplayLabel, getDisplayLabel } from "@/lib/displayLabels";
+import { quoteFormServiceDateLabel } from "@/lib/quotes/quote-field-labels";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import TierPriceOverrideEditor, {
   type TierPriceOverrideMap,
 } from "@/app/admin/quotes/new/TierPriceOverrideEditor";
 import EditSection from "./EditSection";
+import EditQuoteLivePreview from "./EditQuoteLivePreview";
+import EditQuoteHeader from "./EditQuoteHeader";
+import EditQuoteCurrentSummary from "./EditQuoteCurrentSummary";
+import EditQuoteResultPanel from "./EditQuoteResultPanel";
+import EditQuoteReasonField from "./EditQuoteReasonField";
 import {
   QUOTE_UPDATE_REASONS,
   buildReasonText,
@@ -297,10 +294,6 @@ function stableEditQuotePayloadFingerprint(
       .sort();
   }
   return stableStringify(p);
-}
-
-function formatCurrency(n: number): string {
-  return `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
 function SectionDivider({ label }: { label: string }) {
@@ -1407,183 +1400,6 @@ export default function EditQuoteClient({
     }
   }, [pendingResend, newQuoteResult, newQuoteId, handleSendUpdate]);
 
-  /** Live price preview block.
-   *  Extracted as a const so the same JSX can render in the sticky
-   *  right column on desktop without duplicating the 170 lines of
-   *  inline tier/labour/warning rendering. Refs only state from the
-   *  parent scope, so closing over it is safe. */
-  const livePreviewBlock =
-    livePreview || previewLoading ? (
-      <div className="rounded-xl border border-[var(--gold)]/25 bg-[var(--gold)]/5 p-4">
-        <div className="flex items-center gap-2 mb-3">
-          {previewLoading ? (
-            <Loader2 size={13} className="animate-spin text-[var(--gold)]" />
-          ) : (
-            <TrendingUp size={13} className="text-[var(--gold)]" />
-          )}
-          <span className="text-[10px] font-bold text-[var(--gold)] tracking-widest uppercase">
-            {previewLoading ? "Recalculating…" : "Live Price Preview"}
-          </span>
-          {livePreview?.distance_km && !previewLoading && (
-            <span className="ml-auto text-[10px] text-[var(--tx3)]">
-              {livePreview.distance_km} km · {livePreview.drive_time_min} min
-              drive
-            </span>
-          )}
-        </div>
-
-        {!previewLoading && livePreview && (
-          <>
-            {livePreview.tiers ? (
-              <div className="grid grid-cols-3 gap-2">
-                {(["essential", "signature", "estate"] as const).map((tier) => {
-                  const t = livePreview.tiers[tier];
-                  if (!t) return null;
-                  const isEssential = tier === "essential";
-                  return (
-                    <div
-                      key={tier}
-                      className={`rounded-lg p-3 text-center border ${isEssential ? "border-[var(--gold)]/40 bg-[var(--gold)]/8" : "border-[var(--brd)] bg-[var(--bg)]"}`}
-                    >
-                      <div className="text-[9px] text-[var(--gold)] font-semibold uppercase mb-0.5">
-                        {tier}
-                      </div>
-                      <div className="text-[16px] font-bold text-[var(--tx)]">
-                        {formatCurrency(t.price)}
-                      </div>
-                      <div className="text-[9px] text-[var(--tx3)] mt-0.5">
-                        +{formatCurrency(t.tax)} HST
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : livePreview.custom_price ? (
-              <div className="flex items-center gap-5 flex-wrap">
-                <div>
-                  <div className="text-[11px] text-[var(--tx3)]">Price</div>
-                  <div className="text-[20px] font-bold text-[var(--gold)]">
-                    {formatCurrency(livePreview.custom_price.price)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[11px] text-[var(--tx3)]">HST (13%)</div>
-                  <div className="text-sm font-medium text-[var(--tx)]">
-                    +{formatCurrency(livePreview.custom_price.tax)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[11px] text-[var(--tx3)]">
-                    Total incl. HST
-                  </div>
-                  <div className="text-sm font-semibold text-[var(--tx)]">
-                    {formatCurrency(livePreview.custom_price.total)}
-                  </div>
-                </div>
-                {oldPrice > 0 && livePrice != null && (
-                  <div className="ml-auto text-[12px]">
-                    <span className="text-[var(--tx3)] line-through mr-1">
-                      {formatCurrency(Number(oldPrice))}
-                    </span>
-                    <span
-                      className="font-bold"
-                      style={{
-                        color:
-                          livePrice > Number(oldPrice) ? "#EF4444" : "#22C55E",
-                      }}
-                    >
-                      {livePrice > Number(oldPrice) ? "+" : ""}
-                      {formatCurrency(livePrice - Number(oldPrice))}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ) : null}
-
-            {livePreview.labour && (
-              <div className="mt-3 pt-2 border-t border-[var(--gold)]/15 flex gap-4 text-[11px] text-[var(--tx3)]">
-                <span>
-                  <strong className="text-[var(--tx)]">
-                    {livePreview.labour.crewSize}
-                  </strong>{" "}
-                  movers
-                </span>
-                <span>
-                  <strong className="text-[var(--tx)]">
-                    {livePreview.labour.hoursRange}
-                  </strong>
-                </span>
-                <span>
-                  <strong className="text-[var(--tx)]">
-                    {livePreview.labour.truckSize}
-                  </strong>{" "}
-                  truck
-                </span>
-              </div>
-            )}
-
-            {(livePreview.inventory_warnings?.length ?? 0) > 0 && (
-              <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5 space-y-1 text-[11px]">
-                <p className="font-semibold text-amber-600 dark:text-amber-400">
-                  Check inventory quantities
-                </p>
-                <ul className="list-disc list-inside text-[var(--tx2)]">
-                  {livePreview.inventory_warnings.map((w: string, i: number) => (
-                    <li key={i}>{w}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {livePreview.factors &&
-              typeof livePreview.factors.inventory_modifier === "number" &&
-              typeof livePreview.factors.inventory_max_modifier === "number" &&
-              livePreview.factors.inventory_modifier >=
-                livePreview.factors.inventory_max_modifier && (
-                <div className="mt-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-2.5 text-[11px] text-[var(--tx2)]">
-                  <p className="font-semibold text-blue-600 dark:text-blue-400">
-                    Inventory at volume ceiling (×
-                    {Number(livePreview.factors.inventory_max_modifier).toFixed(
-                      2,
-                    )}
-                    )
-                  </p>
-                  <p className="mt-0.5">
-                    Price is capped, consider manual adjustment.
-                  </p>
-                </div>
-              )}
-            {livePreview.factors &&
-              typeof livePreview.factors.labour_component === "number" &&
-              typeof livePreview.factors.subtotal_before_labour === "number" &&
-              Number(livePreview.factors.subtotal_before_labour) > 0 &&
-              Number(livePreview.factors.labour_component) >
-                0.5 * Number(livePreview.factors.subtotal_before_labour) && (
-                <div className="mt-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-2.5 text-[11px] text-[var(--tx2)]">
-                  <p className="font-semibold text-blue-600 dark:text-blue-400">
-                    High labour component:{" "}
-                    {formatCurrency(livePreview.factors.labour_component)}
-                  </p>
-                  <p className="mt-0.5">
-                    This move needs significantly more crew/time than standard.
-                  </p>
-                </div>
-              )}
-          </>
-        )}
-      </div>
-    ) : (
-      // Quiet placeholder so the right column doesn't collapse before
-      // the first preview fires. Tells the operator what to expect.
-      <div className="rounded-xl border border-dashed border-[var(--brd)] bg-[var(--card)]/40 p-4 text-center">
-        <div className="text-[10px] font-bold text-[var(--tx3)] tracking-widest uppercase mb-1">
-          Live Price Preview
-        </div>
-        <p className="text-[11px] text-[var(--tx3)]">
-          Edit any field to see the new pricing here.
-        </p>
-      </div>
-    );
-
   if (done) {
     return (
       <div className="max-w-lg mx-auto text-center py-16">
@@ -1622,96 +1438,20 @@ export default function EditQuoteClient({
 
   return (
     <div>
-      {/* Sticky top header with action buttons.
-          Sits above the form so Save changes / Save & resend are always
-          reachable without scrolling — matches the Google Docs-style
-          editor pattern from the audit. The unsaved-changes amber
-          banner sits inside the same sticky element so it stays
-          visible while the operator works through sections. */}
-      <div
-        className="sticky top-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 pt-3 pb-3 mb-5 bg-[var(--bg)] border-b border-[var(--brd)]"
-        data-edit-quote-header
-      >
-        <div className="flex items-center gap-3 flex-wrap">
-          <button
-            onClick={() => router.back()}
-            className="text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
-            aria-label="Back"
-          >
-            <ArrowLeft size={18} weight="regular" />
-          </button>
-          <div className="min-w-0 flex-1">
-            <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest uppercase">
-              Re-Quote
-            </div>
-            <h1 className="text-lg font-bold text-[var(--tx)] flex items-baseline gap-2 flex-wrap">
-              Edit Quote {oq.quote_id}
-              <span className="text-[11px] font-medium text-[var(--tx3)]">
-                v{oq.version || 1}
-                {!newQuoteResult && (
-                  <>
-                    {" → "}
-                    <span className="text-[var(--gold)]">
-                      v{(oq.version || 1) + 1} on save
-                    </span>
-                  </>
-                )}
-              </span>
-            </h1>
-            <div className="text-[11px] text-[var(--tx3)] flex items-center gap-2 flex-wrap mt-0.5">
-              <span>{contact?.name || "—"}</span>
-              <span>·</span>
-              <span>{serviceTypeDisplayLabel(serviceType)}</span>
-              {oq.move_date && (
-                <>
-                  <span>·</span>
-                  <span>{quoteDetailDateLabel(serviceType)} {oq.move_date}</span>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Action cluster — primary action on the right. Disabled
-              when no changes vs baseline; clicking Save & resend
-              without a reason surfaces the validation error inline. */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleRegenerate}
-              disabled={generating || !hasChanges}
-              className="text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--card)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
-            >
-              <RefreshCw
-                size={12}
-                className={generating ? "animate-spin" : ""}
-              />
-              {generating ? "Saving…" : "Save changes"}
-            </button>
-            <button
-              type="button"
-              onClick={handleSaveAndResend}
-              disabled={generating || linking || (!hasChanges && !newQuoteResult)}
-              className="btn-p text-[11px] font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Send size={12} />
-              {linking ? "Sending…" : "Save & resend"}
-            </button>
-          </div>
-        </div>
-
-        {hasChanges && (
-          <div className="mt-2.5 px-3 py-1.5 rounded-md bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-[11px]">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-            <span className="font-semibold text-amber-700 dark:text-amber-400">
-              Unsaved changes
-            </span>
-            <span className="text-amber-700/70 dark:text-amber-400/70">
-              · click Save changes to preview the new pricing or Save
-              &amp; resend to publish &amp; email the client.
-            </span>
-          </div>
-        )}
-      </div>
+      <EditQuoteHeader
+        quoteId={oq.quote_id}
+        version={oq.version || 1}
+        hasResult={!!newQuoteResult}
+        clientName={contact?.name}
+        serviceType={serviceType}
+        moveDate={oq.move_date}
+        generating={generating}
+        linking={linking}
+        hasChanges={hasChanges}
+        onBack={() => router.back()}
+        onSaveChanges={handleRegenerate}
+        onSaveAndResend={handleSaveAndResend}
+      />
 
       {/* Main 2-col grid:
             Left (col-span 2): all editable sections + result panel
@@ -1722,39 +1462,13 @@ export default function EditQuoteClient({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
         <div className="lg:col-span-2 space-y-5 min-w-0">
       {/* Current quote summary */}
-      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5">
-        <div className="text-[9px] font-bold text-[var(--tx3)] tracking-widest uppercase mb-3">
-          Current Quote
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div>
-            <div className="text-[var(--tx3)] text-[11px]">Client</div>
-            <div className="text-[var(--tx)] font-medium">
-              {contact?.name || "-"}
-            </div>
-          </div>
-          <div>
-            <div className="text-[var(--tx3)] text-[11px]">Current Price</div>
-            <div className="text-[var(--gold)] font-bold">
-              {formatCurrency(Number(oldPrice))}
-            </div>
-          </div>
-          <div>
-            <div className="text-[var(--tx3)] text-[11px]">
-              {quoteDetailDateLabel(serviceType)}
-            </div>
-            <div className="text-[var(--tx)] font-medium">
-              {oq.move_date || "TBD"}
-            </div>
-          </div>
-          <div>
-            <div className="text-[var(--tx3)] text-[11px]">Status</div>
-            <div className="text-[var(--tx)] font-medium uppercase">
-              {getDisplayLabel(oq.status, "quote") || oq.status}
-            </div>
-          </div>
-        </div>
-      </div>
+      <EditQuoteCurrentSummary
+        clientName={contact?.name}
+        currentPrice={Number(oldPrice) || 0}
+        serviceType={serviceType}
+        moveDate={oq.move_date}
+        status={oq.status}
+      />
 
       {/* Live price preview is rendered in the sticky right column via {livePreviewBlock}. */}
       
@@ -2935,54 +2649,14 @@ export default function EditQuoteClient({
           </EditSection>
         )}
 
-        {/* ── Reason for change ──
-            Required only when resending (handleSendUpdate enforces).
-            Curated dropdown lives in ./quote-update-reasons.ts so the
-            list stays consistent with HubSpot deal-property options. */}
-        <div className="border-t border-[var(--brd)] pt-4 space-y-3">
-          <div>
-            <label className={labelClass}>
-              Reason for Update{" "}
-              <span className="font-normal text-[var(--tx3)]">
-                (required when you click Save &amp; resend — shown in
-                the client email and HubSpot)
-              </span>
-            </label>
-            <select
-              value={reasonValue}
-              onChange={(e) =>
-                setReasonValue(
-                  (e.target.value as QuoteUpdateReasonValue) || "",
-                )
-              }
-              className={inputClass}
-            >
-              <option value="">Select a reason…</option>
-              {QUOTE_UPDATE_REASONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          {reasonValue === "other" && (
-            <div>
-              <label className={labelClass}>
-                Describe the change{" "}
-                <span className="font-normal text-[var(--tx3)]">
-                  (this exact text is shown to the client)
-                </span>
-              </label>
-              <input
-                type="text"
-                value={reasonFreeText}
-                onChange={(e) => setReasonFreeText(e.target.value)}
-                placeholder="e.g. Switched packing service from full to partial"
-                className={inputClass}
-              />
-            </div>
-          )}
-        </div>
+        <EditQuoteReasonField
+          reasonValue={reasonValue}
+          reasonFreeText={reasonFreeText}
+          onReasonValueChange={setReasonValue}
+          onReasonFreeTextChange={setReasonFreeText}
+          inputClass={inputClass}
+          labelClass={labelClass}
+        />
       </div>
 
       {/* Save changes button.
@@ -3001,148 +2675,19 @@ export default function EditQuoteClient({
         </button>
       )}
 
-      {/* Generated result */}
       {newQuoteResult && (
-        <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-5 mb-6 mt-6">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest uppercase">
-              Quote Updated
-            </div>
-            {newQuoteResult.version != null && (
-              <span className="text-[9px] font-bold text-[var(--tx3)] tracking-widest uppercase">
-                v{newQuoteResult.version}
-              </span>
-            )}
-            {newQuoteResult.is_revised && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide bg-amber-500/15 text-amber-500 border border-amber-500/30">
-                Revised
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-6 mb-4 flex-wrap">
-            <div>
-              <div className="text-[11px] text-[var(--tx3)]">Quote ID</div>
-              <div className="text-sm font-bold text-[var(--gold)]">
-                {newQuoteId ?? "-"}
-              </div>
-            </div>
-            {(() => {
-              const priceBefore = newQuoteResult.price_before as number | null ?? null;
-              const priceAfter = newPrice;
-              return priceBefore != null && priceAfter != null ? (
-                <div>
-                  <div className="text-[11px] text-[var(--tx3)]">
-                    Price Change
-                  </div>
-                  <div className="text-sm font-medium text-[var(--tx)] flex items-center gap-2">
-                    <span className="line-through text-[var(--tx3)]">
-                      {formatCurrency(Number(priceBefore))}
-                    </span>
-                    <span className="text-[var(--tx3)]">→</span>
-                    <span className="text-[var(--gold)] font-bold">
-                      {formatCurrency(Number(priceAfter))}
-                    </span>
-                  </div>
-                </div>
-              ) : oldPrice != null && newPrice != null ? (
-                <div>
-                  <div className="text-[11px] text-[var(--tx3)]">
-                    Price Change
-                  </div>
-                  <div className="text-sm font-medium text-[var(--tx)] flex items-center gap-2">
-                    <span className="line-through text-[var(--tx3)]">
-                      {formatCurrency(Number(oldPrice))}
-                    </span>
-                    <span className="text-[var(--tx3)]">→</span>
-                    <span className="text-[var(--gold)] font-bold">
-                      {formatCurrency(Number(newPrice))}
-                    </span>
-                  </div>
-                </div>
-              ) : null;
-            })()}
-          </div>
-
-          {newQuoteResult.tiers && (
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {["essential", "signature", "estate"].map((tier) => {
-                const t = newQuoteResult.tiers[tier];
-                if (!t) return null;
-                return (
-                  <div
-                    key={tier}
-                    className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3 text-center"
-                  >
-                    <div className="text-[10px] text-[var(--gold)] font-semibold uppercase">
-                      {t.label || tier}
-                    </div>
-                    <div className="text-lg font-bold text-[var(--tx)] mt-1">
-                      {formatCurrency(t.price)}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {newQuoteResult.custom_price && (
-            <div className="flex gap-5 mb-4">
-              <div>
-                <div className="text-[11px] text-[var(--tx3)]">Price</div>
-                <div className="text-xl font-bold text-[var(--gold)]">
-                  {formatCurrency(newQuoteResult.custom_price.price)}
-                </div>
-              </div>
-              <div>
-                <div className="text-[11px] text-[var(--tx3)]">
-                  Total incl. HST
-                </div>
-                <div className="text-base font-semibold text-[var(--tx)]">
-                  {formatCurrency(newQuoteResult.custom_price.total)}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {newQuoteResult.addons?.items?.length > 0 && (
-            <div className="mb-4 space-y-1">
-              <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
-                Add-Ons
-              </div>
-              {newQuoteResult.addons.items.map((item: any, i: number) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between text-[11px]"
-                >
-                  <span className="text-[var(--tx2)]">{item.name}</span>
-                  <span className="text-[var(--gold)] font-semibold">
-                    {formatCurrency(item.subtotal)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                setNewQuoteResult(null);
-                setNewQuoteId(null);
-              }}
-              className="flex-1 py-3 rounded-xl border border-[var(--brd)] text-[var(--tx2)] text-sm font-medium hover:bg-[var(--bg)] transition-colors"
-            >
-              Edit Further
-            </button>
-            <button
-              onClick={handleSendUpdate}
-              disabled={linking}
-              className="btn-p flex-1 py-3 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              <Send size={16} />
-              {linking ? "Sending…" : "Save & resend to client"}
-            </button>
-          </div>
-        </div>
+        <EditQuoteResultPanel
+          newQuoteResult={newQuoteResult}
+          newQuoteId={newQuoteId}
+          oldPrice={Number(oldPrice) || null}
+          newPrice={newPrice}
+          linking={linking}
+          onEditFurther={() => {
+            setNewQuoteResult(null);
+            setNewQuoteId(null);
+          }}
+          onSendUpdate={handleSendUpdate}
+        />
       )}
 
       {error && (
@@ -3157,7 +2702,12 @@ export default function EditQuoteClient({
             narrow screens (below lg) the grid collapses to single-column
             and the preview renders inline above the form. */}
         <aside className="lg:sticky lg:top-[152px] space-y-4 self-start">
-          {livePreviewBlock}
+          <EditQuoteLivePreview
+            livePreview={livePreview}
+            previewLoading={previewLoading}
+            oldPrice={Number(oldPrice) || 0}
+            livePrice={livePrice}
+          />
         </aside>
       </div>
     </div>
