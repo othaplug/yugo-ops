@@ -30,6 +30,12 @@ import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import TierPriceOverrideEditor, {
   type TierPriceOverrideMap,
 } from "@/app/admin/quotes/new/TierPriceOverrideEditor";
+import EditSection from "./EditSection";
+import {
+  QUOTE_UPDATE_REASONS,
+  buildReasonText,
+  type QuoteUpdateReasonValue,
+} from "./quote-update-reasons";
 
 // Local mirror of QuoteFormClient's PARKING_OPTIONS. Kept inline rather
 // than exported so the create form remains the source of truth — if the
@@ -352,7 +358,14 @@ export default function EditQuoteClient({
   const [toAccess, setToAccess] = useState(oq.to_access || "");
   const [moveDate, setMoveDate] = useState(oq.move_date || "");
   const [moveSize, setMoveSize] = useState(oq.move_size || "");
-  const [reason, setReason] = useState("");
+  // Reason for update: dropdown (`reasonValue`) + free-text (`reasonFreeText`)
+  // used only when the dropdown is "other". The legacy single-line `reason`
+  // is derived via buildReasonText() and required only at send-time.
+  const [reasonValue, setReasonValue] = useState<QuoteUpdateReasonValue | "">(
+    "",
+  );
+  const [reasonFreeText, setReasonFreeText] = useState("");
+  const reason = buildReasonText(reasonValue, reasonFreeText);
 
   // ── Scheduling / building access pre-fill ────────────────
   // All of these are persisted as top-level columns on `quotes` (verified
@@ -1262,6 +1275,15 @@ export default function EditQuoteClient({
     const quoteIdToSend = newQuoteId || oq.quote_id;
     if (!quoteIdToSend) return;
     setError(null);
+    // Reason is required at send-time (resend to client). It surfaces in
+    // the update email and the HubSpot timeline. Dropdown ensures it's
+    // categorised; "other" falls back to free-text.
+    if (!reason || reason.length < 3) {
+      setError(
+        "Pick a reason for the update before resending — the client sees it in the email.",
+      );
+      return;
+    }
     // Mirror create-form guard: refuse to send when assembly_override
     // is YES but the regenerated quote shows zero assembly items /
     // minutes. Same reasoning as QuoteFormClient.handleSend — crew
@@ -1296,6 +1318,11 @@ export default function EditQuoteClient({
         body: JSON.stringify({
           quoteId: quoteIdToSend,
           hubspot_deal_id: oq.hubspot_deal_id,
+          // update_reason is read by /api/quotes/send (when wired) and
+          // logged to the activity timeline + HubSpot note. Safe to send
+          // even before the server reads it — unknown fields are ignored.
+          update_reason: reason,
+          update_reason_code: reasonValue || null,
         }),
       });
       const data = await res.json();
@@ -1316,6 +1343,8 @@ export default function EditQuoteClient({
     assemblyOverride,
     serviceType,
     newQuoteResult,
+    reason,
+    reasonValue,
   ]);
 
   const newPrice =
@@ -1373,7 +1402,10 @@ export default function EditQuoteClient({
 
   return (
     <div>
-      {/* Header */}
+      {/* Header.
+          Shows the current version chip + the projected next version once
+          the operator hits "Save changes" so they know what they're about
+          to publish. */}
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => router.back()}
@@ -1381,14 +1413,22 @@ export default function EditQuoteClient({
         >
           <ArrowLeft size={18} weight="regular" />
         </button>
-        <div>
+        <div className="min-w-0">
           <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest uppercase">
             Re-Quote
           </div>
-          <h1 className="text-lg font-bold text-[var(--tx)]">
+          <h1 className="text-lg font-bold text-[var(--tx)] flex items-baseline gap-2">
             Edit Quote {oq.quote_id}
-            <span className="text-sm font-normal text-[var(--tx3)] ml-2">
+            <span className="text-[11px] font-medium text-[var(--tx3)]">
               v{oq.version || 1}
+              {!newQuoteResult && (
+                <>
+                  {" → "}
+                  <span className="text-[var(--gold)]">
+                    v{(oq.version || 1) + 1} on save
+                  </span>
+                </>
+              )}
             </span>
           </h1>
         </div>
@@ -1978,19 +2018,30 @@ export default function EditQuoteClient({
         )}
 
         {/* ── Per-tier price override + global coordinator override ──
-            Same UX as the create form (admin/quotes/new). Operator
-            had no way to set / change overrides on the edit page
-            until this block landed — the carry-forward at the API
-            payload level preserved an existing override but didn't
-            let it be modified.
-
-            Per-tier: pin one or more tiers to absolute prices.
-            Global: scale all tiers proportionally to a single
-            pre-tax target. Both validated server-side too. */}
+            Same UX as the create form (admin/quotes/new). Wrapped in
+            EditSection so it's collapsed by default — most edits don't
+            touch pricing directly, but when the coordinator does want
+            to override, this is the canonical surface. */}
         {(serviceType === "local_move" ||
           serviceType === "long_distance") && (
-          <div className="pt-2">
-            <SectionDivider label="Price overrides" />
+          <EditSection
+            eyebrow="Pricing"
+            title="Pricing & overrides"
+            summary={
+              Object.keys(tierPriceOverrides).length > 0 ||
+              quotePreTaxOverride.trim()
+                ? "Override active — open to review"
+                : "Engine-priced · open to override per-tier or global"
+            }
+            defaultOpen={
+              Object.keys(tierPriceOverrides).length > 0 ||
+              quotePreTaxOverride.trim().length > 0
+            }
+            hasChanges={
+              Object.keys(tierPriceOverrides).length > 0 ||
+              quotePreTaxOverride.trim().length > 0
+            }
+          >
             <div className="mt-3">
               <TierPriceOverrideEditor
                 value={tierPriceOverrides}
@@ -2075,7 +2126,7 @@ export default function EditQuoteClient({
                 </div>
               </div>
             </div>
-          </div>
+          </EditSection>
         )}
 
         {/* ── Office move ── */}
@@ -2460,13 +2511,20 @@ export default function EditQuoteClient({
           </div>
         )}
 
-        {/* ── Furniture / Client Inventory (residential + office) ── */}
+        {/* ── Furniture / Client Inventory (residential + office) ──
+            Wrapped in EditSection — big block (50+ items + box estimator),
+            collapsed by default. Opens automatically when the operator
+            actually wants to touch inventory. */}
         {(serviceType === "local_move" ||
           serviceType === "long_distance" ||
           serviceType === "office_move") &&
           itemWeights.length > 0 && (
-            <div>
-              <SectionDivider label="Furniture & Inventory" />
+            <EditSection
+              eyebrow="Scope"
+              title="Furniture & inventory"
+              summary={`${inventoryItems.length} item${inventoryItems.length === 1 ? "" : "s"} · ${clientBoxCount || "no"} boxes`}
+              defaultOpen={false}
+            >
               <InventoryInput
                 itemWeights={
                   itemWeights as {
@@ -2512,13 +2570,25 @@ export default function EditQuoteClient({
                   exposes a "Custom" option that opens an inline
                   numeric for exact counts, so the duplicate field
                   was redundant. */}
-            </div>
+            </EditSection>
           )}
 
-        {/* ── Add-ons ── */}
+        {/* ── Add-ons ──
+            Wrapped in EditSection. The full add-on list is long (10+
+            options with tier gating); collapsed default keeps the page
+            scrollable, and the summary shows what's already selected. */}
         {applicableAddons.length > 0 && (
-          <div>
-            <SectionDivider label="Add-Ons" />
+          <EditSection
+            eyebrow="Extras"
+            title="Add-ons"
+            summary={
+              selectedAddons.size === 0
+                ? "No add-ons selected"
+                : `${selectedAddons.size} add-on${selectedAddons.size === 1 ? "" : "s"} selected`
+            }
+            defaultOpen={selectedAddons.size > 0}
+            hasChanges={selectedAddons.size > 0}
+          >
             {tierForAddons === "estate" &&
               (serviceType === "local_move" ||
                 serviceType === "long_distance") && (
@@ -2722,28 +2792,64 @@ export default function EditQuoteClient({
                   );
                 })}
             </div>
-          </div>
+          </EditSection>
         )}
 
-        {/* ── Reason for change ── */}
-        <div className="border-t border-[var(--brd)] pt-4">
-          <label className={labelClass}>
-            Reason for Update{" "}
-            <span className="font-normal text-[var(--tx3)]">
-              (shown in email & HubSpot)
-            </span>
-          </label>
-          <input
-            type="text"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="e.g. Client moved date, added items, changed address…"
-            className={inputClass}
-          />
+        {/* ── Reason for change ──
+            Required only when resending (handleSendUpdate enforces).
+            Curated dropdown lives in ./quote-update-reasons.ts so the
+            list stays consistent with HubSpot deal-property options. */}
+        <div className="border-t border-[var(--brd)] pt-4 space-y-3">
+          <div>
+            <label className={labelClass}>
+              Reason for Update{" "}
+              <span className="font-normal text-[var(--tx3)]">
+                (required when you click Save &amp; resend — shown in
+                the client email and HubSpot)
+              </span>
+            </label>
+            <select
+              value={reasonValue}
+              onChange={(e) =>
+                setReasonValue(
+                  (e.target.value as QuoteUpdateReasonValue) || "",
+                )
+              }
+              className={inputClass}
+            >
+              <option value="">Select a reason…</option>
+              {QUOTE_UPDATE_REASONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {reasonValue === "other" && (
+            <div>
+              <label className={labelClass}>
+                Describe the change{" "}
+                <span className="font-normal text-[var(--tx3)]">
+                  (this exact text is shown to the client)
+                </span>
+              </label>
+              <input
+                type="text"
+                value={reasonFreeText}
+                onChange={(e) => setReasonFreeText(e.target.value)}
+                placeholder="e.g. Switched packing service from full to partial"
+                className={inputClass}
+              />
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Generate button */}
+      {/* Save changes button.
+          Recomputes the engine with the current form values, stamps a
+          new version, and surfaces the result panel below for the
+          operator to verify. No client email is sent at this step —
+          that's the "Save & resend" button in the result panel. */}
       {!newQuoteResult && (
         <button
           onClick={handleRegenerate}
@@ -2751,7 +2857,7 @@ export default function EditQuoteClient({
           className="btn-p w-full py-3 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <RefreshCw size={16} className={generating ? "animate-spin" : ""} />
-          {generating ? "Generating…" : "Re-Generate Quote"}
+          {generating ? "Saving…" : "Save changes & preview new pricing"}
         </button>
       )}
 
@@ -2893,7 +2999,7 @@ export default function EditQuoteClient({
               className="btn-p flex-1 py-3 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               <Send size={16} />
-              {linking ? "Sending…" : "Send Updated Quote to Client"}
+              {linking ? "Sending…" : "Save & resend to client"}
             </button>
           </div>
         </div>
