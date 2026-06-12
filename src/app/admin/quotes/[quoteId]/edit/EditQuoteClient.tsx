@@ -1364,6 +1364,226 @@ export default function EditQuoteClient({
     "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/82 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
   const labelClass = "admin-premium-label admin-premium-label--tight mb-1";
 
+  /** True when the form has diverged from the post-load baseline.
+   *  Re-derived on every render via buildPayload so any section's
+   *  state change flips it without explicit per-field bookkeeping. */
+  const hasChanges = (() => {
+    if (isB2bQuote) return false;
+    const baseline = baselineFingerprintRef.current;
+    if (baseline === null) return false;
+    try {
+      return stableEditQuotePayloadFingerprint(buildPayload()) !== baseline;
+    } catch {
+      return false;
+    }
+  })();
+
+  /** Save & resend = regenerate (which persists the new version) followed
+   *  immediately by send. Requires the engine result panel to have
+   *  appeared so we have a `newQuoteId` to send. If the operator clicks
+   *  Save & resend before a preview run, we run handleRegenerate first
+   *  and then defer send to the next event-loop tick via a state flag. */
+  const [pendingResend, setPendingResend] = useState(false);
+  const handleSaveAndResend = useCallback(async () => {
+    if (!reason || reason.length < 3) {
+      setError(
+        "Pick a reason for the update before resending — the client sees it in the email.",
+      );
+      return;
+    }
+    if (newQuoteResult) {
+      await handleSendUpdate();
+      return;
+    }
+    setPendingResend(true);
+    await handleRegenerate();
+  }, [reason, newQuoteResult, handleSendUpdate, handleRegenerate]);
+
+  // When the regenerate finishes and we have a queued resend, fire send.
+  useEffect(() => {
+    if (pendingResend && newQuoteResult && newQuoteId) {
+      setPendingResend(false);
+      void handleSendUpdate();
+    }
+  }, [pendingResend, newQuoteResult, newQuoteId, handleSendUpdate]);
+
+  /** Live price preview block.
+   *  Extracted as a const so the same JSX can render in the sticky
+   *  right column on desktop without duplicating the 170 lines of
+   *  inline tier/labour/warning rendering. Refs only state from the
+   *  parent scope, so closing over it is safe. */
+  const livePreviewBlock =
+    livePreview || previewLoading ? (
+      <div className="rounded-xl border border-[var(--gold)]/25 bg-[var(--gold)]/5 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          {previewLoading ? (
+            <Loader2 size={13} className="animate-spin text-[var(--gold)]" />
+          ) : (
+            <TrendingUp size={13} className="text-[var(--gold)]" />
+          )}
+          <span className="text-[10px] font-bold text-[var(--gold)] tracking-widest uppercase">
+            {previewLoading ? "Recalculating…" : "Live Price Preview"}
+          </span>
+          {livePreview?.distance_km && !previewLoading && (
+            <span className="ml-auto text-[10px] text-[var(--tx3)]">
+              {livePreview.distance_km} km · {livePreview.drive_time_min} min
+              drive
+            </span>
+          )}
+        </div>
+
+        {!previewLoading && livePreview && (
+          <>
+            {livePreview.tiers ? (
+              <div className="grid grid-cols-3 gap-2">
+                {(["essential", "signature", "estate"] as const).map((tier) => {
+                  const t = livePreview.tiers[tier];
+                  if (!t) return null;
+                  const isEssential = tier === "essential";
+                  return (
+                    <div
+                      key={tier}
+                      className={`rounded-lg p-3 text-center border ${isEssential ? "border-[var(--gold)]/40 bg-[var(--gold)]/8" : "border-[var(--brd)] bg-[var(--bg)]"}`}
+                    >
+                      <div className="text-[9px] text-[var(--gold)] font-semibold uppercase mb-0.5">
+                        {tier}
+                      </div>
+                      <div className="text-[16px] font-bold text-[var(--tx)]">
+                        {formatCurrency(t.price)}
+                      </div>
+                      <div className="text-[9px] text-[var(--tx3)] mt-0.5">
+                        +{formatCurrency(t.tax)} HST
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : livePreview.custom_price ? (
+              <div className="flex items-center gap-5 flex-wrap">
+                <div>
+                  <div className="text-[11px] text-[var(--tx3)]">Price</div>
+                  <div className="text-[20px] font-bold text-[var(--gold)]">
+                    {formatCurrency(livePreview.custom_price.price)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-[var(--tx3)]">HST (13%)</div>
+                  <div className="text-sm font-medium text-[var(--tx)]">
+                    +{formatCurrency(livePreview.custom_price.tax)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-[var(--tx3)]">
+                    Total incl. HST
+                  </div>
+                  <div className="text-sm font-semibold text-[var(--tx)]">
+                    {formatCurrency(livePreview.custom_price.total)}
+                  </div>
+                </div>
+                {oldPrice > 0 && livePrice != null && (
+                  <div className="ml-auto text-[12px]">
+                    <span className="text-[var(--tx3)] line-through mr-1">
+                      {formatCurrency(Number(oldPrice))}
+                    </span>
+                    <span
+                      className="font-bold"
+                      style={{
+                        color:
+                          livePrice > Number(oldPrice) ? "#EF4444" : "#22C55E",
+                      }}
+                    >
+                      {livePrice > Number(oldPrice) ? "+" : ""}
+                      {formatCurrency(livePrice - Number(oldPrice))}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {livePreview.labour && (
+              <div className="mt-3 pt-2 border-t border-[var(--gold)]/15 flex gap-4 text-[11px] text-[var(--tx3)]">
+                <span>
+                  <strong className="text-[var(--tx)]">
+                    {livePreview.labour.crewSize}
+                  </strong>{" "}
+                  movers
+                </span>
+                <span>
+                  <strong className="text-[var(--tx)]">
+                    {livePreview.labour.hoursRange}
+                  </strong>
+                </span>
+                <span>
+                  <strong className="text-[var(--tx)]">
+                    {livePreview.labour.truckSize}
+                  </strong>{" "}
+                  truck
+                </span>
+              </div>
+            )}
+
+            {(livePreview.inventory_warnings?.length ?? 0) > 0 && (
+              <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5 space-y-1 text-[11px]">
+                <p className="font-semibold text-amber-600 dark:text-amber-400">
+                  Check inventory quantities
+                </p>
+                <ul className="list-disc list-inside text-[var(--tx2)]">
+                  {livePreview.inventory_warnings.map((w: string, i: number) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {livePreview.factors &&
+              typeof livePreview.factors.inventory_modifier === "number" &&
+              typeof livePreview.factors.inventory_max_modifier === "number" &&
+              livePreview.factors.inventory_modifier >=
+                livePreview.factors.inventory_max_modifier && (
+                <div className="mt-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-2.5 text-[11px] text-[var(--tx2)]">
+                  <p className="font-semibold text-blue-600 dark:text-blue-400">
+                    Inventory at volume ceiling (×
+                    {Number(livePreview.factors.inventory_max_modifier).toFixed(
+                      2,
+                    )}
+                    )
+                  </p>
+                  <p className="mt-0.5">
+                    Price is capped, consider manual adjustment.
+                  </p>
+                </div>
+              )}
+            {livePreview.factors &&
+              typeof livePreview.factors.labour_component === "number" &&
+              typeof livePreview.factors.subtotal_before_labour === "number" &&
+              Number(livePreview.factors.subtotal_before_labour) > 0 &&
+              Number(livePreview.factors.labour_component) >
+                0.5 * Number(livePreview.factors.subtotal_before_labour) && (
+                <div className="mt-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-2.5 text-[11px] text-[var(--tx2)]">
+                  <p className="font-semibold text-blue-600 dark:text-blue-400">
+                    High labour component:{" "}
+                    {formatCurrency(livePreview.factors.labour_component)}
+                  </p>
+                  <p className="mt-0.5">
+                    This move needs significantly more crew/time than standard.
+                  </p>
+                </div>
+              )}
+          </>
+        )}
+      </div>
+    ) : (
+      // Quiet placeholder so the right column doesn't collapse before
+      // the first preview fires. Tells the operator what to expect.
+      <div className="rounded-xl border border-dashed border-[var(--brd)] bg-[var(--card)]/40 p-4 text-center">
+        <div className="text-[10px] font-bold text-[var(--tx3)] tracking-widest uppercase mb-1">
+          Live Price Preview
+        </div>
+        <p className="text-[11px] text-[var(--tx3)]">
+          Edit any field to see the new pricing here.
+        </p>
+      </div>
+    );
+
   if (done) {
     return (
       <div className="max-w-lg mx-auto text-center py-16">
@@ -1402,43 +1622,107 @@ export default function EditQuoteClient({
 
   return (
     <div>
-      {/* Header.
-          Shows the current version chip + the projected next version once
-          the operator hits "Save changes" so they know what they're about
-          to publish. */}
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={() => router.back()}
-          className="text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
-        >
-          <ArrowLeft size={18} weight="regular" />
-        </button>
-        <div className="min-w-0">
-          <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest uppercase">
-            Re-Quote
-          </div>
-          <h1 className="text-lg font-bold text-[var(--tx)] flex items-baseline gap-2">
-            Edit Quote {oq.quote_id}
-            <span className="text-[11px] font-medium text-[var(--tx3)]">
-              v{oq.version || 1}
-              {!newQuoteResult && (
+      {/* Sticky top header with action buttons.
+          Sits above the form so Save changes / Save & resend are always
+          reachable without scrolling — matches the Google Docs-style
+          editor pattern from the audit. The unsaved-changes amber
+          banner sits inside the same sticky element so it stays
+          visible while the operator works through sections. */}
+      <div
+        className="sticky top-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 pt-3 pb-3 mb-5 bg-[var(--bg)] border-b border-[var(--brd)]"
+        data-edit-quote-header
+      >
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={() => router.back()}
+            className="text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
+            aria-label="Back"
+          >
+            <ArrowLeft size={18} weight="regular" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest uppercase">
+              Re-Quote
+            </div>
+            <h1 className="text-lg font-bold text-[var(--tx)] flex items-baseline gap-2 flex-wrap">
+              Edit Quote {oq.quote_id}
+              <span className="text-[11px] font-medium text-[var(--tx3)]">
+                v{oq.version || 1}
+                {!newQuoteResult && (
+                  <>
+                    {" → "}
+                    <span className="text-[var(--gold)]">
+                      v{(oq.version || 1) + 1} on save
+                    </span>
+                  </>
+                )}
+              </span>
+            </h1>
+            <div className="text-[11px] text-[var(--tx3)] flex items-center gap-2 flex-wrap mt-0.5">
+              <span>{contact?.name || "—"}</span>
+              <span>·</span>
+              <span>{serviceTypeDisplayLabel(serviceType)}</span>
+              {oq.move_date && (
                 <>
-                  {" → "}
-                  <span className="text-[var(--gold)]">
-                    v{(oq.version || 1) + 1} on save
-                  </span>
+                  <span>·</span>
+                  <span>{quoteDetailDateLabel(serviceType)} {oq.move_date}</span>
                 </>
               )}
-            </span>
-          </h1>
+            </div>
+          </div>
+
+          {/* Action cluster — primary action on the right. Disabled
+              when no changes vs baseline; clicking Save & resend
+              without a reason surfaces the validation error inline. */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleRegenerate}
+              disabled={generating || !hasChanges}
+              className="text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--card)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+            >
+              <RefreshCw
+                size={12}
+                className={generating ? "animate-spin" : ""}
+              />
+              {generating ? "Saving…" : "Save changes"}
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveAndResend}
+              disabled={generating || linking || (!hasChanges && !newQuoteResult)}
+              className="btn-p text-[11px] font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Send size={12} />
+              {linking ? "Sending…" : "Save & resend"}
+            </button>
+          </div>
         </div>
-        <span className="ml-auto dt-badge tracking-[0.04em] text-[var(--tx)]">
-          {serviceTypeDisplayLabel(serviceType)}
-        </span>
+
+        {hasChanges && (
+          <div className="mt-2.5 px-3 py-1.5 rounded-md bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-[11px]">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+            <span className="font-semibold text-amber-700 dark:text-amber-400">
+              Unsaved changes
+            </span>
+            <span className="text-amber-700/70 dark:text-amber-400/70">
+              · click Save changes to preview the new pricing or Save
+              &amp; resend to publish &amp; email the client.
+            </span>
+          </div>
+        )}
       </div>
 
+      {/* Main 2-col grid:
+            Left (col-span 2): all editable sections + result panel
+            Right (col-span 1, sticky on lg): live price preview that
+              stays visible while the operator scrolls through sections.
+          On narrow screens it stacks single-column with the preview
+          rendered between the summary and the form. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+        <div className="lg:col-span-2 space-y-5 min-w-0">
       {/* Current quote summary */}
-      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 mb-5">
+      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5">
         <div className="text-[9px] font-bold text-[var(--tx3)] tracking-widest uppercase mb-3">
           Current Quote
         </div>
@@ -1472,185 +1756,27 @@ export default function EditQuoteClient({
         </div>
       </div>
 
-      {/* Live price preview */}
-      {(livePreview || previewLoading) && (
-        <div className="rounded-xl border border-[var(--gold)]/25 bg-[var(--gold)]/5 p-4 mb-5">
-          <div className="flex items-center gap-2 mb-3">
-            {previewLoading ? (
-              <Loader2 size={13} className="animate-spin text-[var(--gold)]" />
-            ) : (
-              <TrendingUp size={13} className="text-[var(--gold)]" />
-            )}
-            <span className="text-[10px] font-bold text-[var(--gold)] tracking-widest uppercase">
-              {previewLoading ? "Recalculating…" : "Live Price Preview"}
-            </span>
-            {livePreview?.distance_km && !previewLoading && (
-              <span className="ml-auto text-[10px] text-[var(--tx3)]">
-                {livePreview.distance_km} km · {livePreview.drive_time_min} min
-                drive
-              </span>
-            )}
-          </div>
+      {/* Live price preview is rendered in the sticky right column via {livePreviewBlock}. */}
+      
+      {/* Edit fields — each logical block lives in its own EditSection
+          card so the page reads as a stack of focused sections, not one
+          wall of fields. Order is: Route & access (always open) → service-
+          type-specific → Pricing → Inventory → Add-ons → Reason. */}
+      <div className="space-y-3">
 
-          {!previewLoading && livePreview && (
-            <>
-              {livePreview.tiers ? (
-                <div className="grid grid-cols-3 gap-2">
-                  {(["essential", "signature", "estate"] as const).map(
-                    (tier) => {
-                      const t = livePreview.tiers[tier];
-                      if (!t) return null;
-                      const isEssential = tier === "essential";
-                      return (
-                        <div
-                          key={tier}
-                          className={`rounded-lg p-3 text-center border ${isEssential ? "border-[var(--gold)]/40 bg-[var(--gold)]/8" : "border-[var(--brd)] bg-[var(--bg)]"}`}
-                        >
-                          <div className="text-[9px] text-[var(--gold)] font-semibold uppercase mb-0.5">
-                            {tier}
-                          </div>
-                          <div className="text-[16px] font-bold text-[var(--tx)]">
-                            {formatCurrency(t.price)}
-                          </div>
-                          <div className="text-[9px] text-[var(--tx3)] mt-0.5">
-                            +{formatCurrency(t.tax)} HST
-                          </div>
-                        </div>
-                      );
-                    },
-                  )}
-                </div>
-              ) : livePreview.custom_price ? (
-                <div className="flex items-center gap-5 flex-wrap">
-                  <div>
-                    <div className="text-[11px] text-[var(--tx3)]">Price</div>
-                    <div className="text-[20px] font-bold text-[var(--gold)]">
-                      {formatCurrency(livePreview.custom_price.price)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[11px] text-[var(--tx3)]">
-                      HST (13%)
-                    </div>
-                    <div className="text-sm font-medium text-[var(--tx)]">
-                      +{formatCurrency(livePreview.custom_price.tax)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[11px] text-[var(--tx3)]">
-                      Total incl. HST
-                    </div>
-                    <div className="text-sm font-semibold text-[var(--tx)]">
-                      {formatCurrency(livePreview.custom_price.total)}
-                    </div>
-                  </div>
-                  {oldPrice > 0 && livePrice != null && (
-                    <div className="ml-auto text-[12px]">
-                      <span className="text-[var(--tx3)] line-through mr-1">
-                        {formatCurrency(Number(oldPrice))}
-                      </span>
-                      <span
-                        className="font-bold"
-                        style={{
-                          color:
-                            livePrice > Number(oldPrice)
-                              ? "#EF4444"
-                              : "#22C55E",
-                        }}
-                      >
-                        {livePrice > Number(oldPrice) ? "+" : ""}
-                        {formatCurrency(livePrice - Number(oldPrice))}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ) : null}
-
-              {livePreview.labour && (
-                <div className="mt-3 pt-2 border-t border-[var(--gold)]/15 flex gap-4 text-[11px] text-[var(--tx3)]">
-                  <span>
-                    <strong className="text-[var(--tx)]">
-                      {livePreview.labour.crewSize}
-                    </strong>{" "}
-                    movers
-                  </span>
-                  <span>
-                    <strong className="text-[var(--tx)]">
-                      {livePreview.labour.hoursRange}
-                    </strong>
-                  </span>
-                  <span>
-                    <strong className="text-[var(--tx)]">
-                      {livePreview.labour.truckSize}
-                    </strong>{" "}
-                    truck
-                  </span>
-                </div>
-              )}
-
-              {/* Algorithm anomaly warnings */}
-              {(livePreview.inventory_warnings?.length ?? 0) > 0 && (
-                <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5 space-y-1 text-[11px]">
-                  <p className="font-semibold text-amber-600 dark:text-amber-400">
-                    Check inventory quantities
-                  </p>
-                  <ul className="list-disc list-inside text-[var(--tx2)]">
-                    {livePreview.inventory_warnings.map(
-                      (w: string, i: number) => (
-                        <li key={i}>{w}</li>
-                      ),
-                    )}
-                  </ul>
-                </div>
-              )}
-              {livePreview.factors &&
-                typeof livePreview.factors.inventory_modifier === "number" &&
-                typeof livePreview.factors.inventory_max_modifier ===
-                  "number" &&
-                livePreview.factors.inventory_modifier >=
-                  livePreview.factors.inventory_max_modifier && (
-                  <div className="mt-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-2.5 text-[11px] text-[var(--tx2)]">
-                    <p className="font-semibold text-blue-600 dark:text-blue-400">
-                      Inventory at volume ceiling (×
-                      {Number(
-                        livePreview.factors.inventory_max_modifier,
-                      ).toFixed(2)}
-                      )
-                    </p>
-                    <p className="mt-0.5">
-                      Price is capped, consider manual adjustment.
-                    </p>
-                  </div>
-                )}
-              {livePreview.factors &&
-                typeof livePreview.factors.labour_component === "number" &&
-                typeof livePreview.factors.subtotal_before_labour ===
-                  "number" &&
-                Number(livePreview.factors.subtotal_before_labour) > 0 &&
-                Number(livePreview.factors.labour_component) >
-                  0.5 * Number(livePreview.factors.subtotal_before_labour) && (
-                  <div className="mt-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-2.5 text-[11px] text-[var(--tx2)]">
-                    <p className="font-semibold text-blue-600 dark:text-blue-400">
-                      High labour component:{" "}
-                      {formatCurrency(livePreview.factors.labour_component)}
-                    </p>
-                    <p className="mt-0.5">
-                      This move needs significantly more crew/time than
-                      standard.
-                    </p>
-                  </div>
-                )}
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Edit fields */}
-      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 mb-6 space-y-5">
-        <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest uppercase">
-          Update Details
-        </div>
-
+        {/* ── Route & access — always open by default since these are
+             the most frequently edited fields and the page makes no
+             sense without them visible. */}
+        <EditSection
+          eyebrow="Logistics"
+          title="Route & access"
+          defaultOpen={true}
+          summary={
+            fromAddress && toAddress
+              ? `${fromAddress.split(",")[0]} → ${toAddress.split(",")[0]}${moveDate ? ` · ${moveDate}` : ""}`
+              : "Set addresses and date"
+          }
+        >
         {/* ── Core fields ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2 space-y-4">
@@ -1910,17 +2036,31 @@ export default function EditQuoteClient({
           </div>
         )}
 
+        </EditSection>
+
         {/* Operator overrides — crew / hours / truck. Engine auto-picks
             from inventory + access; this is the escape hatch when the
             auto-pick is operationally wrong. Leave blank for auto.
-            Currently the engine's walk-up-3rd unconditional crew bump
-            forces a third mover on light 1BR walk-ups — until that
-            engine rule is loosened, this is how operators ship a
-            correct quote. */}
+            Wrapped in EditSection — collapsed by default since most
+            edits trust the engine; opens when the operator needs to
+            force a value. */}
         {(serviceType === "local_move" ||
           serviceType === "long_distance") && (
-          <div className="pt-2">
-            <SectionDivider label="Crew / Hours / Truck (operator override)" />
+          <EditSection
+            eyebrow="Crew"
+            title="Crew, hours & truck override"
+            defaultOpen={
+              !!(crewOverride || hoursOverride || truckOverride)
+            }
+            hasChanges={
+              !!(crewOverride || hoursOverride || truckOverride)
+            }
+            summary={
+              crewOverride || hoursOverride || truckOverride
+                ? `Override active: ${[crewOverride && `crew ${crewOverride}`, hoursOverride && `${hoursOverride}h`, truckOverride].filter(Boolean).join(" · ")}`
+                : "Engine auto-picks · open to override"
+            }
+          >
             <p className="text-[11px] text-[var(--tx3)] mt-2 mb-3 leading-snug">
               Leave blank for the engine&apos;s auto-pick. Set values
               when the auto-pick is wrong for the job (e.g. a light 1BR
@@ -2014,7 +2154,7 @@ export default function EditQuoteClient({
                   : null}
               </p>
             )}
-          </div>
+          </EditSection>
         )}
 
         {/* ── Per-tier price override + global coordinator override ──
@@ -3010,6 +3150,16 @@ export default function EditQuoteClient({
           {error}
         </div>
       )}
+        </div>
+        {/* Right column: sticky live price preview.
+            On lg+ screens it stays pinned just under the sticky header
+            while the operator scrolls through the form sections. On
+            narrow screens (below lg) the grid collapses to single-column
+            and the preview renders inline above the form. */}
+        <aside className="lg:sticky lg:top-[152px] space-y-4 self-start">
+          {livePreviewBlock}
+        </aside>
+      </div>
     </div>
   );
 }
