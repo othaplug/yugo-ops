@@ -33,6 +33,10 @@ import {
   buildReasonText,
   type QuoteUpdateReasonValue,
 } from "./quote-update-reasons";
+import {
+  PRICE_OVERRIDE_REASONS,
+  buildPriceOverrideReasonText,
+} from "@/lib/quotes/price-override-reasons";
 
 // Local mirror of QuoteFormClient's PARKING_OPTIONS. Kept inline rather
 // than exported so the create form remains the source of truth — if the
@@ -2230,15 +2234,63 @@ export default function EditQuoteClient({
                     <label className={labelClass}>
                       Reason (required if overriding)
                     </label>
-                    <input
-                      type="text"
-                      value={quotePreTaxOverrideReason}
-                      onChange={(e) =>
-                        setQuotePreTaxOverrideReason(e.target.value)
+                    <select
+                      value={
+                        PRICE_OVERRIDE_REASONS.some(
+                          (r) => r.label === quotePreTaxOverrideReason,
+                        )
+                          ? PRICE_OVERRIDE_REASONS.find(
+                              (r) => r.label === quotePreTaxOverrideReason,
+                            )?.value ?? ""
+                          : quotePreTaxOverrideReason
+                            ? "other"
+                            : ""
                       }
-                      placeholder="e.g. Loyalty discount, competitive match…"
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v === "" ) {
+                          setQuotePreTaxOverrideReason("");
+                        } else if (v === "other") {
+                          // Preserve existing text if any, otherwise blank.
+                          if (
+                            PRICE_OVERRIDE_REASONS.some(
+                              (r) => r.label === quotePreTaxOverrideReason,
+                            )
+                          ) {
+                            setQuotePreTaxOverrideReason("");
+                          }
+                        } else {
+                          setQuotePreTaxOverrideReason(
+                            buildPriceOverrideReasonText(v),
+                          );
+                        }
+                      }}
                       className={inputClass}
-                    />
+                    >
+                      <option value="">Select a reason…</option>
+                      {PRICE_OVERRIDE_REASONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    {/* "Other" path — free text shown only when the
+                        dropdown is set to other AND the stored value
+                        isn't a known label. */}
+                    {!PRICE_OVERRIDE_REASONS.some(
+                      (r) => r.label === quotePreTaxOverrideReason,
+                    ) &&
+                      quotePreTaxOverrideReason !== "" && (
+                        <input
+                          type="text"
+                          value={quotePreTaxOverrideReason}
+                          onChange={(e) =>
+                            setQuotePreTaxOverrideReason(e.target.value)
+                          }
+                          placeholder="Describe the reason…"
+                          className={`${inputClass} mt-2`}
+                        />
+                      )}
                   </div>
                 </div>
               </div>
@@ -2342,15 +2394,59 @@ export default function EditQuoteClient({
                   <label className={labelClass}>
                     Reason (required if overriding)
                   </label>
-                  <input
-                    type="text"
-                    value={quotePreTaxOverrideReason}
-                    onChange={(e) =>
-                      setQuotePreTaxOverrideReason(e.target.value)
+                  <select
+                    value={
+                      PRICE_OVERRIDE_REASONS.some(
+                        (r) => r.label === quotePreTaxOverrideReason,
+                      )
+                        ? PRICE_OVERRIDE_REASONS.find(
+                            (r) => r.label === quotePreTaxOverrideReason,
+                          )?.value ?? ""
+                        : quotePreTaxOverrideReason
+                          ? "other"
+                          : ""
                     }
-                    placeholder="e.g. Competitive match, stairs not in model…"
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === "") {
+                        setQuotePreTaxOverrideReason("");
+                      } else if (v === "other") {
+                        if (
+                          PRICE_OVERRIDE_REASONS.some(
+                            (r) => r.label === quotePreTaxOverrideReason,
+                          )
+                        ) {
+                          setQuotePreTaxOverrideReason("");
+                        }
+                      } else {
+                        setQuotePreTaxOverrideReason(
+                          buildPriceOverrideReasonText(v),
+                        );
+                      }
+                    }}
                     className={inputClass}
-                  />
+                  >
+                    <option value="">Select a reason…</option>
+                    {PRICE_OVERRIDE_REASONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  {!PRICE_OVERRIDE_REASONS.some(
+                    (r) => r.label === quotePreTaxOverrideReason,
+                  ) &&
+                    quotePreTaxOverrideReason !== "" && (
+                      <input
+                        type="text"
+                        value={quotePreTaxOverrideReason}
+                        onChange={(e) =>
+                          setQuotePreTaxOverrideReason(e.target.value)
+                        }
+                        placeholder="Describe the reason…"
+                        className={`${inputClass} mt-2`}
+                      />
+                    )}
                 </div>
               </div>
             </div>
@@ -2359,8 +2455,17 @@ export default function EditQuoteClient({
 
         {/* ── Office move ── */}
         {serviceType === "office_move" && (
-          <div className="space-y-2">
-            <SectionDivider label="Office Details" />
+          <EditSection
+            eyebrow="Scope"
+            title="Office move details"
+            defaultOpen={true}
+            summary={
+              squareFootage || workstationCount
+                ? `${squareFootage ? `${squareFootage} sqft` : ""}${squareFootage && workstationCount ? " · " : ""}${workstationCount ? `${workstationCount} workstations` : ""}`
+                : "Set square footage, workstations, timing"
+            }
+          >
+            <div className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               <div>
                 <label className={labelClass}>Square Footage</label>
@@ -2415,13 +2520,23 @@ export default function EditQuoteClient({
                 label="Has Reception Area"
               />
             </div>
-          </div>
+            </div>
+          </EditSection>
         )}
 
         {/* ── White glove (multi-line items) ── */}
         {serviceType === "white_glove" && (
+          <EditSection
+            eyebrow="Scope"
+            title="White-glove delivery"
+            defaultOpen={true}
+            summary={
+              whiteGloveItemRows.length > 0
+                ? `${whiteGloveItemRows.length} delivery item${whiteGloveItemRows.length === 1 ? "" : "s"}`
+                : "Add delivery items, building requirements, instructions"
+            }
+          >
           <div className="space-y-4">
-            <SectionDivider label="White glove delivery" />
             <WhiteGloveItemsEditor
               value={whiteGloveItemRows}
               onChange={setWhiteGloveItemRows}
@@ -2522,12 +2637,22 @@ export default function EditQuoteClient({
               />
             </div>
           </div>
+          </EditSection>
         )}
 
         {/* ── Single item ── */}
         {serviceType === "single_item" && (
+          <EditSection
+            eyebrow="Scope"
+            title="Single-item delivery"
+            defaultOpen={true}
+            summary={
+              itemDescription
+                ? `${itemDescription.slice(0, 40)}${itemDescription.length > 40 ? "…" : ""}`
+                : "Set item description, category, weight class"
+            }
+          >
           <div className="space-y-2">
-            <SectionDivider label="Items" />
             <div>
               <label className={labelClass}>Item description *</label>
               <input
@@ -2615,12 +2740,22 @@ export default function EditQuoteClient({
               </div>
             </div>
           </div>
+          </EditSection>
         )}
 
         {/* ── Specialty service ── */}
         {serviceType === "specialty" && (
+          <EditSection
+            eyebrow="Scope"
+            title="Specialty service details"
+            defaultOpen={true}
+            summary={
+              projectType
+                ? `${projectType.replace(/_/g, " ")}${timelineHours ? ` · ${timelineHours}h` : ""}`
+                : "Set project type, hours, crating"
+            }
+          >
           <div className="space-y-2">
-            <SectionDivider label="Specialty Details" />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-end">
               <div>
                 <label className={labelClass}>Project Type</label>
@@ -2674,12 +2809,22 @@ export default function EditQuoteClient({
               </div>
             </div>
           </div>
+          </EditSection>
         )}
 
         {/* ── Specialty items for residential moves ── */}
         {(serviceType === "local_move" || serviceType === "long_distance") && (
+          <EditSection
+            eyebrow="Items"
+            title="Specialty items"
+            defaultOpen={specialtyItems.some((s) => (s.qty ?? 0) > 0)}
+            summary={
+              specialtyItems.some((s) => (s.qty ?? 0) > 0)
+                ? `${specialtyItems.filter((s) => (s.qty ?? 0) > 0).length} specialty type${specialtyItems.filter((s) => (s.qty ?? 0) > 0).length === 1 ? "" : "s"}`
+                : "Piano, safe, hot tub, artwork, etc."
+            }
+          >
           <div>
-            <SectionDivider label="Specialty Items" />
             <p className="text-[11px] text-[var(--tx3)] mt-2 mb-3">
               Add any bulky or specialty items that require extra handling.
             </p>
@@ -2737,6 +2882,7 @@ export default function EditQuoteClient({
               })}
             </div>
           </div>
+          </EditSection>
         )}
 
         {/* ── Furniture / Client Inventory (residential + office) ──

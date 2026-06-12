@@ -25,6 +25,10 @@
  */
 
 import * as React from "react";
+import {
+  PRICE_OVERRIDE_REASONS,
+  buildPriceOverrideReasonText,
+} from "@/lib/quotes/price-override-reasons";
 
 export type TierKey = "essential" | "signature" | "estate";
 
@@ -211,18 +215,68 @@ export default function TierPriceOverrideEditor({
                   </div>
                   <div>
                     <label className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--tx2)] mb-1">
-                      Reason (≥ 3 chars)
+                      Reason
                     </label>
-                    <input
-                      type="text"
-                      value={entry.reason}
-                      onChange={(e) =>
-                        updateTier(tier, { reason: e.target.value })
+                    {/* Reason dropdown — curated list of common
+                        override justifications. Picking an option
+                        sets the reason text to the option's label;
+                        "Other" reveals a free-text input below for
+                        the rare cases that don't fit. */}
+                    <select
+                      value={
+                        PRICE_OVERRIDE_REASONS.some(
+                          (r) => r.label === entry.reason,
+                        )
+                          ? PRICE_OVERRIDE_REASONS.find(
+                              (r) => r.label === entry.reason,
+                            )?.value ?? ""
+                          : entry.reason
+                            ? "other"
+                            : ""
                       }
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v === "") {
+                          updateTier(tier, { reason: "" });
+                        } else if (v === "other") {
+                          if (
+                            PRICE_OVERRIDE_REASONS.some(
+                              (r) => r.label === entry.reason,
+                            )
+                          ) {
+                            updateTier(tier, { reason: "" });
+                          }
+                        } else {
+                          updateTier(tier, {
+                            reason: buildPriceOverrideReasonText(v),
+                          });
+                        }
+                      }}
                       disabled={disabled}
-                      placeholder="competitive match · repeat client · scope correction"
                       className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-[13px]"
-                    />
+                    >
+                      <option value="">Select a reason…</option>
+                      {PRICE_OVERRIDE_REASONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    {!PRICE_OVERRIDE_REASONS.some(
+                      (r) => r.label === entry.reason,
+                    ) &&
+                      entry.reason !== "" && (
+                        <input
+                          type="text"
+                          value={entry.reason}
+                          onChange={(e) =>
+                            updateTier(tier, { reason: e.target.value })
+                          }
+                          disabled={disabled}
+                          placeholder="Describe the override reason…"
+                          className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-[13px] mt-2"
+                        />
+                      )}
                   </div>
                   {!valid && (
                     <div className="sm:col-span-2 text-[10px] text-red-600">
