@@ -720,6 +720,12 @@ export default function CrewJobPage({
       setActionError("");
       setNote("");
       await fetchSession();
+      // The active leg changed (e.g. departed for drop-off) without a route
+      // change, so nudge CrewShell to re-fetch the nav target immediately —
+      // otherwise the floating Navigation button stays disabled until refresh.
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("crew:nav-target-refresh"));
+      }
       if (status === "arrived_at_pickup") {
         // Only force-open the walkthrough modal if it has not already been
         // completed or skipped server-side. Previously this also reset the

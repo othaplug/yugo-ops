@@ -147,15 +147,52 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
     return () => clearInterval(id);
   }, [router, pathname]);
 
+  // Nav target = deep link for the crew's CURRENT active leg. It changes when
+  // the crew advances status (e.g. depart for drop-off) WITHOUT a route change,
+  // so re-fetching only on `pathname` left the Navigation button disabled until
+  // a manual refresh. We now also: poll on a short interval, refresh when the
+  // app regains focus, and refresh immediately on a `crew:nav-target-refresh`
+  // event the job page fires right after a status advance.
   useEffect(() => {
-    fetch("/api/crew/nav-target")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        const p =
-          d && typeof d.path === "string" && d.path.length > 0 ? d.path : null;
-        setNavTargetPath(p);
-      })
-      .catch(() => setNavTargetPath(null));
+    let cancelled = false;
+    const refresh = () => {
+      fetch("/api/crew/nav-target")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (cancelled) return;
+          const p =
+            d && typeof d.path === "string" && d.path.length > 0 ? d.path : null;
+          setNavTargetPath(p);
+        })
+        .catch(() => {
+          if (!cancelled) setNavTargetPath(null);
+        });
+    };
+
+    refresh();
+
+    const interval = setInterval(() => {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState === "hidden"
+      )
+        return;
+      refresh();
+    }, 8000);
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    const onManualRefresh = () => refresh();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("crew:nav-target-refresh", onManualRefresh);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("crew:nav-target-refresh", onManualRefresh);
+    };
   }, [pathname]);
 
   return (
