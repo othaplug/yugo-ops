@@ -7,6 +7,7 @@ import { sendMoveReminderSms } from "@/lib/quote-sms";
 import { getMoveCrewSize } from "@/lib/moves/crew-size";
 import { moveMatchesBalanceReminder48hWindow } from "@/lib/quotes/estate-schedule";
 import { statusUpdateEmailHtml } from "@/lib/email-templates";
+import { moveUsesPreMoveChecklist } from "@/lib/tracking-prep-checklist-visibility";
 import {
   accessMentionsElevator,
   parkingReminderLikelyNeeded,
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
   const { data: moves72 } = await supabase
     .from("moves")
     .select(
-      "id, move_code, client_name, client_email, client_phone, scheduled_date, scheduled_time, from_address, to_address, from_access, to_access, balance_amount, balance_paid_at, deposit_paid_at, tier_selected, square_card_id",
+      "id, move_code, client_name, client_email, client_phone, scheduled_date, scheduled_time, from_address, to_address, from_access, to_access, balance_amount, balance_paid_at, deposit_paid_at, tier_selected, square_card_id, service_type, move_type",
     )
     .in("status", ["confirmed", "scheduled"])
     .eq("scheduled_date", threeDaysOut)
@@ -71,6 +72,23 @@ export async function GET(req: NextRequest) {
       const trackToken = signTrackToken("move", move.id);
       const trackingUrl = `${baseUrl}/track/move/${move.move_code ?? move.id}?token=${trackToken}`;
 
+      // Labour-only / in-home jobs don't get the move-prep checklist email
+      // (parking at both ends, elevator, disconnect appliances — all moot).
+      // Mark it "sent" so it's not re-queried; the balance reminder below
+      // still runs because balance is owed regardless of job type.
+      const usesChecklist = moveUsesPreMoveChecklist({
+        serviceType: move.service_type,
+        moveType: move.move_type,
+        fromAddress: move.from_address,
+        toAddress: move.to_address,
+      });
+
+      if (!usesChecklist) {
+        await supabase
+          .from("moves")
+          .update({ pre_move_72hr_sent: new Date().toISOString() })
+          .eq("id", move.id);
+      } else
       try {
         const result = await sendEmail({
           to: move.client_email,

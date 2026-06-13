@@ -75,7 +75,7 @@ import {
 } from "@/lib/pricing/bin-rental";
 import { labelBookingModificationType } from "@/lib/moves/booking-modification-labels";
 import { isTrackNonMoveProduct } from "@/lib/track-non-move-product";
-import { shouldShowClientPreMoveChecklist } from "@/lib/tracking-prep-checklist-visibility";
+import { shouldShowClientPreMoveChecklist, moveUsesPreMoveChecklist } from "@/lib/tracking-prep-checklist-visibility";
 
 function formatPerkOffer(
   offerType: string,
@@ -1222,11 +1222,18 @@ export default function TrackMoveClient({
     service_type: move.service_type,
     move_type: move.move_type,
   });
-  const showClientPreMoveChecklist = shouldShowClientPreMoveChecklist(
-    liveStage,
-    move.stage,
-    isLogisticsDeliveryTrack ? "delivery" : "move",
-  );
+  const showClientPreMoveChecklist =
+    moveUsesPreMoveChecklist({
+      serviceType: move.service_type,
+      moveType: move.move_type,
+      fromAddress: move.from_address,
+      toAddress: move.to_address,
+    }) &&
+    shouldShowClientPreMoveChecklist(
+      liveStage,
+      move.stage,
+      isLogisticsDeliveryTrack ? "delivery" : "move",
+    );
   const isNonMoveProductTrack = isTrackNonMoveProduct(serviceType);
   const normTrackAddr = (a: string | null | undefined) =>
     String(a ?? "")

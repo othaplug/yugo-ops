@@ -49,6 +49,7 @@ import {
   isPreMoveChecklistComplete,
   preMoveChecklistCounts,
 } from "@/lib/pre-move-checklist";
+import { moveUsesPreMoveChecklist } from "@/lib/tracking-prep-checklist-visibility";
 import EstateServiceChecklistAdminRow from "./EstateServiceChecklistAdminRow";
 import {
   formatMoveDate,
@@ -912,6 +913,13 @@ export default function MoveDetailClient({
   const prepChecklistRecord =
     (move.pre_move_checklist as Record<string, boolean> | null | undefined) ||
     undefined;
+  // Labour-only / in-home jobs don't use the move-prep checklist.
+  const showPrepChecklist = moveUsesPreMoveChecklist({
+    serviceType: move.service_type,
+    moveType: move.move_type,
+    fromAddress: move.from_address,
+    toAddress: move.to_address,
+  });
   const prepCounts = preMoveChecklistCounts(prepChecklistRecord);
   const prepAllDone = isPreMoveChecklistComplete(prepChecklistRecord);
   const prepNotifiedAt = move.pre_move_checklist_notified_at as
@@ -1417,6 +1425,7 @@ export default function MoveDetailClient({
             </div>
           </div>
 
+          {showPrepChecklist && (
           <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 rounded-xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-subtle)] px-3 py-2.5 sm:px-4">
             <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--yu3-ink-muted)]/80 shrink-0">
               Client prep checklist
@@ -1443,6 +1452,7 @@ export default function MoveDetailClient({
               ) : null}
             </div>
           </div>
+          )}
 
           {isEstateTierMove(move) ? (
             <EstateServiceChecklistAdminRow move={move} setMove={setMove} />

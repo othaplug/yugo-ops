@@ -34,6 +34,7 @@ import {
   getCrewStatusFlowForMove,
   getCrewStatusFlowForDelivery,
 } from "@/lib/crew/service-type-flow";
+import { moveUsesPreMoveChecklist } from "@/lib/tracking-prep-checklist-visibility";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import {
   accessLineText,
@@ -394,6 +395,17 @@ export default function CrewJobPage({
   /** Pre-move client checklist is only relevant before the crew is on site at origin. */
   const showClientPreMovePrepBanner = useMemo(() => {
     if (jobType !== "move" || !job) return false;
+    // Labour-only / in-home jobs don't use the move-prep checklist.
+    if (
+      !moveUsesPreMoveChecklist({
+        serviceType: job.serviceType,
+        moveType: job.moveType,
+        fromAddress: job.fromAddress,
+        toAddress: job.toAddress,
+      })
+    ) {
+      return false;
+    }
     if (
       typeof job.preMoveChecklistTotal !== "number" ||
       job.preMoveChecklistTotal <= 0
