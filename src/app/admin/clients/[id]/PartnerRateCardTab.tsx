@@ -1135,27 +1135,62 @@ export default function PartnerRateCardTab({
               </tbody>
             </table>
           </div>
-          {sampleRow && (
-            <div className="rounded-lg border border-[var(--brd)] bg-[var(--bgsub)]/40 px-4 py-3 text-[11px] text-[var(--tx2)] space-y-1">
-              <div>
-                <span className="text-[var(--tx3)]">Weekend surcharge:</span>{" "}
-                <span className="font-semibold text-[var(--tx)]">+{formatCurrency(Number(sampleRow.weekend_surcharge ?? 0))}</span>
+          {sampleRow && (() => {
+            // Representative surcharges across the WHOLE local rate matrix.
+            // Previously this read a single arbitrary `sampleRow` (the first
+            // row, ordered by reason_code → typically a reno_bundle row, one
+            // of which has a $0 weekend surcharge). That made the panel read
+            // "Weekend surcharge: +$0" even though every reno_move_in/out row
+            // carries +$100 — exactly the "it says +$0" confusion. We now
+            // summarise the non-zero values so the panel reflects the card.
+            const collect = (pick: (r: typeof sampleRow) => unknown) =>
+              matrixSourceRows
+                .map((r) => Number(pick(r) ?? 0))
+                .filter((n) => Number.isFinite(n) && n > 0);
+            const wknd = collect((r) => r.weekend_surcharge);
+            const hol = collect((r) => r.holiday_surcharge);
+            const aft = collect((r) => r.after_hours_premium);
+            const money = (vals: number[]) => {
+              if (vals.length === 0) return "+$0";
+              const lo = Math.min(...vals);
+              const hi = Math.max(...vals);
+              return lo === hi
+                ? `+${formatCurrency(lo)}`
+                : `+${formatCurrency(lo)}–${formatCurrency(hi)}`;
+            };
+            const pct = (vals: number[]) => {
+              if (vals.length === 0) return "+0%";
+              const lo = Math.round(Math.min(...vals) * 100);
+              const hi = Math.round(Math.max(...vals) * 100);
+              return lo === hi ? `+${lo}%` : `+${lo}–${hi}%`;
+            };
+            const varies = (vals: number[]) =>
+              new Set(vals).size > 1 ? (
+                <span className="text-[var(--tx3)]"> (varies by move type)</span>
+              ) : null;
+            return (
+              <div className="rounded-lg border border-[var(--brd)] bg-[var(--bgsub)]/40 px-4 py-3 text-[11px] text-[var(--tx2)] space-y-1">
+                <div>
+                  <span className="text-[var(--tx3)]">Weekend surcharge:</span>{" "}
+                  <span className="font-semibold text-[var(--tx)]">{money(wknd)}</span>
+                  {varies(wknd)}
+                </div>
+                <div>
+                  <span className="text-[var(--tx3)]">After-hours:</span>{" "}
+                  <span className="font-semibold text-[var(--tx)]">{pct(aft)}</span>
+                  {varies(aft)}
+                </div>
+                <div>
+                  <span className="text-[var(--tx3)]">Holiday:</span>{" "}
+                  <span className="font-semibold text-[var(--tx)]">{money(hol)}</span>
+                  {varies(hol)}
+                </div>
+                <div className="text-[10px] text-[var(--tx3)] pt-1">
+                  Mobilization and other contract add-ons appear below when configured on the contract.
+                </div>
               </div>
-              <div>
-                <span className="text-[var(--tx3)]">After-hours:</span>{" "}
-                <span className="font-semibold text-[var(--tx)]">
-                  +{Math.round(Number(sampleRow.after_hours_premium ?? 0) * 100)}%
-                </span>
-              </div>
-              <div>
-                <span className="text-[var(--tx3)]">Holiday:</span>{" "}
-                <span className="font-semibold text-[var(--tx)]">+{formatCurrency(Number(sampleRow.holiday_surcharge ?? 0))}</span>
-              </div>
-              <div className="text-[10px] text-[var(--tx3)] pt-1">
-                Mobilization and other contract add-ons appear below when configured on the contract.
-              </div>
-            </div>
-          )}
+            );
+          })()}
           {pmAddons.length > 0 && (
             <div className="rounded-lg border border-[var(--brd)] overflow-hidden">
               <div className="px-3 py-2 text-[9px] font-bold uppercase text-[var(--tx3)] bg-[var(--bgsub)] border-b border-[var(--brd)]">
