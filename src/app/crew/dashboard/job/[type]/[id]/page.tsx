@@ -194,6 +194,17 @@ interface DeliveryStop {
   stopItems?: DeliveryStopItemRow[];
 }
 
+interface MoveStop {
+  id: string;
+  type: "pickup" | "dropoff";
+  address: string;
+  lat: number | null;
+  lng: number | null;
+  sortOrder: number;
+  notes: string | null;
+  isPrimary: boolean;
+}
+
 interface JobDetail {
   id: string;
   jobId: string;
@@ -205,6 +216,8 @@ interface JobDetail {
   moveType?: string;
   status?: string;
   stops?: DeliveryStop[];
+  /** Ordered move pickup/dropoff stops (primary + additional from job_stops). */
+  moveStops?: MoveStop[];
   clientName: string;
   fromAddress: string;
   toAddress: string;
@@ -1526,6 +1539,83 @@ export default function CrewJobPage({
           </div>
         </div>
       </div>
+
+      {/* ── Multi-stop list — every pickup/drop-off in plan order ──
+           Shows when the move has more than one pickup or drop-off, so the
+           crew sees all addresses (not just the primary pair). Each stop is
+           tap-to-navigate. Order reflects the coordinator's plan; the crew
+           can pick any to head to first. */}
+      {job.isMultiStop && (job.moveStops?.length ?? 0) > 1 && (
+        <div className="mb-6 rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-[var(--yu3-line-subtle)] flex items-center justify-between">
+            <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+              Stops in order
+            </span>
+            <span className="text-[10px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+              Tap to navigate · go in any order that fits the plan
+            </span>
+          </div>
+          <ul className="divide-y divide-[var(--yu3-line-subtle)]">
+            {(() => {
+              const pickups = (job.moveStops ?? []).filter((s) => s.type === "pickup");
+              const dropoffs = (job.moveStops ?? []).filter((s) => s.type === "dropoff");
+              const ordered = [...pickups, ...dropoffs];
+              const label = (s: MoveStop, i: number, arr: MoveStop[]) => {
+                const sameType = arr.filter((x) => x.type === s.type);
+                const idx = sameType.indexOf(s) + 1;
+                const base = s.type === "pickup" ? originLabel : destinationLabel;
+                return sameType.length > 1 ? `${base} ${idx}` : base;
+              };
+              return ordered.map((s, i) => {
+                const hasCoords = isValidNavCoord(s.lat, s.lng);
+                const mapsUrl = hasCoords
+                  ? `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`
+                  : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.address)}`;
+                return (
+                  <li key={s.id}>
+                    <a
+                      href={mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start gap-3 px-4 py-3 active:bg-[var(--yu3-bg-surface-subtle)] transition-colors"
+                    >
+                      <span
+                        className={`mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold tabular-nums ${
+                          s.type === "pickup"
+                            ? "bg-[var(--yu3-wine)]/12 text-[var(--yu3-wine)]"
+                            : "bg-[var(--yu3-forest)]/12 text-[var(--yu3-forest)]"
+                        }`}
+                      >
+                        {i + 1}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[10px] font-bold tracking-[0.1em] uppercase text-[var(--yu3-ink-muted)] leading-none [font-family:var(--font-body)]">
+                          {label(s, i, ordered)}
+                          {s.isPrimary ? "" : " · added"}
+                        </span>
+                        <span className="block text-[14px] text-[var(--yu3-ink)] font-medium leading-snug mt-1">
+                          {s.address}
+                        </span>
+                        {s.notes && (
+                          <span className="block text-[12px] text-[var(--yu3-ink-muted)] mt-0.5 leading-snug">
+                            {s.notes}
+                          </span>
+                        )}
+                      </span>
+                      <CaretRight
+                        size={16}
+                        weight="bold"
+                        className="mt-0.5 shrink-0 text-[var(--yu3-wine)]"
+                        aria-hidden
+                      />
+                    </a>
+                  </li>
+                );
+              });
+            })()}
+          </ul>
+        </div>
+      )}
 
       {/* ── Tabs ── */}
       <div className="flex justify-center border-b border-[var(--yu3-line-subtle)] mb-6">

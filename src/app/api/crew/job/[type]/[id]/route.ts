@@ -544,6 +544,111 @@ export async function GET(
     .eq("status", "approved")
     .order("added_at");
 
+  // Multi-stop addresses. The authoritative source is the linked quote's
+  // factors_applied.pickup_locations / dropoff_locations (set when extra
+  // pickups/drop-offs are added). The move row only keeps a single
+  // from/to address, so a 2-pickup move otherwise shows one address to the
+  // crew. Future job_stops rows (admin-ordered) are merged in too.
+  type StopLoc = { address?: unknown; access?: unknown };
+  let quotePickups: StopLoc[] = [];
+  let quoteDropoffs: StopLoc[] = [];
+  if (m.quote_id) {
+    const { data: qf } = await admin
+      .from("quotes")
+      .select("factors_applied")
+      .eq("id", m.quote_id as string)
+      .maybeSingle();
+    const fa =
+      qf?.factors_applied && typeof qf.factors_applied === "object" && !Array.isArray(qf.factors_applied)
+        ? (qf.factors_applied as Record<string, unknown>)
+        : {};
+    if (Array.isArray(fa.pickup_locations)) quotePickups = fa.pickup_locations as StopLoc[];
+    if (Array.isArray(fa.dropoff_locations)) quoteDropoffs = fa.dropoff_locations as StopLoc[];
+  }
+
+  const { data: jobStopRows } = await admin
+    .from("job_stops")
+    .select("id, stop_type, address, lat, lng, sort_order, notes")
+    .eq("job_type", "move")
+    .eq("job_id", m.id)
+    .order("sort_order", { ascending: true });
+
+  const buildStops = (type: "pickup" | "dropoff") => {
+    const primaryAddr = (type === "pickup" ? m.from_address : m.to_address) || "";
+    const primaryLat = type === "pickup" ? m.from_lat : m.to_lat;
+    const primaryLng = type === "pickup" ? m.from_lng : m.to_lng;
+    const list: {
+      id: string;
+      type: "pickup" | "dropoff";
+      address: string;
+      lat: number | null;
+      lng: number | null;
+      sortOrder: number;
+      notes: string | null;
+      isPrimary: boolean;
+    }[] = [];
+
+    const quoteLocs = type === "pickup" ? quotePickups : quoteDropoffs;
+    const quoteAddrs = quoteLocs
+      .map((l) => String(l?.address ?? "").trim())
+      .filter((a) => a.length > 0);
+
+    if (quoteAddrs.length > 1) {
+      // Quote carries the full ordered list — use it as the source of truth.
+      quoteAddrs.forEach((address, i) => {
+        const access =
+          quoteLocs[i] && typeof quoteLocs[i].access === "string"
+            ? (quoteLocs[i].access as string).trim() || null
+            : null;
+        list.push({
+          id: `${type}-${i}`,
+          type,
+          address,
+          lat: i === 0 && primaryLat != null ? Number(primaryLat) : null,
+          lng: i === 0 && primaryLng != null ? Number(primaryLng) : null,
+          sortOrder: i,
+          notes: access,
+          isPrimary: i === 0,
+        });
+      });
+    } else if (String(primaryAddr).trim()) {
+      list.push({
+        id: `primary-${type}`,
+        type,
+        address: String(primaryAddr).trim(),
+        lat: primaryLat != null ? Number(primaryLat) : null,
+        lng: primaryLng != null ? Number(primaryLng) : null,
+        sortOrder: 0,
+        notes: null,
+        isPrimary: true,
+      });
+    }
+
+    // Merge any admin-ordered job_stops (future: drag-to-order persistence).
+    for (const s of jobStopRows ?? []) {
+      if (s.stop_type !== type) continue;
+      const addr = String(s.address ?? "").trim();
+      if (!addr || list.some((x) => x.address.toLowerCase() === addr.toLowerCase())) continue;
+      list.push({
+        id: String(s.id),
+        type,
+        address: addr,
+        lat: s.lat != null ? Number(s.lat) : null,
+        lng: s.lng != null ? Number(s.lng) : null,
+        sortOrder: typeof s.sort_order === "number" ? s.sort_order : 99,
+        notes: (s.notes as string | null) ?? null,
+        isPrimary: false,
+      });
+    }
+
+    return list.sort((a, b) => a.sortOrder - b.sortOrder);
+  };
+
+  const pickupStops = buildStops("pickup");
+  const dropoffStops = buildStops("dropoff");
+  const moveStops = [...pickupStops, ...dropoffStops];
+  const isMultiStopMove = pickupStops.length > 1 || dropoffStops.length > 1;
+
   let fromLat = m.from_lat != null ? Number(m.from_lat) : null;
   let fromLng = m.from_lng != null ? Number(m.from_lng) : null;
   let toLat = m.to_lat != null ? Number(m.to_lat) : null;
@@ -815,6 +920,8 @@ export async function GET(
     coordinatorPhone: (process.env.NEXT_PUBLIC_YUGO_PHONE || "").trim() || null,
     fromAddress: m.from_address || "-",
     toAddress: m.to_address || "-",
+    moveStops,
+    isMultiStop: isMultiStopMove,
     fromAccess: fromAccessOut,
     toAccess: toAccessOut,
     accessNotes: (m as any).access_notes || null,
