@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
+import { CaretDown, CaretUp, Clock } from "@phosphor-icons/react"
 import { formatTime } from "@/lib/client-timezone"
 import type { OperationalJobAlerts } from "@/lib/jobs/operational-alerts"
 import { formatMinutesAsHhMm } from "@/lib/duration-hhmm"
@@ -84,12 +85,72 @@ export default function CrewJobTimer({
     : formatMinutesAsHhMm(Math.round(target))
   const primarySuffix = startedAtIso ? "time left" : "planned"
 
+  const spentHhMm = formatMinutesAsHhMm(Math.round(elapsedMin))
+  const overMin = Math.max(0, Math.round(elapsedMin - target))
+
+  // Collapsed by default to reclaim screen space on the crew job page.
+  // Auto-expands when the job is running past its allocated window so the
+  // overrun warning is never hidden behind a tap.
+  const [expanded, setExpanded] = useState(showTimeBanner)
+
   return (
     <div
       data-job-time-tracker
       className={`mb-4 overflow-hidden rounded-[20px] border border-[var(--yu3-line-subtle)] shadow-[var(--yu3-shadow-md)] [color-scheme:light] ${shellClass}`}
       aria-label="Job time tracker"
     >
+      {/* Compact header — always visible. Tap to expand full detail. */}
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="block w-full text-left [font-family:var(--font-body)]"
+        aria-expanded={expanded}
+        aria-label={expanded ? "Collapse job timer" : "Expand job timer"}
+      >
+        <div className="h-[3px] w-full overflow-hidden bg-[var(--yu3-line-subtle)]">
+          <div
+            className={`h-full transition-[width] duration-700 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${barFill}`}
+            style={{ width: `${percentUsed}%` }}
+          />
+        </div>
+        <div className="flex items-center gap-3 px-4 py-2.5">
+          <Clock
+            size={16}
+            weight="bold"
+            className={showTimeBanner ? "text-amber-600" : "text-[var(--yu3-wine)]"}
+          />
+          <div className="min-w-0 flex-1">
+            {!startedAtIso ? (
+              <p className="text-[13px] font-semibold text-[var(--yu3-ink)]">
+                {formatMinutesAsHhMm(Math.round(target))} allocated
+                <span className="ml-1.5 font-medium text-[var(--yu3-ink-muted)]">
+                  · not started
+                </span>
+              </p>
+            ) : (
+              <p className="text-[13px] font-semibold tabular-nums text-[var(--yu3-ink)]">
+                {spentHhMm} <span className="font-medium text-[var(--yu3-ink-muted)]">spent</span>
+                <span className="mx-1.5 text-[var(--yu3-ink-muted)]">·</span>
+                {showTimeBanner ? (
+                  <span className="text-amber-700">
+                    {formatMinutesAsHhMm(overMin)} over
+                  </span>
+                ) : (
+                  <span className="text-[var(--yu3-wine)]">
+                    {formatMinutesAsHhMm(remainMin)} left
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
+          <span className="shrink-0 text-[var(--yu3-ink-muted)]">
+            {expanded ? <CaretUp size={15} weight="bold" /> : <CaretDown size={15} weight="bold" />}
+          </span>
+        </div>
+      </button>
+
+      {expanded && (
+        <>
       {showTimeBanner && (
         <div className="space-y-1 px-4 py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.12em] [font-family:var(--font-body)] bg-amber-500/12 text-amber-950">
           <p className="leading-snug">
@@ -101,15 +162,6 @@ export default function CrewJobTimer({
           </p>
         </div>
       )}
-
-      <div className="px-4 pt-3">
-        <div className="h-[2px] w-full overflow-hidden rounded-full bg-[var(--yu3-line-subtle)]">
-          <div
-            className={`h-full rounded-full transition-[width] duration-700 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${barFill}`}
-            style={{ width: `${percentUsed}%` }}
-          />
-        </div>
-      </div>
 
       <div className="grid grid-cols-2 gap-4 px-5 pb-1 pt-4">
         <div className="min-w-0 text-left">
@@ -171,6 +223,8 @@ export default function CrewJobTimer({
           </span>
         )}
       </p>
+        </>
+      )}
     </div>
   )
 }
