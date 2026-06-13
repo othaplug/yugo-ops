@@ -393,13 +393,16 @@ const ESTATE_CREAM_EMAIL_MOBILE_CSS = `
 </style>
 `.trim();
 
-export function estateLuxuryCreamLayout(innerHtml: string): string {
+export function estateLuxuryCreamLayout(
+  innerHtml: string,
+  footerOptions?: ClientEmailFooterOptions,
+): string {
   return `
 ${ESTATE_CREAM_EMAIL_MOBILE_CSS}
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${ESTATE_CREAM_PAGE}" style="background-color:${ESTATE_CREAM_PAGE};color-scheme:light;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${ESTATE_CREAM_PAGE}" style="background-color:${ESTATE_CREAM_PAGE};color-scheme:light;margin:0 auto;">
   <tr>
-    <td class="estate-email-outer email-outer-gutter" align="center" bgcolor="${ESTATE_CREAM_PAGE}" style="padding:36px 20px 60px;background-color:${ESTATE_CREAM_PAGE};color-scheme:light;">
-      <table class="estate-email-inner email-fluid-inner" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${ESTATE_CREAM_CARD}" style="max-width:${EMAIL_FLUID_MAX_WIDTH_PX}px;width:100%;background-color:${ESTATE_CREAM_CARD};border:1px solid rgba(92,26,51,0.16);">
+    <td class="estate-email-outer email-outer-gutter" align="center" bgcolor="${ESTATE_CREAM_PAGE}" style="padding:36px 20px 60px;background-color:${ESTATE_CREAM_PAGE};color-scheme:light;text-align:center;">
+      <table class="estate-email-inner email-fluid-inner" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${ESTATE_CREAM_CARD}" style="max-width:${EMAIL_FLUID_MAX_WIDTH_PX}px;width:100%;margin:0 auto;background-color:${ESTATE_CREAM_CARD};border:1px solid rgba(92,26,51,0.16);text-align:left;">
         <tr>
           <td class="estate-email-content" bgcolor="${ESTATE_CREAM_CARD}" style="padding:52px 48px 56px;font-family:${PREMIUM_FONT};color:${ESTATE_BODY};font-size:15px;line-height:1.78;">
             ${emailCardLogoEstate()}
@@ -419,8 +422,9 @@ ${ESTATE_CREAM_EMAIL_MOBILE_CSS}
     </td>
   </tr>
   ${getClientEmailFooterTrs({
-    whyReceiving: "booking",
-    spacerBackground: ESTATE_CREAM_PAGE,
+    whyReceiving: footerOptions?.whyReceiving ?? "booking",
+    variant: footerOptions?.variant,
+    spacerBackground: footerOptions?.spacerBackground ?? ESTATE_CREAM_PAGE,
   })}
 </table>
   `;
@@ -2555,17 +2559,20 @@ export function estate30DayCheckinEmailHtml(
     <p style="font-family:${PREMIUM_FONT};font-size:15px;color:${ESTATE_BODY_MUTED};margin:0 0 24px;line-height:1.6;">Hi ${escapeHtml(first)},</p>
     <h1 style="font-family:${ESTATE_GEORGIA};font-size:28px;font-weight:700;color:${ESTATE_WINE} !important;-webkit-text-fill-color:${ESTATE_WINE};margin:0 0 18px;line-height:1.3;letter-spacing:0;">A note from your Estate team</h1>
     <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 18px;line-height:1.78;">It has been one month since your move with Yugo. We hope you are settling in beautifully.</p>
-    <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 28px;line-height:1.78;">If anything still needs attention, or you have a question about your new home, your coordinator is here for the remainder of your 30-day concierge window.</p>
+    <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 28px;line-height:1.78;">If anything still needs attention, or you have a question about your new home, your coordinator remains a message away &mdash; we are here for you well beyond move day.</p>
     ${coordLine}
     ${welcomeBlock}
-    <p style="font-size:14px;color:${ESTATE_BODY_MUTED};margin:0 0 20px;line-height:1.65;">Your move tracker and documents are still available anytime:</p>
+    <p style="font-size:14px;color:${ESTATE_BODY_MUTED};margin:0 0 20px;line-height:1.65;">Your concierge portal &mdash; documents, your move summary, and a direct line to your coordinator &mdash; is available anytime:</p>
     <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-bottom:8px;">
       <tr><td>
-        <a href="${p.trackingUrl.replace(/&/g, "&amp;")}" style="display:inline-block;background-color:transparent;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};padding:12px 28px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-decoration:none;border:1px solid ${EMAIL_FOREST};text-transform:uppercase;font-family:${PREMIUM_FONT};">TRACK YOUR MOVE&nbsp;&nbsp;&#8250;</a>
+        <a href="${p.trackingUrl.replace(/&/g, "&amp;")}" style="display:inline-block;background-color:transparent;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};padding:12px 28px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-decoration:none;border:1px solid ${EMAIL_FOREST};text-transform:uppercase;font-family:${PREMIUM_FONT};">YOUR CONCIERGE PORTAL&nbsp;&nbsp;&#8250;</a>
       </td></tr>
     </table>
     <p style="font-family:${ESTATE_GEORGIA};font-size:11px;letter-spacing:0;text-transform:none;color:${ESTATE_WINE};margin:28px 0 0;line-height:1.4;">Yugo</p>
-  `);
+  `,
+    // Lifecycle (relationship) email, not transactional → use the full footer
+    // with Email Preferences + Unsubscribe (CASL / CAN-SPAM compliant).
+    { variant: "full", whyReceiving: "generic" });
 }
 
 /**
