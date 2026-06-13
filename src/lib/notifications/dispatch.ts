@@ -100,6 +100,27 @@ export async function sendNotification(
     return { email: false, sms: false, push: false };
   }
 
+  // Per-user channel MUTE, read best-effort so a not-yet-applied migration can
+  // never break notifications (selecting a missing column would error and fail
+  // closed). Defaults to "not muted" when the columns aren't present.
+  let mutedEmail = false;
+  let mutedSms = false;
+  let mutedPush = false;
+  try {
+    const { data: mute } = await supabase
+      .from("platform_users")
+      .select("notif_mute_email, notif_mute_sms, notif_mute_push")
+      .eq("user_id", recipientUserId)
+      .maybeSingle();
+    if (mute) {
+      mutedEmail = (mute as { notif_mute_email?: boolean }).notif_mute_email === true;
+      mutedSms = (mute as { notif_mute_sms?: boolean }).notif_mute_sms === true;
+      mutedPush = (mute as { notif_mute_push?: boolean }).notif_mute_push === true;
+    }
+  } catch {
+    /* columns absent (migration not applied) — treat as not muted */
+  }
+
   const { data: prefs } = await supabase
     .from("notification_preferences")
     .select("email_enabled, sms_enabled, push_enabled")
@@ -107,9 +128,14 @@ export async function sendNotification(
     .eq("event_slug", eventSlug)
     .maybeSingle();
 
-  const emailEnabled = prefs?.email_enabled ?? true;
-  const smsEnabled = prefs?.sms_enabled ?? false;
-  const pushEnabled = prefs?.push_enabled ?? true;
+  // An explicit per-event preference always wins. When there's no row for this
+  // slug (e.g. an event slug not yet in the notification_events catalog), fall
+  // back to the per-user channel MUTE so "All Email OFF" suppresses it too —
+  // the fix for emails leaking from un-cataloged slugs. Default ON for
+  // email/push, OFF for SMS, matching the historical defaults.
+  const emailEnabled = prefs?.email_enabled ?? (mutedEmail ? false : true);
+  const smsEnabled = prefs?.sms_enabled ?? (mutedSms ? false : false);
+  const pushEnabled = prefs?.push_enabled ?? (mutedPush ? false : true);
 
   let email: string | null = platformUser.email ?? null;
   if (!email) {

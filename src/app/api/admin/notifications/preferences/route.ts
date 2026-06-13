@@ -62,6 +62,20 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminClient();
 
+  // Per-user channel MUTE — the authoritative master switch. This governs every
+  // event INCLUDING slugs not (yet) in the notification_events catalog, which is
+  // the gap that let email keep sending after "All Email OFF". sendNotification
+  // falls back to this mute when an event has no explicit pref row.
+  const muteColumn: Record<string, string> = {
+    email: "notif_mute_email",
+    sms: "notif_mute_sms",
+    push: "notif_mute_push",
+  };
+  await admin
+    .from("platform_users")
+    .update({ [muteColumn[channel]]: !enabled })
+    .eq("user_id", user!.id);
+
   // Get all event slugs
   const { data: events } = await admin
     .from("notification_events")
@@ -71,7 +85,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // Upsert preferences for all events
+  // Upsert per-event preferences too, so the per-event UI rows reflect the
+  // master state and individual events can still be re-enabled while muted.
   const rows = events.map((e: { event_slug: string }) => ({
     user_id: user!.id,
     event_slug: e.event_slug,
