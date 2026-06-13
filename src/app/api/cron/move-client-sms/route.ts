@@ -104,14 +104,14 @@ export async function GET(req: NextRequest) {
         body = [
           `Hi ${firstName}, ${fromLine}.`,
           `Thank you for trusting us with your move today. It's clear we fell short of the standard you deserve, and I'd like to personally make it right.`,
-          `I'll be reaching out shortly — or call us anytime at ${pm.supportPhone}. Putting this right matters to us.`,
+          `I'll be reaching out shortly, or call us anytime at ${pm.supportPhone}. Putting this right matters to us.`,
         ].join("\n\n");
       } else {
         // 4–5★ at sign-off → thank-you + Google review (straight to Google,
         // since they already rated us during sign-off).
         body = [
           `Hi ${firstName},`,
-          `Thank you for letting Yugo care for your move — it was our privilege.`,
+          `Thank you for letting Yugo care for your move. It was our privilege.`,
           `If you have a moment, a quick Google review would mean a great deal to our team:`,
           pm.googleReviewUrl,
         ].join("\n\n");

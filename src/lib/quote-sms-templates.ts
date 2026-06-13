@@ -114,7 +114,7 @@ export function buildQuoteFollowupSmsBody(params: {
     const n = daysLeft ?? 7;
     return [
       `Hi ${name},`,
-      `Just a heads up — your Yugo quote is valid for ${n} more day${n === 1 ? "" : "s"}.`,
+      `Just a heads up, your Yugo quote is valid for ${n} more day${n === 1 ? "" : "s"}.`,
       `Lock in your date and rate whenever you are ready.`,
       `View your quote:\n${url}`,
     ].join("\n\n");

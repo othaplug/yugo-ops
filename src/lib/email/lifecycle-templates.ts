@@ -982,7 +982,7 @@ function noCardPaymentOptionsPanel(opts: {
 }): string {
   return `<div style="margin-bottom:22px;font-family:${PREMIUM_FONT}">
     <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:22px;text-align:center">
-      <div style="${FOREST_EYEBROW_UPPER}margin-bottom:10px;">Action required — no card on file</div>
+      <div style="${FOREST_EYEBROW_UPPER}margin-bottom:10px;">Action required: no card on file</div>
       <div style="font-size:28px;font-weight:700;color:${EMAIL_FOREST};margin-bottom:10px;letter-spacing:0">${formatCurrencyEmail(opts.balanceAmount)}</div>
       <div style="font-size:12px;color:${PROMO_CREAM_MUTED};line-height:1.65">
         Due before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(opts.moveDate)}</strong>. Please pay using one of the methods below.
@@ -991,12 +991,12 @@ function noCardPaymentOptionsPanel(opts: {
   </div>
 
   <div style="margin-bottom:14px;font-family:${PREMIUM_FONT}">
-    <div style="${FOREST_EYEBROW_UPPER}text-align:center;margin-bottom:10px;">Option 1 — Pay online with credit card</div>
+    <div style="${FOREST_EYEBROW_UPPER}text-align:center;margin-bottom:10px;">Option 1: Pay online with credit card</div>
     ${ctaButton(opts.paymentPageUrl, "Pay balance now")}
   </div>
 
   <div style="margin-bottom:22px;font-family:${PREMIUM_FONT}">
-    <div style="${FOREST_EYEBROW_UPPER}text-align:center;margin-bottom:10px;">Option 2 — Send Interac e-Transfer</div>
+    <div style="${FOREST_EYEBROW_UPPER}text-align:center;margin-bottom:10px;">Option 2: Send Interac e-Transfer</div>
     <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-radius:0;padding:18px;font-family:${PREMIUM_FONT}">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="font-family:${PREMIUM_FONT}">
         <tr>
@@ -1034,7 +1034,7 @@ export interface BalanceReminder48hrData {
 export function balanceReminder48hrEmail(d: BalanceReminder48hrData): string {
   const bodyText = d.hasCardOnFile
     ? `Your remaining balance will be charged to the card on file before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>.`
-    : `Your remaining balance is due before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. We don't have a card on file — please pay using one of the methods below.`;
+    : `Your remaining balance is due before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. We don't have a card on file, so please pay using one of the methods below.`;
 
   const callout = d.hasCardOnFile
     ? `<div style="margin-bottom:22px;font-family:${PREMIUM_FONT}">
@@ -1460,7 +1460,7 @@ export function quoteFollowupUrgencyEmail(d: QuoteFollowupUrgencyData): string {
   const body =
     d.daysUntilMove <= 1
       ? `Your ${d.serviceLabel.toLowerCase()} is scheduled for <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. To secure your crew and truck, we need your confirmation now.`
-      : `Your ${d.serviceLabel.toLowerCase()} is scheduled for <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. Availability for that date is limited — once you confirm, your crew and truck are locked in.`;
+      : `Your ${d.serviceLabel.toLowerCase()} is scheduled for <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. Availability for that date is limited. Once you confirm, your crew and truck are locked in.`;
 
   return equinoxPromoLayout(
     `

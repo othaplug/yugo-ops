@@ -2323,7 +2323,7 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
       p.welcomePackageUrl
         ? `
     ${estateWineLabel("Your welcome guide")}
-    <p style="font-size:15px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 18px;line-height:1.78;">Timelines, packing guidance, and how to reach your coordinator &mdash; in one calm, mobile-friendly place.</p>
+    <p style="font-size:15px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 18px;line-height:1.78;">Timelines, packing guidance, and how to reach your coordinator, all in one calm, mobile-friendly place.</p>
     <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 8px;background-color:${ESTATE_WINE_SURFACE_PAGE};">
       <tr><td style="background-color:${ESTATE_WINE_SURFACE_PAGE};">
         <a href="${p.welcomePackageUrl.replace(/&/g, "&amp;")}" style="${wineWelcomeGuideCta}">VIEW WELCOME GUIDE&nbsp;&nbsp;&#8250;</a>
@@ -2559,10 +2559,10 @@ export function estate30DayCheckinEmailHtml(
     <p style="font-family:${PREMIUM_FONT};font-size:15px;color:${ESTATE_BODY_MUTED};margin:0 0 24px;line-height:1.6;">Hi ${escapeHtml(first)},</p>
     <h1 style="font-family:${ESTATE_GEORGIA};font-size:28px;font-weight:700;color:${ESTATE_WINE} !important;-webkit-text-fill-color:${ESTATE_WINE};margin:0 0 18px;line-height:1.3;letter-spacing:0;">A note from your Estate team</h1>
     <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 18px;line-height:1.78;">It has been one month since your move with Yugo. We hope you are settling in beautifully.</p>
-    <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 28px;line-height:1.78;">If anything still needs attention, or you have a question about your new home, your coordinator remains a message away &mdash; we are here for you well beyond move day.</p>
+    <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 28px;line-height:1.78;">If anything still needs attention, or you have a question about your new home, your coordinator remains a message away. We are here for you well beyond move day.</p>
     ${coordLine}
     ${welcomeBlock}
-    <p style="font-size:14px;color:${ESTATE_BODY_MUTED};margin:0 0 20px;line-height:1.65;">Your concierge portal &mdash; documents, your move summary, and a direct line to your coordinator &mdash; is available anytime:</p>
+    <p style="font-size:14px;color:${ESTATE_BODY_MUTED};margin:0 0 20px;line-height:1.65;">Your concierge portal, with your documents, move summary, and a direct line to your coordinator, is available anytime:</p>
     <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-bottom:8px;">
       <tr><td>
         <a href="${p.trackingUrl.replace(/&/g, "&amp;")}" style="display:inline-block;background-color:transparent;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};padding:12px 28px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-decoration:none;border:1px solid ${EMAIL_FOREST};text-transform:uppercase;font-family:${PREMIUM_FONT};">YOUR CONCIERGE PORTAL&nbsp;&nbsp;&#8250;</a>

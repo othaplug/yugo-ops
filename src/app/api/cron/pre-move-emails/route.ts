@@ -312,7 +312,7 @@ export async function GET(req: NextRequest) {
       const html = statusUpdateEmailHtml({
         eyebrow: "Before your move",
         headline: "Parking for your move",
-        body: `Hi ${first},<br/><br/>If our truck needs street space at either address, you may need a temporary parking permit from the City of Toronto. Apply several business days before your move: <a href="${torontoParkingUrl}" style="color:#2C3E2D;font-weight:600;">City of Toronto — streets and parking</a>.<br/><br/>If you have a loading dock or dedicated parking, you may already be set.${coordPhone5 ? `<br/><br/>Questions? Call <strong>${coordPhone5}</strong>.` : ""}`,
+        body: `Hi ${first},<br/><br/>If our truck needs street space at either address, you may need a temporary parking permit from the City of Toronto. Apply several business days before your move: <a href="${torontoParkingUrl}" style="color:#2C3E2D;font-weight:600;">City of Toronto: streets and parking</a>.<br/><br/>If you have a loading dock or dedicated parking, you may already be set.${coordPhone5 ? `<br/><br/>Questions? Call <strong>${coordPhone5}</strong>.` : ""}`,
         ctaUrl: trackUrl,
         ctaLabel: "VIEW MOVE DETAILS",
         includeFooter: true,
@@ -321,7 +321,7 @@ export async function GET(req: NextRequest) {
       try {
         const r = await sendEmail({
           to: m.client_email,
-          subject: "Parking for your move — quick heads up",
+          subject: "Parking for your move: a quick heads up",
           html,
         });
         if (r.success) {
@@ -369,7 +369,7 @@ export async function GET(req: NextRequest) {
     try {
       const r = await sendEmail({
         to: m.client_email,
-        subject: "Your move is in 3 days — quick prep checklist",
+        subject: "Your move is in 3 days: a quick prep checklist",
         html,
       });
       if (r.success) {

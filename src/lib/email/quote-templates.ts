@@ -775,7 +775,7 @@ function residentialTemplate(d: QuoteTemplateData): string {
     estateConfident ? ", your Estate move plan is ready" : ""
   }`;
   const heroBody = estateConfident
-    ? "Your coordinator has prepared the Estate package for this move — fully managed, white-glove, with a dedicated coordinator from booking through final placement. Other packages are listed below for reference."
+    ? "Your coordinator has prepared the Estate package for this move: fully managed, white-glove, with a dedicated coordinator from booking through final placement. Other packages are listed below for reference."
     : "We have prepared three flat-rate service options tailored to your move. Every package includes professional movers, a dedicated truck, and full protection. Choose the level of care that suits you best.";
 
   // For Estate-featured / Estate-only: recommendation note goes ABOVE

@@ -228,7 +228,7 @@ export async function sendMoveReminderSms(params: {
     body = [
       greet,
       `Your move with Yugo is in 3 days, on ${fmtDate}.${timeLine}`,
-      `Questions before the big day? Reply here or call (647) 370-4525 — we are happy to help.`,
+      `Questions before the big day? Reply here or call (647) 370-4525. We are happy to help.`,
     ].join("\n\n");
   } else {
     const crewLine = `Your crew of ${params.crewSize ?? "2–3"} will be arriving${params.scheduledTime ? ` at ${params.scheduledTime}` : ""}.`;

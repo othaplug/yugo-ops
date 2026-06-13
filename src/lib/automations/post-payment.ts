@@ -593,14 +593,14 @@ export async function runPostPaymentActions(
             `<ul style="margin:0;padding-left:18px;line-height:1.55;">` +
             `<li>Confirm the inventory we built from your intake</li>` +
             `<li>Flag bulky or fragile pieces before crew day</li>` +
-            `<li>Check access details — elevators, stairs, narrow doors</li>` +
+            `<li>Check access details: elevators, stairs, narrow doors</li>` +
             `<li>Arrive with the right truck, blankets, and dollies</li>` +
             `</ul>` +
             `<br/>` +
             `<strong>What to photograph (about two minutes):</strong>` +
             `<br/>` +
             `<ul style="margin:0;padding-left:18px;line-height:1.55;">` +
-            `<li>Each room from the doorway — wide shots, not close-ups</li>` +
+            `<li>Each room from the doorway: wide shots, not close-ups</li>` +
             `<li>Anything heavy, oversized, or fragile</li>` +
             `<li>The building entrance and elevator if you have one</li>` +
             `</ul>` +
@@ -664,7 +664,7 @@ export async function runPostPaymentActions(
               `${first}, welcome to ${companyDisplayName} Estate.`,
               `It is our privilege to handle your move (ref ${input.moveCode}). Your dedicated coordinator will call you personally within 24 hours to begin tailoring every detail.`,
               welcomePackageUrl
-                ? `Your private Estate welcome package — concierge contacts, your timeline, and what to expect — is ready:\n${welcomePackageUrl}`
+                ? `Your private Estate welcome package is ready, with your concierge contacts, your timeline, and everything to expect:\n${welcomePackageUrl}`
                 : `Your private move portal:\n${trackingUrl}`,
               ...(welcomePackageUrl ? [`Track your move anytime:\n${trackingUrl}`] : []),
               `We are at your service. Reply here or call (647) 370-4525.`,
