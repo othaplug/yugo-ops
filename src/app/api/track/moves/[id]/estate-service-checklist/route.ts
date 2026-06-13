@@ -31,7 +31,7 @@ export async function PATCH(
 
   const { data: move, error: fetchErr } = await supabase
     .from("moves")
-    .select("id, tier_selected, service_tier")
+    .select("id, tier_selected")
     .eq("id", id)
     .single();
 

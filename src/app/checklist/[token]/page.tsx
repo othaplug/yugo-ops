@@ -18,17 +18,24 @@ export default async function ChecklistTokenPage({
   if (!t) notFound();
 
   const sb = createAdminClient();
-  const { data: move } = await sb
+  // NOTE: do NOT select `service_tier` — that column does not exist on `moves`.
+  // Including it made the whole query error → `move` came back null → the page
+  // 404'd for every client even though the checklist_token was valid. `moves`
+  // uses `tier_selected` for the package tier.
+  const { data: move, error: moveErr } = await sb
     .from("moves")
     .select(
-      "id, client_name, from_access, to_access, from_postal, to_postal, from_parking, to_parking, tier_selected, service_tier, extended_checklist_progress",
+      "id, client_name, from_access, to_access, from_postal, to_postal, from_parking, to_parking, tier_selected, extended_checklist_progress",
     )
     .eq("checklist_token", t)
     .maybeSingle();
 
+  if (moveErr) {
+    console.error("[checklist] move lookup failed:", moveErr.message);
+  }
   if (!move) notFound();
 
-  const tierLower = String(move.tier_selected || move.service_tier || "signature")
+  const tierLower = String(move.tier_selected || "signature")
     .toLowerCase()
     .trim();
 

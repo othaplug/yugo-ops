@@ -179,7 +179,7 @@ export async function GET(req: NextRequest) {
   const { data: moves48 } = await supabase
     .from("moves")
     .select(
-      "id, move_code, client_name, client_email, scheduled_date, balance_amount, balance_paid_at, deposit_paid_at, tier_selected, service_tier, move_size, inventory_score, square_card_id",
+      "id, move_code, client_name, client_email, scheduled_date, balance_amount, balance_paid_at, deposit_paid_at, tier_selected, move_size, inventory_score, square_card_id",
     )
     .in("status", ["confirmed", "scheduled"])
     .in("scheduled_date", [twoDaysOut, threeDaysOut])
@@ -195,7 +195,7 @@ export async function GET(req: NextRequest) {
           scheduledDate: move.scheduled_date,
           twoDaysOutIso: twoDaysOut,
           tierSelected: move.tier_selected,
-          serviceTier: move.service_tier,
+          serviceTier: null,
           moveSize: move.move_size,
           inventoryScore:
             move.inventory_score != null ? Number(move.inventory_score) : null,

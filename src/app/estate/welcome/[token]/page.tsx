@@ -26,14 +26,14 @@ export default async function EstateWelcomePage({
   const { data: move, error } = await supabase
     .from("moves")
     .select(
-      "id, move_code, status, tier_selected, service_tier, client_name, scheduled_date, coordinator_name, coordinator_phone, coordinator_email, from_address, to_address, welcome_package_token, move_project_id",
+      "id, move_code, status, tier_selected, client_name, scheduled_date, coordinator_name, coordinator_phone, coordinator_email, from_address, to_address, welcome_package_token, move_project_id",
     )
     .eq("welcome_package_token", raw)
     .maybeSingle();
 
   if (error || !move) notFound();
 
-  const tier = String(move.tier_selected || move.service_tier || "")
+  const tier = String(move.tier_selected || "")
     .toLowerCase()
     .trim();
   if (tier !== "estate") notFound();
