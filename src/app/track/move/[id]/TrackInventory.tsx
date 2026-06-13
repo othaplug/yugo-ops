@@ -94,6 +94,7 @@ export default function TrackInventory({
   const { toast } = useToast();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [extraItems, setExtraItems] = useState<ExtraItem[]>([]);
+  const [boxCount, setBoxCount] = useState(0);
   const [loading, setLoading] = useState(() => !estateWalkthroughScopeOnly);
   const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
   const [addExtraOpen, setAddExtraOpen] = useState(false);
@@ -112,8 +113,9 @@ export default function TrackInventory({
         if (cancelled) return;
         setItems(data.items ?? []);
         setExtraItems(data.extraItems ?? []);
+        setBoxCount(typeof data.boxCount === "number" ? data.boxCount : 0);
       })
-      .catch(() => { if (!cancelled) { setItems([]); setExtraItems([]); } })
+      .catch(() => { if (!cancelled) { setItems([]); setExtraItems([]); setBoxCount(0); } })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [moveId, token, estateWalkthroughScopeOnly]);
@@ -146,6 +148,7 @@ export default function TrackInventory({
         .then((data) => {
           setItems(data.items ?? []);
           setExtraItems(data.extraItems ?? []);
+          setBoxCount(typeof data.boxCount === "number" ? data.boxCount : 0);
         })
         .catch(() => {});
     } catch (e) {
@@ -364,7 +367,7 @@ export default function TrackInventory({
     );
   }
 
-  if (items.length === 0 && extraItems.length === 0) {
+  if (items.length === 0 && extraItems.length === 0 && boxCount <= 0) {
     return (
       <>
         <div className={`text-center pt-8 sm:pt-10 ${className}`.trim()}>
@@ -421,6 +424,12 @@ export default function TrackInventory({
           >
             {totalItemCount} {totalItemCount === 1 ? "item" : "items"} across{" "}
             {rooms.length} {rooms.length === 1 ? "room" : "rooms"}
+            {boxCount > 0 && (
+              <>
+                {" · "}
+                {boxCount} {boxCount === 1 ? "box" : "boxes"}
+              </>
+            )}
           </p>
         </div>
         <button
@@ -440,6 +449,27 @@ export default function TrackInventory({
 
       {/* Room list */}
       <div className="p-4 space-y-2">
+        {boxCount > 0 && (
+          <div
+            className="border flex items-center justify-between gap-2 px-4 py-3"
+            style={{ borderColor: "#E0DDD8", backgroundColor: `${FOREST}06` }}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <h4 className="text-[13px] font-bold" style={{ color: FOREST }}>
+                Packed boxes
+              </h4>
+              <span className="text-[11px]" style={{ color: TEXT_MUTED_ON_LIGHT }}>
+                Estimated
+              </span>
+            </div>
+            <span
+              className="text-[13px] font-semibold tabular-nums px-1.5 py-0.5"
+              style={{ backgroundColor: `${FOREST}12`, color: FOREST }}
+            >
+              {boxCount}
+            </span>
+          </div>
+        )}
         {rooms.map((room) => {
           const expanded = isExpanded(room);
           const count = roomItemCount(room);
