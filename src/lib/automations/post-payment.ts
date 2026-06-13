@@ -189,6 +189,30 @@ export async function runPostPaymentActions(
 
   const selectedTier = move.tier_selected || quote.selected_tier;
   const tierLabel = TIER_LABELS[selectedTier ?? ""] ?? selectedTier ?? "";
+  const isEstateBooking = String(selectedTier ?? "").toLowerCase().trim() === "estate";
+
+  // Estate welcome-package link — generated once here and shared by BOTH the
+  // confirmation email and the booking SMS (the SMS step can't see the email
+  // step's locals, and its in-memory move row is stale after the token write).
+  let welcomePackageUrl: string | null = null;
+  if (isEstateBooking) {
+    let wpTok = String(
+      (move as { welcome_package_token?: string | null }).welcome_package_token ?? "",
+    ).trim();
+    if (!wpTok) {
+      wpTok = generateWelcomePackageToken();
+      const { error: wpErr } = await supabase
+        .from("moves")
+        .update({ welcome_package_token: wpTok })
+        .eq("id", input.moveId);
+      if (wpErr) {
+        console.error("[postPayment] welcome_package_token", wpErr.message);
+        wpTok = "";
+      }
+    }
+    if (wpTok) welcomePackageUrl = `${baseUrl}/estate/welcome/${wpTok}`;
+  }
+
   const serviceLabel = SERVICE_LABELS[quote.service_type] ?? quote.service_type;
   const totalWithTax = Number(move.amount) || 0;
   const depositAmount = input.amount;
@@ -442,28 +466,7 @@ export async function runPostPaymentActions(
         const timeWindow =
           (move.arrival_window as string) || "Morning (7 AM – 12 PM)";
 
-        let welcomePackageUrl: string | null = null;
-        if (tier === "estate") {
-          let wpToken = String(
-            (move as { welcome_package_token?: string | null })
-              .welcome_package_token ?? "",
-          ).trim();
-          if (!wpToken) {
-            wpToken = generateWelcomePackageToken();
-            const { error: tokErr } = await supabase
-              .from("moves")
-              .update({ welcome_package_token: wpToken })
-              .eq("id", input.moveId);
-            if (tokErr) {
-              console.error("[postPayment] welcome_package_token", tokErr);
-              wpToken = "";
-            }
-          }
-          if (wpToken) {
-            welcomePackageUrl = `${baseUrl}/estate/welcome/${wpToken}`;
-          }
-        }
-
+        // welcomePackageUrl is computed once in shared scope above.
         const confirmParams: TierConfirmationParams = {
           clientName,
           moveCode: input.moveCode,
@@ -651,18 +654,32 @@ export async function runPostPaymentActions(
           !isBinRental && checklistTokenForEmail
             ? `Move-day checklist:\n${baseUrl}/checklist/${checklistTokenForEmail}`
             : null;
-        await sendSMS(
-          to,
-          [
-            `Hi ${first},`,
-            `You're booked with ${companyDisplayName}. Reference: ${input.moveCode}.`,
-            `Your coordinator will reach out within 24 hours.`,
-            isBinRental
-              ? `Track your order:\n${trackingUrl}`
-              : `Track your move:\n${trackingUrl}`,
-            ...(checklistLine ? [checklistLine] : []),
-          ].join("\n\n"),
-        );
+
+        // Estate is a white-glove concierge tier — its booking text should feel
+        // bespoke, not the standard confirmation. Lead with the personal
+        // coordinator, point to the curated Estate welcome package, and use
+        // warmer language. Falls back gracefully if the welcome link is absent.
+        const smsBody = isEstateBooking
+          ? [
+              `${first}, welcome to ${companyDisplayName} Estate.`,
+              `It is our privilege to handle your move (ref ${input.moveCode}). Your dedicated coordinator will call you personally within 24 hours to begin tailoring every detail.`,
+              welcomePackageUrl
+                ? `Your private Estate welcome package — concierge contacts, your timeline, and what to expect — is ready:\n${welcomePackageUrl}`
+                : `Your private move portal:\n${trackingUrl}`,
+              ...(welcomePackageUrl ? [`Track your move anytime:\n${trackingUrl}`] : []),
+              `We are at your service. Reply here or call (647) 370-4525.`,
+            ].join("\n\n")
+          : [
+              `Hi ${first},`,
+              `You're booked with ${companyDisplayName}. Reference: ${input.moveCode}.`,
+              `Your coordinator will reach out within 24 hours.`,
+              isBinRental
+                ? `Track your order:\n${trackingUrl}`
+                : `Track your move:\n${trackingUrl}`,
+              ...(checklistLine ? [checklistLine] : []),
+            ].join("\n\n");
+
+        await sendSMS(to, smsBody);
       },
     },
 
