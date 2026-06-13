@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
 import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
+import { schedulePostMoveClientSms } from "@/lib/moves/schedule-post-move-client-sms";
 import { createClientReferralIfNeeded } from "@/lib/client-referral";
 import { generateMovePDFs } from "@/lib/documents/generateMovePDFs";
 import { generatePostMoveDocuments } from "@/lib/post-move-documents";
@@ -123,11 +124,17 @@ export const ensureJobCompleted = async (
 
   if (jobType === "move") {
     try {
+      // Cancel only the MID-move check-ins (the job is done, they're moot).
+      // Post-move texts (review / recovery) are queued AFTER this point by the
+      // completion follow-up and must survive — never cancel them here, or an
+      // idempotent re-completion would wipe the pending post-move text before
+      // the 1h send window elapses.
       const { error: cancelSmsErr } = await admin
         .from("scheduled_move_client_sms")
         .update({ status: "cancelled" })
         .eq("move_id", jobId)
-        .eq("status", "pending");
+        .eq("status", "pending")
+        .in("kind", ["en_route_checkin", "long_unload_checkin"]);
       if (cancelSmsErr) {
         console.error("[complete-move-job] cancel mid-move SMS:", cancelSmsErr.message);
       }
@@ -319,8 +326,14 @@ export const runMoveCompletionFollowUp = async (
   },
 ): Promise<void> => {
   syncDealStageByMoveId(moveId, "completed").catch(() => {});
+  // Review-ask EMAIL (unchanged: next-day via /api/cron/review-requests).
   createReviewRequestIfEligible(admin, moveId).catch((e) =>
     console.error("[review] create failed:", e),
+  );
+  // Timely post-move TEXT (~1h, rating-gated, via /api/cron/move-client-sms).
+  // Runs after ensureJobCompleted so the cancellation sweep can't wipe it.
+  schedulePostMoveClientSms(admin, moveId).catch((e) =>
+    console.error("[post-move-sms] schedule failed:", e),
   );
   createClientReferralIfNeeded(admin, moveId).catch((e) =>
     console.error("[referral] create failed:", e),

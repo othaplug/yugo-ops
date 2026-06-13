@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
-import { sendSMS } from "@/lib/sms/sendSMS";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken, signReviewToken } from "@/lib/track-token";
 import { getTrackMoveSlug } from "@/lib/move-code";
@@ -89,29 +88,19 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    if (rr.client_phone) {
-      try {
-        const { success, error } = await sendSMS(
-          rr.client_phone,
-          [
-            firstName ? `Hi ${firstName},` : "Hi,",
-            `Your Yugo move is complete.`,
-            `We'd love a quick Google review when you have a moment.`,
-            reviewUrl,
-          ].join("\n\n"),
-        );
-        if (!success) errors.push(`sms:${rr.id}:${error || "failed"}`);
-      } catch (e) {
-        errors.push(`sms:${rr.id}:${e instanceof Error ? e.message : String(e)}`);
-      }
-    }
+    // NOTE: the post-move "your move is complete" TEXT is no longer sent here.
+    // It used to ride this once-daily cron, so it landed the next morning. It
+    // now goes through /api/cron/move-client-sms (every 3 min), queued ~1h after
+    // completion and conditioned on the client's sign-off star rating
+    // (4–5★ → review ask, 1–3★ → service recovery). See
+    // src/lib/moves/schedule-post-move-client-sms.ts. This cron keeps the
+    // review-request EMAIL only.
 
     await supabase
       .from("review_requests")
       .update({
         status: "sent",
         email_sent_at: rr.client_email ? new Date().toISOString() : null,
-        sms_sent_at: rr.client_phone ? new Date().toISOString() : null,
       })
       .eq("id", rr.id);
     sent++;
