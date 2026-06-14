@@ -1,30 +1,14 @@
 /* ==========================================================================
    Yugo — self-hosted Brown font family
+   --------------------------------------------------------------------------
+   Trimmed to the weights/styles the app actually uses: Regular (400) and
+   Bold (700), plus their italics. Brown's classic family has no Medium/
+   Semibold cut, so Tailwind `font-medium` (500) / `font-semibold` (600) map
+   to the nearest available weight (Regular / Bold). Thin (100) and Light
+   (300) were declared but effectively unused, so they're omitted.
+
+   Drop the matching .woff2 files into /public/fonts/brown/ to activate.
    ========================================================================== */
-
-@font-face {
-  font-family: "Brown";
-  src: url("/fonts/brown/Brown-Thin.woff2") format("woff2");
-  font-weight: 100;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Brown";
-  src: url("/fonts/brown/Brown-Thin-Italic.woff2") format("woff2");
-  font-weight: 100;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Brown";
-  src: url("/fonts/brown/Brown-Light.woff2") format("woff2");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
 
 @font-face {
   font-family: "Brown";

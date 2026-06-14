@@ -55,6 +55,24 @@ export default async function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <head>
+        {/* Preload the two Brown weights every page uses (Regular + Bold) so
+            brand type paints without a flash once the .woff2 files are present
+            in /public/fonts/brown/. (These 404 until the licensed files are
+            added; harmless preload warning in the meantime.) */}
+        <link
+          rel="preload"
+          href="/fonts/brown/Brown-Regular.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/brown/Brown-Bold.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `try{window.__YUGO_DISPLAY_DATE_FORMAT__=${formatJson};}catch(e){}`,
