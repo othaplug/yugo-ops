@@ -6,6 +6,15 @@
 @import "../styles/tokens.css";
 @import "../styles/typography.css";
 @import "../styles/admin-tokens.css";
+
+/* Tailwind `font-sans` utility = brand Brown (consistent with --font-body /
+   --font-heading). Client pages that use the `font-sans` class (track,
+   estate welcome) otherwise resolved to Tailwind's default system stack
+   instead of Brown. Renders the system-ui fallback until the Brown .woff2
+   files are present in public/fonts/brown/. */
+@theme {
+  --font-sans: "Brown", system-ui, sans-serif;
+}
 /*
  * Yugo+ admin v3 — design system tokens + base chrome. Scoped to the
  * [data-yugo-admin-v3] attribute on <AdminShellV3>. Loaded last so the
