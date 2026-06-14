@@ -211,7 +211,9 @@ export function buildNonBinAgreementSections(p: NonBinAgreementBuildParams): { t
         ? `Enhanced declared-value coverage is included with your Signature package, providing full declared value protection up to $50,000 per move. Per-item coverage up to $2,500. ${companyDisplayName} maintains $5,000,000 in commercial liability insurance.`
         : p.serviceType === "local_move" && liabilityTier === "essential"
           ? `Released-value cargo liability applies at $0.60 per pound per article unless you purchase upgraded coverage shown on your quote. ${companyDisplayName} maintains $5,000,000 in commercial liability insurance. Where you select enhanced valuation or full-value protection, those terms on your quote govern.`
-          : `Released-value cargo liability applies at $0.60 per pound per article unless you purchase upgraded coverage shown on your quote. ${companyDisplayName} maintains $5,000,000 in commercial liability insurance. Where you select enhanced valuation or full-value protection, those terms on your quote govern.`;
+          : p.serviceType === "white_glove"
+            ? `Standard Protection is included with your White Glove service: cargo liability at $5.00 per pound per article, total coverage up to $30,000, zero deductible. Eligible claims are resolved through full repair of any damaged item, or replacement at current market value where repair is not possible. Where you select an enhanced or full-replacement coverage rider shown on your quote, those terms govern. ${companyDisplayName} maintains $5,000,000 in commercial liability insurance.`
+            : `Released-value cargo liability applies at $0.60 per pound per article unless you purchase upgraded coverage shown on your quote. ${companyDisplayName} maintains $5,000,000 in commercial liability insurance. Where you select enhanced valuation or full-value protection, those terms on your quote govern.`;
 
   return [
     {
