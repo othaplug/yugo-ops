@@ -5171,6 +5171,14 @@ function ValuationProtectionCard({
   const wgTotalCoverage = wgPreset
     ? wgPreset.totalCoverage
     : (wgSelected?.totalCoverage ?? null);
+  /**
+   * White Glove default (no rider / no coordinator add-on): the included
+   * protection is richer than residential released value, $5/lb up to $30,000,
+   * $0 deductible, with full repair of any damage.
+   */
+  const wgDefaultIncluded = wgMode && !wgActive;
+  const WG_DEFAULT_RATE_PER_LB = 5;
+  const WG_DEFAULT_TOTAL_COVERAGE = 30000;
   const upgradeTarget = UPGRADE_TARGET[currentPackage];
   const upgradeData = upgradeTarget
     ? findValuationUpgrade(valuationUpgrades, currentPackage, upgradeTarget)
@@ -5209,10 +5217,12 @@ function ValuationProtectionCard({
     ? premiumShellRuleRgba(premiumShellKind)
     : `${FOREST}10`;
 
-  const dispActive = VALUATION_DISPLAY[activeTierSlug] ?? {
-    label: activeTierSlug,
-    shortLabel: activeTierSlug,
-  };
+  const dispActive = wgDefaultIncluded
+    ? { label: "Standard Protection", shortLabel: "Standard Protection" }
+    : (VALUATION_DISPLAY[activeTierSlug] ?? {
+        label: activeTierSlug,
+        shortLabel: activeTierSlug,
+      });
   const dispUpgrade = upgradeTarget
     ? (VALUATION_DISPLAY[upgradeTarget] ?? null)
     : null;
@@ -5220,8 +5230,9 @@ function ValuationProtectionCard({
   const hasRatePerPound = tierData.rate_per_pound != null;
   /** Released valuation is always $0.60/lb (must match `damage_process` / legal copy). */
   const RELEASED_RATE_PER_LB = 0.6;
-  const displayRatePerPound =
-    activeTierSlug === "released"
+  const displayRatePerPound = wgDefaultIncluded
+    ? WG_DEFAULT_RATE_PER_LB
+    : activeTierSlug === "released"
       ? RELEASED_RATE_PER_LB
       : Number(tierData.rate_per_pound ?? 0);
 
@@ -5294,7 +5305,23 @@ function ValuationProtectionCard({
                   </span>
                 </span>
               </div>
-              {tierData.deductible === 0 && (
+              {wgDefaultIncluded && (
+                <div className="flex justify-between items-baseline gap-6 text-[13px]">
+                  <span
+                    className={`${QUOTE_EYEBROW_CLASS} shrink-0`}
+                    style={{ color: inkMuted }}
+                  >
+                    Total coverage
+                  </span>
+                  <span
+                    className="font-bold tabular-nums text-right"
+                    style={{ color: ink }}
+                  >
+                    up to {fmtPrice(WG_DEFAULT_TOTAL_COVERAGE)}
+                  </span>
+                </div>
+              )}
+              {(tierData.deductible === 0 || wgDefaultIncluded) && (
                 <div className="flex justify-between items-baseline gap-6 text-[13px]">
                   <span
                     className={`${QUOTE_EYEBROW_CLASS} shrink-0`}
@@ -5410,7 +5437,9 @@ function ValuationProtectionCard({
           className="text-[12px] leading-relaxed pb-5"
           style={{ color: inkBody }}
         >
-          {tierData.damage_process}
+          {wgDefaultIncluded
+            ? "Full repair of any damaged item, or replacement at current market value where repair is not possible."
+            : tierData.damage_process}
         </p>
 
         <hr
@@ -5630,8 +5659,8 @@ function ValuationProtectionCard({
             })}
           </div>
           <p className="text-[11px] mt-3" style={{ color: inkMuted }}>
-            Optional. Your included released-value coverage applies if you do not
-            add a rider.
+            Optional. Your included Standard Protection applies if you do not add
+            a rider.
           </p>
         </div>
       ) : upgradeData &&
