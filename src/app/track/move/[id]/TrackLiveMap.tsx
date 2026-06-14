@@ -122,7 +122,7 @@ export default function TrackLiveMap({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [crewSpeed, setCrewSpeed] = useState<number | null>(null);
   const [drawerExpanded, setDrawerExpanded] = useState(false);
-  /** Bumps when container size changes (e.g. fullscreen) so Mapbox/Leaflet can call resize — do not use as React `key` (remount breaks Mapbox DOM cleanup). */
+  /** Bumps when container size changes (e.g. fullscreen) so Mapbox/Leaflet can call resize, do not use as React `key` (remount breaks Mapbox DOM cleanup). */
   const [mapResizeSignal, setMapResizeSignal] = useState(0);
 
   // Crew phone (for direct call)
@@ -477,7 +477,7 @@ export default function TrackLiveMap({
                 color: isEstate ? "rgba(237, 230, 220, 0.62)" : `${FOREST}99`,
               }}
             >
-              No live location yet — the route preview below is for your
+              No live location yet, the route preview below is for your
               reference.
             </p>
           </div>

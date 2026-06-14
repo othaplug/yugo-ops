@@ -315,7 +315,7 @@ function BinRentalTrackingSection({
                 className="text-[13px] font-semibold"
                 style={{ color: FOREST }}
               >
-                Bin delivery — {formatMoveDate(binOrder.drop_off_date)}
+                Bin delivery, {formatMoveDate(binOrder.drop_off_date)}
               </p>
               <p
                 className="text-[12px] opacity-70 mt-0.5"
@@ -340,7 +340,7 @@ function BinRentalTrackingSection({
                 className="text-[13px] font-semibold"
                 style={{ color: FOREST }}
               >
-                Home move day — {formatMoveDate(binOrder.move_date)}
+                Home move day, {formatMoveDate(binOrder.move_date)}
               </p>
               <p
                 className="text-[12px] opacity-70 mt-0.5"
@@ -357,7 +357,7 @@ function BinRentalTrackingSection({
                 className="text-[13px] font-semibold"
                 style={{ color: FOREST }}
               >
-                Bin pickup — {formatMoveDate(binOrder.pickup_date)}
+                Bin pickup, {formatMoveDate(binOrder.pickup_date)}
               </p>
               <p
                 className="text-[12px] opacity-70 mt-0.5"
@@ -460,7 +460,7 @@ function BinRentalTrackingSection({
 }
 
 /**
- * Client track page — contact row.
+ * Client track page, contact row.
  * Renders coordinator name + phone (tappable) when name set, falls back
  * to Yugo logo + phone when name missing. Source-of-truth resolution
  * happens server-side in page.tsx (move.coordinator_name → platform default).
@@ -637,7 +637,7 @@ export default function TrackMoveClient({
   fillParentHeight?: boolean;
   /** Company inbox for footer “Contact us” (from platform config on live track). */
   companyContactEmail?: string;
-  /** Coordinator displayed on client track page — per-move first, then platform default. */
+  /** Coordinator displayed on client track page, per-move first, then platform default. */
   coordinatorName?: string | null;
   /** Optional phone for coordinator. Falls back to YUGO_PHONE if missing. */
   coordinatorPhone?: string | null;
@@ -1482,7 +1482,7 @@ export default function TrackMoveClient({
   const trackTabInactive = FOREST;
   const trackTabBorderBg = `${FOREST}12`;
 
-  // B2B one-off: no client tracking page — managed through partner portal
+  // B2B one-off: no client tracking page, managed through partner portal
   if (isB2BOneOff) {
     return (
       <div
@@ -1820,7 +1820,7 @@ export default function TrackMoveClient({
                                 "tier",
                               ) || null;
                   if (!label) return null;
-                  /** Inline kicker — same language as quote tier `· RECOMMENDED` (ResidentialLayout). */
+                  /** Inline kicker, same language as quote tier `· RECOMMENDED` (ResidentialLayout). */
                   const kickerColor = "#492A1D";
                   return (
                     <span
@@ -1848,7 +1848,7 @@ export default function TrackMoveClient({
             </span>
           </div>
 
-          {/* Tier scope briefing — tells crew what is and isn't included */}
+          {/* Tier scope briefing, tells crew what is and isn't included */}
           {!isNonMoveProductTrack && (() => {
             const rawTier = move.tier_selected || move.tier || move.service_tier || "";
             const tierKey = normalizeTierKey(rawTier);
@@ -1870,7 +1870,7 @@ export default function TrackMoveClient({
                   className="text-[11px] uppercase tracking-wider font-semibold mb-2"
                   style={{ color: `${WINE}80` }}
                 >
-                  {tierLabel} — Crew Scope
+                  {tierLabel}, Crew Scope
                 </p>
                 <div className="space-y-2">
                   {/* Assembly */}
@@ -1892,7 +1892,7 @@ export default function TrackMoveClient({
                     <div className="flex items-start gap-2">
                       <span className="text-[13px] shrink-0 mt-0.5" style={{ color: FOREST }}>✓</span>
                       <p className="text-[13px]" style={{ color: FOREST }}>
-                        Assembly included — disassemble and reassemble as needed
+                        Assembly included, disassemble and reassemble as needed
                       </p>
                     </div>
                   )}
@@ -1900,7 +1900,7 @@ export default function TrackMoveClient({
                     <div className="flex items-start gap-2">
                       <span className="text-amber-600 shrink-0 mt-0.5 text-sm">✓</span>
                       <p className="text-[13px]" style={{ color: FOREST }}>
-                        Assembly add-on purchased — proceed with disassembly and reassembly
+                        Assembly add-on purchased, proceed with disassembly and reassembly
                       </p>
                     </div>
                   )}
@@ -1923,7 +1923,7 @@ export default function TrackMoveClient({
                     <div className="flex items-start gap-2">
                       <span className="text-[13px] shrink-0 mt-0.5" style={{ color: FOREST }}>✓</span>
                       <p className="text-[13px]" style={{ color: FOREST }}>
-                        Full wrap — every piece of furniture wrapped, no exceptions
+                        Full wrap, every piece of furniture wrapped, no exceptions
                       </p>
                     </div>
                   )}
@@ -1932,7 +1932,7 @@ export default function TrackMoveClient({
                     <div className="flex items-start gap-2">
                       <span className="text-[13px] shrink-0 mt-0.5" style={{ color: FOREST, opacity: 0.4 }}>→</span>
                       <p className="text-[13px]" style={{ color: FOREST }}>
-                        Entry point placement — items placed at entry or first available room only
+                        Entry point placement, items placed at entry or first available room only
                       </p>
                     </div>
                   )}
@@ -1940,7 +1940,7 @@ export default function TrackMoveClient({
                     <div className="flex items-start gap-2">
                       <span className="text-[13px] shrink-0 mt-0.5" style={{ color: FOREST }}>✓</span>
                       <p className="text-[13px]" style={{ color: FOREST }}>
-                        Room-of-choice placement — place every item where the client directs
+                        Room-of-choice placement, place every item where the client directs
                       </p>
                     </div>
                   )}
@@ -1949,7 +1949,7 @@ export default function TrackMoveClient({
                     <div className="flex items-start gap-2">
                       <span className="text-[13px] shrink-0 mt-0.5" style={{ color: WINE }}>★</span>
                       <p className="text-[13px] font-semibold" style={{ color: WINE }}>
-                        Estate tier — white glove protocol in effect.
+                        Estate tier, white glove protocol in effect.
                         Four-point blanket wrap, no dragging, no stacking.
                         Photo document all specialty items before and after.
                       </p>
@@ -2379,7 +2379,7 @@ export default function TrackMoveClient({
                 .addr-to   { animation: slideInTo 0.45s cubic-bezier(0.22,1,0.36,1) 0.3s both; }
               `}</style>
 
-                        {/* From / To — match dashboard spine + type scale */}
+                        {/* From / To, match dashboard spine + type scale */}
                         <div className="flex gap-3 items-stretch">
                           <div className="flex flex-col items-center pt-1 shrink-0">
                             <div
@@ -2461,7 +2461,7 @@ export default function TrackMoveClient({
                           </div>
                         </div>
 
-                        {/* Balance — same stack as dashboard (Balance Due + serif amount + caption) */}
+                        {/* Balance, same stack as dashboard (Balance Due + serif amount + caption) */}
                         <div
                           className="flex flex-col gap-3 pt-3 border-t"
                           style={{ borderColor: `${FOREST}18` }}
@@ -2588,7 +2588,7 @@ export default function TrackMoveClient({
                           )}
                         </div>
 
-                        {/* Crew — names only within 3 days / live / complete when crew assigned */}
+                        {/* Crew, names only within 3 days / live / complete when crew assigned */}
                         <div
                           className="border-t pt-4 mt-1"
                           style={{ borderColor: `${FOREST}18` }}
@@ -2610,7 +2610,7 @@ export default function TrackMoveClient({
                           />
                         </div>
 
-                        {/* Coordinator — show name when available, else Yugo logo + phone */}
+                        {/* Coordinator, show name when available, else Yugo logo + phone */}
                         <div
                           className="border-t pt-4 mt-1"
                           style={{ borderColor: `${FOREST}18` }}
@@ -4625,7 +4625,7 @@ export default function TrackMoveClient({
         </div>
       </div>
 
-        {/* Change Request Modal (not offered on Estate track — coordinator-led) */}
+        {/* Change Request Modal (not offered on Estate track, coordinator-led) */}
         {changeModalOpen && !isEstateTier && (
           <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 modal-overlay">
             <div
@@ -4963,7 +4963,7 @@ export default function TrackMoveClient({
 }
 
 // ─────────────────────────────────────────────────────────────
-// CrewChangeRequestBanner — shown when crew submits a walkthrough
+// CrewChangeRequestBanner, shown when crew submits a walkthrough
 // change request during move-day pickup.
 // ─────────────────────────────────────────────────────────────
 
@@ -5138,7 +5138,7 @@ function CrewChangeRequestBanner({
           When `added.length > 0` (the client is being charged for items that
           weren't on the original quote), show Approve & Pay / Decline.
           When ONLY items were removed (credit owed back to the client),
-          there's nothing to approve or pay — show a single Acknowledge
+          there's nothing to approve or pay, show a single Acknowledge
           action that auto-applies the credit. The old "Approve & Pay $-83"
           / "Decline Extras" pair made no sense for a refund scenario. */}
       {added.length > 0 ? (

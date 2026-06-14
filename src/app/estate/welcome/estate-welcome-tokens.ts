@@ -1,5 +1,5 @@
 /**
- * Estate welcome package page — colors aligned with {@link ESTATE_PAGE_BG} / quote wine shell.
+ * Estate welcome package page, colors aligned with {@link ESTATE_PAGE_BG} / quote wine shell.
  * Standalone module (no "use client") so the welcome page stays a Server Component.
  */
 export const ESTATE_WELCOME_BG = "#2B0416";

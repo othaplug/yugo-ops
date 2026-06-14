@@ -41,7 +41,7 @@ export default function TrackPhotos({
   moveId: string;
   token: string;
   moveComplete?: boolean;
-  /** Omit outer card — parent provides single bordered wrapper */
+  /** Omit outer card, parent provides single bordered wrapper */
   embedded?: boolean;
 }) {
   const [photos, setPhotos] = useState<Photo[]>([]);

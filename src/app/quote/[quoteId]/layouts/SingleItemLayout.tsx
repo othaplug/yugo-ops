@@ -38,8 +38,8 @@ export default function SingleItemLayout({
   const tax = Math.round(price * TAX_RATE);
   const deposit = calculateDeposit("single_item", price);
   // Full-payment-at-booking triggers:
-  //   1. Tiny tickets (< $500) — not worth a two-step charge.
-  //   2. Move date inside the 48h cancellation window — deposit is non-
+  //   1. Tiny tickets (< $500), not worth a two-step charge.
+  //   2. Move date inside the 48h cancellation window, deposit is non-
   //      refundable past that point, so we collect the whole total up
   //      front to match the refund policy and avoid arriving on the day
   //      of a job with only the deposit captured. See
@@ -53,7 +53,7 @@ export default function SingleItemLayout({
 
   // Resolve the per-line array. Old quotes with scalar fields synthesize
   // a one-row array; new quotes pass through unchanged. Single source of
-  // truth — see src/lib/quotes/single-item-types.ts.
+  // truth, see src/lib/quotes/single-item-types.ts.
   const quoteItemsRaw = (quote as unknown as { quote_items?: unknown }).quote_items;
   const lines: SingleItemLine[] = resolveSingleItemLines(quoteItemsRaw, {
     item_description: f?.item_description as string | null | undefined,
@@ -65,7 +65,7 @@ export default function SingleItemLayout({
     number_of_items: f?.single_item_quantity as number | null | undefined,
   });
 
-  // Residential vs commercial copy mode — see single-item-copy.ts for the
+  // Residential vs commercial copy mode, see single-item-copy.ts for the
   // detection rules. Uses access types + per-line signals + free-text notes.
   const copy = getSingleItemQuoteCopy({
     from_access: quote.from_access as string | null | undefined,
@@ -100,7 +100,7 @@ export default function SingleItemLayout({
 
   // Assembly / disassembly are charged per-line in the engine, so they are
   // already part of the quote total. Surface them in the "What's Included"
-  // section so the client sees the labour they're paying for — otherwise
+  // section so the client sees the labour they're paying for, otherwise
   // the bullet list reads like a flat haul.
   const hasDisassemblyAtPickup = lines.some((l) => {
     const a = (l.assembly || "").toLowerCase();
@@ -122,7 +122,7 @@ export default function SingleItemLayout({
 
   // Junk-removal display: client sees what's being hauled away (confirms
   // the scope they discussed with the coordinator). We deliberately don't
-  // mention a drop-off facility — that's an operational detail.
+  // mention a drop-off facility, that's an operational detail.
   const junkPickupFrom = (f?.junk_pickup_from as string | null) ?? null;
   const junkItems = (f?.junk_items_description as string | null) ?? null;
   const showJunkLine = junkPickupFrom && junkItems && junkItems.trim().length > 0;
@@ -243,7 +243,7 @@ export default function SingleItemLayout({
                 className="text-[12px] leading-snug"
                 style={{ color: FOREST }}
               >
-                Junk removal: {junkItems} — hauled away. Disposal included.
+                Junk removal: {junkItems}, hauled away. Disposal included.
               </span>
             </div>
           )}

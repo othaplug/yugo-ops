@@ -274,7 +274,7 @@ export function TrackLiveMapLeaflet({
       {hasPosition && crew && (
         <Marker position={[crew.current_lat, crew.current_lng]} icon={makeCrewIcon(bearing)}>
           {/* crew.name is already scrubbed at the source
-              (/track/move/[id]/page.tsx — clientFacingCrewName). The
+              (/track/move/[id]/page.tsx, clientFacingCrewName). The
               previous .replace("Team ", "") was a partial fix that
               still leaked everything after the prefix. No longer
               needed. */}

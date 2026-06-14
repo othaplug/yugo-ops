@@ -29,7 +29,7 @@ import {
   SIGNATURE_PAGE_BG,
 } from "../signature-quote-ui";
 
-/** Estate card face — Yugo wine (#5C1A33) shifting to deeper wine for depth. */
+/** Estate card face, Yugo wine (#5C1A33) shifting to deeper wine for depth. */
 const ESTATE_CARD_WINE_DEEP = "#3D1522";
 const ESTATE_CARD_WINE_HIGHLIGHT = "#6B2848";
 
@@ -41,13 +41,13 @@ const LIGHT_FOOTER = FOREST_MUTED;
 const ESTATE_TAGLINE = "rgba(255,255,255,0.82)";
 const ESTATE_TAX_LINE = "rgba(255,255,255,0.92)";
 const ESTATE_FOOTER = "rgba(255,255,255,0.78)";
-/** Headings and checks on Estate dark card (off-white — no gold). */
+/** Headings and checks on Estate dark card (off-white, no gold). */
 const ESTATE_ACCENT_LIGHT = "rgba(255,255,255,0.92)";
-/** Yugo brand palette — inline “Recommended” suffix (light: leather; Estate: off-white). */
+/** Yugo brand palette, inline “Recommended” suffix (light: leather; Estate: off-white). */
 const BRAND_LEATHER = "#492A1D";
 const BRAND_OFF_WHITE = "#F9EDE4";
 
-/** Tier cards: never show truck size (e.g. “20ft”) — one consistent client-facing line. */
+/** Tier cards: never show truck size (e.g. “20ft”), one consistent client-facing line. */
 const TIER_CARD_TRUCK_LABEL = "Dedicated Moving Truck";
 
 function tierCardTruckBullet(fromQuoteOrConfig: string): string {
@@ -72,15 +72,15 @@ interface Props {
   recommendedTier?: string;
   /**
    * How the comparison is shown to the client.
-   *   "comparison"      (default) — all three tiers side-by-side
-   *   "estate_featured" — Estate rendered first, Essential + Signature
+   *   "comparison"      (default), all three tiers side-by-side
+   *   "estate_featured", Estate rendered first, Essential + Signature
    *                       in a collapsible "Compare with other packages"
    *                       section below (price-anchor preserved but
    *                       Estate is the obvious primary)
-   *   "estate_only"     — single-tier Estate render, no comparison.
+   *   "estate_only"    , single-tier Estate render, no comparison.
    *                       Heading copy changes from "Choose your package"
    *                       to "Your Estate move".
-   * Effective only when recommendedTier === "estate" — for other
+   * Effective only when recommendedTier === "estate", for other
    * recommendations the parent forces "comparison".
    */
   presentationMode?: "comparison" | "estate_featured" | "estate_only";
@@ -99,7 +99,7 @@ interface Props {
   useAdditiveTierCards?: { signature: boolean; estate: boolean };
   /** Merged tier labels, taglines, “Best for”, and optional inclusions intro lines. */
   tierMetaMap: ResidentialQuoteTierMetaMap;
-  /** Estate or Signature premium shell — headings and rails use cream on dark (wine or green tokens). */
+  /** Estate or Signature premium shell, headings and rails use cream on dark (wine or green tokens). */
   darkShellInk?: PremiumSurfaceInk | null;
 }
 
@@ -118,7 +118,7 @@ export default function ResidentialLayout({
   tierMetaMap,
 }: Props) {
   // Presentation-mode gates. estate-featured / estate-only are only
-  // honored when Estate is the recommended tier — server forces
+  // honored when Estate is the recommended tier, server forces
   // "comparison" otherwise, but defending here too in case a stale
   // mode value lands on a quote that re-recommended a different tier.
   const isEstateRecommended = (recommendedTier ?? "").toLowerCase() === "estate";
@@ -173,7 +173,7 @@ export default function ResidentialLayout({
           style={{ color: d ? d.body : FOREST_BODY }}
         >
           {isEstateOnly
-            ? "A fully managed home transition — every detail handled."
+            ? "A fully managed home transition, every detail handled."
             : isEstateFeatured
               ? "Your coordinator has prepared Estate for this move. Other packages remain available below for reference."
               : "Every package includes a professional crew, truck, and blanket wrapping."}
@@ -282,7 +282,7 @@ export default function ResidentialLayout({
       {/*
         Per-tier card renderer. Pulled into a closure so the
         estate_featured mode can render Estate as a hero row above the
-        collapsible "Compare with other packages" group — same card
+        collapsible "Compare with other packages" group, same card
         markup, no duplication.
         Returns null when the tier is missing from tiers/tierMetaMap.
       */}
@@ -536,7 +536,7 @@ export default function ResidentialLayout({
                         const deltaCards = additions
                           .map((f) => f.card)
                           .filter(Boolean);
-                        // “Everything in …, plus:” — list only tier-specific lines (truck/crew live in Essential).
+                        // “Everything in …, plus:”, list only tier-specific lines (truck/crew live in Essential).
                         const listBullets = deltaCards;
                         return (
                           <div className="flex-1 min-h-0 flex flex-col mb-4 space-y-3">
@@ -579,7 +579,7 @@ export default function ResidentialLayout({
                       </p>
                     )}
 
-                    {/* Fix #4: Upgrade nudge — Essential only, not collapsed.
+                    {/* Fix #4: Upgrade nudge, Essential only, not collapsed.
                        Suppressed when Estate is the coordinator-recommended tier
                        (saying "most clients choose Signature" while Estate is
                        pre-selected as RECOMMENDED contradicts itself). When
@@ -667,7 +667,7 @@ export default function ResidentialLayout({
           );
         };
 
-        // Hero row — Estate-only / Estate-featured: just Estate.
+        // Hero row, Estate-only / Estate-featured: just Estate.
         // Comparison: all three.
         const heroGridCols = isEstateOnly
           ? "grid-cols-1 max-w-md"

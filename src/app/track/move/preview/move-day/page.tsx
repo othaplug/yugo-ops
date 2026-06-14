@@ -9,7 +9,7 @@ import TrackMoveClient from "../../[id]/TrackMoveClient";
 import PreviewChromeBanner from "../PreviewChromeBanner";
 
 export const metadata: Metadata = {
-  title: "Track move (sample — move day)",
+  title: "Track move (sample, move day)",
   robots: { index: false, follow: false },
 };
 

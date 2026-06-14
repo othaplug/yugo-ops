@@ -42,8 +42,8 @@ export default function TrackYourCrewSection({
       ? "Team not assigned yet"
       : "Crew not assigned yet"
     : isBins
-      ? "Team assigned — names soon"
-      : "Crew assigned — names soon";
+      ? "Team assigned, names soon"
+      : "Crew assigned, names soon";
 
   const placeholderBody = !crewAssigned
     ? isBins
@@ -65,7 +65,7 @@ export default function TrackYourCrewSection({
       {showNameList ? (
         <div className="space-y-3">
           {/* Team name (e.g. "Alpha") is internal dispatch nomenclature; client
-              sees individual crew names below — they don't need to know the
+              sees individual crew names below, they don't need to know the
               admin team grouping. */}
           <div className="flex flex-wrap gap-3">
           {names.map((name: string, i: number) => (

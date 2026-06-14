@@ -120,7 +120,7 @@ export default function WhiteGloveLayout({
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
   const deposit = calculateDeposit("white_glove", price);
-  // Same booking-window rule as SingleItemLayout — bookings inside the
+  // Same booking-window rule as SingleItemLayout, bookings inside the
   // 48h cancellation window collect full payment up front to match the
   // non-refundable policy. See src/lib/quotes/booking-payment-window.ts.
   const wgBookingDecision = decideBookingPayment({

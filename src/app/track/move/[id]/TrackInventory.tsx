@@ -87,7 +87,7 @@ export default function TrackInventory({
   moveId: string;
   token: string;
   moveComplete?: boolean;
-  /** e.g. `mb-6` for tab content spacing — avoids a parent wrapper div */
+  /** e.g. `mb-6` for tab content spacing, avoids a parent wrapper div */
   className?: string;
   estateWalkthroughScopeOnly?: boolean;
 }) {
@@ -335,7 +335,7 @@ export default function TrackInventory({
           className="text-[13px] leading-relaxed max-w-[320px] mx-auto mt-5"
           style={{ color: FOREST }}
         >
-          In your virtual walkthrough, we shape your move list with you—what we align on there is
+          In your virtual walkthrough, we shape your move list with you. What we align on there is
           what we pack and transport with the same care through every stage of your relocation.
           Pieces we have not yet reviewed together are not part of your move until your
           coordinator updates your plan.

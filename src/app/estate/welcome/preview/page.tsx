@@ -26,7 +26,7 @@ export default function EstateWelcomePreviewPage() {
       supportEmail={getClientSupportEmail()}
       clientName="Alex Sample"
       hasScheduledMove
-      previewBanner="Sample preview — not tied to a real booking."
+      previewBanner="Sample preview, not tied to a real booking."
     />
   );
 }

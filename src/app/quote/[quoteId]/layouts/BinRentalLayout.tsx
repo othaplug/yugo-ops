@@ -166,7 +166,7 @@ export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) 
             Continue to payment
           </button>
           <p className="text-center text-[11px] leading-relaxed" style={{ color: `${FOREST}65` }}>
-            Total {fmtPrice(total)} (incl. HST) — you&apos;ll review the rental agreement and pay on the next steps.
+            Total {fmtPrice(total)} (incl. HST), you&apos;ll review the rental agreement and pay on the next steps.
           </p>
         </div>
       )}

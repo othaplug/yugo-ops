@@ -90,8 +90,8 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
     "All tools and equipment",
     "Floor protection",
     "Guaranteed flat price",
-    "General liability — $5M coverage",
-    "WSIB covered — every crew member",
+    "General liability, $5M coverage",
+    "WSIB covered, every crew member",
   ];
 
   return (
@@ -174,15 +174,15 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
             </p>
             <p>
               Estimated {storageWeeks} week{storageWeeks !== 1 ? "s" : ""} at{" "}
-              {fmtPrice(storageWeeklyRate)}/week —{" "}
+              {fmtPrice(storageWeeklyRate)}/week, about{" "}
               <span className="font-semibold">{fmtPrice(labourStorageFee)}</span>{" "}
-              storage estimate (coordinator may adjust).
+              total storage estimate (coordinator may adjust).
             </p>
           </div>
         )}
       </div>
 
-      {/* Crew + truck — hours removed (client pays for scope, not time) */}
+      {/* Crew + truck, hours removed (client pays for scope, not time) */}
       <div className="grid grid-cols-2 gap-3">
         <div
           className="p-4 rounded-xl text-center"
@@ -305,7 +305,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
           {/* Investment Summary is intentionally bare on labour-only
               quotes (operator decision 2026-06-11). Client review of
               YG-30287 surfaced confusion when this section itemized
-              labour base + complexity + heavy + access — none of which
+              labour base + complexity + heavy + access, none of which
               the client needs to see. Truck / storage / return visits
               are kept because they represent genuinely separate
               services the client opted into; everything else is rolled
@@ -383,7 +383,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
             </button>
             <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
               {fullPayment
-                ? "Full payment required at booking — no balance due."
+                ? "Full payment required at booking, no balance due."
                 : `Deposit to confirm · Balance of ${fmtPrice(balance)} due 48 hours before your move`}
             </p>
           </div>

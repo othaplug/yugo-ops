@@ -9,7 +9,7 @@ import TrackMoveClient from "@/app/track/move/[id]/TrackMoveClient";
 import PreviewChromeBanner from "@/app/track/move/preview/PreviewChromeBanner";
 
 export const metadata: Metadata = {
-  title: "Estate track — walkthrough done (sample)",
+  title: "Estate track, walkthrough done (sample)",
   robots: { index: false, follow: false },
 };
 

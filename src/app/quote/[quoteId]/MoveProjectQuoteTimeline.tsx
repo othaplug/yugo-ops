@@ -16,7 +16,7 @@ import { premiumShellInk, type PremiumShellKind } from "./quote-premium-shell";
 // Local truck-slug → client-facing label map. Mirrors TRUCK_LUXURY on
 // QuotePageClient and TRUCK_DISPLAY_LABELS in the email templates so a
 // 26ft truck reads "26ft truck" / a Sprinter reads "Extended Sprinter
-// van" everywhere — never the raw DB slug.
+// van" everywhere, never the raw DB slug.
 const TRUCK_SLUG_LABELS: Record<string, string> = {
   sprinter: "Extended Sprinter van",
   "16ft": "16ft truck",

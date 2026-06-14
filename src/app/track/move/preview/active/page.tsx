@@ -9,11 +9,11 @@ import TrackMoveClient from "../../[id]/TrackMoveClient";
 import PreviewChromeBanner from "../PreviewChromeBanner";
 
 export const metadata: Metadata = {
-  title: "Track move (sample — before complete)",
+  title: "Track move (sample, before complete)",
   robots: { index: false, follow: false },
 };
 
-/** Standard Signature track: cream shell, countdown, tabs — not Estate. */
+/** Standard Signature track: cream shell, countdown, tabs, not Estate. */
 export default function TrackMovePreviewActivePage() {
   if (!allowClientUiPreview()) notFound();
 

@@ -80,7 +80,7 @@ const PACKING_KIT_CONTENTS: Record<number, string> = {
   5: "45 small, 70 medium, 25 large boxes · 10 wardrobe boxes (rental) · 10 tape rolls · 25 lbs packing paper",
 };
 
-/** Slugs for tiered packing kit — surfaced first when the list is collapsed (mobile + desktop). */
+/** Slugs for tiered packing kit, surfaced first when the list is collapsed (mobile + desktop). */
 const PACKING_KIT_ADDON_SLUGS = new Set([
   "packing_materials",
   "packing_materials_kit",
@@ -225,7 +225,7 @@ function flooredTruckLabel(
   return truckSecondary ? `${base} + support van` : base;
 }
 
-/** Client delivery / B2B — replaces residential "Your Move Includes" copy. */
+/** Client delivery / B2B, replaces residential "Your Move Includes" copy. */
 const LOGISTICS_INCLUSION_FEATURES: TierFeature[] = [
   {
     card: "Dedicated delivery vehicle",
@@ -339,7 +339,7 @@ export default function QuotePageClient({
    * already in the DB may still carry a stale truck_primary='sprinter'
    * on a 3BR+ from before the engine fix. Routing every InclusionsShowcase
    * + estate-experience consumer through this derived value means a
-   * client viewing any old quote sees the correct truck size — never
+   * client viewing any old quote sees the correct truck size, never
    * the dangerous "Dedicated Sprinter van" on a 3BR.
    */
   const flooredTruckPrimary = ((): string | null => {
@@ -355,7 +355,7 @@ export default function QuotePageClient({
 
   /**
    * Display-time floor of est_crew_size by move size. Same rationale as
-   * the truck floor above — quotes generated before the crew-minimum
+   * the truck floor above, quotes generated before the crew-minimum
    * fix carry est_crew_size=3 on a 3BR, but operationally a 3BR move
    * needs 4 movers. Without this guard the client sees "3 professional
    * movers" on a quote whose engine recommendation has since been
@@ -493,7 +493,7 @@ export default function QuotePageClient({
     useState(false);
   const prevSelectedTierRef = useRef<string | null>(null);
   // Fix #10: Hydrate declarations from quote.high_value_declarations so
-  // they persist across page reloads (was React-state-only — invisible
+  // they persist across page reloads (was React-state-only, invisible
   // to coordinator and lost on refresh).
   const [declarations, setDeclarations] = useState<HighValueDeclaration[]>(
     () => {
@@ -520,7 +520,7 @@ export default function QuotePageClient({
     },
   );
 
-  // Fix #10: Debounced persistence — when declarations change, POST the
+  // Fix #10: Debounced persistence, when declarations change, POST the
   // full array to /api/quotes/[id]/declarations so the coordinator sees
   // them on the admin quote detail page. Skipped until first user edit
   // (declarationsDirtyRef) to avoid an empty write on every page load.
@@ -582,7 +582,7 @@ export default function QuotePageClient({
   const isSignatureFlow = isResidential && selectedTier === "signature";
   const residentialSolidCtaClass =
     "w-full max-w-md py-3.5 rounded-none border-0 text-[10px] font-bold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90";
-  /** Estate (wine) or Signature (green) — colour shell only; Estate-only copy uses `isEstateFlow`. */
+  /** Estate (wine) or Signature (green), colour shell only; Estate-only copy uses `isEstateFlow`. */
   const shellKind: PremiumShellKind = premiumShellKind(
     isResidential,
     selectedTier,
@@ -883,7 +883,7 @@ export default function QuotePageClient({
     );
   }, [isResidential, selectedTier, quote.service_type, residentialTierMeta]);
 
-  /* ── Applicable add-ons (Estate hides items bundled in-package — see getVisibleAddons / addon-visibility) ── */
+  /* ── Applicable add-ons (Estate hides items bundled in-package, see getVisibleAddons / addon-visibility) ── */
   const applicableAddons = useMemo(() => {
     const serviceOk = (a: (typeof allAddons)[number]) =>
       !a.applicable_service_types?.length ||
@@ -1038,7 +1038,7 @@ export default function QuotePageClient({
     grandTotal,
   ]);
 
-  /* ── Booking payment window — full payment vs deposit ──
+  /* ── Booking payment window, full payment vs deposit ──
      When move is < 48h away, charge the full grand total at booking.
      Server enforces independently (no client trust). See
      src/lib/quotes/booking-payment-window.ts. */
@@ -1212,7 +1212,7 @@ export default function QuotePageClient({
   ]);
 
   /* ── Handlers ── */
-  /** Eased scroll (~1s) — reads better than instant jump when advancing steps. */
+  /** Eased scroll (~1s), reads better than instant jump when advancing steps. */
   const smoothScrollToRef = useCallback(
     (
       ref: React.RefObject<HTMLElement | null>,
@@ -1325,7 +1325,7 @@ export default function QuotePageClient({
         const nextStep = hasAddons ? 2 : 3;
         setCurrentStep(nextStep);
         setFurthestStepReached((s) => Math.max(s, nextStep));
-        // Land on “Your move included” (inclusions / Estate experience) first — not add-ons.
+        // Land on “Your move included” (inclusions / Estate experience) first, not add-ons.
         const tierScrollMs = 480;
         scrollToSection(comparisonRef, {
           delayMs: 160,
@@ -1399,7 +1399,7 @@ export default function QuotePageClient({
   const handleStepClick = useCallback(
     (stepNum: number) => {
       if (!isResidential || stepNum > currentStep) return;
-      // When no addons, step 2 (Customize) is skipped — treat as step 3
+      // When no addons, step 2 (Customize) is skipped, treat as step 3
       const effectiveStep =
         stepNum === 2 && applicableAddons.length === 0 ? 3 : stepNum;
       setCurrentStep(effectiveStep);
@@ -1421,7 +1421,7 @@ export default function QuotePageClient({
     if (currentStep === 3) return applicableAddons.length > 0 ? 2 : 1;
     if (currentStep === 4) return 3;
     // Step 5 (Book): earlier sections stay mounted with `currentStep >= n`, so their
-    // "← Back" controls must still navigate — previously getBackStep was null and did nothing.
+    // "← Back" controls must still navigate, previously getBackStep was null and did nothing.
     if (currentStep === 5) return 4;
     return null;
   }, [currentStep, applicableAddons.length]);
@@ -1475,7 +1475,7 @@ export default function QuotePageClient({
   // jobs: small residential moves and commercial point-to-point deliveries.
   // Detection here drives whether we render the commercial-flavored
   // InclusionsShowcase (which uses LOGISTICS_INCLUSION_FEATURES + "Your
-  // Delivery Includes" copy) — for residential, we suppress that block and
+  // Delivery Includes" copy), for residential, we suppress that block and
   // let SingleItemLayout's own "What's Included" section speak for itself.
   const singleItemMode = useMemo(() => {
     if (quote.service_type !== "single_item") return null;
@@ -1558,7 +1558,7 @@ export default function QuotePageClient({
     }
     // Single-item context-aware hero: residential moves see "Your Move
     // Quote", commercial deliveries see "Your Delivery Quote". Detection
-    // uses access types + per-line signals — see single-item-copy.ts.
+    // uses access types + per-line signals, see single-item-copy.ts.
     if (quote.service_type === "single_item") {
       const copy = getSingleItemQuoteCopy({
         from_access: quote.from_access as string | null | undefined,
@@ -1675,7 +1675,7 @@ export default function QuotePageClient({
           </p>
         </div>
       )}
-      {/* ═══ HERO — deep wine (#2B0416) for all flows; headline + meta live in this block ═══ */}
+      {/* ═══ HERO, deep wine (#2B0416) for all flows; headline + meta live in this block ═══ */}
       <header
         className="relative overflow-hidden text-[#F9EDE4]"
         style={{
@@ -1706,7 +1706,7 @@ export default function QuotePageClient({
             {hero.subtitle}
           </p>
 
-          {/* Quote meta — vertical rules between columns (visible all breakpoints; row scrolls on very narrow screens) */}
+          {/* Quote meta, vertical rules between columns (visible all breakpoints; row scrolls on very narrow screens) */}
           <div className="mt-8 flex flex-nowrap items-stretch justify-center gap-x-0 gap-y-0 overflow-x-auto pb-1 [scrollbar-width:thin]">
             <div className="text-left min-w-0 shrink-0 px-4 sm:px-6">
               <p
@@ -1792,11 +1792,11 @@ export default function QuotePageClient({
              lower floors, above 20th floor, old/small elevators all
              affect crew time + truck pick). Asking them AFTER the price
              is shown made clients wonder if answering "yes" would jack
-             up the quote — implicit pressure to lie. Asking BEFORE the
+             up the quote, implicit pressure to lie. Asking BEFORE the
              price chart frames them honestly as scoping questions.
              Note: the card POSTs to client-building-intelligence on
              change so the coordinator sees responses in admin; pricing
-             does not recompute client-side (that's by design — engine
+             does not recompute client-side (that's by design, engine
              re-runs require regenerate). */}
           {isResidential && tiers && !booked && (
             <div className="mb-6">
@@ -1842,7 +1842,7 @@ export default function QuotePageClient({
 
           {/* ═══ Tier cards (residential) or service-type layouts ═══ */}
           {/* Fix #8: ClientBuildingIntelCard moved out of this section
-             and rendered above the seasonal pricing banner — keep this
+             and rendered above the seasonal pricing banner, keep this
              section focused on tier selection so the visual order is
              building scope → price context → tier choice. */}
           {isResidential && tiers ? (
@@ -1915,7 +1915,7 @@ export default function QuotePageClient({
             <>
               {/* Residential single-item moves shouldn't see the
                   commercial "Your Delivery Includes / Shipment visibility"
-                  feature grid — SingleItemLayout below has its own
+                  feature grid, SingleItemLayout below has its own
                   "What's Included" section. Only commercial deliveries
                   (dock-to-dock, vendor-shipped) render the logistics
                   showcase. Detection: see singleItemMode useMemo. */}
@@ -2219,7 +2219,7 @@ export default function QuotePageClient({
                     : null
                 }
                 /* Fix #7: Estate clients should see every add-on immediately
-                   — no "View all" hidden state. The selectedTierKey lets
+                  , no "View all" hidden state. The selectedTierKey lets
                    AddOnsSection initialise showAll = true when Estate. */
                 selectedTierKey={isResidential ? selectedTier : null}
                 moveSize={quote.move_size}
@@ -2745,7 +2745,7 @@ export default function QuotePageClient({
                     footerNoteColor={shellInk.muted}
                     amountHeading={
                       // Inside the 48h window, full payment is collected
-                      // up-front — see booking-payment-window.ts. Heading
+                      // up-front, see booking-payment-window.ts. Heading
                       // and submit label must reflect that or the client
                       // sees "Deposit amount" then gets charged the total.
                       bookingRequiresFullPayment
@@ -2934,7 +2934,7 @@ export default function QuotePageClient({
         )}
 
         <footer className={`py-5 text-center border-t ${shellBorderTopClass}`}>
-          {/* Fix #6: This IS Yugo's own product — "Powered by Yugo" is template
+          {/* Fix #6: This IS Yugo's own product, "Powered by Yugo" is template
              leftover that only makes sense on white-label tools. Drop the logo
              block; the Yugo wordmark already lives in the header. */}
           <YugoMarketingFooter
@@ -3093,7 +3093,7 @@ const InclusionsShowcase = React.forwardRef<
     showEventSetupFeature?: boolean;
     /** e.g. Truck: 20ft (+$150) from factors_applied */
     truckPricingNote?: string | null;
-    /** Estate wine / Signature green shell — use cream ink, not WINE/forest on dark */
+    /** Estate wine / Signature green shell, use cream ink, not WINE/forest on dark */
     premiumShellKind?: PremiumShellKind;
     /**
      * Logistics-only: `white_glove` uses the same delivery grid and hydration as standard
@@ -3565,7 +3565,7 @@ function WalkthroughDetails({
   premiumShellKind = "none",
 }: {
   quote: Quote;
-  /** Used under a parent “Your inventory” heading — no duplicate title or top rule */
+  /** Used under a parent “Your inventory” heading, no duplicate title or top rule */
   embedded?: boolean;
   premiumShellKind?: PremiumShellKind;
 }) {
@@ -3896,7 +3896,7 @@ function ConfirmDetailsSection({
   const protectionLabel =
     VALUATION_TIER_LABELS[protectionKey] ??
     getDisplayLabel(includedValuation, "valuation");
-  // Floor the truck label here as well — ConfirmDetailsSection renders
+  // Floor the truck label here as well, ConfirmDetailsSection renders
   // the "Your Team" summary the client confirms before reserving, so the
   // Sprinter-on-3BR display safety net must apply here too. Uses the
   // module-level flooredTruckLabel helper which mirrors the engine floor.
@@ -3923,7 +3923,7 @@ function ConfirmDetailsSection({
           <strong>Crew:</strong>{" "}
           {(() => {
             // Inline crew floor mirrors CREW_FLOOR_BY_MOVE_SIZE in the
-            // parent QuotePageClient — old quotes with est_crew_size=3
+            // parent QuotePageClient, old quotes with est_crew_size=3
             // on a 3BR surface here too. See crew-and-truck-minimums.ts.
             const stored = quote.est_crew_size;
             const flr: Record<string, number> = {
@@ -4122,7 +4122,7 @@ function ConfirmDetailsSection({
               </p>
               <p style={{ color: shellText!.primary }}>
                 {(() => {
-                  // Inline floor — see comment in moveSummarySegments above.
+                  // Inline floor, see comment in moveSummarySegments above.
                   const stored = quote.est_crew_size;
                   const flr: Record<string, number> = {
                     studio: 2, partial: 2, "1br": 2, "2br": 2,
@@ -4303,7 +4303,7 @@ function ConfirmDetailsSection({
                 </ul>
                 {pickupRows.length > 1 && (
                   <p className="text-[11px]" style={{ color: inkBody }}>
-                    {pickupRows.length} pickup locations — crew will visit each
+                    {pickupRows.length} pickup locations, crew will visit each
                     stop.
                   </p>
                 )}
@@ -4352,7 +4352,7 @@ function ConfirmDetailsSection({
                   // floors via applyMinimums().
                   const moveSize = String(quote.move_size ?? "").toLowerCase();
                   // inventory_score is on the row but not in the typed
-                  // Quote shape — cast to read it without widening the
+                  // Quote shape, cast to read it without widening the
                   // type for one consumer.
                   const invScore =
                     typeof (quote as unknown as { inventory_score?: number })
@@ -4668,7 +4668,7 @@ function ConfirmDetailsSection({
               "24ft": "24ft full-size moving truck",
               "26ft": "26ft maximum-capacity truck",
             };
-            // Inline floor — flooredTruckPrimary is in the parent scope.
+            // Inline floor, flooredTruckPrimary is in the parent scope.
             const inlineTruckFloor: Record<string, string> = {
               studio: "sprinter", partial: "sprinter", "1br": "sprinter",
               "2br": "16ft", "3br": "24ft", "4br": "24ft", "5br_plus": "26ft",
@@ -4952,7 +4952,7 @@ function ValuationProtectionCard({
         Your Protection
       </h2>
 
-      {/* Active protection — open layout, label / value rows */}
+      {/* Active protection, open layout, label / value rows */}
       <div>
         <div className="flex items-start justify-between gap-4 pb-5">
           <div className="flex-1 min-w-0">
@@ -5591,7 +5591,7 @@ function AddOnsSection({
       : premiumShellKind === "signature"
         ? SIGNATURE_CTA
         : FOREST;
-  // Fix #7: Estate clients see every add-on expanded — they expect to see
+  // Fix #7: Estate clients see every add-on expanded, they expect to see
   // everything available, not a teaser with a "View all" reveal. Other
   // tiers keep the original collapsed default.
   const [showAll, setShowAll] = useState(
@@ -5674,7 +5674,7 @@ function AddOnsSection({
               className="text-[12px] leading-relaxed"
               style={{ color: shellText.body }}
             >
-              Optional extras—toggle only what you need.
+              Optional extras. Toggle only what you need.
             </p>
           </>
         ) : (
@@ -5695,7 +5695,7 @@ function AddOnsSection({
               className="text-[12px] leading-relaxed"
               style={{ color: FOREST_BODY }}
             >
-              Optional extras—toggle only what you need.
+              Optional extras. Toggle only what you need.
             </p>
           </>
         )}
@@ -5821,7 +5821,7 @@ function AddOnsSection({
                       </p>
                     )}
 
-                    {/* Packing kit contents expand — tier dropdown drives copy when kit is on */}
+                    {/* Packing kit contents expand, tier dropdown drives copy when kit is on */}
                     {PACKING_KIT_ADDON_SLUGS.has(addon.slug) &&
                       (moveSize ||
                         (isOn &&

@@ -10,7 +10,7 @@ import { deriveEstateServiceChecklistAutomation } from "@/lib/estate-service-che
 import type { EstateDayPlan } from "@/lib/quotes/estate-schedule";
 import YugoLogo from "@/components/YugoLogo";
 
-/** Deep wine panel — Estate timeline (matches premium reference). */
+/** Deep wine panel, Estate timeline (matches premium reference). */
 const PANEL_BG =
   "linear-gradient(165deg, #3d1228 0%, #2a0a16 48%, #1f0812 100%)";
 const INK = "rgba(249, 237, 228, 0.94)";

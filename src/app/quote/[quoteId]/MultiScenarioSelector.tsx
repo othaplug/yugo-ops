@@ -108,7 +108,7 @@ export default function MultiScenarioSelector({
             Select a scheduling option
           </h1>
           <p className="text-sm leading-relaxed" style={{ color: FOREST_BODY }}>
-            We&rsquo;ve put together a few options for your move. Select the one that works best for you — all include the same service.
+            We&rsquo;ve put together a few options for your move. Select the one that works best for you, all include the same service.
           </p>
         </div>
 

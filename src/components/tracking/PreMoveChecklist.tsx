@@ -83,7 +83,7 @@ export default function PreMoveChecklist({
           body: JSON.stringify({ token, item: id, checked: newVal }),
         });
       } catch {
-        // Optimistic — revert on failure
+        // Optimistic, revert on failure
         setChecked((prev) => ({ ...prev, [id]: !newVal }));
       } finally {
         setSaving(null);
@@ -224,7 +224,7 @@ export default function PreMoveChecklist({
       {allDone && (
         <div className="px-4 py-3 bg-[#22c55e]/5 border-t border-[#22c55e]/20 border-l-4 border-l-[#22c55e]">
           <span className="text-[13px] font-semibold text-[#22c55e] leading-snug">
-            Prep checklist complete — we&apos;ll notify your coordinator and
+            Prep checklist complete, we&apos;ll notify your coordinator and
             ops so your crew can see you&apos;re ready for move day.
           </span>
         </div>

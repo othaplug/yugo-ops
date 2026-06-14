@@ -167,7 +167,7 @@ export default function SchedulingAlternativesCard({
     );
   }
 
-  // partial — show alternatives
+  // partial, show alternatives
   return (
     <div
       className="mt-6 rounded-2xl border p-5"

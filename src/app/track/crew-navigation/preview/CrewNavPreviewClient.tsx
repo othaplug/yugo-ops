@@ -11,7 +11,7 @@ const CrewNavigation = dynamic(
   { ssr: false }
 );
 
-/** Fixed sample destination — Mapbox routing + turn UI (dev / preview only). */
+/** Fixed sample destination, Mapbox routing + turn UI (dev / preview only). */
 const SAMPLE_DEST: CrewNavDestination = {
   lat: 43.6425662,
   lng: -79.3870578,

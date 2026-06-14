@@ -12,7 +12,7 @@ function firstName(full: string | null | undefined): string {
   return t || "there";
 }
 
-/** Thin separator between narrative sections — fades at edges so it stays quiet on wine. */
+/** Thin separator between narrative sections, fades at edges so it stays quiet on wine. */
 function SubtleSectionDivider() {
   return (
     <div className="max-w-4xl mx-auto px-5 md:px-8" aria-hidden>
@@ -101,7 +101,7 @@ const TIMELINE_STEPS: { title: string; description: string }[] = [
   {
     title: "Walkthrough completed",
     description:
-      "Room-by-room plan documented — every piece, access note, and special handling call-out on record.",
+      "Room-by-room plan documented, every piece, access note, and special handling call-out on record.",
   },
   {
     title: "Packing materials delivered",
@@ -119,12 +119,12 @@ const PACK_DAY_FEATURES: { title: string; description: string }[] = [
   {
     title: "Professional packers",
     description:
-      "Our team handles every box. You do not need to pack — that is the point of Estate.",
+      "Our team handles every box. You do not need to pack, that is the point of Estate.",
   },
   {
     title: "Every category covered",
     description:
-      "China, books, wardrobes, art — each item wrapped and boxed with the right materials.",
+      "China, books, wardrobes, art, each item wrapped and boxed with the right materials.",
   },
   {
     title: "Wardrobe boxes",
@@ -139,7 +139,7 @@ const PACK_DAY_FEATURES: { title: string; description: string }[] = [
   {
     title: "Clean, organized handoff",
     description:
-      "Your home is left tidy and ready for move day — calm, not chaotic.",
+      "Your home is left tidy and ready for move day, calm, not chaotic.",
   },
 ];
 
@@ -147,7 +147,7 @@ const MOVE_DAY_FEATURES: { title: string; description: string }[] = [
   {
     title: "Dedicated truck and team",
     description:
-      "Your crew and vehicle are reserved for you — not shared, not rushed.",
+      "Your crew and vehicle are reserved for you, not shared, not rushed.",
   },
   {
     title: "White glove handling",
@@ -175,7 +175,7 @@ const NEW_HOME_FEATURES: { title: string; description: string }[] = [
   {
     title: "Precision placement",
     description:
-      "Every piece where you envision it — we adjust until it feels right.",
+      "Every piece where you envision it, we adjust until it feels right.",
   },
   {
     title: "Full unpacking",
@@ -189,7 +189,7 @@ const NEW_HOME_FEATURES: { title: string; description: string }[] = [
   },
   {
     title: "When we leave, you are home",
-    description: "Not still moving — settled, with space to breathe.",
+    description: "Not still moving, settled, with space to breathe.",
   },
 ];
 
@@ -204,7 +204,7 @@ const AFTER_MOVE_FEATURES: { title: string; description: string }[] = [
   {
     title: "30-day concierge",
     description:
-      "The same relationship continues after move day — questions, tweaks, and coordination.",
+      "The same relationship continues after move day, questions, tweaks, and coordination.",
   },
   {
     title: "Placement and adjustments",
@@ -214,7 +214,7 @@ const AFTER_MOVE_FEATURES: { title: string; description: string }[] = [
   {
     title: "Partner perks",
     description:
-      "Exclusive offers from partners we trust — part of the Estate experience.",
+      "Exclusive offers from partners we trust, part of the Estate experience.",
   },
 ];
 
@@ -352,7 +352,7 @@ export default function EstateWelcomeGuideView({
             What we handle in the days ahead
           </SectionTitle>
           <BodyP>
-            In the days leading up to your move, here is what we handle — so you
+            In the days leading up to your move, here is what we handle, so you
             stay focused on life, not logistics.
           </BodyP>
           <ol className="mt-12 m-0 p-0 list-none">
@@ -481,7 +481,7 @@ export default function EstateWelcomeGuideView({
                 The day before your move, our packing team arrives
               </SectionTitle>
               <BodyP>
-                Calm and thorough. You do not need to touch a box — we wrap,
+                Calm and thorough. You do not need to touch a box, we wrap,
                 protect, and label everything with a documented plan behind it.
               </BodyP>
               <FeatureGrid items={PACK_DAY_FEATURES} />
@@ -501,7 +501,7 @@ export default function EstateWelcomeGuideView({
                 Your crew arrives in your window
               </SectionTitle>
               <BodyP>
-                This is what we do — precise, insured, and communicated. You always
+                This is what we do, precise, insured, and communicated. You always
                 know where things stand.
               </BodyP>
               <FeatureGrid items={MOVE_DAY_FEATURES} />
@@ -521,7 +521,7 @@ export default function EstateWelcomeGuideView({
                 When the truck arrives, the next chapter begins
               </SectionTitle>
               <BodyP>
-                Unloading is not the end — it is the beginning of you actually
+                Unloading is not the end, it is the beginning of you actually
                 living in your new space.
               </BodyP>
               <FeatureGrid items={NEW_HOME_FEATURES} />
@@ -543,7 +543,7 @@ export default function EstateWelcomeGuideView({
             Your belongings are fully covered
           </SectionTitle>
           <BodyP>
-            Straightforward coverage — the details live in your agreement; here
+            Straightforward coverage, the details live in your agreement; here
             is the essence.
           </BodyP>
           <ul className="mt-8 space-y-3 max-w-xl">
@@ -578,7 +578,7 @@ export default function EstateWelcomeGuideView({
             Our relationship does not end on move day
           </SectionTitle>
           <BodyP>
-            Estate means support that continues — so small questions do not
+            Estate means support that continues, so small questions do not
             become big stress.
           </BodyP>
           <FeatureGrid items={AFTER_MOVE_FEATURES} />
@@ -624,7 +624,7 @@ export default function EstateWelcomeGuideView({
             className="text-[14px] md:text-[15px] leading-relaxed mb-8 max-w-2xl"
             style={{ color: ON_WINE.secondary }}
           >
-            We stay in our lane — moving is what we do, and we do it
+            We stay in our lane, moving is what we do, and we do it
             exceptionally well. For everything else, your coordinator can
             connect you with vetted professionals from our trusted partner
             network.

@@ -10,7 +10,7 @@ export const ESTATE_ROSE_HOVER = "#7A1847";
 export const ESTATE_TIER_ISLAND_BG = "#FFFBF7";
 
 /**
- * Text on wine (#2B0416) — tuned so 11–12px copy stays legible (avoid /50–/65 Tailwind on dark).
+ * Text on wine (#2B0416), tuned so 11–12px copy stays legible (avoid /50–/65 Tailwind on dark).
  * Use `kicker` for uppercase section labels (replaces rose #66143D text on wine).
  */
 export const ESTATE_ON_WINE = {
@@ -116,7 +116,7 @@ export const EstateExperienceSection = React.forwardRef<
               />
               <EstateFeatureCard
                 title="Full Packing Service"
-                description="Our team packs everything — china, books, wardrobes, art. You don't touch a box."
+                description="Our team packs everything, china, books, wardrobes, art. You don't touch a box."
               />
             </div>
           </div>
@@ -148,7 +148,7 @@ export const EstateExperienceSection = React.forwardRef<
               />
               <EstateFeatureCard
                 title="Full Furniture Wrapping"
-                description="Every piece individually wrapped, padded, and protected — no exceptions."
+                description="Every piece individually wrapped, padded, and protected, no exceptions."
               />
               <EstateFeatureCard
                 title="Complex Disassembly & Precision Reassembly"
@@ -156,7 +156,7 @@ export const EstateExperienceSection = React.forwardRef<
               />
               <EstateFeatureCard
                 title="Floor & Property Protection"
-                description="Premium runners, booties, and corner guards at every touchpoint — both homes."
+                description="Premium runners, booties, and corner guards at every touchpoint, both homes."
               />
               <EstateFeatureCard
                 title="Premium Art & Antique Handling"
@@ -187,7 +187,7 @@ export const EstateExperienceSection = React.forwardRef<
               />
               <EstateFeatureCard
                 title="Debris & Packaging Removal"
-                description="Every box, every wrapper, every piece of tape — gone before we leave."
+                description="Every box, every wrapper, every piece of tape, gone before we leave."
               />
             </div>
           </div>
@@ -205,16 +205,16 @@ export const EstateExperienceSection = React.forwardRef<
                  the dollar caps, or we state the caps in the headline. We
                  state the caps. The protection-detail page already does. */}
               <EstateFeatureCard
-                title="Full replacement value — up to $10,000 per item · $100,000 per move"
+                title="Full replacement value, up to $10,000 per item · $100,000 per move"
                 description="Items replaced at today's market value, zero deductible. Items over $10,000 can be individually declared for additional coverage."
               />
               <EstateFeatureCard
                 title="All Packing Materials Included"
-                description="Boxes, wrapping, 5 wardrobe boxes, mattress bags — everything provided."
+                description="Boxes, wrapping, 5 wardrobe boxes, mattress bags, everything provided."
               />
               <EstateFeatureCard
                 title="30-Day Post-Move Concierge"
-                description="Direct line to your coordinator for 30 days after your move — no support queues."
+                description="Direct line to your coordinator for 30 days after your move, no support queues."
               />
               <EstateFeatureCard
                 title="Exclusive Yugo Circle Partner Offers"
@@ -226,7 +226,7 @@ export const EstateExperienceSection = React.forwardRef<
 
         {/* Fix #3: "Zero-Damage Commitment" used to live here next to the
            valuation cards. It conflated two different claims: "zero
-           deductible" (insurance term — no out-of-pocket on a claim) with
+           deductible" (insurance term, no out-of-pocket on a claim) with
            a service promise ("we won't damage anything"). Clients reading
            both wondered: if something IS damaged, do you fix it for free
            or just promise it won't happen? Removing the standalone claim;

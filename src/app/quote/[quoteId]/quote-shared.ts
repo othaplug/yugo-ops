@@ -15,12 +15,12 @@ export const CREAM = "#FAF7F2";
 export const FOREST_BODY = "#3E4D40";
 export const FOREST_MUTED = "#5A6B5E";
 
-/** Hero (wine) subtitle & meta — solid tints read better than 50% white */
+/** Hero (wine) subtitle & meta, solid tints read better than 50% white */
 export const HERO_SUBTITLE = "rgba(255,255,255,0.92)";
 export const HERO_META_LABEL = "rgba(255,255,255,0.82)";
 export const HERO_META_VALUE = "#FFFFFF";
 
-/** Uppercase section label above h2 — readable size on cream */
+/** Uppercase section label above h2, readable size on cream */
 export const QUOTE_EYEBROW_CLASS =
   "text-[11px] font-bold tracking-[0.12em] uppercase";
 
@@ -50,7 +50,7 @@ export function quoteArrivalTimeWindowLabel(quote: {
  * Quote confirm step: room-by-room inventory (or walkthrough summary) is offered for smaller homes only.
  * Studio through 2 BR: show the section. 3 BR and above: omit (standard rule for Estate and residential).
  * Unknown / empty move_size: show (do not hide without a classified size).
- * Walkthrough-based quotes should still render inventory UI — combine with `quote.walkthrough_based` at the call site.
+ * Walkthrough-based quotes should still render inventory UI, combine with `quote.walkthrough_based` at the call site.
  */
 const MOVE_SIZES_HIDE_QUOTE_INVENTORY_SECTION = new Set([
   "3br",
@@ -248,7 +248,7 @@ export const TIER_ORDER = ["essential", "signature", "estate"] as const;
 
 /**
  * Tier card copy on the client quote (tagline + “Best for” footer can be overridden via platform_config).
- * `inclusionsIntro` — line above the bullet list on Signature/Estate (“Everything in Essential, plus:”).
+ * `inclusionsIntro`, line above the bullet list on Signature/Estate (“Everything in Essential, plus:”).
  */
 export type ResidentialQuoteTierMetaMap = Record<
   string,
@@ -292,7 +292,7 @@ export const TIER_META: ResidentialQuoteTierMetaMap = {
     bg: "#FDF8FA",
     border: WINE,
     footer:
-      "Best for: clients who expect every detail handled — high-value homes, art, antiques, complete transitions.",
+      "Best for: clients who expect every detail handled, high-value homes, art, antiques, complete transitions.",
     inclusionsIntro: "Everything in Signature, plus:",
   },
 };
@@ -417,7 +417,7 @@ export function expiresLabel(d: string | null) {
   return `Valid for ${days} days`;
 }
 
-/** Value-only for use under a "Valid" label (e.g. "7 days", "Tomorrow") — avoids repeating "Valid". */
+/** Value-only for use under a "Valid" label (e.g. "7 days", "Tomorrow"), avoids repeating "Valid". */
 export function expiresValue(d: string | null) {
   if (!d) return null;
   const exp = new Date(d);
@@ -434,7 +434,7 @@ export function addDays(d: Date, n: number) {
   return r;
 }
 
-/** Tiered deposit for residential local moves — 10 / 15 / 25 % with minimums. */
+/** Tiered deposit for residential local moves, 10 / 15 / 25 % with minimums. */
 export function calculateTieredDeposit(tier: string, total: number): number {
   switch (tier) {
     case "essential":
@@ -450,7 +450,7 @@ export function calculateTieredDeposit(tier: string, total: number): number {
 
 /**
  * Compute days between today and the move date. Returns Infinity if
- * move_date is not supplied / invalid — so calling code falls back to
+ * move_date is not supplied / invalid, so calling code falls back to
  * the legacy "advance booking" path rather than accidentally locking
  * in full payment.
  */
@@ -476,7 +476,7 @@ export function calculateDeposit(
   // Universal short-notice rule (operator decision 2026-06-11): bookings
   // less than 4 days from the move date require full payment at booking.
   // The 4-day window matches the operator's 48-hour-before-move balance
-  // collection window — a booking made 3 days out leaves no operational
+  // collection window, a booking made 3 days out leaves no operational
   // gap to collect a balance before crew dispatch. Applies to ALL
   // service types so a last-minute Estate or labour-only book doesn't
   // ship without payment locked in.
@@ -512,7 +512,7 @@ export function calculateDeposit(
       // out require a flat $150 deposit (not 50%). Under-4-days short-
       // notice case already handled by the universal rule above.
       // Removes the old 50% rule which was generating $452 deposits
-      // on $904 jobs — too aggressive for a flat-rate hourly service.
+      // on $904 jobs, too aggressive for a flat-rate hourly service.
       return 150;
     case "bin_rental":
       return total;
@@ -565,7 +565,7 @@ export function getOfflineDepositInclusiveFromQuote(quote: {
     return totalWithTax;
   }
 
-  // Short-notice booking — calculateDeposit will return full amount
+  // Short-notice booking, calculateDeposit will return full amount
   // when daysUntilMove < 4. We pass move_date so it honors that rule.
   if (daysUntilMove(quote.move_date) < 4) {
     return totalWithTax;

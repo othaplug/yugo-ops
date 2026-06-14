@@ -9,11 +9,11 @@ import TrackMoveClient from "../../[id]/TrackMoveClient";
 import PreviewChromeBanner from "../PreviewChromeBanner";
 
 export const metadata: Metadata = {
-  title: "Track move (sample — completed)",
+  title: "Track move (sample, completed)",
   robots: { index: false, follow: false },
 };
 
-/** Standard track after completion: perks hub, referral area, documents — cream shell. */
+/** Standard track after completion: perks hub, referral area, documents, cream shell. */
 export default function TrackMovePreviewCompletedPage() {
   if (!allowClientUiPreview()) notFound();
 

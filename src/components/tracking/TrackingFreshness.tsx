@@ -2,7 +2,7 @@
 
 /**
  * Admin / dispatch: shows how fresh crew GPS data is (by last update timestamp).
- * When the crew is not on an active job, copy stays muted (grey) — no alert colors.
+ * When the crew is not on an active job, copy stays muted (grey), no alert colors.
  * Stale fixes while on-job use amber only; "GPS offline" wording is not shown on the map/badge.
  */
 export function TrackingFreshness({
@@ -13,7 +13,7 @@ export function TrackingFreshness({
 }: {
   lastUpdate?: string | null;
   className?: string;
-  /** False for idle / offline / returning — freshness is shown in grey only. */
+  /** False for idle / offline / returning, freshness is shown in grey only. */
   crewOnJob?: boolean;
   /** `dark` for labels on the live map (dark basemap). */
   tone?: "light" | "dark";

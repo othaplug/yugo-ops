@@ -215,7 +215,7 @@ export default function ClientRoomPhotoCapture({ moveId, token, initialPhotos = 
                     </div>
                   </>
                 ) : (
-                  /* Empty state — tap to capture */
+                  /* Empty state, tap to capture */
                   <label
                     className="flex flex-col items-center justify-center w-full h-full cursor-pointer p-2"
                     style={{ minHeight: 90 }}

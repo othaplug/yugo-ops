@@ -22,7 +22,7 @@ export async function generateMetadata({
  * Standalone booking confirmation page.
  *
  * The quote page (/quote/[quoteId]) is for *choosing*. Once a deposit has been
- * paid, the client should land here — a dedicated confirmation surface that
+ * paid, the client should land here, a dedicated confirmation surface that
  * shows the booked tier, the move date, addresses, and what happens next.
  *
  * Reached via:
@@ -102,7 +102,7 @@ export default async function QuoteConfirmedPage({
     <div className="min-h-screen bg-[#F9EDE4]">
       {/* Header */}
       <div className="bg-[#2B0416] px-6 py-12 text-center">
-        {/* Real YUGO logo (cream on wine) — the brand mark should never
+        {/* Real YUGO logo (cream on wine), the brand mark should never
             appear as a styled text fallback. */}
         <div className="flex items-center justify-center mb-6">
           <YugoLogo size={28} variant="cream" />

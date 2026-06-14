@@ -9,7 +9,7 @@ const ESTATE_FAQ: { category: string; questions: { q: string; a: string }[] }[] 
       questions: [
         {
           q: "What should I do to prepare?",
-          a: "Nothing. That is the point of Estate. Our team handles packing, wrapping, and protection. If there are items you would prefer to keep with you — jewelry, medications, important documents — set those aside. Everything else is ours to handle.",
+          a: "Nothing. That is the point of Estate. Our team handles packing, wrapping, and protection. If there are items you would prefer to keep with you, jewelry, medications, important documents, set those aside. Everything else is ours to handle.",
         },
         {
           q: "Do I need to be home on pack day?",
@@ -17,7 +17,7 @@ const ESTATE_FAQ: { category: string; questions: { q: string; a: string }[] }[] 
         },
         {
           q: "How long does the packing take? How long is the move?",
-          a: "Your Estate move is typically two days. Day one is packing — our team wraps, boxes, and labels every item in your home, usually in 5 to 7 hours depending on the size. Day two is the move itself — loading, transport, placement, unpacking, and debris removal, usually 6 to 8 hours. Your coordinator will provide a detailed schedule specific to your home.",
+          a: "Your Estate move is typically two days. Day one is packing, our team wraps, boxes, and labels every item in your home, usually in 5 to 7 hours depending on the size. Day two is the move itself, loading, transport, placement, unpacking, and debris removal, usually 6 to 8 hours. Your coordinator will provide a detailed schedule specific to your home.",
         },
         {
           q: "Can I add items after the quote is finalized?",
@@ -25,11 +25,11 @@ const ESTATE_FAQ: { category: string; questions: { q: string; a: string }[] }[] 
         },
         {
           q: "What about my pets or plants?",
-          a: "For the safety of your pets and our crew, we ask that pets are secured or cared for elsewhere on move day. We do not transport living animals or plants — but your coordinator can help arrange pet transport or plant care through our network if needed.",
+          a: "For the safety of your pets and our crew, we ask that pets are secured or cared for elsewhere on move day. We do not transport living animals or plants, but your coordinator can help arrange pet transport or plant care through our network if needed.",
         },
         {
           q: "What if I have items in multiple locations?",
-          a: "We regularly handle multi-location moves — a main home, a storage unit, a second property. Each pickup location is built into your move plan with its own timeline. Your coordinator will map the most efficient route and schedule for your crew.",
+          a: "We regularly handle multi-location moves, a main home, a storage unit, a second property. Each pickup location is built into your move plan with its own timeline. Your coordinator will map the most efficient route and schedule for your crew.",
         },
       ],
     },
@@ -42,7 +42,7 @@ const ESTATE_FAQ: { category: string; questions: { q: string; a: string }[] }[] 
         },
         {
           q: "How do you handle fine art, antiques, and high-value pieces?",
-          a: "Estate includes premium art and antique handling — museum-grade wrapping, custom padding, and careful transport by crew members trained in high-value item handling. For pieces requiring custom crating, your coordinator will arrange this in advance. We ask that you disclose all high-value items before move day so we can plan the appropriate handling and coverage.",
+          a: "Estate includes premium art and antique handling, museum-grade wrapping, custom padding, and careful transport by crew members trained in high-value item handling. For pieces requiring custom crating, your coordinator will arrange this in advance. We ask that you disclose all high-value items before move day so we can plan the appropriate handling and coverage.",
         },
         {
           q: "Can you move a wine collection?",
@@ -50,7 +50,7 @@ const ESTATE_FAQ: { category: string; questions: { q: string; a: string }[] }[] 
         },
         {
           q: "What about my piano, safe, or pool table?",
-          a: "Specialty items like pianos, safes, and pool tables require specific equipment and expertise. These are handled as part of your Estate move with dedicated crew members who specialize in heavy and complex items. Upright pianos, safes under 500 lbs, and standard items are included. Grand pianos, slate pool tables, and items requiring disassembly by a certified technician are quoted separately — your coordinator will confirm during the walkthrough.",
+          a: "Specialty items like pianos, safes, and pool tables require specific equipment and expertise. These are handled as part of your Estate move with dedicated crew members who specialize in heavy and complex items. Upright pianos, safes under 500 lbs, and standard items are included. Grand pianos, slate pool tables, and items requiring disassembly by a certified technician are quoted separately, your coordinator will confirm during the walkthrough.",
         },
         {
           q: "What about chandeliers and light fixtures?",
@@ -62,11 +62,11 @@ const ESTATE_FAQ: { category: string; questions: { q: string; a: string }[] }[] 
         },
         {
           q: "What happens if the move takes longer than expected?",
-          a: "Your quoted price is guaranteed. Whether the move takes four hours or eight, the price does not change. Estate is a flat rate — not hourly. The only scenario where costs adjust is if the scope changes significantly from what was quoted, and any adjustment requires your written approval before proceeding.",
+          a: "Your quoted price is guaranteed. Whether the move takes four hours or eight, the price does not change. Estate is a flat rate, not hourly. The only scenario where costs adjust is if the scope changes significantly from what was quoted, and any adjustment requires your written approval before proceeding.",
         },
         {
           q: "Who will be in my home? Are your crew vetted?",
-          a: "Every Yugo crew member is professionally trained, fully insured, and background-checked. Your Estate move uses a dedicated team — the same people from start to finish. We do not use day labourers or subcontractors. Your coordinator will introduce your crew before move day so you know exactly who will be in your home.",
+          a: "Every Yugo crew member is professionally trained, fully insured, and background-checked. Your Estate move uses a dedicated team, the same people from start to finish. We do not use day labourers or subcontractors. Your coordinator will introduce your crew before move day so you know exactly who will be in your home.",
         },
       ],
     },
@@ -75,19 +75,19 @@ const ESTATE_FAQ: { category: string; questions: { q: string; a: string }[] }[] 
       questions: [
         {
           q: "Do you mount TVs and wall art?",
-          a: "Our focus is the move itself — transporting and placing your belongings with care. We do not mount TVs, mirrors, or wall art, as this requires specialized hardware, stud-finding, and carries liability for wall damage. However, your coordinator can arrange a professional installer from our vetted network, often for the same day or the day after your move. We will place your TV and art exactly where you want them so the installer simply mounts what is already in position.",
+          a: "Our focus is the move itself, transporting and placing your belongings with care. We do not mount TVs, mirrors, or wall art, as this requires specialized hardware, stud-finding, and carries liability for wall damage. However, your coordinator can arrange a professional installer from our vetted network, often for the same day or the day after your move. We will place your TV and art exactly where you want them so the installer simply mounts what is already in position.",
         },
         {
           q: "Do you organize closets, kitchens, and rooms?",
-          a: "Estate includes thoughtful placement and light organization — your kitchen items go to the kitchen, books to the shelves, wardrobes are hung in closets. The goal is for you to feel settled, not still moving, when we leave. For full professional organization — drawer systems, closet design, pantry optimization — your coordinator can connect you with a certified professional organizer from our partner network.",
+          a: "Estate includes thoughtful placement and light organization, your kitchen items go to the kitchen, books to the shelves, wardrobes are hung in closets. The goal is for you to feel settled, not still moving, when we leave. For full professional organization, drawer systems, closet design, pantry optimization, your coordinator can connect you with a certified professional organizer from our partner network.",
         },
         {
           q: "Do you offer interior design or styling services?",
-          a: "We are movers, not designers — and we believe in staying in our lane. That said, we work closely with several of Toronto's leading interior designers and can make an introduction if you are looking for design support at your new home. Many of our Estate clients work with designers, and we coordinate directly with their teams for seamless furniture placement.",
+          a: "We are movers, not designers, and we believe in staying in our lane. That said, we work closely with several of Toronto's leading interior designers and can make an introduction if you are looking for design support at your new home. Many of our Estate clients work with designers, and we coordinate directly with their teams for seamless furniture placement.",
         },
         {
           q: "Do you offer cleaning services?",
-          a: "We do not provide cleaning services, but we understand that both your old and new home may need attention before and after the move. Your coordinator can connect you with trusted cleaning professionals in our network — whether you need a move-out deep clean, a pre-move-in refresh, or ongoing housekeeping at your new home.",
+          a: "We do not provide cleaning services, but we understand that both your old and new home may need attention before and after the move. Your coordinator can connect you with trusted cleaning professionals in our network, whether you need a move-out deep clean, a pre-move-in refresh, or ongoing housekeeping at your new home.",
         },
         {
           q: "What happens with items that will not fit in my new home?",
@@ -95,7 +95,7 @@ const ESTATE_FAQ: { category: string; questions: { q: string; a: string }[] }[] 
         },
         {
           q: "Can I request the same crew for future moves?",
-          a: "Absolutely. Many of our Estate clients develop a preference for specific crew members. Let your coordinator know and we will do our best to assign the same team for any future services — whether that is another move, a delivery, or furniture rearrangement.",
+          a: "Absolutely. Many of our Estate clients develop a preference for specific crew members. Let your coordinator know and we will do our best to assign the same team for any future services, whether that is another move, a delivery, or furniture rearrangement.",
         },
       ],
     },
@@ -104,15 +104,15 @@ const ESTATE_FAQ: { category: string; questions: { q: string; a: string }[] }[] 
       questions: [
         {
           q: "What happens if something is damaged?",
-          a: "Your Estate package includes full replacement valuation — repair by a verified professional, replacement with an equivalent item at current market value, or a full cash settlement. Per-item coverage up to $10,000 and per move up to $100,000 with zero deductible. Report any concern within 48 hours through your tracking page or by contacting your coordinator directly. We resolve all claims within 10 business days.",
+          a: "Your Estate package includes full replacement valuation, repair by a verified professional, replacement with an equivalent item at current market value, or a full cash settlement. Per-item coverage up to $10,000 and per move up to $100,000 with zero deductible. Report any concern within 48 hours through your tracking page or by contacting your coordinator directly. We resolve all claims within 10 business days.",
         },
         {
           q: "What is included in the 30-day concierge support?",
-          a: "For 30 days after your move, your coordinator remains available for questions, adjustments, and support. Need a piece of furniture moved to a different room? Want to rearrange the living room layout? Have a question about an item you cannot find? Your coordinator is a call or text away. This is not a call center — it is the same person who managed your move from day one.",
+          a: "For 30 days after your move, your coordinator remains available for questions, adjustments, and support. Need a piece of furniture moved to a different room? Want to rearrange the living room layout? Have a question about an item you cannot find? Your coordinator is a call or text away. This is not a call center, it is the same person who managed your move from day one.",
         },
         {
           q: "What if my new home is not ready on move day?",
-          a: "If your new home is not ready — construction delays, closing issues, or other circumstances — your coordinator will work with you on options. We offer short-term storage at our facility, and your move can be rescheduled at no additional cost with adequate notice. Your belongings are fully insured while in our care.",
+          a: "If your new home is not ready, construction delays, closing issues, or other circumstances, your coordinator will work with you on options. We offer short-term storage at our facility, and your move can be rescheduled at no additional cost with adequate notice. Your belongings are fully insured while in our care.",
         },
         {
           q: "Do you provide temporary storage?",
@@ -129,7 +129,7 @@ const ESTATE_FAQ: { category: string; questions: { q: string; a: string }[] }[] 
         },
         {
           q: "What does the guaranteed flat price mean?",
-          a: "The price on your quote is the price you pay — regardless of how long the move takes. We do not charge by the hour. If the move takes longer than we estimated, the cost to you does not change. The only scenario where the price adjusts is if the scope of the move differs significantly from what was quoted — additional items, different access conditions, or changes you request on move day. Any adjustment requires your written approval first.",
+          a: "The price on your quote is the price you pay, regardless of how long the move takes. We do not charge by the hour. If the move takes longer than we estimated, the cost to you does not change. The only scenario where the price adjusts is if the scope of the move differs significantly from what was quoted, additional items, different access conditions, or changes you request on move day. Any adjustment requires your written approval first.",
         },
         {
           q: "When is the balance due?",

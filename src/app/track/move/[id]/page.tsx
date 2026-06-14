@@ -35,7 +35,7 @@ export default async function TrackMovePage({
   if (error || !move) notFound();
   if (!verifyTrackToken("move", move.id, token || "")) notFound();
 
-  // Tracking pages never expire — completed moves show the permanent perks hub.
+  // Tracking pages never expire, completed moves show the permanent perks hub.
   // Clients bookmarking this URL years later still see their perks + referral code.
   const linkExpired = false;
 
@@ -79,7 +79,7 @@ export default async function TrackMovePage({
     if (c) {
       crew = {
         id: c.id,
-        // NEVER c.name — that's the internal team identifier.
+        // NEVER c.name, that's the internal team identifier.
         name: clientCrewLabel,
         members: Array.isArray(c.members) ? c.members : undefined,
       };
@@ -112,7 +112,7 @@ export default async function TrackMovePage({
 
   // Server-side show-once tip prompt logic:
   // Mark tip_prompt_shown_at on the very first completed-page load,
-  // BEFORE we respond to the client — so every subsequent visit gets false.
+  // BEFORE we respond to the client, so every subsequent visit gets false.
   let showTipPrompt = false;
   let tipData: { amount: number } | null = null;
 
@@ -127,7 +127,7 @@ export default async function TrackMovePage({
     if (existingTip?.charged_at) {
       tipData = { amount: Number(existingTip.amount) };
     } else if (!move.tip_prompt_shown_at && move.square_card_id) {
-      // First visit after completion with a card on file — show the full prompt
+      // First visit after completion with a card on file, show the full prompt
       await supabase
         .from("moves")
         .update({ tip_prompt_shown_at: new Date().toISOString() })

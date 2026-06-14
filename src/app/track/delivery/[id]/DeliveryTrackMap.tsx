@@ -14,7 +14,7 @@ const USE_MAPBOX = MAPBOX_TOKEN && !MAPBOX_TOKEN.startsWith("pk.your-") && MAPBO
 type Coord = { lat: number; lng: number };
 type CrewPos = { current_lat: number; current_lng: number; name?: string } | null;
 
-/** Yugo forest — crew / client map chrome (not tailwind green). */
+/** Yugo forest, crew / client map chrome (not tailwind green). */
 const FOREST_MARKER = "#2C3E2D";
 
 function calcBearing(from: { lat: number; lng: number }, to: { lat: number; lng: number }): number {
@@ -68,7 +68,7 @@ function planStopIcon(label: string) {
   });
 }
 
-/** Directional arrow marker for delivery crew — rotated to heading. */
+/** Directional arrow marker for delivery crew, rotated to heading. */
 function crewArrowIcon(bearing: number | null = null) {
   const rot = bearing != null ? bearing : 0;
   return L.divIcon({

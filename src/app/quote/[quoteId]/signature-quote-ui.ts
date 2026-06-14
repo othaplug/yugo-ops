@@ -1,11 +1,11 @@
 /**
- * Residential Signature tier — deep green shell + cream type (parallel role to Estate wine).
+ * Residential Signature tier, deep green shell + cream type (parallel role to Estate wine).
  * Voice/copy stays Signature-specific in components; these tokens are colour only.
  */
 
 export const SIGNATURE_PAGE_BG = "#15261A";
 
-/** Text on deep green — same keys as ESTATE_ON_WINE for shared styling logic */
+/** Text on deep green, same keys as ESTATE_ON_WINE for shared styling logic */
 /** Tuned for WCAG-friendly contrast on #15261A (avoid grey forest on green). */
 export const SIGNATURE_ON_SHELL = {
   primary: "#F4FAF5",
@@ -13,9 +13,9 @@ export const SIGNATURE_ON_SHELL = {
   secondary: "rgba(244, 250, 245, 0.9)",
   muted: "rgba(244, 250, 245, 0.84)",
   subtle: "rgba(244, 250, 245, 0.78)",
-  /** Inactive progress labels — still clearly legible on deep green */
+  /** Inactive progress labels, still clearly legible on deep green */
   faded: "rgba(244, 250, 245, 0.76)",
-  /** Uppercase section labels — light sage, not dim grey */
+  /** Uppercase section labels, light sage, not dim grey */
   kicker: "#D2EBD8",
   hairline: "rgba(244, 250, 245, 0.42)",
   borderSubtle: "rgba(184, 212, 190, 0.34)",
