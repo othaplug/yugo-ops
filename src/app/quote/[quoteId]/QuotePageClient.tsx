@@ -1102,6 +1102,47 @@ export default function QuotePageClient({
   const wgRider = isWhiteGlove
     ? (WHITE_GLOVE_RIDERS.find((r) => r.id === wgRiderId) ?? null)
     : null;
+
+  /**
+   * White Glove: the coordinator may select the Enhanced insurance rider at
+   * quote time. Its price is already baked into custom_price (basePrice), so we
+   * REFLECT it in Your Protection read-only (no extra valuationCost, no double
+   * charge) and hide the client rider ladder when it's pre-set.
+   */
+  const coordinatorInsurance = useMemo(() => {
+    if (!isWhiteGlove) return null;
+    const sel = (
+      quote as {
+        selected_addons?: Array<{
+          slug?: string;
+          addon_id?: string;
+          price?: number;
+          tier_index?: number;
+        }>;
+      }
+    ).selected_addons;
+    if (!Array.isArray(sel)) return null;
+    const ins = sel.find((s) => s.slug === "enhanced_insurance");
+    if (!ins) return null;
+    const addon = allAddons.find((a) => a.slug === "enhanced_insurance");
+    let label = "Enhanced coverage";
+    let price = typeof ins.price === "number" ? ins.price : 0;
+    const tiers = addon?.tiers ?? null;
+    if (tiers && tiers.length) {
+      const tier =
+        (typeof ins.tier_index === "number" ? tiers[ins.tier_index] : null) ??
+        tiers.find((t) => t.price === price) ??
+        tiers[0];
+      if (tier) {
+        label = tier.label;
+        price = tier.price;
+      }
+    }
+    const m = /up to/i.test(label) ? label.match(/\$([\d,]+)/) : null;
+    const totalCoverage = m ? parseInt(m[1].replace(/,/g, ""), 10) : null;
+    return { label, price, totalCoverage };
+  }, [isWhiteGlove, quote, allAddons]);
+
   const valuationCost =
     (isWhiteGlove ? (wgRider?.price ?? 0) : (activeUpgrade?.price ?? 0)) +
     declarationFeeTotal;
@@ -2431,12 +2472,15 @@ export default function QuotePageClient({
                 valuationTiers={valuationTiers}
                 valuationUpgrades={valuationUpgrades}
                 upgradeSelected={
-                  isWhiteGlove ? wgRiderId != null : valuationUpgradeSelected
+                  isWhiteGlove
+                    ? wgRiderId != null || coordinatorInsurance != null
+                    : valuationUpgradeSelected
                 }
                 onToggleUpgrade={() => setValuationUpgradeSelected((p) => !p)}
                 whiteGloveRiders={isWhiteGlove ? WHITE_GLOVE_RIDERS : null}
                 selectedRiderId={wgRiderId}
                 onSelectRider={setWgRiderId}
+                coordinatorInsurance={coordinatorInsurance}
                 declarations={declarations}
                 onAddDeclaration={(d) => {
                   // Fix #10: mark dirty so the effect persists the array
@@ -5053,6 +5097,7 @@ function ValuationProtectionCard({
   whiteGloveRiders = null,
   selectedRiderId = null,
   onSelectRider,
+  coordinatorInsurance = null,
   declarations,
   onAddDeclaration,
   onRemoveDeclaration,
@@ -5069,6 +5114,12 @@ function ValuationProtectionCard({
   whiteGloveRiders?: WhiteGloveRider[] | null;
   selectedRiderId?: string | null;
   onSelectRider?: (id: string | null) => void;
+  /** White Glove: coordinator-selected enhanced insurance (already in price); reflected read-only. */
+  coordinatorInsurance?: {
+    label: string;
+    price: number;
+    totalCoverage: number | null;
+  } | null;
   declarations: HighValueDeclaration[];
   onAddDeclaration: (d: HighValueDeclaration) => void;
   onRemoveDeclaration: (idx: number) => void;
@@ -5080,6 +5131,10 @@ function ValuationProtectionCard({
   const wgSelected = wgMode
     ? (whiteGloveRiders!.find((r) => r.id === selectedRiderId) ?? null)
     : null;
+  // Coordinator pre-set the rider at quote time (price already in custom_price).
+  const wgPreset = wgMode ? coordinatorInsurance : null;
+  // Whichever drives the active (upgraded) protection display.
+  const wgActive = wgPreset ?? wgSelected;
   const premiumChrome = premiumShellKind !== "none";
   const shellText = premiumShellInk(premiumShellKind);
   const premiumBorder = premiumShellSectionBorderClass(premiumShellKind);
@@ -5104,16 +5159,18 @@ function ValuationProtectionCard({
   const [declValue, setDeclValue] = useState("");
 
   const activeTierSlug = wgMode
-    ? wgSelected
+    ? wgActive
       ? "full_replacement"
       : "released"
     : upgradeSelected
       ? (UPGRADE_TARGET[currentPackage] ?? includedValuation)
       : includedValuation;
   const tierData = valuationTiers.find((t) => t.tier_slug === activeTierSlug);
-  /** White Glove riders override the per-item / total caps with the selected rider. */
-  const wgPerItem = wgSelected?.perItem ?? null;
-  const wgTotalCoverage = wgSelected?.totalCoverage ?? null;
+  /** White Glove riders override the per-item / total caps with the active rider. */
+  const wgPerItem = wgActive ? 10000 : null;
+  const wgTotalCoverage = wgPreset
+    ? wgPreset.totalCoverage
+    : (wgSelected?.totalCoverage ?? null);
   const upgradeTarget = UPGRADE_TARGET[currentPackage];
   const upgradeData = upgradeTarget
     ? findValuationUpgrade(valuationUpgrades, currentPackage, upgradeTarget)
@@ -5122,7 +5179,7 @@ function ValuationProtectionCard({
     ? valuationTiers.find((t) => t.tier_slug === upgradeTarget)
     : null;
   const isHighest = wgMode
-    ? wgSelected?.totalCoverage === 100000
+    ? (wgActive?.totalCoverage ?? 0) === 100000
     : currentPackage === "estate" ||
       (upgradeSelected && activeTierSlug === "full_replacement");
 
@@ -5188,13 +5245,15 @@ function ValuationProtectionCard({
               {dispActive.shortLabel}
             </div>
             <div className="text-[11px] mt-1" style={{ color: inkMuted }}>
-              {upgradeSelected
-                ? "Upgraded"
-                : journeyCopy === "delivery"
-                  ? "Included with your delivery"
-                  : journeyCopy === "service"
-                    ? "Included with your service"
-                    : "Included with your move"}
+              {wgPreset
+                ? "Included in your quote"
+                : upgradeSelected
+                  ? "Upgraded"
+                  : journeyCopy === "delivery"
+                    ? "Included with your delivery"
+                    : journeyCopy === "service"
+                      ? "Included with your service"
+                      : "Included with your move"}
             </div>
           </div>
           {isHighest && (
@@ -5304,29 +5363,31 @@ function ValuationProtectionCard({
                   up to {fmtPrice(wgPerItem ?? tierData.max_per_item ?? 10000)}
                 </span>
               </div>
-              <div className="flex justify-between items-baseline gap-6 text-[13px]">
-                <span
-                  className={`${QUOTE_EYEBROW_CLASS} shrink-0`}
-                  style={{ color: inkMuted }}
-                >
-                  {wgMode
-                    ? "Total coverage"
-                    : journeyCopy === "delivery"
-                      ? "Per shipment"
-                      : journeyCopy === "service"
-                        ? "Per service"
-                        : "Per move"}
-                </span>
-                <span
-                  className="font-bold tabular-nums text-right"
-                  style={{ color: ink }}
-                >
-                  up to{" "}
-                  {fmtPrice(
-                    wgTotalCoverage ?? tierData.max_per_shipment ?? 100000,
-                  )}
-                </span>
-              </div>
+              {!(wgMode && wgTotalCoverage == null) && (
+                <div className="flex justify-between items-baseline gap-6 text-[13px]">
+                  <span
+                    className={`${QUOTE_EYEBROW_CLASS} shrink-0`}
+                    style={{ color: inkMuted }}
+                  >
+                    {wgMode
+                      ? "Total coverage"
+                      : journeyCopy === "delivery"
+                        ? "Per shipment"
+                        : journeyCopy === "service"
+                          ? "Per service"
+                          : "Per move"}
+                  </span>
+                  <span
+                    className="font-bold tabular-nums text-right"
+                    style={{ color: ink }}
+                  >
+                    up to{" "}
+                    {fmtPrice(
+                      wgTotalCoverage ?? tierData.max_per_shipment ?? 100000,
+                    )}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between items-baseline gap-6 text-[13px]">
                 <span
                   className={`${QUOTE_EYEBROW_CLASS} shrink-0`}
@@ -5425,7 +5486,50 @@ function ValuationProtectionCard({
         </div>
       </div>
 
-      {wgMode ? (
+      {wgMode && wgPreset ? (
+        <div
+          className={`mt-10 pt-6 border-t ${premiumChrome ? premiumBorder : "border-[var(--brd)]/25"}`}
+        >
+          <p className={`${QUOTE_EYEBROW_CLASS} mb-3`} style={{ color: ink }}>
+            Enhanced protection
+          </p>
+          <div
+            className="rounded-lg border px-4 py-3.5 flex items-center justify-between gap-4"
+            style={{
+              borderColor: valAccent,
+              backgroundColor: premiumChrome
+                ? "rgba(58,92,64,0.18)"
+                : `${FOREST}0D`,
+            }}
+          >
+            <span className="min-w-0">
+              <span
+                className="block text-[14px] font-semibold tracking-tight"
+                style={{ color: ink }}
+              >
+                {wgPreset.label}
+              </span>
+              <span
+                className="block text-[11px] mt-1 leading-snug"
+                style={{ color: inkMuted }}
+              >
+                Full replacement value · $0 deductible · included in your quote
+              </span>
+            </span>
+            <span
+              className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+              style={{ backgroundColor: valAccent }}
+              aria-hidden
+            >
+              <Check
+                className="w-3 h-3"
+                weight="bold"
+                style={{ color: premiumChrome ? shellText!.primary : "white" }}
+              />
+            </span>
+          </div>
+        </div>
+      ) : wgMode ? (
         <div
           className={`mt-10 pt-6 border-t ${premiumChrome ? premiumBorder : "border-[var(--brd)]/25"}`}
         >
