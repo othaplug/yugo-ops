@@ -124,7 +124,7 @@ const PACK_DAY_FEATURES: { title: string; description: string }[] = [
   {
     title: "Every category covered",
     description:
-      "China, books, wardrobes, art, each item wrapped and boxed with the right materials.",
+      "China, books, wardrobes, art. Each item is wrapped and boxed with the right materials.",
   },
   {
     title: "Wardrobe boxes",
@@ -204,12 +204,12 @@ const AFTER_MOVE_FEATURES: { title: string; description: string }[] = [
   {
     title: "30-day concierge",
     description:
-      "The same relationship continues after move day, questions, tweaks, and coordination.",
+      "The same relationship continues after move day: questions, tweaks, and coordination.",
   },
   {
     title: "Placement and adjustments",
     description:
-      "Something need a small move or follow-up? We help arrange it.",
+      "Need a piece moved to a new spot, or a small follow-up? We will arrange it.",
   },
   {
     title: "Partner perks",
@@ -407,7 +407,7 @@ export default function EstateWelcomeGuideView({
             <div className="max-w-3xl mx-auto px-5 md:px-8">
               <p
                 className="text-[11px] font-semibold tracking-[0.2em] uppercase mb-2"
-                style={{ color: "#66143D" }}
+                style={{ color: ON_WINE.kicker }}
               >
                 Your schedule
               </p>
@@ -442,7 +442,7 @@ export default function EstateWelcomeGuideView({
                     <div className="pt-1 pb-2 min-w-0">
                       <p
                         className="text-[11px] uppercase tracking-wider font-semibold"
-                        style={{ color: "#66143D" }}
+                        style={{ color: ON_WINE.kicker }}
                       >
                         {formatMoveDate(day.date)}
                       </p>
@@ -609,7 +609,7 @@ export default function EstateWelcomeGuideView({
         <div className="max-w-4xl mx-auto px-5 md:px-8">
           <p
             className="text-[11px] font-semibold tracking-[0.2em] uppercase mb-3"
-            style={{ color: "#66143D" }}
+            style={{ color: ON_WINE.kicker }}
           >
             Beyond the Move
           </p>

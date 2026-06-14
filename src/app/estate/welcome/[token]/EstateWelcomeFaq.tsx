@@ -9,7 +9,7 @@ const ESTATE_FAQ: { category: string; questions: { q: string; a: string }[] }[] 
       questions: [
         {
           q: "What should I do to prepare?",
-          a: "Nothing. That is the point of Estate. Our team handles packing, wrapping, and protection. If there are items you would prefer to keep with you, jewelry, medications, important documents, set those aside. Everything else is ours to handle.",
+          a: "Nothing. That is the point of Estate. Our team handles packing, wrapping, and protection. If there are items you would prefer to keep with you, like jewelry, medications, or important documents, simply set those aside. Everything else is ours to handle.",
         },
         {
           q: "Do I need to be home on pack day?",
@@ -146,7 +146,7 @@ export default function EstateWelcomeFaq() {
         <div key={group.category} className="mb-10 last:mb-0">
           <h3
             className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-4"
-            style={{ color: ROSE }}
+            style={{ color: ON_WINE.kicker }}
           >
             {group.category}
           </h3>
@@ -164,7 +164,7 @@ export default function EstateWelcomeFaq() {
                   <span className="font-semibold text-[14px] pr-4">{item.q}</span>
                   <span
                     className="shrink-0 text-xl leading-none transition-transform duration-200 group-open:rotate-45"
-                    style={{ color: ROSE }}
+                    style={{ color: ON_WINE.kicker }}
                     aria-hidden
                   >
                     +
