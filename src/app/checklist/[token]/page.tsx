@@ -18,14 +18,15 @@ export default async function ChecklistTokenPage({
   if (!t) notFound();
 
   const sb = createAdminClient();
-  // NOTE: do NOT select `service_tier` — that column does not exist on `moves`.
-  // Including it made the whole query error → `move` came back null → the page
-  // 404'd for every client even though the checklist_token was valid. `moves`
-  // uses `tier_selected` for the package tier.
+  // NOTE: select ONLY columns that exist on `moves`. Including a non-existent
+  // column (previously `service_tier`, then `from_postal`/`to_postal`) makes the
+  // whole query error → `move` comes back null → the page 404s for every client
+  // even though the checklist_token is valid. `moves` has no separate postal
+  // columns, so the parking heuristic runs on parking text only.
   const { data: move, error: moveErr } = await sb
     .from("moves")
     .select(
-      "id, client_name, from_access, to_access, from_postal, to_postal, from_parking, to_parking, tier_selected, extended_checklist_progress",
+      "id, client_name, from_access, to_access, from_parking, to_parking, tier_selected, extended_checklist_progress",
     )
     .eq("checklist_token", t)
     .maybeSingle();

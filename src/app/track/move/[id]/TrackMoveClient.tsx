@@ -36,6 +36,7 @@ import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import {
   WINE,
   FOREST,
+  GOLD,
   TEXT_MUTED_ON_LIGHT,
   TRACK_EYEBROW_CLASS,
   TRACK_CARD_TITLE_CLASS,
@@ -57,6 +58,7 @@ import {
   ArrowsCounterClockwise,
   Recycle,
   ArrowRight,
+  ShieldCheck,
 } from "@phosphor-icons/react";
 import PreMoveChecklist from "@/components/tracking/PreMoveChecklist";
 import EstateServiceChecklist from "@/components/tracking/EstateServiceChecklist";
@@ -551,6 +553,7 @@ export default function TrackMoveClient({
   crewChangeRequest = null,
   binOrder = null,
   quotePickupStops = null,
+  whiteGloveKind = "delivery",
   pendingBookingModification = null,
   moveProjectForTrack = null,
   fillParentHeight = false,
@@ -609,6 +612,7 @@ export default function TrackMoveClient({
   binOrder?: BinOrderTrackRow | null;
   /** From originating quote factors when multiple pickups were quoted */
   quotePickupStops?: { address: string; access: string | null }[] | null;
+  whiteGloveKind?: "delivery" | "service";
   /** Coordinator booking change waiting for client approval (price increase). */
   pendingBookingModification?: {
     id: string;
@@ -1215,6 +1219,9 @@ export default function TrackMoveClient({
   const serviceType = (move.service_type ||
     move.move_type ||
     "residential") as string;
+  const isWhiteGlove = serviceType === "white_glove";
+  /** White Glove can be a delivery or a service (move / in-home setup). */
+  const wgNoun = whiteGloveKind === "service" ? "service" : "delivery";
   const isB2BOneOff =
     serviceType === "b2b_oneoff" || serviceType === "b2b_delivery";
   const isSingleItem = serviceType === "single_item";
@@ -1617,9 +1624,11 @@ export default function TrackMoveClient({
                 className="text-[12px] mt-1 opacity-60"
                 style={{ color: FOREST }}
               >
-                {isLogisticsDeliveryTrack
-                  ? "Thank you. See you on delivery day."
-                  : "Thank you. See you on move day."}
+                {isWhiteGlove
+                  ? `Thank you. See you on ${wgNoun} day.`
+                  : isLogisticsDeliveryTrack
+                    ? "Thank you. See you on delivery day."
+                    : "Thank you. See you on move day."}
               </p>
               <button
                 type="button"
@@ -1848,8 +1857,118 @@ export default function TrackMoveClient({
             </span>
           </div>
 
+          {/* ── White Glove: premium, client-facing scope card (no crew/tier ops) ── */}
+          {isWhiteGlove && (() => {
+            const crewN =
+              typeof move.est_crew_size === "number" && move.est_crew_size > 0
+                ? move.est_crew_size
+                : null;
+            const declaredValue =
+              typeof move.declared_value === "number" && move.declared_value > 0
+                ? move.declared_value
+                : null;
+            const enhancedInsurance = move.enhanced_insurance === true;
+            const assemblyRaw = String(move.assembly_needed ?? "")
+              .toLowerCase()
+              .trim();
+            const assemblyNeeded =
+              move.assembly_needed === true ||
+              ["yes", "both", "disassembly", "reassembly", "assembly", "true"].includes(
+                assemblyRaw,
+              );
+            const rows: { title: string; desc: string }[] = [
+              {
+                title: "Full wrap and protection",
+                desc: "Every item blanket-wrapped, padded, and secured for transit.",
+              },
+              {
+                title: crewN
+                  ? `Dedicated crew of ${crewN}`
+                  : "Dedicated specialist crew",
+                desc: "Trained white glove professionals, fully insured.",
+              },
+              {
+                title: "Careful handling and placement",
+                desc: "Hand-carried and set down exactly where you want it.",
+              },
+              ...(assemblyNeeded
+                ? [
+                    {
+                      title: "Assembly and setup",
+                      desc: "We assemble and position your items on site.",
+                    },
+                  ]
+                : []),
+              {
+                title: "Photo documentation",
+                desc: `Before and after photos at pickup and ${wgNoun === "service" ? "completion" : "delivery"} for your records.`,
+              },
+            ];
+            const protectionLine = enhancedInsurance
+              ? declaredValue
+                ? `Enhanced coverage included, full replacement value up to $${declaredValue.toLocaleString()}.`
+                : "Enhanced coverage included, full replacement value as quoted."
+              : "Standard Protection included, $5.00/lb up to $30,000, full repair of any damage.";
+            return (
+              <div
+                className="mb-4 rounded-2xl px-5 py-4 border"
+                style={{ backgroundColor: `${WINE}06`, borderColor: `${WINE}18` }}
+              >
+                <p
+                  className="text-[11px] uppercase tracking-wider font-semibold mb-3"
+                  style={{ color: `${WINE}80` }}
+                >
+                  White Glove {wgNoun}
+                </p>
+                <div className="space-y-2.5">
+                  {rows.map((r) => (
+                    <div key={r.title} className="flex items-start gap-2.5">
+                      <Check
+                        className="w-4 h-4 shrink-0 mt-0.5"
+                        weight="bold"
+                        style={{ color: GOLD }}
+                        aria-hidden
+                      />
+                      <div className="min-w-0">
+                        <p
+                          className="text-[13px] font-semibold leading-snug"
+                          style={{ color: WINE }}
+                        >
+                          {r.title}
+                        </p>
+                        <p
+                          className="text-[11px] mt-0.5 leading-snug"
+                          style={{ color: FOREST, opacity: 0.7 }}
+                        >
+                          {r.desc}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div
+                  className="mt-3 pt-3 border-t flex items-start gap-2"
+                  style={{ borderColor: `${WINE}14` }}
+                >
+                  <ShieldCheck
+                    className="w-4 h-4 shrink-0 mt-0.5"
+                    weight="fill"
+                    style={{ color: WINE }}
+                    aria-hidden
+                  />
+                  <p
+                    className="text-[12px] leading-snug"
+                    style={{ color: FOREST }}
+                  >
+                    {protectionLine}
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Tier scope briefing, tells crew what is and isn't included */}
-          {!isNonMoveProductTrack && (() => {
+          {!isNonMoveProductTrack && !isWhiteGlove && (() => {
             const rawTier = move.tier_selected || move.tier || move.service_tier || "";
             const tierKey = normalizeTierKey(rawTier);
             const ops = getTierOps(tierKey);
@@ -2001,9 +2120,11 @@ export default function TrackMoveClient({
                 >
                   {est != null && est >= 3 ? (
                     <li>
-                      {isLogisticsDeliveryTrack
-                        ? `Your delivery is planned with a ${est}-person crew for heavier or technical handling.`
-                        : `Your move is planned with a ${est}-person crew for heavier or technical handling.`}
+                      {isWhiteGlove
+                        ? `Your ${wgNoun} is planned with a ${est}-person specialist crew for heavier or technical handling.`
+                        : isLogisticsDeliveryTrack
+                          ? `Your delivery is planned with a ${est}-person crew for heavier or technical handling.`
+                          : `Your move is planned with a ${est}-person crew for heavier or technical handling.`}
                     </li>
                   ) : null}
                   {hints.map((h) => (
@@ -2159,11 +2280,13 @@ export default function TrackMoveClient({
                     className="mt-1 text-[12px] font-sans opacity-60"
                     style={{ color: FOREST }}
                   >
-                    {isLogisticsDeliveryTrack
-                      ? "days until delivery day"
-                      : isNonMoveProductTrack
-                        ? "days until move day (packing with bins)"
-                        : "days until move day"}
+                    {isWhiteGlove
+                      ? `days until ${wgNoun} day`
+                      : isLogisticsDeliveryTrack
+                        ? "days until delivery day"
+                        : isNonMoveProductTrack
+                          ? "days until move day (packing with bins)"
+                          : "days until move day"}
                   </div>
                 </div>
               )}
@@ -3082,6 +3205,22 @@ export default function TrackMoveClient({
                     {
                       label: "Another Single Item",
                       sub: "Sofa, piano, art piece",
+                      href: "https://helloyugo.com",
+                    },
+                  ];
+                } else if (isWhiteGlove) {
+                  const wgCap = wgNoun.charAt(0).toUpperCase() + wgNoun.slice(1);
+                  heading = "Another white glove project?";
+                  title = `Book your next white glove ${wgNoun}.`;
+                  ctas = [
+                    {
+                      label: `Book Another White Glove ${wgCap}`,
+                      sub: "Premium handling, full protection",
+                      href: "https://helloyugo.com",
+                    },
+                    {
+                      label: "Refer a friend",
+                      sub: "Share the white glove experience",
                       href: "https://helloyugo.com",
                     },
                   ];
@@ -4140,7 +4279,8 @@ export default function TrackMoveClient({
                                   className="text-[12px] sm:text-[13px] leading-relaxed opacity-85 mb-3"
                                   style={{ color: FOREST }}
                                 >
-                                  Changes are reviewed by your coordinator before your move.
+                                  Changes are reviewed by your coordinator before
+                                  your {isWhiteGlove ? wgNoun : "move"}.
                                 </p>
                                 <button
                                   type="button"

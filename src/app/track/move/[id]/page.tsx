@@ -200,6 +200,10 @@ export default async function TrackMovePage({
     .maybeSingle();
 
   let quotePickupStops: { address: string; access: string | null }[] | null = null;
+  // White Glove sub-type (delivery vs service) lives on the originating quote's
+  // factors_applied (not copied to the move row); surface it so the track page
+  // can tailor copy. Defaults to "delivery" for legacy/unknown.
+  let whiteGloveKind: "delivery" | "service" = "delivery";
   if (move.quote_id) {
     const { data: originQuote } = await supabase
       .from("quotes")
@@ -208,6 +212,7 @@ export default async function TrackMovePage({
       .maybeSingle();
     if (originQuote) {
       const fac = originQuote.factors_applied as Record<string, unknown> | null;
+      if (fac?.white_glove_kind === "service") whiteGloveKind = "service";
       const rows = abbreviateLocationRows(
         pickupLocationsFromQuote(fac, originQuote.from_address, originQuote.from_access),
       );
@@ -330,6 +335,7 @@ export default async function TrackMovePage({
       } | null}
       binOrder={binOrder}
       quotePickupStops={quotePickupStops}
+      whiteGloveKind={whiteGloveKind}
       pendingBookingModification={pendingBookingMod ?? null}
       moveProjectForTrack={moveProjectForTrack}
       coordinatorName={trackCoordinatorName}
