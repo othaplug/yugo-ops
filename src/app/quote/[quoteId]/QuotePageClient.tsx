@@ -2356,7 +2356,11 @@ export default function QuotePageClient({
           )}
 
         {/* ═══ SECTION 2: ADD-ONS ═══ */}
-        {(residentialSectionAtLeast(2) || (!isResidential && isConfirmed)) &&
+        {/* White Glove has no client "Customize" step, scope and protection are
+            coordinator-configured / handled by the protection rider ladder, so
+            the add-on section is suppressed (avoids duplicating insurance). */}
+        {!isWhiteGlove &&
+          (residentialSectionAtLeast(2) || (!isResidential && isConfirmed)) &&
           quote.service_type !== "bin_rental" &&
           (applicableAddons.length > 0 ||
             (isResidential && selectedTier === "estate")) &&

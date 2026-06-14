@@ -122,7 +122,9 @@ ON CONFLICT (slug) DO NOTHING;
 UPDATE public.addons SET tiers = '[
   {"label": "Items under $5K", "price": 50},
   {"label": "Items $5K-$15K", "price": 100},
-  {"label": "Items over $15K", "price": 150}
+  {"label": "Items over $15K", "price": 150},
+  {"label": "Up to $50,000 coverage", "price": 300},
+  {"label": "Up to $100,000 coverage", "price": 500}
 ]'::jsonb WHERE slug = 'enhanced_insurance' AND tiers IS NULL;
 
 -- ═══ QUOTES: selected_addons column ═══
