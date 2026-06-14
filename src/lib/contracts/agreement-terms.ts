@@ -72,7 +72,7 @@ function serviceDescription(p: NonBinAgreementBuildParams): string {
       if (tier === "essential") {
         return `${companyDisplayName} will deliver an Essential-tier local residential move for the ${pkg} package: efficient, professional handling with protective wrapping for key furniture, basic disassembly and reassembly, standard floor protection, truck, crew, standard equipment, and loading and unloading between the addresses above, as described in your quote.`;
       }
-      return `${companyDisplayName} will provide a carefully scoped local residential move for the ${pkg} package—truck, crew, equipment, and loading and unloading—as described in your quote.`;
+      return `${companyDisplayName} will provide a carefully scoped local residential move for the ${pkg} package (truck, crew, equipment, and loading and unloading) as described in your quote.`;
     case "long_distance":
       return `${companyDisplayName} will oversee your long-distance relocation between the origin and destination in your quote, including transport and access as specified (packing, storage, or delivery timing may apply per your quotation).`;
     case "office_move":
@@ -82,12 +82,12 @@ function serviceDescription(p: NonBinAgreementBuildParams): string {
     case "white_glove":
       return `${companyDisplayName} will provide white-glove service as quoted: refined handling, inside placement, and optional assembly or debris removal where included.`;
     case "specialty":
-      return `${companyDisplayName} will execute the specialty engagement in your quote—for example crating, piano, art, or antique work—according to the agreed scope, crew, and schedule.`;
+      return `${companyDisplayName} will execute the specialty engagement in your quote (for example crating, piano, art, or antique work) according to the agreed scope, crew, and schedule.`;
     case "b2b_oneoff":
     case "b2b_delivery":
       return `${companyDisplayName} will complete the commercial pickup and delivery in your quote with the documentation and handling standards specified.`;
     case "event":
-      return `${companyDisplayName} will manage event logistics as quoted: round-trip transport between venues (or the legs listed), optional on-site setup or strike, and a coordinated return—executed with the same precision we apply on private moves.`;
+      return `${companyDisplayName} will manage event logistics as quoted: round-trip transport between venues (or the legs listed), optional on-site setup or strike, and a coordinated return, executed with the same precision we apply on private moves.`;
     case "labour_only":
       return `${companyDisplayName} will place an on-site crew at the address for the tasks in your quote (for example loading, unloading, or staging). Unless your quote explicitly includes transport, this agreement does not cover moving goods in ${companyDisplayName}'s vehicles.`;
     default:
@@ -107,17 +107,17 @@ function prohibitedItemsBody(p: NonBinAgreementBuildParams): string {
   const base = [
     `For the safety of your home, our team, and ${carryScope}, the following categories fall outside what we pack, load, or transport unless ${companyDisplayName} confirms otherwise in writing:`,
     "",
-    "(a) Dangerous goods and hazardous materials—fuels, oils, solvents, paints and thinners, propane or other compressed gas (except where lawfully exempt), fireworks, ammunition, bulk household chemicals, pesticides, pool chemicals, and similar items that are regulated or unsafe aboard our vehicles.",
+    "(a) Dangerous goods and hazardous materials: fuels, oils, solvents, paints and thinners, propane or other compressed gas (except where lawfully exempt), fireworks, ammunition, bulk household chemicals, pesticides, pool chemicals, and similar items that are regulated or unsafe aboard our vehicles.",
     "",
-    "(b) Perishables—refrigerated or frozen food, open food, and anything that may spoil or attract pests en route.",
+    "(b) Perishables: refrigerated or frozen food, open food, and anything that may spoil or attract pests en route.",
     "",
     "(c) Living plants and animals.",
     "",
-    `(d) Irreplaceable valuables best kept with you—cash, negotiable instruments, jewelry and watches (unless declared and coverage is agreed), passports, wills, and other essential originals; and any piece you would prefer not to entrust to the truck.`,
+    `(d) Irreplaceable valuables best kept with you: cash, negotiable instruments, jewelry and watches (unless declared and coverage is agreed), passports, wills, and other essential originals; and any piece you would prefer not to entrust to the truck.`,
     "",
     `(e) Illegal goods or contraband. Firearms and ammunition must never be ${concealPhrase}; any lawful arrangement must be confirmed in writing before move day.`,
     "",
-    `We ask that you remove or clearly identify these items before we arrive. Should prohibited or undisclosed goods appear, ${companyDisplayName} may decline them, adjust scope under Section 8, or pause service until the matter is resolved—with your comfort and our duty of care both in mind.`,
+    `We ask that you remove or clearly identify these items before we arrive. Should prohibited or undisclosed goods appear, ${companyDisplayName} may decline them, adjust scope under Section 8, or pause service until the matter is resolved, with your comfort and our duty of care both in mind.`,
   ];
 
   if (serviceType === "labour_only") {
@@ -151,7 +151,7 @@ function clientResponsibilitiesBody(p: NonBinAgreementBuildParams): string {
   const { companyDisplayName, serviceType, isLogisticsDelivery } = p;
 
   if (isLogisticsDelivery) {
-    return `To honor the delivery we quoted, you agree to: (a) provide accurate shipment descriptions, dimensions, weights, and any special handling notes; (b) declare individual items above $500 in value when required for coverage; (c) ensure gracious access for pickup and delivery—dock or door, elevator bookings, parking, permits, and clear paths; (d) remove or flag hazardous materials, perishables, and items ${companyDisplayName} cannot carry. Omissions may call for scope or investment adjustments, always confirmed with you in writing.`;
+    return `To honor the delivery we quoted, you agree to: (a) provide accurate shipment descriptions, dimensions, weights, and any special handling notes; (b) declare individual items above $500 in value when required for coverage; (c) ensure gracious access for pickup and delivery (dock or door, elevator bookings, parking, permits, and clear paths); (d) remove or flag hazardous materials, perishables, and items ${companyDisplayName} cannot carry. Omissions may call for scope or investment adjustments, always confirmed with you in writing.`;
   }
 
   if (serviceType === "office_move") {
@@ -159,7 +159,7 @@ function clientResponsibilitiesBody(p: NonBinAgreementBuildParams): string {
   }
 
   if (serviceType === "long_distance") {
-    return `For a long-distance move done well, you agree to: (a) provide accurate item lists and declared values for coverage; (b) respect origin and destination access rules—elevators, long carry, parking; (c) clear perishables, hazardous materials, and prohibited items from the move; (d) be present or name an authorized representative at delivery. Changes to windows or storage may adjust pricing only with your written approval.`;
+    return `For a long-distance move done well, you agree to: (a) provide accurate item lists and declared values for coverage; (b) respect origin and destination access rules (elevators, long carry, parking); (c) clear perishables, hazardous materials, and prohibited items from the move; (d) be present or name an authorized representative at delivery. Changes to windows or storage may adjust pricing only with your written approval.`;
   }
 
   if (serviceType === "event") {
@@ -171,10 +171,10 @@ function clientResponsibilitiesBody(p: NonBinAgreementBuildParams): string {
   }
 
   if (serviceType === "specialty") {
-    return `You agree to: (a) disclose dimensions, weight, structural condition, and path constraints—stairs, turns, surface protection; (b) obtain permits or building approvals where required; (c) clear hazardous materials from the piece or area; (d) declare value for insurance when we request it. Conditions we learn only on site may require a thoughtful pause until resolved.`;
+    return `You agree to: (a) disclose dimensions, weight, structural condition, and path constraints (stairs, turns, surface protection); (b) obtain permits or building approvals where required; (c) clear hazardous materials from the piece or area; (d) declare value for insurance when we request it. Conditions we learn only on site may require a thoughtful pause until resolved.`;
   }
 
-  return `You agree to: (a) disclose every item to be moved, with dimensions and special handling needs; (b) declare items valued above $500 individually when coverage requires it; (c) arrange elevator bookings, parking, permits, and clear access at both homes; (d) remove or identify hazardous materials, perishables, and items ${companyDisplayName} cannot transport. Surprises on access or inventory may lead to scope adjustments—always discussed and confirmed with you in writing.`;
+  return `You agree to: (a) disclose every item to be moved, with dimensions and special handling needs; (b) declare items valued above $500 individually when coverage requires it; (c) arrange elevator bookings, parking, permits, and clear access at both homes; (d) remove or identify hazardous materials, perishables, and items ${companyDisplayName} cannot transport. Surprises on access or inventory may lead to scope adjustments, always discussed and confirmed with you in writing.`;
 }
 
 export function buildNonBinAgreementSections(p: NonBinAgreementBuildParams): { title: string; body: string }[] {
@@ -220,7 +220,7 @@ export function buildNonBinAgreementSections(p: NonBinAgreementBuildParams): { t
     },
     {
       title: "2. Your Quoted Investment",
-      body: `The total above (${fmtPrice(grandTotal)} incl. HST) is the agreed price for the ${scopeNoun} we outlined in your quote—provided access, inventory, and conditions match what you shared with us. There are no hidden surcharges in this package beyond changes you approve in writing.`,
+      body: `The total above (${fmtPrice(grandTotal)} incl. HST) is the agreed price for the ${scopeNoun} we outlined in your quote, provided access, inventory, and conditions match what you shared with us. There are no hidden surcharges in this package beyond changes you approve in writing.`,
     },
     {
       title: "3. Payment Terms",
@@ -244,7 +244,7 @@ export function buildNonBinAgreementSections(p: NonBinAgreementBuildParams): { t
     },
     {
       title: "8. Changes to Scope",
-      body: `Should the day-of reality differ from the quote—additional pieces, access we were not told about, weight or volume beyond the agreed inventory, or circumstances outside reasonable control—${companyDisplayName} will walk you through the impact and secure your written approval before any further charges apply.`,
+      body: `Should the day-of reality differ from the quote (additional pieces, access we were not told about, weight or volume beyond the agreed inventory, or circumstances outside reasonable control), ${companyDisplayName} will walk you through the impact and secure your written approval before any further charges apply.`,
     },
     {
       title: "9. Claims and Care of Your Goods",
@@ -256,7 +256,7 @@ export function buildNonBinAgreementSections(p: NonBinAgreementBuildParams): { t
     },
     {
       title: "11. When the Unexpected Happens",
-      body: `${companyDisplayName} cannot be responsible for delays arising from events outside reasonable control—severe weather, road closures, traffic, elevator outages, labour disruptions, or government orders. We will reach out quickly and reschedule for the earliest suitable time, without penalty on our side except where unavoidable third-party costs apply.`,
+      body: `${companyDisplayName} cannot be responsible for delays arising from events outside reasonable control: severe weather, road closures, traffic, elevator outages, labour disruptions, or government orders. We will reach out quickly and reschedule for the earliest suitable time, without penalty on our side except where unavoidable third-party costs apply.`,
     },
   ];
 }
@@ -278,11 +278,11 @@ export function buildBinRentalAgreementSections(p: BinAgreementBuildParams): { t
   return [
     {
       title: "1. Bin Rental Service",
-      body: `A refined alternative to cardboard: premium plastic moving bins, delivered empty to your door, yours through the included rental period, then collected once emptied and neatly stacked—exactly as described in your quote. Wardrobe boxes supplied for move day return with pickup unless your quote notes otherwise.`,
+      body: `A refined alternative to cardboard: premium plastic moving bins, delivered empty to your door, yours through the included rental period, then collected once emptied and neatly stacked, exactly as described in your quote. Wardrobe boxes supplied for move day return with pickup unless your quote notes otherwise.`,
     },
     {
       title: "2. Your Quoted Investment",
-      body: `The total shown (${fmtPrice(grandTotal)} incl. HST) covers the bin program in your quote—quantities, accessories, delivery, pickup, and the rental window. This is equipment rental, not a full staffed residential move unless you have engaged us separately. Extra bins or extended time are confirmed in writing before any charge.`,
+      body: `The total shown (${fmtPrice(grandTotal)} incl. HST) covers the bin program in your quote: quantities, accessories, delivery, pickup, and the rental window. This is equipment rental, not a full staffed residential move unless you have engaged us separately. Extra bins or extended time are confirmed in writing before any charge.`,
     },
     {
       title: "3. Delivery, Pickup, and Timing",
@@ -296,7 +296,7 @@ export function buildBinRentalAgreementSections(p: BinAgreementBuildParams): { t
     },
     {
       title: "5. Card on File",
-      body: `I authorize ${companyLegalName} to retain my card on file through Square's secure, PCI-compliant systems and to charge only what you approve in writing—fairly, for example, for late returns, extra rental days, missing bins, or damaged equipment, in line with your quote and the law.`,
+      body: `I authorize ${companyLegalName} to retain my card on file through Square's secure, PCI-compliant systems and to charge only what you approve in writing, fairly, for example, for late returns, extra rental days, missing bins, or damaged equipment, in line with your quote and the law.`,
     },
     {
       title: "6. Cancellation",
@@ -308,7 +308,7 @@ export function buildBinRentalAgreementSections(p: BinAgreementBuildParams): { t
     },
     {
       title: "8. Liability and Insurance",
-      body: `This agreement covers rental logistics—not the full valuation stack of a staffed move. ${companyDisplayName} carries commercial liability insurance; we are happy to share particulars on request. What you pack inside the bins stays your responsibility unless you have contracted separate moving coverage.`,
+      body: `This agreement covers rental logistics, not the full valuation stack of a staffed move. ${companyDisplayName} carries commercial liability insurance; we are happy to share particulars on request. What you pack inside the bins stays your responsibility unless you have contracted separate moving coverage.`,
     },
     {
       title: "9. What Not to Place in Bins",
@@ -316,11 +316,11 @@ export function buildBinRentalAgreementSections(p: BinAgreementBuildParams): { t
     },
     {
       title: "10. Access and Your Home",
-      body: `Kindly ensure safe, lawful access for delivery and pickup—parking, elevator bookings, entry, and someone on hand or clear instructions as agreed. For the crew's safety, do not overload bins beyond a comfortable carrying weight.`,
+      body: `Kindly ensure safe, lawful access for delivery and pickup: parking, elevator bookings, entry, and someone on hand or clear instructions as agreed. For the crew's safety, do not overload bins beyond a comfortable carrying weight.`,
     },
     {
       title: "11. Delays and Rescheduling",
-      body: `${companyDisplayName} cannot be held liable for delays caused by weather, traffic, building access, or other matters outside reasonable control. We will reconnect with you and reschedule as soon as we can. Changes you request—or repeated access issues—may carry additional cost only when agreed in writing.`,
+      body: `${companyDisplayName} cannot be held liable for delays caused by weather, traffic, building access, or other matters outside reasonable control. We will reconnect with you and reschedule as soon as we can. Changes you request, or repeated access issues, may carry additional cost only when agreed in writing.`,
     },
   ];
 }

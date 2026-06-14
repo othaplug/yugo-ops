@@ -1570,6 +1570,9 @@ export default function QuoteFormClient({
   const [junkItemsCount, setJunkItemsCount] = useState<number>(1);
 
   // White glove
+  const [whiteGloveKind, setWhiteGloveKind] = useState<"delivery" | "service">(
+    "delivery",
+  );
   const [declaredValue, setDeclaredValue] = useState("");
   const [whiteGloveItemRows, setWhiteGloveItemRows] = useState<
     WhiteGloveItemRow[]
@@ -2909,6 +2912,8 @@ export default function QuoteFormClient({
 
         // White-glove restoration
         if (nextService === "white_glove") {
+          if (fa.white_glove_kind === "service" || fa.white_glove_kind === "delivery")
+            setWhiteGloveKind(fa.white_glove_kind);
           const wgItemsRaw = fa.white_glove_items;
           if (Array.isArray(wgItemsRaw) && wgItemsRaw.length > 0) {
             const rows = wgItemsRaw
@@ -4815,6 +4820,7 @@ export default function QuoteFormClient({
             is_custom: r.is_custom === true ? true : undefined,
           }));
         base.white_glove_items = items.length > 0 ? items : undefined;
+        base.white_glove_kind = whiteGloveKind;
         base.declared_value = Number(declaredValue) || undefined;
         if (wgDebrisRemoval) base.white_glove_debris_removal = true;
         if (
@@ -5312,6 +5318,7 @@ export default function QuoteFormClient({
       savedMoveProjectId,
       widgetRequestIdParam,
       whiteGloveItemRows,
+      whiteGloveKind,
       wgDebrisRemoval,
       wgGuaranteedWindow,
       wgGuaranteedWindowHours,
@@ -8778,6 +8785,55 @@ export default function QuoteFormClient({
               {/* ── White glove fields ── */}
               {serviceType === "white_glove" && (
                 <div className="space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                      White Glove type
+                    </h3>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(
+                        [
+                          {
+                            value: "delivery",
+                            label: "Delivery",
+                            helper: "Item transport with white glove handling",
+                          },
+                          {
+                            value: "service",
+                            label: "Service",
+                            helper:
+                              "A move, in-home setup, or other on-site white glove service",
+                          },
+                        ] as const
+                      ).map((opt) => {
+                        const active = whiteGloveKind === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setWhiteGloveKind(opt.value)}
+                            className={`flex-1 min-w-[160px] text-left px-3 py-2 rounded-md border transition-colors ${
+                              active
+                                ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                                : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
+                            }`}
+                          >
+                            <span className="block text-[11px] font-semibold">
+                              {opt.label}
+                            </span>
+                            <span
+                              className={`block text-[9px] mt-0.5 ${
+                                active
+                                  ? "text-[var(--btn-text-on-accent)]/80"
+                                  : "text-[var(--tx3)]"
+                              }`}
+                            >
+                              {opt.helper}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                   <WhiteGloveItemsEditor
                     value={whiteGloveItemRows}
                     onChange={setWhiteGloveItemRows}

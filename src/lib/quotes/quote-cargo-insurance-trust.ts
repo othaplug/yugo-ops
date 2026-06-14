@@ -1,5 +1,5 @@
 /**
- * Trust bar cell: "$2M Insurance" / "Full cargo coverage" only applies to jobs with
+ * Trust bar cell: "$5M Insurance" / "Full cargo coverage" only applies to jobs with
  * cargo in transit (moves and deliveries). Omit for bin rental (equipment rental) and
  * labour-only (no transit). Other service types are allowlisted so new quote types
  * do not show cargo claims by default.

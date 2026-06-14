@@ -278,6 +278,73 @@ const UNIVERSAL_LOGISTICS_FEATURES: TierFeature[] = [
   },
 ];
 
+/**
+ * White Glove inclusions, a premium move-or-delivery service. Same slots as
+ * the logistics grid but with elevated, non-commercial copy (no "freight",
+ * "logistics professionals", or "shipment" language).
+ */
+const WHITE_GLOVE_INCLUSION_FEATURES: TierFeature[] = [
+  {
+    card: "Dedicated vehicle",
+    title: "Dedicated white glove vehicle",
+    desc: "Clean, climate-controlled transport, sized for your items",
+  },
+  {
+    card: "Specialist crew",
+    title: "Professional crew",
+    desc: "Licensed, insured, background-checked specialists",
+  },
+  {
+    card: "Premium wrapping",
+    title: "Premium wrapping and padding",
+    desc: "Blankets, pads, and protection for every item",
+  },
+  {
+    card: "Careful placement",
+    title: "Careful handling and placement",
+    desc: "Hand-carried and set down exactly where you want it",
+  },
+  {
+    card: "Site protection",
+    title: "Floor and entryway protection",
+    desc: "Runners, booties, and corner guards where needed",
+  },
+  {
+    card: "Equipment included",
+    title: "All equipment included",
+    desc: "Dollies, straps, and tools as required",
+  },
+  {
+    card: "Valuation",
+    title: "Valuation per your selection",
+    desc: "Coverage as shown in Your Protection below",
+  },
+  {
+    card: "Documentation",
+    title: "Photo documentation",
+    desc: "Before and after photos at pickup and delivery",
+  },
+];
+
+/**
+ * White Glove protection riders: full replacement value (Estate-level
+ * coverage), total coverage scaling up to $50k / $100k, $0 deductible. The
+ * $100k tier matches the residential Estate insurance upgrade ($10k per item,
+ * zero deductible). Prices are coordinator-tunable. Applies to BOTH White
+ * Glove variants (delivery and service).
+ */
+type WhiteGloveRider = {
+  id: string;
+  totalCoverage: number;
+  perItem: number;
+  deductible: number;
+  price: number;
+};
+const WHITE_GLOVE_RIDERS: WhiteGloveRider[] = [
+  { id: "wg_50k", totalCoverage: 50000, perItem: 10000, deductible: 0, price: 300 },
+  { id: "wg_100k", totalCoverage: 100000, perItem: 10000, deductible: 0, price: 500 },
+];
+
 const LOGISTICS_VEHICLE_LABELS: Record<string, string> = {
   sprinter: "Dedicated Sprinter cargo van",
   "16ft": "16ft climate-controlled box truck",
@@ -332,6 +399,23 @@ export default function QuotePageClient({
   googleReviewCountLabel?: string;
 }) {
   const isResidential = quote.service_type === "local_move" && !!quote.tiers;
+  /**
+   * White Glove is a unique, premium service (it can be a move OR a delivery).
+   * It gets the same dark-green Signature shell + flow as the residential
+   * Signature tier, but with single custom pricing and no tier/customize step.
+   */
+  const isWhiteGlove = quote.service_type === "white_glove";
+  /**
+   * White Glove sub-type chosen by the coordinator at quote time and stored in
+   * factors_applied.white_glove_kind. "delivery" = item transport (the default,
+   * and what legacy quotes fall back to); "service" = a move, in-home setup, or
+   * other on-site white glove service. Drives copy/labels, not the flow.
+   */
+  const wgKind: "delivery" | "service" =
+    (quote.factors_applied as Record<string, unknown> | null)
+      ?.white_glove_kind === "service"
+      ? "service"
+      : "delivery";
 
   /**
    * Display-time floor of quote.truck_primary by move size. Engine-side
@@ -421,10 +505,13 @@ export default function QuotePageClient({
     b2bVerticalCodeNorm,
     b2bVerticalDisplayName,
   );
-  const valuationJourneyCopy: "move" | "delivery" =
-    isClientLogisticsDeliveryServiceType(quote.service_type)
-      ? "delivery"
-      : "move";
+  const valuationJourneyCopy: "move" | "delivery" | "service" =
+    quote.service_type === "white_glove"
+      ? // White Glove can be a move OR a delivery, keep protection copy neutral.
+        "service"
+      : isClientLogisticsDeliveryServiceType(quote.service_type)
+        ? "delivery"
+        : "move";
 
   const showCargoInsuranceTrust = quoteShowsCargoInsuranceTrust(
     quote.service_type,
@@ -491,6 +578,8 @@ export default function QuotePageClient({
   /** Opt-in only; do not hydrate from `valuation_upgraded` (stale/coordinator flags caused false “upgrade added”). */
   const [valuationUpgradeSelected, setValuationUpgradeSelected] =
     useState(false);
+  /** White Glove protection rider selection (id from WHITE_GLOVE_RIDERS) or null. */
+  const [wgRiderId, setWgRiderId] = useState<string | null>(null);
   const prevSelectedTierRef = useRef<string | null>(null);
   // Fix #10: Hydrate declarations from quote.high_value_declarations so
   // they persist across page reloads (was React-state-only, invisible
@@ -583,10 +672,9 @@ export default function QuotePageClient({
   const residentialSolidCtaClass =
     "w-full max-w-md py-3.5 rounded-none border-0 text-[10px] font-bold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90";
   /** Estate (wine) or Signature (green), colour shell only; Estate-only copy uses `isEstateFlow`. */
-  const shellKind: PremiumShellKind = premiumShellKind(
-    isResidential,
-    selectedTier,
-  );
+  const shellKind: PremiumShellKind = isWhiteGlove
+    ? "signature"
+    : premiumShellKind(isResidential, selectedTier);
   const premiumShell = shellKind !== "none";
   const darkInk = premiumShellInk(shellKind);
   const shellInk =
@@ -888,7 +976,20 @@ export default function QuotePageClient({
     const serviceOk = (a: (typeof allAddons)[number]) =>
       !a.applicable_service_types?.length ||
       a.applicable_service_types.includes(quote.service_type);
-    const base = allAddons.filter(serviceOk);
+    // White Glove no longer offers the delivery-specific same-day / second-
+    // attempt add-ons (they don't fit a premium move or in-home service).
+    const WHITE_GLOVE_HIDDEN_ADDON_SLUGS = new Set([
+      "same_day",
+      "second_attempt",
+    ]);
+    const base = allAddons.filter(
+      (a) =>
+        serviceOk(a) &&
+        !(
+          quote.service_type === "white_glove" &&
+          WHITE_GLOVE_HIDDEN_ADDON_SLUGS.has(a.slug)
+        ),
+    );
     if (!selectedTier) return base;
     if (
       quote.service_type === "local_move" ||
@@ -998,7 +1099,12 @@ export default function QuotePageClient({
     [declarations],
   );
 
-  const valuationCost = (activeUpgrade?.price ?? 0) + declarationFeeTotal;
+  const wgRider = isWhiteGlove
+    ? (WHITE_GLOVE_RIDERS.find((r) => r.id === wgRiderId) ?? null)
+    : null;
+  const valuationCost =
+    (isWhiteGlove ? (wgRider?.price ?? 0) : (activeUpgrade?.price ?? 0)) +
+    declarationFeeTotal;
 
   /* ── Computed totals ── */
   const totalBeforeTax = basePrice + addonTotal + valuationCost;
@@ -1136,6 +1242,7 @@ export default function QuotePageClient({
     return {
       quoteId: quote.quote_id,
       serviceType: quote.service_type,
+      whiteGloveKind: wgKind,
       residentialTier: isResidential && selectedTier ? selectedTier : null,
       packageLabel,
       fromAddress: quoteForDisplay.from_address,
@@ -1456,6 +1563,38 @@ export default function QuotePageClient({
 
   const isConfirmed = confirmed && selectedTier != null;
 
+  /* ── White Glove flow ribbon (Includes → Review → Protect → Reserve) ── */
+  const WG_STEPS = useMemo(
+    () => [
+      { key: "includes", label: "Includes" },
+      { key: "review", label: "Review" },
+      { key: "protect", label: "Protect" },
+      { key: "reserve", label: "Reserve" },
+    ],
+    [],
+  );
+  const wgCurrentStep = booked
+    ? 4
+    : contractSigned
+      ? 4
+      : confirmed
+        ? 3
+        : 1;
+  const handleWgStepClick = useCallback(
+    (stepNum: number) => {
+      const refs: React.RefObject<HTMLElement | null>[] = [
+        comparisonRef,
+        comparisonRef,
+        protectionRef,
+        paymentRef,
+      ];
+      const ref = refs[stepNum - 1];
+      if (ref?.current)
+        ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    },
+    [],
+  );
+
   const factorsApplied = useMemo(
     () => (quote.factors_applied ?? null) as Record<string, unknown> | null,
     [quote.factors_applied],
@@ -1578,6 +1717,19 @@ export default function QuotePageClient({
       });
       return { headline: copy.pageTitle, subtitle: copy.pageSubtitle };
     }
+    if (quote.service_type === "white_glove") {
+      return wgKind === "service"
+        ? {
+            headline: "Your White Glove Service Quote",
+            subtitle:
+              "Premium white glove service, tailored to your move, setup, or project from start to finish.",
+          }
+        : {
+            headline: "Your White Glove Delivery Quote",
+            subtitle:
+              "Premium handling and full protection for your items, from pickup to placement.",
+          };
+    }
     const base = HERO_CONFIG[quote.service_type] ?? HERO_CONFIG.local_move;
     if (isB2BDeliveryQuoteServiceType(quote.service_type)) {
       const code =
@@ -1591,14 +1743,17 @@ export default function QuotePageClient({
     return base;
   }, [quote]);
   const dateLabel =
-    quote.service_type === "single_item" ||
-    quote.service_type === "white_glove" ||
-    quote.service_type === "b2b_oneoff" ||
-    quote.service_type === "b2b_delivery"
-      ? "Delivery Date"
-      : quote.service_type === "office_move"
-        ? "Relocation Date"
-        : "Move Date";
+    quote.service_type === "white_glove"
+      ? wgKind === "service"
+        ? "Service Date"
+        : "Delivery Date"
+      : quote.service_type === "single_item" ||
+          quote.service_type === "b2b_oneoff" ||
+          quote.service_type === "b2b_delivery"
+        ? "Delivery Date"
+        : quote.service_type === "office_move"
+          ? "Relocation Date"
+          : "Move Date";
 
   /* ── Expiry check ── */
   const expiringSoon = useMemo(() => {
@@ -1776,6 +1931,15 @@ export default function QuotePageClient({
         />
       )}
 
+      {isWhiteGlove && !booked && (
+        <ProgressBar
+          currentStep={wgCurrentStep}
+          steps={WG_STEPS}
+          onStepClick={handleWgStepClick}
+          premiumShellKind={shellKind}
+        />
+      )}
+
       <div className="max-w-4xl md:max-w-5xl lg:max-w-7xl mx-auto px-5 md:px-6">
         {/* ═══ GUARANTEED PRICE + seasonal + tier or service layouts (cream island, or full wine when Estate tier selected) ═══ */}
         <div
@@ -1812,7 +1976,9 @@ export default function QuotePageClient({
 
           {/* ═══ SEASONAL PRICING BANNER ═══ */}
           {(() => {
-            if (booked || !quote.move_date) return null;
+            // White Glove is single custom pricing, the price-by-month strip
+            // doesn't apply.
+            if (isWhiteGlove || booked || !quote.move_date) return null;
             const moveMonth =
               new Date(quote.move_date + "T00:00:00").getMonth() + 1;
             const PEAK_MODS: Record<number, number> = {
@@ -1950,20 +2116,23 @@ export default function QuotePageClient({
                 crewSize={flooredCrewSize}
                 variant="logistics"
                 logisticsClientPreset="white_glove"
+                whiteGloveKind={wgKind}
+                premiumShellKind={shellKind}
                 truckPricingNote={truckBreakdownClientNote}
               />
               <WhiteGloveLayout
                 quote={quoteForDisplay}
                 onConfirm={handleConfirm}
                 confirmed={confirmed}
+                premiumShellKind={shellKind}
+                whiteGloveKind={wgKind}
               />
               <div
-                className="mt-10 pt-8 border-t max-w-3xl mx-auto w-full"
-                style={{ borderColor: `${FOREST}18` }}
+                className={`mt-10 pt-8 border-t max-w-3xl mx-auto w-full ${shellBorderTopClass}`}
               >
                 <p
                   className={`${QUOTE_EYEBROW_CLASS} mb-3`}
-                  style={{ color: `${FOREST}70` }}
+                  style={{ color: shellInk.muted }}
                 >
                   Your inventory
                 </p>
@@ -1971,7 +2140,7 @@ export default function QuotePageClient({
                   quote={quoteForDisplay}
                   selectedAddons={selectedAddons}
                   omitOuterChrome
-                  premiumShellKind="none"
+                  premiumShellKind={shellKind}
                 />
               </div>
             </>
@@ -2257,8 +2426,13 @@ export default function QuotePageClient({
                 currentPackage={currentPackage}
                 valuationTiers={valuationTiers}
                 valuationUpgrades={valuationUpgrades}
-                upgradeSelected={valuationUpgradeSelected}
+                upgradeSelected={
+                  isWhiteGlove ? wgRiderId != null : valuationUpgradeSelected
+                }
                 onToggleUpgrade={() => setValuationUpgradeSelected((p) => !p)}
+                whiteGloveRiders={isWhiteGlove ? WHITE_GLOVE_RIDERS : null}
+                selectedRiderId={wgRiderId}
+                onSelectRider={setWgRiderId}
                 declarations={declarations}
                 onAddDeclaration={(d) => {
                   // Fix #10: mark dirty so the effect persists the array
@@ -2443,7 +2617,7 @@ export default function QuotePageClient({
                     className="text-sm sm:text-[13px] font-bold tracking-tight"
                     style={{ color: shellInk.primary }}
                   >
-                    $2M Insurance
+                    $5M Insurance
                   </p>
                   <p
                     className="text-[11px] sm:text-[12px] leading-snug mt-1 mx-auto sm:max-w-none px-0.5"
@@ -2570,7 +2744,7 @@ export default function QuotePageClient({
                   agreementPremiumShell={
                     isEstateFlow
                       ? "wine"
-                      : isSignatureFlow
+                      : isSignatureFlow || isWhiteGlove
                         ? "signature"
                         : undefined
                   }
@@ -3100,6 +3274,8 @@ const InclusionsShowcase = React.forwardRef<
      * logistics, but skips the universal accountability row and any API `includes` merge.
      */
     logisticsClientPreset?: "standard" | "white_glove";
+    /** White Glove sub-type: tailors the "includes" title/sub copy. */
+    whiteGloveKind?: "delivery" | "service";
     /** Assembly auto-detection: when explicitly false, suppress disassembly/reassembly row. */
     assemblyRequired?: boolean | null;
   }
@@ -3119,6 +3295,7 @@ const InclusionsShowcase = React.forwardRef<
     truckPricingNote = null,
     premiumShellKind = "none",
     logisticsClientPreset = "standard",
+    whiteGloveKind = "delivery",
     assemblyRequired = null,
   },
   ref,
@@ -3156,7 +3333,9 @@ const InclusionsShowcase = React.forwardRef<
 
   const baseFeatures =
     variant === "logistics"
-      ? LOGISTICS_INCLUSION_FEATURES
+      ? isWhiteGloveLogistics
+        ? WHITE_GLOVE_INCLUSION_FEATURES
+        : LOGISTICS_INCLUSION_FEATURES
       : variant === "event" && eventFeatures && eventFeatures.length > 0
         ? eventFeatures.filter(
             (feat) =>
@@ -3174,6 +3353,19 @@ const InclusionsShowcase = React.forwardRef<
       ? baseFeatures.map((f) => ({ ...f }))
       : variant === "logistics"
         ? baseFeatures.map((f, i) => {
+            // White Glove keeps its elevated static copy, only the crew count
+            // is injected so it stays premium (no "cargo van"/"shipment").
+            if (isWhiteGloveLogistics) {
+              if (i === 1) {
+                return {
+                  ...f,
+                  title: crewSize
+                    ? `Professional crew of ${crewSize}`
+                    : "Professional crew",
+                };
+              }
+              return { ...f };
+            }
             if (logisticsLeadPackage && i === 0) {
               return {
                 ...f,
@@ -3238,15 +3430,23 @@ const InclusionsShowcase = React.forwardRef<
   const sectionTitle =
     variant === "event"
       ? "What's Included"
-      : variant === "logistics"
-        ? "Your Delivery Includes"
-        : "Your Move Includes";
+      : isWhiteGloveLogistics
+        ? whiteGloveKind === "service"
+          ? "Your White Glove Service Includes"
+          : "Your White Glove Delivery Includes"
+        : variant === "logistics"
+          ? "Your Delivery Includes"
+          : "Your Move Includes";
   const sectionSub =
     variant === "event"
       ? "Event logistics, fully covered."
-      : variant === "logistics"
-        ? "Commercial logistics, handled end to end."
-        : "Every detail, handled.";
+      : isWhiteGloveLogistics
+        ? whiteGloveKind === "service"
+          ? "Premium service, start to finish."
+          : "Premium handling, start to finish."
+        : variant === "logistics"
+          ? "Commercial logistics, handled end to end."
+          : "Every detail, handled.";
 
   const premiumInclusions = premiumShellKind !== "none";
   const inclusionInk = premiumShellInk(premiumShellKind);
@@ -3278,11 +3478,13 @@ const InclusionsShowcase = React.forwardRef<
                   : FOREST_MUTED,
             }}
           >
-            {variant === "logistics"
-              ? "Delivery"
-              : variant === "event"
-                ? "Event"
-                : "Move"}{" "}
+            {isWhiteGloveLogistics
+              ? "White glove"
+              : variant === "logistics"
+                ? "Delivery"
+                : variant === "event"
+                  ? "Event"
+                  : "Move"}{" "}
             inclusions
           </p>
           <h2
@@ -4844,6 +5046,9 @@ function ValuationProtectionCard({
   valuationUpgrades,
   upgradeSelected,
   onToggleUpgrade,
+  whiteGloveRiders = null,
+  selectedRiderId = null,
+  onSelectRider,
   declarations,
   onAddDeclaration,
   onRemoveDeclaration,
@@ -4856,13 +5061,21 @@ function ValuationProtectionCard({
   valuationUpgrades: ValuationUpgrade[];
   upgradeSelected: boolean;
   onToggleUpgrade: () => void;
+  /** White Glove: full-replacement rider ladder (replaces the single upgrade). */
+  whiteGloveRiders?: WhiteGloveRider[] | null;
+  selectedRiderId?: string | null;
+  onSelectRider?: (id: string | null) => void;
   declarations: HighValueDeclaration[];
   onAddDeclaration: (d: HighValueDeclaration) => void;
   onRemoveDeclaration: (idx: number) => void;
   /** Delivery / logistics quotes use shipment wording instead of "move". */
-  journeyCopy?: "move" | "delivery";
+  journeyCopy?: "move" | "delivery" | "service";
   premiumShellKind?: PremiumShellKind;
 }) {
+  const wgMode = !!whiteGloveRiders && whiteGloveRiders.length > 0;
+  const wgSelected = wgMode
+    ? (whiteGloveRiders!.find((r) => r.id === selectedRiderId) ?? null)
+    : null;
   const premiumChrome = premiumShellKind !== "none";
   const shellText = premiumShellInk(premiumShellKind);
   const premiumBorder = premiumShellSectionBorderClass(premiumShellKind);
@@ -4886,10 +5099,17 @@ function ValuationProtectionCard({
   const [declName, setDeclName] = useState("");
   const [declValue, setDeclValue] = useState("");
 
-  const activeTierSlug = upgradeSelected
-    ? (UPGRADE_TARGET[currentPackage] ?? includedValuation)
-    : includedValuation;
+  const activeTierSlug = wgMode
+    ? wgSelected
+      ? "full_replacement"
+      : "released"
+    : upgradeSelected
+      ? (UPGRADE_TARGET[currentPackage] ?? includedValuation)
+      : includedValuation;
   const tierData = valuationTiers.find((t) => t.tier_slug === activeTierSlug);
+  /** White Glove riders override the per-item / total caps with the selected rider. */
+  const wgPerItem = wgSelected?.perItem ?? null;
+  const wgTotalCoverage = wgSelected?.totalCoverage ?? null;
   const upgradeTarget = UPGRADE_TARGET[currentPackage];
   const upgradeData = upgradeTarget
     ? findValuationUpgrade(valuationUpgrades, currentPackage, upgradeTarget)
@@ -4897,9 +5117,10 @@ function ValuationProtectionCard({
   const upgradeTierData = upgradeTarget
     ? valuationTiers.find((t) => t.tier_slug === upgradeTarget)
     : null;
-  const isHighest =
-    currentPackage === "estate" ||
-    (upgradeSelected && activeTierSlug === "full_replacement");
+  const isHighest = wgMode
+    ? wgSelected?.totalCoverage === 100000
+    : currentPackage === "estate" ||
+      (upgradeSelected && activeTierSlug === "full_replacement");
 
   const declThreshold = tierData?.max_per_item ?? 2500;
 
@@ -4967,7 +5188,9 @@ function ValuationProtectionCard({
                 ? "Upgraded"
                 : journeyCopy === "delivery"
                   ? "Included with your delivery"
-                  : "Included with your move"}
+                  : journeyCopy === "service"
+                    ? "Included with your service"
+                    : "Included with your move"}
             </div>
           </div>
           {isHighest && (
@@ -5046,7 +5269,11 @@ function ValuationProtectionCard({
                     className={`${QUOTE_EYEBROW_CLASS} shrink-0`}
                     style={{ color: inkMuted }}
                   >
-                    {journeyCopy === "delivery" ? "Per shipment" : "Per move"}
+                    {journeyCopy === "delivery"
+                      ? "Per shipment"
+                      : journeyCopy === "service"
+                        ? "Per service"
+                        : "Per move"}
                   </span>
                   <span
                     className="font-bold tabular-nums text-right"
@@ -5070,7 +5297,7 @@ function ValuationProtectionCard({
                   className="font-bold tabular-nums text-right"
                   style={{ color: ink }}
                 >
-                  up to {fmtPrice(tierData.max_per_item ?? 10000)}
+                  up to {fmtPrice(wgPerItem ?? tierData.max_per_item ?? 10000)}
                 </span>
               </div>
               <div className="flex justify-between items-baseline gap-6 text-[13px]">
@@ -5078,13 +5305,22 @@ function ValuationProtectionCard({
                   className={`${QUOTE_EYEBROW_CLASS} shrink-0`}
                   style={{ color: inkMuted }}
                 >
-                  {journeyCopy === "delivery" ? "Per shipment" : "Per move"}
+                  {wgMode
+                    ? "Total coverage"
+                    : journeyCopy === "delivery"
+                      ? "Per shipment"
+                      : journeyCopy === "service"
+                        ? "Per service"
+                        : "Per move"}
                 </span>
                 <span
                   className="font-bold tabular-nums text-right"
                   style={{ color: ink }}
                 >
-                  up to {fmtPrice(tierData.max_per_shipment ?? 100000)}
+                  up to{" "}
+                  {fmtPrice(
+                    wgTotalCoverage ?? tierData.max_per_shipment ?? 100000,
+                  )}
                 </span>
               </div>
               <div className="flex justify-between items-baseline gap-6 text-[13px]">
@@ -5185,10 +5421,115 @@ function ValuationProtectionCard({
         </div>
       </div>
 
-      {upgradeData &&
+      {wgMode ? (
+        <div
+          className={`mt-10 pt-6 border-t ${premiumChrome ? premiumBorder : "border-[var(--brd)]/25"}`}
+        >
+          <p className={`${QUOTE_EYEBROW_CLASS} mb-1`} style={{ color: ink }}>
+            Upgrade your protection
+          </p>
+          <p
+            className="text-[12px] leading-snug mb-4"
+            style={{ color: inkBody }}
+          >
+            Full replacement value coverage with a $0 deductible. Choose the
+            total coverage that fits.
+          </p>
+          <div className="space-y-3">
+            {whiteGloveRiders!.map((r) => {
+              const selected = selectedRiderId === r.id;
+              const isEstateLevel = r.totalCoverage === 100000;
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => onSelectRider?.(selected ? null : r.id)}
+                  aria-pressed={selected}
+                  className="w-full text-left rounded-lg border px-4 py-3.5 transition-colors flex items-center justify-between gap-4"
+                  style={{
+                    borderColor: selected
+                      ? valAccent
+                      : premiumChrome
+                        ? shellText!.borderSubtle
+                        : `${FOREST}22`,
+                    backgroundColor: selected
+                      ? premiumChrome
+                        ? "rgba(58,92,64,0.18)"
+                        : `${FOREST}0D`
+                      : "transparent",
+                  }}
+                >
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className="text-[14px] font-semibold tracking-tight"
+                        style={{ color: ink }}
+                      >
+                        Up to {fmtPrice(r.totalCoverage)} coverage
+                      </span>
+                      {isEstateLevel && (
+                        <span
+                          className="text-[9px] font-bold uppercase tracking-[0.1em] px-2 py-0.5 rounded-full"
+                          style={{
+                            color: premiumChrome ? shellText!.primary : "white",
+                            backgroundColor: valAccent,
+                          }}
+                        >
+                          Estate-level
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className="block text-[11px] mt-1 leading-snug"
+                      style={{ color: inkMuted }}
+                    >
+                      Full replacement value · {fmtPrice(r.perItem)} per item · $0
+                      deductible
+                    </span>
+                  </span>
+                  <span className="shrink-0 flex items-center gap-3">
+                    <span
+                      className="text-[16px] font-bold tabular-nums"
+                      style={{ color: ink }}
+                    >
+                      {fmtPrice(r.price)}
+                    </span>
+                    <span
+                      className="w-5 h-5 rounded-full border flex items-center justify-center shrink-0"
+                      style={{
+                        borderColor: selected
+                          ? valAccent
+                          : premiumChrome
+                            ? shellText!.borderSubtle
+                            : `${FOREST}40`,
+                        backgroundColor: selected ? valAccent : "transparent",
+                      }}
+                      aria-hidden
+                    >
+                      {selected ? (
+                        <Check
+                          className="w-3 h-3"
+                          weight="bold"
+                          style={{
+                            color: premiumChrome ? shellText!.primary : "white",
+                          }}
+                        />
+                      ) : null}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] mt-3" style={{ color: inkMuted }}>
+            Optional. Your included released-value coverage applies if you do not
+            add a rider.
+          </p>
+        </div>
+      ) : upgradeData &&
         upgradeTierData &&
         dispUpgrade &&
-        (!isHighest || upgradeSelected) && (
+        (!isHighest || upgradeSelected) ? (
           <div
             className={`mt-10 pt-6 border-t ${premiumChrome ? premiumBorder : "border-[var(--brd)]/25"}`}
           >
@@ -5210,7 +5551,13 @@ function ValuationProtectionCard({
             {upgradeData.assumed_shipment_value > 0 && (
               <p className="text-[11px]" style={{ color: inkMuted }}>
                 Covers up to {fmtPrice(upgradeData.assumed_shipment_value)}{" "}
-                total {journeyCopy === "delivery" ? "shipment" : "move"} value
+                total{" "}
+                {journeyCopy === "delivery"
+                  ? "shipment"
+                  : journeyCopy === "service"
+                    ? "service"
+                    : "move"}{" "}
+                value
               </p>
             )}
 
@@ -5266,17 +5613,21 @@ function ValuationProtectionCard({
                     />
                     {journeyCopy === "delivery"
                       ? "Added to delivery"
-                      : "Added to move"}
+                      : journeyCopy === "service"
+                        ? "Added to protection"
+                        : "Added to move"}
                   </>
                 ) : journeyCopy === "delivery" ? (
                   "Add to delivery"
+                ) : journeyCopy === "service" ? (
+                  "Add protection"
                 ) : (
                   "Add to move"
                 )}
               </button>
             </div>
           </div>
-        )}
+        ) : null}
 
       <div
         className={`mt-10 pt-6 border-t ${premiumChrome ? premiumBorder : "border-[var(--brd)]/25"}`}

@@ -251,7 +251,7 @@ export default function SeasonalPricingPreview({
               lineHeight: 1.4,
             }}
           >
-            Your move date is locked at this price — guaranteed.
+            Your move date is locked at this price, guaranteed.
           </p>
         )}
       </div>

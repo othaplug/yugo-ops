@@ -293,6 +293,7 @@ interface QuoteInput {
   junk_items_count?: number;
   // White glove
   declared_value?: number;
+  white_glove_kind?: "delivery" | "service";
   /** Multi-line curated delivery items (preferred). Legacy single-line fields remain as fallback. */
   white_glove_items?: Array<{
     id?: string;
@@ -2934,6 +2935,8 @@ async function calcWhiteGlove(
     } as TierResult,
     factors: {
       white_glove_pricing: "item_based",
+      white_glove_kind:
+        input.white_glove_kind === "service" ? "service" : "delivery",
       white_glove_items: items,
       white_glove_item_lines: breakdown.itemLines,
       white_glove_items_subtotal: breakdown.itemsOrMinimum,

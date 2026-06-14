@@ -48,6 +48,8 @@ export interface ContractAddon {
 export interface ContractQuoteData {
   quoteId: string;
   serviceType: string;
+  /** White Glove sub-type; "service" drops the delivery-specific agreement framing. */
+  whiteGloveKind?: "delivery" | "service";
   packageLabel: string;
   fromAddress: string;
   toAddress: string;
@@ -144,7 +146,7 @@ const BALANCE_DUE: Record<string, string> = {
   long_distance: "before departure date",
   office_move: "per agreed phasing schedule",
   single_item: "upon delivery",
-  white_glove: "upon delivery",
+  white_glove: "48 hours before your service date",
   specialty: "upon project completion",
   b2b_oneoff: "upon delivery",
   b2b_delivery: "upon delivery",
@@ -158,12 +160,12 @@ const AGREEMENT_HEADER: Record<string, { title: string; subtitle: string }> = {
   local_move: {
     title: "Residential Move Agreement",
     subtitle:
-      "Please review and sign to continue—your move is reserved once payment is complete.",
+      "Please review and sign to continue. Your move is reserved once payment is complete.",
   },
   long_distance: {
     title: "Long Distance Move Agreement",
     subtitle:
-      "Please review and sign to continue—we will hold your dates once payment is complete.",
+      "Please review and sign to continue. We will hold your dates once payment is complete.",
   },
   office_move: {
     title: "Office Relocation Agreement",
@@ -175,9 +177,9 @@ const AGREEMENT_HEADER: Record<string, { title: string; subtitle: string }> = {
     subtitle: "Please review and sign to confirm this delivery.",
   },
   white_glove: {
-    title: "White Glove Delivery Agreement",
+    title: "White Glove Service Agreement",
     subtitle:
-      "Please review and sign—white-glove service begins once you confirm below.",
+      "Please review and sign to reserve your white glove service.",
   },
   specialty: {
     title: "Specialty Service Agreement",
@@ -196,7 +198,7 @@ const AGREEMENT_HEADER: Record<string, { title: string; subtitle: string }> = {
   event: {
     title: "Event Logistics Agreement",
     subtitle:
-      "Please review and sign—we will hold your logistics window once you confirm.",
+      "Please review and sign. We will hold your logistics window once you confirm.",
   },
   labour_only: {
     title: "Labour Service Agreement",
@@ -205,7 +207,7 @@ const AGREEMENT_HEADER: Record<string, { title: string; subtitle: string }> = {
   bin_rental: {
     title: "Bin Rental Agreement",
     subtitle:
-      "Please review and sign—your bin delivery is confirmed once you complete payment.",
+      "Please review and sign. Your bin delivery is confirmed once you complete payment.",
   },
 };
 
@@ -278,11 +280,11 @@ export default function ContractSign({
     title: agreementDocumentTitle(q.serviceType, q.residentialTier),
     subtitle:
       q.serviceType === "local_move" && q.residentialTier === "estate"
-        ? "Your Estate experience is outlined below—please review and sign to reserve your date."
+        ? "Your Estate experience is outlined below. Please review and sign to reserve your date."
         : q.serviceType === "local_move" && q.residentialTier === "signature"
-          ? "Your Signature move is outlined below—please review and sign to continue."
+          ? "Your Signature move is outlined below. Please review and sign to continue."
           : q.serviceType === "local_move" && q.residentialTier === "essential"
-            ? "Your Essential move is outlined below—please review and sign to continue."
+            ? "Your Essential move is outlined below. Please review and sign to continue."
             : agreementMeta.subtitle,
   };
   const agreementSignLabel = agreementCheckboxLabel(
@@ -526,7 +528,14 @@ export default function ContractSign({
           residentialTier: q.residentialTier,
           companyLegalName,
           companyDisplayName,
-          isLogisticsDelivery: isLogisticsDeliveryCopy,
+          // White Glove "service" quotes read as a move/setup, not a delivery,
+          // so they use the move-style agreement framing.
+          isLogisticsDelivery:
+            isLogisticsDeliveryCopy &&
+            !(
+              q.serviceType === "white_glove" &&
+              q.whiteGloveKind === "service"
+            ),
           b2bNet30Invoice,
           paidInFullAtBooking,
           fmtPrice,
@@ -796,7 +805,7 @@ export default function ContractSign({
               style={{ color: agreementTheme.inkBody }}
             >
               Total {fmtPrice(q.grandTotal)} (incl. HST) per quote. Payment per
-              Net 30 invoice after confirmation — no card charge on this page.
+              Net 30 invoice after confirmation. No card charge on this page.
             </p>
           )}
           {paidInFullAtBooking && isBinRental && (
@@ -863,6 +872,13 @@ export default function ContractSign({
               {agreementSignLabel}, accept its terms, and authorize{" "}
               {companyDisplayName} to deliver and collect your bins as
               scheduled.
+            </>
+          ) : q.serviceType === "white_glove" ? (
+            <>
+              By signing below, you confirm that you have read the{" "}
+              {agreementSignLabel}, accept its terms, and authorize{" "}
+              {companyDisplayName} to carry out your white glove service as
+              quoted.
             </>
           ) : isClientLogisticsDeliveryServiceType(q.serviceType) ? (
             <>
@@ -972,14 +988,14 @@ export default function ContractSign({
             {isBinRental ? (
               <>
                 I have read the <b>{agreementSignLabel}</b> and agree to its
-                terms—including payment, rental timing, card on file,
+                terms, including payment, rental timing, card on file,
                 cancellation, what may not go in the bins, and care of the
                 equipment.
               </>
             ) : (
               <>
                 I have read the <b>{agreementSignLabel}</b> and agree to its
-                terms—including your quoted investment, payment and
+                terms, including your quoted investment, payment and
                 cancellation, what we cannot transport, liability, and the rest
                 of the agreement above.
               </>

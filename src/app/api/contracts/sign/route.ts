@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { rateLimit } from "@/lib/rate-limit";
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import {
   WINE,
   GOLD,

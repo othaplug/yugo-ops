@@ -86,12 +86,20 @@ export default async function QuoteConfirmedPage({
   const serviceVerb =
     quote.service_type === "office_move"
       ? "relocation"
-      : quote.service_type === "b2b_delivery" ||
-        quote.service_type === "b2b_oneoff" ||
-        quote.service_type === "single_item" ||
+      : // White Glove can be a move or a delivery, keep it neutral.
         quote.service_type === "white_glove"
-      ? "delivery"
-      : "move";
+        ? "white glove service"
+        : quote.service_type === "b2b_delivery" ||
+            quote.service_type === "b2b_oneoff" ||
+            quote.service_type === "single_item"
+          ? "delivery"
+          : "move";
+  const dateRowLabel =
+    serviceVerb === "delivery"
+      ? "Delivery date"
+      : quote.service_type === "white_glove"
+        ? "Service date"
+        : "Move date";
 
   const [supportPhone, supportEmail] = await Promise.all([
     getCompanyPhone(),
@@ -100,52 +108,61 @@ export default async function QuoteConfirmedPage({
 
   return (
     <div className="min-h-screen bg-[#F9EDE4]">
-      {/* Header */}
-      <div className="bg-[#2B0416] px-6 py-12 text-center">
-        {/* Real YUGO logo (cream on wine), the brand mark should never
-            appear as a styled text fallback. */}
-        <div className="flex items-center justify-center mb-6">
-          <YugoLogo size={28} variant="cream" />
+      {/* ═══ Premium wine hero ═══ */}
+      <div className="relative overflow-hidden bg-[#2B0416] px-6 pt-14 pb-16 text-center">
+        <div
+          className="absolute inset-0 opacity-[0.12] pointer-events-none"
+          aria-hidden
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 20% 40%, rgba(255,255,255,0.18) 0%, transparent 55%), radial-gradient(circle at 82% 60%, rgba(255,255,255,0.12) 0%, transparent 55%)",
+          }}
+        />
+        <div className="relative z-[1]">
+          {/* Real YUGO logo (cream on wine), the brand mark should never
+              appear as a styled text fallback. */}
+          <div className="flex items-center justify-center mb-3">
+            <YugoLogo size={32} variant="cream" />
+          </div>
+          <div className="w-10 h-px mx-auto mb-7 bg-[#F9EDE4]/30" />
+          <div className="w-14 h-14 rounded-full bg-[#F9EDE4]/[0.07] border border-[#F9EDE4]/25 flex items-center justify-center mx-auto mb-5">
+            <svg viewBox="0 0 20 20" fill="none" className="w-6 h-6" aria-hidden>
+              <path
+                d="M4 10l4 4 8-8"
+                stroke="#F9EDE4"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+          <p className="text-[11px] uppercase tracking-[0.22em] text-[#E7B7CC] mb-3 font-semibold">
+            Confirmed
+          </p>
+          <h1 className="font-serif text-[30px] md:text-[36px] text-[#F9EDE4] mb-3 leading-tight">
+            You&apos;re booked.
+          </h1>
+          <p className="text-[14px] text-[#F9EDE4]/70 max-w-sm mx-auto leading-relaxed">
+            {clientFirstName ? `${clientFirstName}, your` : "Your"}
+            {moveDateStr ? ` ${moveDateStr}` : ""} {serviceVerb} is confirmed.
+            {" "}We have it from here.
+          </p>
         </div>
-        <div className="w-10 h-10 rounded-full bg-[#F9EDE4]/10 border border-[#F9EDE4]/20 flex items-center justify-center mx-auto mb-4">
-          <svg
-            viewBox="0 0 20 20"
-            fill="none"
-            className="w-5 h-5"
-            aria-hidden
-          >
-            <path
-              d="M4 10l4 4 8-8"
-              stroke="#F9EDE4"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-        <h1 className="font-serif text-[28px] md:text-[32px] text-[#F9EDE4] mb-2 leading-tight">
-          You&apos;re booked.
-        </h1>
-        <p className="text-[13px] text-[#F9EDE4]/65 max-w-sm mx-auto">
-          {clientFirstName ? `${clientFirstName}, your` : "Your"}
-          {moveDateStr ? ` ${moveDateStr}` : ""} {serviceVerb} is confirmed.
-        </p>
       </div>
 
-      <div className="max-w-md mx-auto px-6 py-8 space-y-4">
+      <div className="max-w-md mx-auto px-6 py-9 space-y-4">
         {/* Booking summary */}
-        <div className="bg-white rounded-2xl p-5">
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[#2B0416]/45 mb-3 font-semibold">
+        <div className="bg-white rounded-2xl p-6 border border-[#2B0416]/[0.08] shadow-[0_1px_3px_rgba(43,4,22,0.04)]">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-[#66143D] mb-4 font-bold">
             Booking summary
           </p>
           <div className="space-y-2.5 text-[13px]">
             <SummaryRow label="Quote" value={quote.quote_id} mono />
-            {tierLabel && <SummaryRow label="Package" value={tierLabel} />}
+            {tierLabel && quote.service_type !== "white_glove" && (
+              <SummaryRow label="Package" value={tierLabel} />
+            )}
             {moveDateStr && (
-              <SummaryRow
-                label={serviceVerb === "delivery" ? "Delivery date" : "Move date"}
-                value={moveDateStr}
-              />
+              <SummaryRow label={dateRowLabel} value={moveDateStr} />
             )}
             {(() => {
               // Build a combined list of all pickups (primary + extras) and
@@ -204,8 +221,8 @@ export default async function QuoteConfirmedPage({
         </div>
 
         {/* What happens next */}
-        <div className="bg-white rounded-2xl p-5">
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[#2B0416]/45 mb-4 font-semibold">
+        <div className="bg-white rounded-2xl p-6 border border-[#2B0416]/[0.08] shadow-[0_1px_3px_rgba(43,4,22,0.04)]">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-[#66143D] mb-5 font-bold">
             What happens next
           </p>
           <div className="space-y-3.5">
@@ -297,9 +314,9 @@ function SummaryRow({
 }) {
   return (
     <div className="flex justify-between gap-3">
-      <span className="text-[#2B0416]/55 shrink-0">{label}</span>
+      <span className="text-[#2B0416]/50 shrink-0">{label}</span>
       <span
-        className={`text-[#2B0416] ${mono ? "font-mono" : ""} ${
+        className={`text-[#2B0416] font-medium ${mono ? "font-mono" : ""} ${
           align === "right" ? "text-right max-w-[62%]" : ""
         }`}
       >
@@ -319,15 +336,15 @@ function NextStep({
   body: string;
 }) {
   return (
-    <div className="flex gap-3">
-      <div className="w-5 h-5 rounded-full bg-[#2B0416] text-[#F9EDE4] text-[10px] font-semibold flex items-center justify-center shrink-0 mt-0.5">
+    <div className="flex gap-3.5">
+      <div className="w-6 h-6 rounded-full bg-[#2B0416] text-[#F9EDE4] text-[11px] font-serif flex items-center justify-center shrink-0 mt-0.5">
         {step}
       </div>
       <div className="min-w-0">
-        <p className="text-[13px] font-medium text-[#2B0416] leading-snug">
+        <p className="text-[13px] font-semibold text-[#2B0416] leading-snug">
           {title}
         </p>
-        <p className="text-[11px] text-[#2B0416]/55 mt-0.5 leading-relaxed">
+        <p className="text-[11px] text-[#2B0416]/55 mt-1 leading-relaxed">
           {body}
         </p>
       </div>

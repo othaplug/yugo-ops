@@ -22,6 +22,8 @@ interface Props {
   estateMode?: boolean;
   /** Residential Estate (wine) or Signature (green): dark bar, cream labels */
   premiumShellKind?: PremiumShellKind;
+  /** Override the default 5-step residential flow (e.g. White Glove has no Customize). */
+  steps?: readonly { key: string; label: string }[];
 }
 
 const ESTATE_ROSE = "#66143D";
@@ -31,7 +33,9 @@ export default function ProgressBar({
   onStepClick,
   estateMode = false,
   premiumShellKind: premiumShellKindProp,
+  steps: stepsProp,
 }: Props) {
+  const STEP_LIST = stepsProp ?? STEPS;
   const kind: PremiumShellKind =
     premiumShellKindProp ??
     (estateMode ? "wine" : "none");
@@ -65,7 +69,7 @@ export default function ProgressBar({
         className="flex items-center justify-center gap-1 md:gap-2 min-w-max"
         aria-label="Booking steps"
       >
-        {STEPS.map((step, i) => {
+        {STEP_LIST.map((step, i) => {
           const stepNum = i + 1;
           const isComplete = currentStep > stepNum;
           const isCurrent = currentStep === stepNum;
