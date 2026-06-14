@@ -58,7 +58,6 @@ import {
   ArrowsCounterClockwise,
   Recycle,
   ArrowRight,
-  ShieldCheck,
 } from "@phosphor-icons/react";
 import PreMoveChecklist from "@/components/tracking/PreMoveChecklist";
 import EstateServiceChecklist from "@/components/tracking/EstateServiceChecklist";
@@ -658,8 +657,6 @@ export default function TrackMoveClient({
   const [changeUrgent, setChangeUrgent] = useState(false);
   const [changeSubmitting, setChangeSubmitting] = useState(false);
   const [changeSubmitted, setChangeSubmitted] = useState(false);
-  const [inventoryChangeModalOpen, setInventoryChangeModalOpen] =
-    useState(false);
 
   // Crew change request state (move-day walkthrough)
   const [crewCrApprovalState, setCrewCrApprovalState] = useState<
@@ -1947,15 +1944,9 @@ export default function TrackMoveClient({
                   ))}
                 </div>
                 <div
-                  className="mt-3 pt-3 border-t flex items-start gap-2"
+                  className="mt-3 pt-3 border-t"
                   style={{ borderColor: `${WINE}14` }}
                 >
-                  <ShieldCheck
-                    className="w-4 h-4 shrink-0 mt-0.5"
-                    weight="fill"
-                    style={{ color: WINE }}
-                    aria-hidden
-                  />
                   <p
                     className="text-[12px] leading-snug"
                     style={{ color: FOREST }}
@@ -4258,83 +4249,19 @@ export default function TrackMoveClient({
                           ) : (
                             <>
                               <div
-                                className="rounded-xl border px-4 py-3"
-                                style={{
-                                  borderColor: inventoryChangeEligible
-                                    ? `${FOREST}30`
-                                    : `${FOREST}12`,
-                                  backgroundColor: inventoryChangeEligible
-                                    ? `${FOREST}06`
-                                    : `${FOREST}04`,
-                                  opacity: inventoryChangeEligible ? 1 : 0.75,
-                                }}
+                                className="text-[15px] sm:text-[17px] font-bold uppercase tracking-[0.1em] leading-tight mb-2 [font-family:var(--font-body)]"
+                                style={{ color: FOREST }}
                               >
-                                <div
-                                  className="text-[15px] sm:text-[17px] font-bold uppercase tracking-[0.1em] leading-tight mb-2 [font-family:var(--font-body)]"
-                                  style={{ color: FOREST }}
-                                >
-                                  Need to update your inventory?
-                                </div>
-                                <p
-                                  className="text-[12px] sm:text-[13px] leading-relaxed opacity-85 mb-3"
-                                  style={{ color: FOREST }}
-                                >
-                                  Changes are reviewed by your coordinator before
-                                  your {isWhiteGlove ? wgNoun : "move"}.
-                                </p>
-                                <button
-                                  type="button"
-                                  disabled={!inventoryChangeEligible}
-                                  onClick={() =>
-                                    inventoryChangeEligible &&
-                                    setInventoryChangeModalOpen(true)
-                                  }
-                                  className="w-full sm:w-auto rounded-none px-4 py-2 font-bold uppercase tracking-[0.12em] leading-none text-[10px] sm:text-[11px] transition-[filter,opacity] hover:brightness-95 active:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40 disabled:cursor-not-allowed [font-family:var(--font-body)]"
-                                  style={{
-                                    backgroundColor: FOREST,
-                                    color: "#FFFBF7",
-                                    outlineColor: FOREST,
-                                  }}
-                                >
-                                  Request inventory change
-                                </button>
-                                {!inventoryChangeEligible &&
-                                  inventoryChangeReason && (
-                                    <p
-                                      className="text-[11px] mt-2 opacity-55 leading-snug"
-                                      style={{ color: FOREST }}
-                                    >
-                                      {inventoryChangeReason}
-                                    </p>
-                                  )}
+                                Need to update your{" "}
+                                {isWhiteGlove ? wgNoun : "move"}?
                               </div>
-                              <InventoryChangeRequestModal
-                                open={inventoryChangeModalOpen}
-                                onClose={() =>
-                                  setInventoryChangeModalOpen(false)
-                                }
-                                moveId={move.id}
-                                token={token}
-                                itemWeights={inventoryChangeItemWeights}
-                                inventoryLines={(
-                                  dashboardInventory?.items ?? []
-                                ).map(
-                                  (i: { id: string; item_name?: string }) => ({
-                                    id: i.id,
-                                    item_name: i.item_name || "Item",
-                                  }),
-                                )}
-                                currentSubtotal={Number(move.amount) || 0}
-                                perScoreRate={inventoryChangePerScoreRate}
-                                maxLines={inventoryChangeMaxItems}
-                                onSubmitted={() => {
-                                  toast(
-                                    "Change request sent. We'll email you when it's reviewed.",
-                                    "check",
-                                  );
-                                  router.refresh();
-                                }}
-                              />
+                              <p
+                                className="text-[12px] sm:text-[13px] leading-relaxed opacity-85"
+                                style={{ color: FOREST }}
+                              >
+                                Changes are reviewed by your coordinator before
+                                your {isWhiteGlove ? wgNoun : "move"}.
+                              </p>
                             </>
                           )}
                         </>
