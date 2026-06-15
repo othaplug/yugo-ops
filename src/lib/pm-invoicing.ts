@@ -52,6 +52,36 @@ type PmMove = {
 const MOVE_SELECT =
   "id, move_code, client_name, tenant_name, scheduled_date, total_price, amount, estimate, final_amount, from_address, to_address";
 
+/**
+ * Square requires invoice numbers to be unique per location. The base number is
+ * derived from the billing cycle, so a partner billed twice in the same cycle
+ * (e.g. a catch-up invoice) would collide and Square rejects the publish. Append
+ * -2, -3, … until the number is unused among this partner's invoices.
+ */
+async function uniqueInvoiceNumber(
+  sb: Sb,
+  partnerId: string,
+  base: string,
+  excludeId?: string,
+): Promise<string> {
+  const { data } = await sb
+    .from("partner_invoices")
+    .select("id, invoice_number")
+    .eq("organization_id", partnerId)
+    .or(`invoice_number.eq.${base},invoice_number.like.${base}-%`);
+  const taken = new Set(
+    (data ?? [])
+      .filter((r) => r.id !== excludeId)
+      .map((r) => String(r.invoice_number)),
+  );
+  if (!taken.has(base)) return base;
+  for (let n = 2; n < 1000; n++) {
+    const candidate = `${base}-${n}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+  return `${base}-${Date.now()}`;
+}
+
 export type PmInvoiceResult =
   | {
       ok: true;
@@ -131,11 +161,24 @@ export async function generateAndSendPmInvoice(
       await sb.from("partner_invoices").delete().eq("id", stuckDraft.id);
     } else {
       invoiceId = stuckDraft.id;
-      invoiceNumber = stuckDraft.invoice_number as string;
       periodStart = stuckDraft.period_start as string;
       periodEnd = stuckDraft.period_end as string;
       dueDate = (stuckDraft.due_date as string) || calcDueDate(now);
       totalAmount = Number(stuckDraft.total_amount);
+      // The previous publish may have failed on a duplicate number — re-resolve
+      // to a unique one (excluding this draft) and persist it before retrying.
+      invoiceNumber = await uniqueInvoiceNumber(
+        sb,
+        partnerId,
+        stuckDraft.invoice_number as string,
+        stuckDraft.id,
+      );
+      if (invoiceNumber !== stuckDraft.invoice_number) {
+        await sb
+          .from("partner_invoices")
+          .update({ invoice_number: invoiceNumber })
+          .eq("id", invoiceId);
+      }
       return finishViaSquare();
     }
   }
@@ -177,7 +220,7 @@ export async function generateAndSendPmInvoice(
   }
   const orgCode = partnerId.slice(0, 4).toUpperCase();
   const cycleTag = dueDate.replaceAll("-", "").slice(2, 8); // YYMMDD
-  invoiceNumber = `INV-${orgCode}-${cycleTag}`;
+  invoiceNumber = await uniqueInvoiceNumber(sb, partnerId, `INV-${orgCode}-${cycleTag}`);
 
   const { data: invoice, error: insertErr } = await sb
     .from("partner_invoices")
