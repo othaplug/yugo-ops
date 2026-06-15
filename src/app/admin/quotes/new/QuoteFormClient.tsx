@@ -5488,6 +5488,9 @@ export default function QuoteFormClient({
     }
     setGenerating(true);
     setSendSuccess(false);
+    // Reported back so callers (e.g. auto-apply on Send) know the regenerate
+    // actually persisted. Any early return / failure leaves this false.
+    let generateSucceeded = false;
     try {
       const res = await fetch("/api/quotes/generate", {
         method: "POST",
@@ -5510,6 +5513,7 @@ export default function QuoteFormClient({
       if (!id) throw new Error("Generate did not return a quote_id");
       setQuoteResult(data);
       setQuoteId(id);
+      generateSucceeded = true;
       setSavedMoveProjectId(
         typeof data.move_project_id === "string" ? data.move_project_id : null,
       );
@@ -5573,6 +5577,7 @@ export default function QuoteFormClient({
     } finally {
       setGenerating(false);
     }
+    return generateSucceeded;
   };
 
   // ── Send quote (Step 2: only after generate; requires quoteId from state) ────────────────────────────
@@ -5652,11 +5657,20 @@ export default function QuoteFormClient({
         }
       }
       if (stale.length > 0) {
-        toast(
-          `Per-tier override is set but the saved quote still has the old price for ${stale.join(", ")}. Click Regenerate to apply, then Send Quote.`,
-          "alertTriangle",
-        );
-        return;
+        // Don't make the operator click Regenerate then Send — apply the
+        // pending override for them (regenerate persists it + recomputes the
+        // saved quote server-side), then continue sending the fresh prices.
+        // The send endpoint reads the saved quote row, so once regenerate
+        // succeeds the client receives the override price.
+        toast(`Applying override for ${stale.join(", ")}…`, "info");
+        const applied = await handleGenerate();
+        if (!applied) {
+          toast(
+            "Could not apply the override automatically. Review the form, then Regenerate and Send.",
+            "alertTriangle",
+          );
+          return;
+        }
       }
     }
     setSending(true);
