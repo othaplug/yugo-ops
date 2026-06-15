@@ -70,12 +70,10 @@ export default async function RevenuePage() {
   ]);
   const clientTypeMap: Record<string, string> = {};
   const orgIdToType: Record<string, string> = {};
-  const orgIdToName: Record<string, string> = {};
   const clientNameToOrgId: Record<string, string> = {};
   (orgs || []).forEach((o) => {
     clientTypeMap[o.name] = o.type || "retail";
     orgIdToType[o.id] = o.type || "retail";
-    if (o.name) orgIdToName[o.id] = o.name;
     clientNameToOrgId[o.name] = o.id;
   });
   (invoices || []).forEach((inv) => {
@@ -90,7 +88,6 @@ export default async function RevenuePage() {
       paidMoves={paidMoves || []}
       clientTypeMap={clientTypeMap}
       orgIdToType={orgIdToType}
-      orgIdToName={orgIdToName}
       clientNameToOrgId={clientNameToOrgId}
       sentPartnerInvoices={sentPartnerInvoices || []}
       unbilledPMmoves={unbilledPMmoves || []}
