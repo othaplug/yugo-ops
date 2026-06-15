@@ -5589,6 +5589,48 @@ export default function QuoteFormClient({
     return generateSucceeded;
   };
 
+  // ── Auto-apply a pending per-tier override ──────────────────────────────
+  // Typing a tier override updates the live preview but does NOT persist it
+  // until a regenerate runs. Operators kept missing that step, so the saved
+  // quote (and the client page) showed the OLD engine price (YG-30294: $680
+  // typed, client still saw $950, tier_price_overrides null in the DB). Once a
+  // quote exists and a valid override (price + reason) differs from the saved
+  // tier price, regenerate automatically — debounced — so the override bakes in
+  // without a manual "Regenerate" click. The send-time guard stays as a backstop.
+  const generatingRef = useRef(false);
+  useEffect(() => {
+    generatingRef.current = generating;
+  }, [generating]);
+  const handleGenerateRef = useRef(handleGenerate);
+  handleGenerateRef.current = handleGenerate;
+  useEffect(() => {
+    if (!quoteId) return;
+    if (serviceType !== "local_move" && serviceType !== "long_distance") return;
+    const base = quoteResult?.tiers as
+      | Record<string, { price?: number } | undefined>
+      | undefined;
+    if (!base) return;
+    let pending = false;
+    for (const tk of ["essential", "signature", "estate"] as const) {
+      const ov = tierPriceOverrides[tk];
+      if (!ov) continue;
+      const p = parseFloat(ov.price);
+      if (!Number.isFinite(p) || p <= 0) continue;
+      if (ov.reason.trim().length < 3) continue;
+      const saved = base[tk]?.price;
+      if (typeof saved === "number" && Math.abs(p - saved) >= 1) {
+        pending = true;
+        break;
+      }
+    }
+    if (!pending) return;
+    const timer = setTimeout(() => {
+      if (generatingRef.current) return;
+      void handleGenerateRef.current();
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [tierPriceOverrides, quoteResult?.tiers, quoteId, serviceType]);
+
   // ── Send quote (Step 2: only after generate; requires quoteId from state) ────────────────────────────
   const handleSend = async () => {
     if (!quoteId) {
