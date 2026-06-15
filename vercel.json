@@ -49,6 +49,10 @@
       "schedule": "0 11 * * *"
     },
     {
+      "path": "/api/cron/partner-pm-invoices",
+      "schedule": "30 11 * * *"
+    },
+    {
       "path": "/api/cron/quote-reengagement",
       "schedule": "30 11 * * *"
     },

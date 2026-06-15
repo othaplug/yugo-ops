@@ -104,11 +104,26 @@ export async function reconcileUnpaidSquareInvoices(
     return { checked: 0, markedPaid: 0, linkedIds: 0, errors: [err2.message] };
   }
 
+  // Partner (PM) batched invoices: same idea, separate table. These are sent to
+  // partners via Square; when the partner pays, Square flips the invoice to PAID
+  // but nothing tells Ops — so without this pass they sit "sent" forever and
+  // inflate Outstanding on the Revenue page.
+  const { data: partnerRows, error: err3 } = await supabase
+    .from("partner_invoices")
+    .select("id, square_invoice_id, status, square_invoice_url")
+    .not("square_invoice_id", "is", null)
+    .in("status", ["sent", "overdue"])
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (err3) errors.push(`partner_invoices query: ${err3.message}`);
+
   const rowsWithId = withSquareId ?? [];
   const rowsMissing = missingSquareId ?? [];
+  const partnerInvoiceRows = partnerRows ?? [];
   let markedPaid = 0;
   let linkedIds = 0;
-  let checked = rowsWithId.length + rowsMissing.length;
+  let checked = rowsWithId.length + rowsMissing.length + partnerInvoiceRows.length;
 
   for (const row of rowsWithId) {
     const squareInvoiceId = (row.square_invoice_id as string | null)?.trim();
@@ -170,6 +185,32 @@ export async function reconcileUnpaidSquareInvoices(
       const msg = e instanceof Error ? e.message : String(e);
       errors.push(`${refText || "?"}: ${msg}`);
       console.error("[reconcile-square-invoices] orphan row failed:", row.id, e);
+    }
+  }
+
+  for (const row of partnerInvoiceRows) {
+    const squareInvoiceId = (row.square_invoice_id as string | null)?.trim();
+    if (!squareInvoiceId) continue;
+
+    try {
+      const res = await squareClient.invoices.get({ invoiceId: squareInvoiceId });
+      const inv = res.invoice;
+      if (!isSquareInvoicePaidStatus(inv?.status as string | undefined)) continue;
+
+      const publicUrl = (inv as { publicUrl?: string | null } | undefined)?.publicUrl ?? null;
+      await supabase
+        .from("partner_invoices")
+        .update({
+          status: "paid",
+          paid_at: new Date().toISOString(),
+          ...(publicUrl && !row.square_invoice_url ? { square_invoice_url: publicUrl } : {}),
+        })
+        .eq("id", row.id);
+      markedPaid++;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      errors.push(`partner ${squareInvoiceId}: ${msg}`);
+      console.error("[reconcile-square-invoices] partner_invoices.get failed:", squareInvoiceId, e);
     }
   }
 

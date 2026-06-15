@@ -105,15 +105,6 @@ interface UnbilledPMMove {
   amount?: number | null;
 }
 
-interface BookedMoveBalance {
-  id: string;
-  estimate?: number | null;
-  final_amount?: number | null;
-  total_price?: number | null;
-  amount?: number | null;
-  deposit_amount?: number | null;
-}
-
 interface PMMoveAll {
   id: string;
   client_name?: string | null;
@@ -140,8 +131,6 @@ interface RevenueClientProps {
   sentPartnerInvoices?: SentPartnerInvoice[];
   /** Completed PM moves not yet attached to a partner invoice. */
   unbilledPMmoves?: UnbilledPMMove[];
-  /** Booked residential moves with deposit collected — balance still due. */
-  bookedMovesBalance?: BookedMoveBalance[];
   /** All PM moves (for revenue chart third segment + top clients). */
   pmMovesAll?: PMMoveAll[];
 }
@@ -330,7 +319,6 @@ export default function RevenueClient({
   clientNameToOrgId = {},
   sentPartnerInvoices = [],
   unbilledPMmoves = [],
-  bookedMovesBalance = [],
   pmMovesAll = [],
 }: RevenueClientProps) {
   const [period, setPeriod] = useState<Period>("6mo");
@@ -409,19 +397,15 @@ export default function RevenueClient({
     return s + Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0);
   }, 0);
 
-  // Booked residential moves: balance due after deposit
-  const outstandingDepositBalances = bookedMovesBalance.reduce((s, m) => {
-    const price = Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0);
-    const deposit = Number(m.deposit_amount ?? 0);
-    return s + Math.max(0, price - deposit);
-  }, 0);
-
-  const outstanding = outstandingDeliveryInvoices;
+  // Outstanding = money actually owed now: unpaid sent/overdue invoices + PM
+  // billing invoices sent + completed PM moves not yet billed. We deliberately
+  // do NOT count future booked-move balances — those deposits are already
+  // collected and the balance isn't due until ~48h before the move, so they're
+  // upcoming/pipeline, not a current receivable.
   const totalOutstanding =
     outstandingDeliveryInvoices +
     outstandingPartnerInvoices +
-    outstandingPMUnbilled +
-    outstandingDepositBalances;
+    outstandingPMUnbilled;
 
   const byClient: Record<string, number> = {};
   invoicesForBreakdown.forEach((i) => {
@@ -914,9 +898,6 @@ export default function RevenueClient({
               )}
               {outstandingPMUnbilled > 0 && (
                 <p>{formatCompactCurrency(outstandingPMUnbilled)} · PM awaiting invoice</p>
-              )}
-              {outstandingDepositBalances > 0 && (
-                <p>{formatCompactCurrency(outstandingDepositBalances)} · balances due</p>
               )}
             </div>
           ) : (
