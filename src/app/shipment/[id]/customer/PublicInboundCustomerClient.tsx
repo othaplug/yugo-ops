@@ -1,9 +1,51 @@
 "use client";
 
 import { useState } from "react";
-import { User, EnvelopeSimple, Phone, MapPin, Chats, CheckCircle } from "@phosphor-icons/react";
+import {
+  User,
+  EnvelopeSimple,
+  Phone,
+  MapPin,
+  Chats,
+  CheckCircle,
+} from "@phosphor-icons/react";
+import YugoLogo from "@/components/YugoLogo";
 
-export default function PublicInboundCustomerClient({ id, token }: { id: string; token: string }) {
+/* Premium client palette (explicit, never admin dark vars). */
+const BG = "#FAF7F2";
+const INK = "#241C16";
+const WINE = "#5C1A33";
+const FOREST = "#2C3E2D";
+const MUTED = "rgba(36,28,22,0.58)";
+const FIELD_BORDER = "rgba(44,62,45,0.22)";
+const CARD_BORDER = "rgba(92,26,51,0.14)";
+
+/** Full building-access list for a white glove delivery. */
+const ACCESS_OPTIONS: { value: string; label: string }[] = [
+  { value: "elevator", label: "Elevator" },
+  { value: "freight_elevator", label: "Freight / service elevator" },
+  { value: "ground_floor", label: "Ground floor / street level" },
+  { value: "walk_up_2", label: "Walk-up (2nd floor)" },
+  { value: "walk_up_3", label: "Walk-up (3rd floor)" },
+  { value: "walk_up_4_plus", label: "Walk-up (4th floor or higher)" },
+  { value: "stairs", label: "Stairs" },
+  { value: "narrow_stairs", label: "Narrow stairs" },
+  { value: "loading_dock", label: "Loading dock" },
+  { value: "concierge", label: "Concierge / front desk" },
+  { value: "long_carry", label: "Long carry from parking" },
+  { value: "other", label: "Other (add a note)" },
+];
+
+const fieldClass =
+  "w-full rounded-lg border px-3.5 py-2.5 text-[14px] outline-none transition-colors focus:border-[#5C1A33] focus:ring-2 focus:ring-[#5C1A33]/15";
+
+export default function PublicInboundCustomerClient({
+  id,
+  token,
+}: {
+  id: string;
+  token: string;
+}) {
   const [done, setDone] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,14 +84,32 @@ export default function PublicInboundCustomerClient({ id, token }: { id: string;
     }
   }
 
+  const fieldStyle = { backgroundColor: "#fff", borderColor: FIELD_BORDER, color: INK };
+  const labelStyle = { color: FOREST };
+
   if (done) {
     return (
-      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center px-4">
+      <div
+        className="min-h-screen flex items-center justify-center px-4"
+        style={{ backgroundColor: BG }}
+      >
         <div className="max-w-md text-center">
-          <CheckCircle className="mx-auto text-[#2D6A4F]" size={48} weight="fill" aria-hidden />
-          <h1 className="text-xl font-semibold mt-4">Thank you</h1>
-          <p className="text-sm text-[var(--tx3)] mt-2">
-            Your details were submitted. Our team will reach out to schedule delivery.
+          <CheckCircle
+            className="mx-auto"
+            style={{ color: FOREST }}
+            size={52}
+            weight="fill"
+            aria-hidden
+          />
+          <h1
+            className="font-hero text-[26px] mt-5"
+            style={{ color: INK }}
+          >
+            Thank you
+          </h1>
+          <p className="text-[14px] mt-3 leading-relaxed" style={{ color: MUTED }}>
+            Your details were submitted. Our team will be in touch to arrange
+            your white glove delivery.
           </p>
         </div>
       </div>
@@ -57,104 +117,191 @@ export default function PublicInboundCustomerClient({ id, token }: { id: string;
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] px-4 py-10 text-[var(--tx)]">
+    <div
+      className="min-h-screen px-4 py-12"
+      style={{ backgroundColor: BG, color: INK }}
+    >
       <div className="max-w-md mx-auto">
-        <h1 className="text-xl font-semibold mb-1">Customer delivery details</h1>
-        <p className="text-sm text-[var(--tx3)] mb-6">
-          Provide the end customer&apos;s information so we can schedule white glove delivery.
-        </p>
+        <div className="flex flex-col items-center text-center mb-7">
+          <YugoLogo size={30} variant="black" />
+          <div
+            className="w-10 h-px my-4"
+            style={{ backgroundColor: `${WINE}33` }}
+          />
+          <h1 className="font-hero text-[28px] leading-tight" style={{ color: INK }}>
+            Customer delivery details
+          </h1>
+          <p className="text-[13px] mt-2 leading-relaxed max-w-xs" style={{ color: MUTED }}>
+            Share where and how to deliver, so we can arrange your white glove
+            delivery with care.
+          </p>
+        </div>
 
-        <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-[var(--brd)] bg-white p-5 shadow-sm">
-          <label className="block text-sm">
-            <span className="flex items-center gap-1.5 text-[var(--tx3)] mb-1">
-              <User size={16} aria-hidden /> Name
+        <form
+          onSubmit={onSubmit}
+          className="space-y-5 rounded-2xl border bg-white p-6 shadow-[0_2px_14px_rgba(92,26,51,0.05)]"
+          style={{ borderColor: CARD_BORDER }}
+        >
+          <label className="block">
+            <span
+              className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] mb-1.5"
+              style={labelStyle}
+            >
+              <User size={15} aria-hidden /> Name
             </span>
             <input
               required
-              className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+              className={fieldClass}
+              style={fieldStyle}
               value={form.customer_name}
-              onChange={(e) => setForm((f) => ({ ...f, customer_name: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, customer_name: e.target.value }))
+              }
             />
           </label>
-          <label className="block text-sm">
-            <span className="flex items-center gap-1.5 text-[var(--tx3)] mb-1">
-              <EnvelopeSimple size={16} aria-hidden /> Email
+
+          <label className="block">
+            <span
+              className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] mb-1.5"
+              style={labelStyle}
+            >
+              <EnvelopeSimple size={15} aria-hidden /> Email
             </span>
             <input
               required
               type="email"
-              className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+              className={fieldClass}
+              style={fieldStyle}
               value={form.customer_email}
-              onChange={(e) => setForm((f) => ({ ...f, customer_email: e.target.value }))}
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="flex items-center gap-1.5 text-[var(--tx3)] mb-1">
-              <Phone size={16} aria-hidden /> Phone
-            </span>
-            <input
-              required
-              className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
-              value={form.customer_phone}
-              onChange={(e) => setForm((f) => ({ ...f, customer_phone: e.target.value }))}
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="flex items-center gap-1.5 text-[var(--tx3)] mb-1">
-              <MapPin size={16} aria-hidden /> Delivery address
-            </span>
-            <input
-              required
-              className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
-              value={form.customer_address}
-              onChange={(e) => setForm((f) => ({ ...f, customer_address: e.target.value }))}
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="text-[var(--tx3)] mb-1 block">Postal code</span>
-            <input
-              className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
-              value={form.customer_postal}
-              onChange={(e) => setForm((f) => ({ ...f, customer_postal: e.target.value }))}
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="text-[var(--tx3)] mb-1 block">Building access</span>
-            <select
-              className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
-              value={form.customer_access}
-              onChange={(e) => setForm((f) => ({ ...f, customer_access: e.target.value }))}
-            >
-              <option value="elevator">Elevator</option>
-              <option value="stairs">Stairs</option>
-              <option value="loading_dock">Loading dock</option>
-              <option value="other">Other</option>
-            </select>
-          </label>
-          <label className="block text-sm">
-            <span className="flex items-center gap-1.5 text-[var(--tx3)] mb-1">
-              <Chats size={16} aria-hidden /> Notes
-            </span>
-            <textarea
-              rows={3}
-              className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
-              value={form.customer_notes}
-              onChange={(e) => setForm((f) => ({ ...f, customer_notes: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, customer_email: e.target.value }))
+              }
             />
           </label>
 
-          <div className="pt-2 border-t border-[var(--brd)]/40">
-            <p className="text-xs text-[var(--tx3)] mb-2">If you are responding to a damage notice, tell us how to proceed.</p>
-            <label className="block text-sm mb-2">
-              <span className="text-[var(--tx3)] mb-1 block">Resolution preference</span>
-              <select
-                className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
-                value={form.partner_resolution_choice}
-                onChange={(e) => setForm((f) => ({ ...f, partner_resolution_choice: e.target.value }))}
+          <label className="block">
+            <span
+              className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] mb-1.5"
+              style={labelStyle}
+            >
+              <Phone size={15} aria-hidden /> Phone
+            </span>
+            <input
+              required
+              className={fieldClass}
+              style={fieldStyle}
+              value={form.customer_phone}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, customer_phone: e.target.value }))
+              }
+            />
+          </label>
+
+          <label className="block">
+            <span
+              className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] mb-1.5"
+              style={labelStyle}
+            >
+              <MapPin size={15} aria-hidden /> Delivery address
+            </span>
+            <input
+              required
+              className={fieldClass}
+              style={fieldStyle}
+              value={form.customer_address}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, customer_address: e.target.value }))
+              }
+            />
+          </label>
+
+          <label className="block">
+            <span
+              className="block text-[11px] font-semibold uppercase tracking-[0.08em] mb-1.5"
+              style={labelStyle}
+            >
+              Postal code
+            </span>
+            <input
+              className={fieldClass}
+              style={fieldStyle}
+              value={form.customer_postal}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, customer_postal: e.target.value }))
+              }
+            />
+          </label>
+
+          <label className="block">
+            <span
+              className="block text-[11px] font-semibold uppercase tracking-[0.08em] mb-1.5"
+              style={labelStyle}
+            >
+              Building access
+            </span>
+            <select
+              className={`${fieldClass} appearance-none`}
+              style={fieldStyle}
+              value={form.customer_access}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, customer_access: e.target.value }))
+              }
+            >
+              {ACCESS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span
+              className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] mb-1.5"
+              style={labelStyle}
+            >
+              <Chats size={15} aria-hidden /> Notes
+            </span>
+            <textarea
+              rows={3}
+              className={fieldClass}
+              style={fieldStyle}
+              placeholder="Anything our crew should know (parking, buzzer, preferred times)…"
+              value={form.customer_notes}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, customer_notes: e.target.value }))
+              }
+            />
+          </label>
+
+          <div className="pt-4 border-t" style={{ borderColor: `${WINE}14` }}>
+            <p className="text-[12px] mb-3 leading-relaxed" style={{ color: MUTED }}>
+              If you are responding to a damage notice, tell us how you would
+              like us to proceed.
+            </p>
+            <label className="block mb-3">
+              <span
+                className="block text-[11px] font-semibold uppercase tracking-[0.08em] mb-1.5"
+                style={labelStyle}
               >
-                <option value="">—</option>
+                Resolution preference
+              </span>
+              <select
+                className={`${fieldClass} appearance-none`}
+                style={fieldStyle}
+                value={form.partner_resolution_choice}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    partner_resolution_choice: e.target.value,
+                  }))
+                }
+              >
+                <option value="">Select if applicable</option>
                 <option value="return_sender">Return to sender</option>
-                <option value="deliver_as_is">Deliver as-is (customer informed)</option>
+                <option value="deliver_as_is">
+                  Deliver as-is (customer informed)
+                </option>
                 <option value="hold_replacement">Hold for replacement</option>
                 <option value="other">Other</option>
               </select>
@@ -162,21 +309,35 @@ export default function PublicInboundCustomerClient({ id, token }: { id: string;
             <textarea
               rows={2}
               placeholder="Additional instructions"
-              className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+              className={fieldClass}
+              style={fieldStyle}
               value={form.partner_resolution_notes}
-              onChange={(e) => setForm((f) => ({ ...f, partner_resolution_notes: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  partner_resolution_notes: e.target.value,
+                }))
+              }
             />
           </div>
 
-          {err ? <p className="text-sm text-red-600">{err}</p> : null}
+          {err ? (
+            <p className="text-[13px] font-medium" style={{ color: "#B42318" }}>
+              {err}
+            </p>
+          ) : null}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-[#1f5f3f] text-white text-sm font-semibold disabled:opacity-60"
+            className="w-full py-3.5 rounded-xl text-[12px] font-bold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+            style={{ backgroundColor: WINE }}
           >
-            {loading ? "Saving…" : "Submit"}
+            {loading ? "Submitting…" : "Submit"}
           </button>
+          <p className="text-[11px] text-center" style={{ color: MUTED }}>
+            Handled by Yugo white glove delivery.
+          </p>
         </form>
       </div>
     </div>

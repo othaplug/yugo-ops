@@ -42,6 +42,8 @@ function isPublic(pathname: string): boolean {
   if (pathname.startsWith("/pay/")) return true;
   if (pathname.startsWith("/track/")) return true;
   if (pathname.startsWith("/tracking")) return true;
+  /** Public inbound-shipment client pages (customer form + tracking); token verified in-route. */
+  if (pathname.startsWith("/shipment/")) return true;
   if (pathname.startsWith("/widget/")) return true;
   if (pathname.startsWith("/embed/")) return true;
   if (pathname.startsWith("/claim/")) return true;
@@ -50,6 +52,8 @@ function isPublic(pathname: string): boolean {
   if (pathname.startsWith("/survey/")) return true;
   if (pathname.startsWith("/api/surveys/")) return true;
   if (pathname.startsWith("/api/survey/")) return true;
+  /** Public inbound-shipment endpoints (carrier/customer tokens verified in-route). */
+  if (pathname.startsWith("/api/public/")) return true;
   if (pathname.startsWith("/api/client/")) return true;
   if (pathname.startsWith("/api/contracts/")) return true;
   if (pathname.startsWith("/api/quotes/")) return true;

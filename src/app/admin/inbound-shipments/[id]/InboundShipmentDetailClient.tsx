@@ -111,22 +111,39 @@ export default function InboundShipmentDetailClient({
   }
 
   async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const fd = new FormData();
-    fd.set("file", file);
-    const res = await fetch(`/api/admin/inbound-shipments/${shipmentId}/photos`, {
-      method: "POST",
-      body: fd,
-    });
-    const j = await res.json();
-    if (res.ok) {
-      setShipment((s) => ({ ...s, inspection_photos: j.photos }));
-      setMsg("Photo uploaded");
-    } else {
-      setMsg(j.error || "Upload failed");
-    }
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
     e.target.value = "";
+    setLoading(true);
+    let uploaded = 0;
+    let lastError: string | null = null;
+    // Upload sequentially so each append to inspection_photos is consistent.
+    for (let i = 0; i < files.length; i++) {
+      setMsg(`Uploading photo ${i + 1} of ${files.length}…`);
+      const fd = new FormData();
+      fd.set("file", files[i]);
+      try {
+        const res = await fetch(
+          `/api/admin/inbound-shipments/${shipmentId}/photos`,
+          { method: "POST", body: fd },
+        );
+        const j = await res.json();
+        if (res.ok) {
+          setShipment((s) => ({ ...s, inspection_photos: j.photos }));
+          uploaded++;
+        } else {
+          lastError = j.error || "Upload failed";
+        }
+      } catch {
+        lastError = "Network error";
+      }
+    }
+    setLoading(false);
+    setMsg(
+      lastError
+        ? `${uploaded} uploaded. ${lastError}`
+        : `${uploaded} photo${uploaded === 1 ? "" : "s"} uploaded.`,
+    );
   }
 
   function copy(text: string) {
@@ -263,8 +280,14 @@ export default function InboundShipmentDetailClient({
         </p>
         <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--gold)] text-xs font-semibold cursor-pointer">
           <Camera size={16} aria-hidden />
-          Upload photo
-          <input type="file" accept="image/*" className="hidden" onChange={onPhoto} />
+          Upload photos
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={onPhoto}
+          />
         </label>
         {photos.length > 0 && (
           <div className="grid grid-cols-3 gap-2">
