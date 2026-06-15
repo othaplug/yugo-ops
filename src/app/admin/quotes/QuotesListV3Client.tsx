@@ -101,7 +101,12 @@ function expiryInfo(
   expiresAt: string | null,
   status: string,
 ): { label: string; tone: "warning" | "danger" | "neutral" } | null {
-  if (!expiresAt || status === "accepted") return null;
+  // Only live quotes get an expiry/countdown chip. Terminal or cold statuses
+  // (accepted, expired, declined, lost, cold, …) are already conveyed by the
+  // status pill — a second "Expired" or "Nd left" chip there is duplicative
+  // ("Expired · Expired") or contradictory ("Declined · 4d left").
+  const ACTIVE = new Set(["draft", "sent", "viewed"]);
+  if (!expiresAt || !ACTIVE.has(status)) return null;
   const daysLeft = Math.ceil(
     (new Date(expiresAt).getTime() - Date.now()) / 86_400_000,
   );
