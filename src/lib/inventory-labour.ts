@@ -24,8 +24,13 @@
  *        assembly cap 3 (was 2), MIN_HOURS_BY_SIZE +1h per tier.
  *        Net effect: ~15-25% higher hours estimates across 2BR–5BR
  *        range; small-job estimates roughly unchanged (within floor).
+ *  - v3: shipped 2026-06-15. Assembly parallelism uses the full crew
+ *        (cap 3) instead of crew-1, so a 2-person crew no longer runs all
+ *        assembly serially through one mover. Lowers wall-clock on small,
+ *        assembly-heavy moves (~5h → ~4h on a light 1BR) and clears the
+ *        false "underpriced" labour-rate flag that the inflated hours caused.
  */
-export const LABOUR_CALIBRATION_VERSION = 2;
+export const LABOUR_CALIBRATION_VERSION = 3;
 
 const DISASSEMBLY_BY_SIZE: Record<string, number> = {
   studio: 0.25,
@@ -343,7 +348,16 @@ export function estimateLabourFromScore(
   const itemAssemblyMinutes = options?.assemblyMinutes ?? 0;
   let disassemblyHours: number;
   if (itemAssemblyMinutes > 0) {
-    const assemblyParallel = Math.min(3, Math.max(1, crewSize - 1));
+    // Assembly — disassembly at origin and (mostly) reassembly at the
+    // destination, where the unload is essentially finished — uses the crew
+    // that's actually available, not crew-1. Reserving one mover forced a
+    // 2-person crew to run ALL assembly serially through a single body, which
+    // over-stated wall-clock on small assembly-heavy moves: a light 1BR (score
+    // ~14, 4 detected assembly items) came out at ~5h and then false-flagged
+    // the labour-rate check as "underpriced" (labour-$ ÷ crew ÷ inflated hours).
+    // Let the full crew assemble, still capped at 3 (the marginal benefit of a
+    // 4th dedicated assembler drops off sharply).
+    const assemblyParallel = Math.min(3, crewSize);
     const assemblyManHours = (itemAssemblyMinutes / 60) * careMultiplier;
     disassemblyHours = Math.max(
       baseDisassemblyHours,
