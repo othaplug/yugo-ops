@@ -34,7 +34,6 @@ import {
   getInvoiceRevenueDate,
   normalizePartnerCategoryForBreakdown,
   partnerRevenueTotalForMonth,
-  partnerRevenueLifetime,
 } from "@/lib/partner-revenue";
 import {
   deliveryPreTaxForAdminList,
@@ -135,6 +134,8 @@ interface RevenueClientProps {
   clientTypeMap?: Record<string, string>;
   /** Org id → type (retail, b2c, …). Used so B2B invoices resolve even when client name mismatches. */
   orgIdToType?: Record<string, string>;
+  /** Org id → display name. Used to aggregate PM partner moves by partner, not per-unit. */
+  orgIdToName?: Record<string, string>;
   clientNameToOrgId?: Record<string, string>;
   /** PM billing invoices with status='sent' (not yet paid). */
   sentPartnerInvoices?: SentPartnerInvoice[];
@@ -327,6 +328,7 @@ export default function RevenueClient({
   paidMoves = [],
   clientTypeMap = {},
   orgIdToType = {},
+  orgIdToName = {},
   clientNameToOrgId = {},
   sentPartnerInvoices = [],
   unbilledPMmoves = [],
@@ -347,26 +349,55 @@ export default function RevenueClient({
   };
 
   const all = invoices || [];
-  const invoicesForBreakdown = all.filter(
-    (i) => !invoiceExcludedFromRevenue(i),
-  );
   const paidMovesList = paidMoves || [];
   const paidInvoicesAll = all.filter((i) => i.status === "paid");
   const deliveryRows = deliveries as Parameters<
     typeof partnerRevenueTotalForMonth
   >[2];
 
-  const invoiceRevenue = partnerRevenueLifetime(
-    all,
-    paidInvoicesAll,
-    deliveryRows,
-    orgIdToType,
-    clientTypeMap,
-  );
-  const paidPartnerInvoices = paidInvoicesAll.filter((i) =>
+  /* ── Period window: scope every revenue breakdown to the selected toggle so
+        the whole page reads as one timeframe (not lifetime numbers next to a
+        6-month chart). Outstanding stays a live snapshot. ── */
+  const { periodStart, periodEnd, periodLabel } = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    if (period === "all")
+      return { periodStart: null as Date | null, periodEnd: now, periodLabel: "all time" };
+    if (period === "year" && selectedYear != null)
+      return {
+        periodStart: new Date(selectedYear, 0, 1),
+        periodEnd: new Date(selectedYear, 11, 31, 23, 59, 59, 999),
+        periodLabel: String(selectedYear),
+      };
+    if (period === "monthly")
+      return { periodStart: new Date(y, m, 1), periodEnd: now, periodLabel: "this month" };
+    if (period === "ytd")
+      return { periodStart: new Date(y, 0, 1), periodEnd: now, periodLabel: "year to date" };
+    return { periodStart: new Date(y, m - 5, 1), periodEnd: now, periodLabel: "last 6 months" };
+  }, [period, selectedYear]);
+
+  const inPeriod = (d: Date | null | undefined) => {
+    if (!d || isNaN(d.getTime())) return false;
+    return (!periodStart || d >= periodStart) && d <= periodEnd;
+  };
+
+  // Paid partner invoices (the actual invoice channel), scoped to the period.
+  const allPaidPartnerInvoices = paidInvoicesAll.filter((i) =>
     isPartnerChannelInvoice(i, orgIdToType, clientTypeMap),
   );
-  const moveRevenue = paidMovesList.reduce(
+  const paidPartnerInvoices = allPaidPartnerInvoices.filter((i) =>
+    inPeriod(getInvoiceRevenueDate(i)),
+  );
+  // Decision: "Partner invoices" means invoices only — no delivery fallback.
+  const invoiceRevenue = paidPartnerInvoices
+    .filter((i) => !invoiceExcludedFromRevenue(i))
+    .reduce((s, i) => s + invoicePreTaxForDisplay(i), 0);
+
+  const scopedPaidMoves = paidMovesList.filter((m) =>
+    inPeriod(getMoveRevenueDate(m)),
+  );
+  const moveRevenue = scopedPaidMoves.reduce(
     (s, m) => s + Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate ?? 0),
     0,
   );
@@ -379,6 +410,19 @@ export default function RevenueClient({
   const outstandingDeliveryInvoices = all
     .filter((i) => invoiceStatusIsOutstanding(i.status))
     .reduce((s, i) => s + invoicePreTaxForDisplay(i), 0);
+
+  // Delivered jobs with no invoice yet — earned but unbilled (not "paid revenue").
+  const coveredByInvoice = deliveryIdsCoveredByAnyInvoice(all);
+  const deliveredNotInvoiced = deliveryRows.reduce((s, raw) => {
+    const d = raw as Parameters<typeof deliveryPreTaxForAdminList>[0] & {
+      id: string;
+      status?: string | null;
+    };
+    if (!["delivered", "completed"].includes(String(d.status || "").toLowerCase()))
+      return s;
+    if (coveredByInvoice.has(String(d.id))) return s;
+    return s + deliveryPreTaxForAdminList(d);
+  }, 0);
 
   // PM billing invoices sent but not paid (partner_invoices table)
   const outstandingPartnerInvoices = sentPartnerInvoices.reduce(
@@ -398,29 +442,35 @@ export default function RevenueClient({
     return s + Math.max(0, price - deposit);
   }, 0);
 
-  const outstanding = outstandingDeliveryInvoices;
   const totalOutstanding =
     outstandingDeliveryInvoices +
+    deliveredNotInvoiced +
     outstandingPartnerInvoices +
     outstandingPMUnbilled +
     outstandingDepositBalances;
 
+  // Top clients — paid revenue only, scoped to the period. PM moves aggregate by
+  // partner org (not the per-unit client_name).
+  const pmName = (m: PMMoveAll) =>
+    (m.organization_id && orgIdToName[m.organization_id]) || m.client_name || "PM partner";
   const byClient: Record<string, number> = {};
-  invoicesForBreakdown.forEach((i) => {
+  paidPartnerInvoices.forEach((i) => {
+    if (invoiceExcludedFromRevenue(i)) return;
     const name = i.client_name ?? "-";
     byClient[name] = (byClient[name] || 0) + invoicePreTaxForDisplay(i);
   });
-  paidMovesList.forEach((m) => {
+  scopedPaidMoves.forEach((m) => {
     const name = m.client_name || "-";
     byClient[name] =
       (byClient[name] || 0) + Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate ?? 0);
   });
-  // PM partners — aggregate by organization name (client_name on the move)
-  pmMovesAll.forEach((m) => {
-    const name = m.client_name || "PM partner";
-    byClient[name] =
-      (byClient[name] || 0) + Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0);
-  });
+  pmMovesAll
+    .filter((m) => m.payment_marked_paid_at && inPeriod(new Date(m.payment_marked_paid_at)))
+    .forEach((m) => {
+      const name = pmName(m);
+      byClient[name] =
+        (byClient[name] || 0) + Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0);
+    });
   const topClients = Object.entries(byClient)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8);
@@ -450,29 +500,40 @@ export default function RevenueClient({
         0,
       );
 
+  // Paid partner INVOICES only for a month (no delivery fallback — that's
+  // unbilled and surfaced under Outstanding). maxDay caps to a day-of-month
+  // for fair month-to-date comparisons.
+  const partnerPaidInMonth = (y: number, mo: number, maxDay = 31) =>
+    allPaidPartnerInvoices
+      .filter((i) => {
+        if (invoiceExcludedFromRevenue(i)) return false;
+        const d = getInvoiceRevenueDate(i);
+        return (
+          d.getFullYear() === y && d.getMonth() === mo && d.getDate() <= maxDay
+        );
+      })
+      .reduce((s, i) => s + invoicePreTaxForDisplay(i), 0);
+
+  const movesPaidInMonth = (y: number, mo: number, maxDay = 31) =>
+    paidMovesList
+      .filter((m) => {
+        const d = getMoveRevenueDate(m);
+        return (
+          d.getFullYear() === y && d.getMonth() === mo && d.getDate() <= maxDay
+        );
+      })
+      .reduce(
+        (s, m) => s + Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate ?? 0),
+        0,
+      );
+
   const chartData = useMemo(() => {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
 
-    const moveSumInMonth = (y: number, mo: number) =>
-      paidMovesList
-        .filter((move) => {
-          const d = getMoveRevenueDate(move);
-          return d.getFullYear() === y && d.getMonth() === mo;
-        })
-        .reduce((s, move) => s + Number(move.final_amount ?? move.total_price ?? move.amount ?? move.estimate ?? 0), 0);
-
-    const partnerInMonth = (y: number, mo: number) =>
-      partnerRevenueTotalForMonth(
-        all,
-        paidInvoicesAll,
-        deliveryRows,
-        orgIdToType,
-        clientTypeMap,
-        y,
-        mo,
-      );
+    const moveSumInMonth = (y: number, mo: number) => movesPaidInMonth(y, mo);
+    const partnerInMonth = (y: number, mo: number) => partnerPaidInMonth(y, mo);
 
     const row = (
       label: string,
@@ -537,12 +598,10 @@ export default function RevenueClient({
       const daysInMonth = new Date(year, month + 1, 0).getDate();
       const byDayMoves: Record<number, number> = {};
       const byDayPartnerInv: Record<number, number> = {};
-      const byDayDlv: Record<number, number> = {};
       const byDayPM: Record<number, number> = {};
       for (let d = 1; d <= daysInMonth; d++) {
         byDayMoves[d] = 0;
         byDayPartnerInv[d] = 0;
-        byDayDlv[d] = 0;
         byDayPM[d] = 0;
       }
       pmMovesAll.forEach((m) => {
@@ -572,27 +631,9 @@ export default function RevenueClient({
             (byDayMoves[day] || 0) + Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate ?? 0);
         }
       });
-      const covered = deliveryIdsCoveredByAnyInvoice(all);
-      const PAID_D = new Set(["delivered", "completed"]);
-      for (const raw of deliveries || []) {
-        const d = raw as Parameters<typeof deliveryPreTaxForAdminList>[0] & {
-          id: string;
-          status?: string | null;
-          scheduled_date?: string | null;
-          created_at?: string | null;
-        };
-        if (!PAID_D.has(String(d.status || "").toLowerCase())) continue;
-        if (covered.has(String(d.id))) continue;
-        const ts = String(d.scheduled_date || d.created_at || "");
-        const dt = ts ? new Date(ts) : null;
-        if (!dt || dt.getFullYear() !== year || dt.getMonth() !== month)
-          continue;
-        const day = dt.getDate();
-        byDayDlv[day] = (byDayDlv[day] || 0) + deliveryPreTaxForAdminList(d);
-      }
       return Array.from({ length: daysInMonth }, (_, i) => {
         const day = i + 1;
-        const partner = (byDayPartnerInv[day] || 0) + (byDayDlv[day] || 0);
+        const partner = byDayPartnerInv[day] || 0;
         const moves = byDayMoves[day] || 0;
         const pm = byDayPM[day] || 0;
         return row(
@@ -650,27 +691,14 @@ export default function RevenueClient({
     realtor: 0,
     b2c: 0,
   };
+  // Paid partner invoices by category (period-scoped, paid-only — no delivery
+  // fallback, which is unbilled and now lives under Outstanding).
   for (const inv of paidPartnerInvoices) {
     if (invoiceExcludedFromRevenue(inv)) continue;
     const cat = normalizePartnerCategoryForBreakdown(
       getInvoicePartnerType(inv, orgIdToType, clientTypeMap),
     );
     byTypeRaw[cat] = (byTypeRaw[cat] || 0) + invoicePreTaxForDisplay(inv);
-  }
-  const coveredForBreakdown = deliveryIdsCoveredByAnyInvoice(all);
-  const PAID_DLV = new Set(["delivered", "completed"]);
-  for (const raw of deliveryRows) {
-    const d = raw as Parameters<typeof deliveryPreTaxForAdminList>[0] & {
-      id: string;
-      organization_id?: string | null;
-      status?: string | null;
-    };
-    if (!PAID_DLV.has(String(d.status || "").toLowerCase())) continue;
-    if (coveredForBreakdown.has(String(d.id))) continue;
-    const oid = d.organization_id;
-    const orgType = (oid && orgIdToType[oid]) || "retail";
-    const cat = normalizePartnerCategoryForBreakdown(orgType);
-    byTypeRaw[cat] = (byTypeRaw[cat] || 0) + deliveryPreTaxForAdminList(d);
   }
   byTypeRaw.b2c = (byTypeRaw.b2c || 0) + moveRevenue;
   const byType = [
@@ -727,95 +755,38 @@ export default function RevenueClient({
   }, [paidInvoicesAll, selectedType, orgIdToType, clientTypeMap]);
 
   const now = new Date();
-  const currentMonthRevenue = useMemo(() => {
-    const y = now.getFullYear();
-    const m = now.getMonth();
-    const partnerSum = partnerRevenueTotalForMonth(
-      all,
-      paidInvoicesAll,
-      deliveryRows,
-      orgIdToType,
-      clientTypeMap,
-      y,
-      m,
-    );
-    const moveSum = paidMovesList
-      .filter((move) => {
-        const d = getMoveRevenueDate(move);
-        return d.getFullYear() === y && d.getMonth() === m;
-      })
-      .reduce((s, mov) => s + Number(mov.final_amount ?? mov.total_price ?? mov.amount ?? mov.estimate ?? 0), 0);
-    return partnerSum + moveSum;
-  }, [
-    all,
-    paidInvoicesAll,
-    deliveryRows,
-    orgIdToType,
-    clientTypeMap,
-    paidMovesList,
-    now,
-  ]);
+  const todayDay = now.getDate();
+  // Current month-to-date (paid only).
+  const currentMonthRevenue = useMemo(
+    () =>
+      partnerPaidInMonth(now.getFullYear(), now.getMonth(), todayDay) +
+      movesPaidInMonth(now.getFullYear(), now.getMonth(), todayDay),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allPaidPartnerInvoices, paidMovesList, todayDay],
+  );
 
+  // Previous month through the SAME day-of-month, so the delta is a fair
+  // month-to-date vs month-to-date comparison (not partial vs full month).
   const prevMonthRevenue = useMemo(() => {
     const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const y = prev.getFullYear();
-    const m = prev.getMonth();
-    const partnerSum = partnerRevenueTotalForMonth(
-      all,
-      paidInvoicesAll,
-      deliveryRows,
-      orgIdToType,
-      clientTypeMap,
-      y,
-      m,
+    return (
+      partnerPaidInMonth(prev.getFullYear(), prev.getMonth(), todayDay) +
+      movesPaidInMonth(prev.getFullYear(), prev.getMonth(), todayDay)
     );
-    const moveSum = paidMovesList
-      .filter((move) => {
-        const d = getMoveRevenueDate(move);
-        return d.getFullYear() === y && d.getMonth() === m;
-      })
-      .reduce((s, mov) => s + Number(mov.final_amount ?? mov.total_price ?? mov.amount ?? mov.estimate ?? 0), 0);
-    return partnerSum + moveSum;
-  }, [
-    all,
-    paidInvoicesAll,
-    deliveryRows,
-    orgIdToType,
-    clientTypeMap,
-    paidMovesList,
-    now,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allPaidPartnerInvoices, paidMovesList, todayDay]);
 
   const ytdRevenue = useMemo(() => {
     const y = now.getFullYear();
     const m = now.getMonth();
-    let partnerY = 0;
-    for (let mo = 0; mo <= m; mo++) {
-      partnerY += partnerRevenueTotalForMonth(
-        all,
-        paidInvoicesAll,
-        deliveryRows,
-        orgIdToType,
-        clientTypeMap,
-        y,
-        mo,
-      );
-    }
-    const moveSum = paidMovesList
-      .filter((move) => getMoveRevenueDate(move).getFullYear() === y)
-      .reduce((s, mov) => s + Number(mov.final_amount ?? mov.total_price ?? mov.amount ?? mov.estimate ?? 0), 0);
-    return partnerY + moveSum;
-  }, [
-    all,
-    paidInvoicesAll,
-    deliveryRows,
-    orgIdToType,
-    clientTypeMap,
-    paidMovesList,
-    now,
-  ]);
+    let total = 0;
+    for (let mo = 0; mo <= m; mo++)
+      total += partnerPaidInMonth(y, mo) + movesPaidInMonth(y, mo);
+    return total;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allPaidPartnerInvoices, paidMovesList, now]);
 
-  const revenueSourceCount = paidPartnerInvoices.length + paidMovesList.length;
+  const revenueSourceCount = paidPartnerInvoices.length + scopedPaidMoves.length;
   const avgJob =
     revenueSourceCount > 0 ? Math.round(paidTotal / revenueSourceCount) : 0;
   const pctChange =
@@ -860,7 +831,7 @@ export default function RevenueClient({
         <KpiCard
           label={`${currentMonthLabel} Revenue`}
           value={formatCompactCurrency(currentMonthRevenue)}
-          sub="Before HST"
+          sub="Month to date · before HST · vs same point last month"
           delta={pctChange}
           href="/admin/finance/invoices"
           accent
@@ -868,7 +839,7 @@ export default function RevenueClient({
         <KpiCard
           label={`${now.getFullYear()} YTD`}
           value={formatCompactCurrency(ytdRevenue)}
-          sub={`${paidPartnerInvoices.length} paid partner invoices · ${paidMovesList.length} paid moves`}
+          sub="Paid revenue, Jan 1 to today"
           href="/admin/finance/invoices"
         />
         {/* Outstanding — shows full breakdown across all sources */}
@@ -883,6 +854,9 @@ export default function RevenueClient({
             <div className="text-[11px] text-[var(--tx3)] space-y-0.5 mt-1">
               {outstandingDeliveryInvoices > 0 && (
                 <p>{formatCompactCurrency(outstandingDeliveryInvoices)} · B2B invoices</p>
+              )}
+              {deliveredNotInvoiced > 0 && (
+                <p>{formatCompactCurrency(deliveredNotInvoiced)} · delivered, not invoiced</p>
               )}
               {outstandingPartnerInvoices > 0 && (
                 <p>{formatCompactCurrency(outstandingPartnerInvoices)} · PM invoices sent</p>
@@ -908,7 +882,7 @@ export default function RevenueClient({
       {/* ── Section 2: Revenue by Source ──────────────────────────────────── */}
       {(invoiceRevenue > 0 || moveRevenue > 0) && (
         <>
-          <SectionDivider label="Revenue by Source" />
+          <SectionDivider label={`Revenue by Source · ${periodLabel}`} />
           <div className="grid sm:grid-cols-2 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-[var(--brd)]">
             <div className="sm:pr-8 pb-4 sm:pb-0">
               <SourcePill
@@ -932,8 +906,10 @@ export default function RevenueClient({
                 {formatCompactCurrency(paidTotal)}
               </p>
               <p className="text-[10px] text-[var(--tx3)] mt-1.5">
-                {paidPartnerInvoices.length} paid partner invoices ·{" "}
-                {paidMovesList.length} paid moves
+                {paidPartnerInvoices.length} paid partner invoice
+                {paidPartnerInvoices.length === 1 ? "" : "s"} ·{" "}
+                {scopedPaidMoves.length} paid move
+                {scopedPaidMoves.length === 1 ? "" : "s"}
               </p>
             </div>
           </div>
@@ -1075,9 +1051,9 @@ export default function RevenueClient({
           <div className="mb-5">
             <h2 className="admin-section-h2">By Service Type</h2>
             <p className="text-[10px] text-[var(--tx3)] mt-0.5">
-              Paid partner and delivery fallback by org category, plus
-              residential move payments under Moves (before HST; invoice rows
-              exclude cancelled and archived)
+              Paid partner invoices by org category, plus residential move
+              payments under Moves ({periodLabel}; before HST; excludes
+              cancelled and archived)
             </p>
           </div>
           <div className="space-y-1 divide-y divide-[var(--brd)]">
@@ -1138,7 +1114,7 @@ export default function RevenueClient({
             <div>
               <h2 className="admin-section-h2">Top Clients</h2>
               <p className="text-[10px] text-[var(--tx3)] mt-0.5">
-                Ranked by lifetime revenue
+                Ranked by paid revenue · {periodLabel}
               </p>
             </div>
             <Link
