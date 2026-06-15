@@ -139,6 +139,12 @@ interface InventoryInputProps {
   fromAccess?: string;
   toAccess?: string;
   showLabourEstimate?: boolean;
+  /**
+   * Effective assembly minutes (0 when assembly is off or overridden off).
+   * Included in the Signature/Estate hours estimate so the scope matches the
+   * engine; Essential always excludes assembly (it's a paid add-on there).
+   */
+  assemblyMinutes?: number;
   /** Controlled box count (midpoint of range) */
   boxCount?: number;
   onBoxCountChange?: (n: number) => void;
@@ -157,6 +163,7 @@ export default function InventoryInput({
   fromAccess,
   toAccess,
   showLabourEstimate = false,
+  assemblyMinutes = 0,
   boxCount,
   onBoxCountChange,
   mode = "residential",
@@ -424,7 +431,7 @@ export default function InventoryInput({
     };
     const sig = estimateLabourFromScore(
       labourScore, distanceKm, fromAccess, toAccess, moveSize,
-      { ...baseOpts, tier: "signature" as const },
+      { ...baseOpts, tier: "signature" as const, assemblyMinutes },
     );
     const ess = estimateLabourFromScore(
       labourScore, distanceKm, fromAccess, toAccess, moveSize,
@@ -432,7 +439,7 @@ export default function InventoryInput({
     );
     const est = estimateLabourFromScore(
       labourScore, distanceKm, fromAccess, toAccess, moveSize,
-      { ...baseOpts, tier: "estate" as const },
+      { ...baseOpts, tier: "estate" as const, assemblyMinutes },
     );
     // Apply the move-size truck floor so the preview matches what the
     // engine actually charges. estimateLabourFromScore returns a
@@ -462,6 +469,7 @@ export default function InventoryInput({
     toAccess,
     moveSize,
     catalogMinCrew,
+    assemblyMinutes,
   ]);
 
   const internalBoxCount = boxCount ?? 0;

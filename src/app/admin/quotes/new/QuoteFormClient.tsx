@@ -3960,6 +3960,16 @@ export default function QuoteFormClient({
   const effectiveAssemblyRequired =
     assemblyOverride !== null ? assemblyOverride : assemblyDetection.required;
 
+  // Effective assembly minutes for the inventory labour estimate (scope display).
+  // 0 when assembly is off/overridden off so Signature/Estate hours match what the
+  // engine actually charges. Mirrors the engine's labourAssemblyMinutes in
+  // /api/quotes/generate.
+  const effectiveAssemblyMinutes = useMemo(() => {
+    if (!effectiveAssemblyRequired) return 0;
+    const { totalMinutes } = calcAssemblyMinutes(inventoryItems, itemWeights);
+    return totalMinutes > 0 ? totalMinutes : 0;
+  }, [effectiveAssemblyRequired, inventoryItems, itemWeights]);
+
   // ── Quick optimistic estimate — updates on ANY pricing-relevant change ──────
   const liveEstimate = useMemo(
     () =>
@@ -8158,6 +8168,7 @@ export default function QuoteFormClient({
                             serviceType,
                           )
                         }
+                        assemblyMinutes={effectiveAssemblyMinutes}
                         boxCount={Number(clientBoxCount) || 0}
                         onBoxCountChange={(n) =>
                           setClientBoxCount(n > 0 ? String(n) : "")
