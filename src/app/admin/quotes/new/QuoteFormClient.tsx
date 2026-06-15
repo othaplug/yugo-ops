@@ -5359,6 +5359,10 @@ export default function QuoteFormClient({
       quoteId,
       assemblyOverride,
       sizeOverrideConfirmed,
+      // CRITICAL: without this, buildPayload captures a stale tierPriceOverrides
+      // and Regenerate/Send ships the OLD engine price — the override silently
+      // never persists (YG-30294/30295: $680 typed, server kept $950).
+      tierPriceOverrides,
     ],
   );
 
@@ -5603,6 +5607,10 @@ export default function QuoteFormClient({
   }, [generating]);
   const handleGenerateRef = useRef(handleGenerate);
   handleGenerateRef.current = handleGenerate;
+  // Loop guard: only auto-apply ONCE per distinct override input. Even if a
+  // regenerate somehow fails to move the saved price, we never re-fire for the
+  // same value — no runaway reload.
+  const lastAutoAppliedKeyRef = useRef<string>("");
   useEffect(() => {
     if (!quoteId) return;
     if (serviceType !== "local_move" && serviceType !== "long_distance") return;
@@ -5610,7 +5618,7 @@ export default function QuoteFormClient({
       | Record<string, { price?: number } | undefined>
       | undefined;
     if (!base) return;
-    let pending = false;
+    const pendingParts: string[] = [];
     for (const tk of ["essential", "signature", "estate"] as const) {
       const ov = tierPriceOverrides[tk];
       if (!ov) continue;
@@ -5619,13 +5627,15 @@ export default function QuoteFormClient({
       if (ov.reason.trim().length < 3) continue;
       const saved = base[tk]?.price;
       if (typeof saved === "number" && Math.abs(p - saved) >= 1) {
-        pending = true;
-        break;
+        pendingParts.push(`${tk}:${Math.round(p)}`);
       }
     }
-    if (!pending) return;
+    if (pendingParts.length === 0) return;
+    const key = pendingParts.join("|");
+    if (key === lastAutoAppliedKeyRef.current) return; // already attempted this exact set
     const timer = setTimeout(() => {
       if (generatingRef.current) return;
+      lastAutoAppliedKeyRef.current = key;
       void handleGenerateRef.current();
     }, 1000);
     return () => clearTimeout(timer);
