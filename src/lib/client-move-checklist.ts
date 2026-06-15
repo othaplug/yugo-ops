@@ -50,10 +50,10 @@ export const CLIENT_MOVE_CHECKLIST: ClientChecklistCategoryDef[] = [
     category: "Move Day Morning",
     items: [
       { id: "essentials_bag", text: "Pack an essentials bag (chargers, toiletries, change of clothes, snacks)", conditional: "always" },
-      { id: "walkthrough", text: "Do a final walkthrough — check closets, cabinets, storage", conditional: "always" },
+      { id: "walkthrough", text: "Do a final walkthrough: check closets, cabinets, storage", conditional: "always" },
       { id: "keys", text: "Gather all keys, fobs, garage remotes", conditional: "always" },
       { id: "access", text: "Ensure clear path from door to truck (remove obstacles)", conditional: "always" },
-      { id: "phones", text: "Keep phone charged — you will receive your tracking link", conditional: "always" },
+      { id: "phones", text: "Keep phone charged, you will receive your tracking link", conditional: "always" },
     ],
   },
 ];
