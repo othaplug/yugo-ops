@@ -370,10 +370,28 @@ export default function RevenueClient({
     (s, m) => s + Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate ?? 0),
     0,
   );
-  const paidTotal = invoiceRevenue + moveRevenue;
-  const totalSource = Math.max(1, invoiceRevenue + moveRevenue);
+  // PM (property-manager) move revenue — shown in the chart's third segment;
+  // must also be counted in the totals (it was previously omitted).
+  const pmRevenue = pmMovesAll.reduce(
+    (s, m) => s + Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0),
+    0,
+  );
+  // Partner job count (delivered jobs + paid invoices) for averages.
+  const coveredPartnerDlv = deliveryIdsCoveredByAnyInvoice(all);
+  const partnerJobCount =
+    paidPartnerInvoices.length +
+    deliveryRows.filter((raw) => {
+      const d = raw as { id?: string; status?: string | null };
+      return (
+        ["delivered", "completed"].includes(String(d.status || "").toLowerCase()) &&
+        !coveredPartnerDlv.has(String(d.id))
+      );
+    }).length;
+  const paidTotal = invoiceRevenue + moveRevenue + pmRevenue;
+  const totalSource = Math.max(1, paidTotal);
   const invPct = Math.round((invoiceRevenue / totalSource) * 100);
-  const movePct = 100 - invPct;
+  const movePct = Math.round((moveRevenue / totalSource) * 100);
+  const pmPct = Math.max(0, 100 - invPct - movePct);
 
   // B2B delivery invoices outstanding (invoices table)
   const outstandingDeliveryInvoices = all
@@ -745,7 +763,7 @@ export default function RevenueClient({
         return d.getFullYear() === y && d.getMonth() === m;
       })
       .reduce((s, mov) => s + Number(mov.final_amount ?? mov.total_price ?? mov.amount ?? mov.estimate ?? 0), 0);
-    return partnerSum + moveSum;
+    return partnerSum + moveSum + pmInMonth(y, m);
   }, [
     all,
     paidInvoicesAll,
@@ -753,6 +771,7 @@ export default function RevenueClient({
     orgIdToType,
     clientTypeMap,
     paidMovesList,
+    pmMovesAll,
     now,
   ]);
 
@@ -775,7 +794,7 @@ export default function RevenueClient({
         return d.getFullYear() === y && d.getMonth() === m;
       })
       .reduce((s, mov) => s + Number(mov.final_amount ?? mov.total_price ?? mov.amount ?? mov.estimate ?? 0), 0);
-    return partnerSum + moveSum;
+    return partnerSum + moveSum + pmInMonth(y, m);
   }, [
     all,
     paidInvoicesAll,
@@ -783,6 +802,7 @@ export default function RevenueClient({
     orgIdToType,
     clientTypeMap,
     paidMovesList,
+    pmMovesAll,
     now,
   ]);
 
@@ -804,7 +824,9 @@ export default function RevenueClient({
     const moveSum = paidMovesList
       .filter((move) => getMoveRevenueDate(move).getFullYear() === y)
       .reduce((s, mov) => s + Number(mov.final_amount ?? mov.total_price ?? mov.amount ?? mov.estimate ?? 0), 0);
-    return partnerY + moveSum;
+    let pmY = 0;
+    for (let mo = 0; mo <= m; mo++) pmY += pmInMonth(y, mo);
+    return partnerY + moveSum + pmY;
   }, [
     all,
     paidInvoicesAll,
@@ -812,10 +834,13 @@ export default function RevenueClient({
     orgIdToType,
     clientTypeMap,
     paidMovesList,
+    pmMovesAll,
     now,
   ]);
 
-  const revenueSourceCount = paidPartnerInvoices.length + paidMovesList.length;
+  // Avg job value across ALL services and jobs (moves + PM moves + partner jobs).
+  const revenueSourceCount =
+    paidMovesList.length + pmMovesAll.length + partnerJobCount;
   const avgJob =
     revenueSourceCount > 0 ? Math.round(paidTotal / revenueSourceCount) : 0;
   const pctChange =
@@ -868,7 +893,7 @@ export default function RevenueClient({
         <KpiCard
           label={`${now.getFullYear()} YTD`}
           value={formatCompactCurrency(ytdRevenue)}
-          sub={`${paidPartnerInvoices.length} paid partner invoices · ${paidMovesList.length} paid moves`}
+          sub="All services · before HST"
           href="/admin/finance/invoices"
         />
         {/* Outstanding — shows full breakdown across all sources */}
@@ -901,27 +926,33 @@ export default function RevenueClient({
         <KpiCard
           label="Avg Job Value"
           value={formatCompactCurrency(avgJob)}
-          sub={`Across ${revenueSourceCount} sources`}
+          sub={`Across ${revenueSourceCount} jobs, all services`}
         />
       </div>
 
       {/* ── Section 2: Revenue by Source ──────────────────────────────────── */}
-      {(invoiceRevenue > 0 || moveRevenue > 0) && (
+      {(invoiceRevenue > 0 || moveRevenue > 0 || pmRevenue > 0) && (
         <>
           <SectionDivider label="Revenue by Source" />
           <div className="grid sm:grid-cols-2 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-[var(--brd)]">
             <div className="sm:pr-8 pb-4 sm:pb-0">
               <SourcePill
-                color="var(--tx2)"
-                label="Partner invoices"
-                value={invoiceRevenue}
-                pct={invPct}
-              />
-              <SourcePill
                 color="var(--grn)"
                 label="Move payments"
                 value={moveRevenue}
                 pct={movePct}
+              />
+              <SourcePill
+                color={CHART_PM_FILL}
+                label="PM moves"
+                value={pmRevenue}
+                pct={pmPct}
+              />
+              <SourcePill
+                color="var(--tx2)"
+                label="Partner invoices"
+                value={invoiceRevenue}
+                pct={invPct}
               />
             </div>
             <div className="sm:pl-8 pt-4 sm:pt-0 flex flex-col justify-center">
@@ -932,8 +963,8 @@ export default function RevenueClient({
                 {formatCompactCurrency(paidTotal)}
               </p>
               <p className="text-[10px] text-[var(--tx3)] mt-1.5">
-                {paidPartnerInvoices.length} paid partner invoices ·{" "}
-                {paidMovesList.length} paid moves
+                {paidMovesList.length} moves · {pmMovesAll.length} PM moves ·{" "}
+                {partnerJobCount} partner jobs
               </p>
             </div>
           </div>
