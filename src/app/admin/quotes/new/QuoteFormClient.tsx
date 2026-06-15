@@ -2415,6 +2415,26 @@ export default function QuoteFormClient({
     }
     return next;
   }, [quoteResult?.tiers, tierPriceOverrides]);
+  /**
+   * True when a per-tier price override has been typed but not yet regenerated,
+   * so server-computed panels (labour validation) still reflect the old engine
+   * price. The margin panel recomputes client-side via previewTiers; labour
+   * can't, so we surface a "regenerate" badge instead of showing a stale rate.
+   */
+  const hasStaleTierOverride = useMemo(() => {
+    const base = quoteResult?.tiers;
+    if (!base) return false;
+    for (const tk of ["essential", "signature", "estate"] as const) {
+      const ov = tierPriceOverrides[tk];
+      if (!ov) continue;
+      const p = parseFloat(ov.price);
+      if (!Number.isFinite(p) || p <= 0) continue;
+      const saved = (base as Record<string, { price?: number } | undefined>)[tk]
+        ?.price;
+      if (typeof saved === "number" && Math.abs(p - saved) >= 1) return true;
+    }
+    return false;
+  }, [quoteResult?.tiers, tierPriceOverrides]);
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendSuccess, setSendSuccess] = useState(false);
@@ -13129,7 +13149,12 @@ export default function QuoteFormClient({
                           true_cost_estate?: number;
                         }
                       | undefined;
-                    const tiers = quoteResult.tiers as
+                    // Use previewTiers (engine prices with any in-flight per-tier
+                    // override overlaid) so this panel evaluates the SAME price the
+                    // customer Preview shows — not the stale engine price. Without
+                    // this, an override to $720 left the margin panel reporting the
+                    // old $950 economics ("Healthy") for a quote that's below floor.
+                    const tiers = (previewTiers ?? quoteResult.tiers) as
                       | Record<string, { price: number }>
                       | undefined;
                     const curPrice =
@@ -13300,10 +13325,20 @@ export default function QuoteFormClient({
                             const profit = price - estTotalCost;
                             // True profit subtracts OH share + claims reserve.
                             const trueProfit = profit - ohShare - claimsReserve;
-                            const AlertIcon = alert.Icon;
                             const floor = trueFloorByTier[label] ?? 50;
                             const belowFloor =
                               trueMargin != null && trueMargin < floor;
+                            // A floor breach is the binding signal — never let a
+                            // gross-based "Healthy margin." verdict (or its check
+                            // icon) sit on a tier the banner flags below floor.
+                            const AlertIcon = belowFloor ? Warning : alert.Icon;
+                            const verdictHint = belowFloor
+                              ? `Below luxury floor (target ${floor}% true).`
+                              : alert.hint;
+                            const grossCls =
+                              belowFloor && margin >= 35
+                                ? "text-amber-500"
+                                : alert.cls;
                             const trueClass =
                               trueMargin == null
                                 ? "text-[var(--tx3)]"
@@ -13328,7 +13363,7 @@ export default function QuoteFormClient({
                                 <div className="text-right shrink-0 max-w-[min(100%,14rem)]">
                                   <div className="flex items-center justify-end gap-1.5">
                                     <span
-                                      className={`inline-flex items-center gap-1 font-bold tabular-nums ${alert.cls}`}
+                                      className={`inline-flex items-center gap-1 font-bold tabular-nums ${grossCls}`}
                                     >
                                       {margin}%
                                       <AlertIcon
@@ -13354,7 +13389,7 @@ export default function QuoteFormClient({
                                     </div>
                                   )}
                                   <p className="text-[9px] text-[var(--tx3)] leading-snug">
-                                    {alert.hint}
+                                    {verdictHint}
                                   </p>
                                   <p className="text-[9px] text-[var(--tx3)]">
                                     profit {fmtPrice(profit)} · true{" "}
@@ -13513,6 +13548,11 @@ export default function QuoteFormClient({
                   <p className="text-[9px] uppercase tracking-wider text-[var(--tx3)]">
                     Labour rate check
                   </p>
+                  {hasStaleTierOverride ? (
+                    <span className="text-[9px] px-2 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+                      Stale · regenerate
+                    </span>
+                  ) : (
                   <span
                     className={[
                       "text-[9px] px-2 py-0.5 rounded-full font-semibold",
@@ -13540,6 +13580,7 @@ export default function QuoteFormClient({
                           ? "Underpriced"
                           : "Not enforced"}
                   </span>
+                  )}
                 </div>
                 <div className="mt-2 space-y-1">
                   <div className="flex justify-between text-[10px] gap-2">
