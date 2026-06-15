@@ -158,7 +158,6 @@ import {
   calcAssemblyMinutes,
   detectAssemblyRequired,
 } from "@/lib/quotes/assembly-detection";
-import { ESSENTIAL_ADDONS } from "@/lib/tiers/essential-addons";
 
 const PanelRightClose = PanelRightOpen;
 
@@ -10963,45 +10962,17 @@ export default function QuoteFormClient({
               <>
               <div className="pt-5 pb-5" aria-hidden />
 
-              {/* ── 6a. Essential-specific add-ons (shown when tier is Essential) ── */}
+              {/* ── 6a. Essential upsell note. The Essential-specific add-ons
+                   themselves are real DB add-ons (excluded_tiers signature/estate)
+                   and render in the interactive Add-Ons list below + on the client
+                   quote page, so they're no longer duplicated as a static list. ── */}
               {recommendedTier === "essential" && serviceType === "local_move" && (
-                <div className="space-y-3 mb-2">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                    Essential Add-Ons
-                  </h3>
-                  <p className="text-[10px] text-[var(--tx3)]">
-                    These services are not included in Essential. Add them individually or upgrade to Signature.
+                <div className="mb-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2.5">
+                  <p className="text-[10px] text-[var(--tx2)] leading-snug">
+                    Adding multiple services? Signature includes assembly, full wrap,
+                    room-of-choice placement, mattress bags, and debris removal,
+                    often at a better total value.
                   </p>
-                  <div className="space-y-2">
-                    {ESSENTIAL_ADDONS.map((addon) => (
-                      <div
-                        key={addon.key}
-                        className="flex items-start justify-between gap-3 rounded-lg px-3 py-2.5 border border-[var(--brd)] bg-[var(--bg)]"
-                      >
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-semibold text-[var(--tx)] leading-snug">
-                            {addon.label}
-                          </p>
-                          <p className="text-[10px] text-[var(--tx3)] mt-0.5 leading-snug">
-                            {addon.description}
-                          </p>
-                          <p className="text-[10px] text-amber-600 mt-0.5">
-                            {addon.upgradeNote}
-                          </p>
-                        </div>
-                        <span className="text-[10px] font-semibold text-[var(--tx2)] shrink-0 mt-0.5">
-                          {addon.priceLabel}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2.5">
-                    <p className="text-[10px] text-[var(--tx2)] leading-snug">
-                      Adding multiple services? Signature includes assembly, full wrap,
-                      room-of-choice placement, mattress bags, and debris removal —
-                      often at a better total value.
-                    </p>
-                  </div>
                 </div>
               )}
 
