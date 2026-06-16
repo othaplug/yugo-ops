@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { calculateDeposit } from "@/app/quote/[quoteId]/quote-shared";
 
 export async function POST(
   req: NextRequest,
@@ -18,7 +19,7 @@ export async function POST(
 
   const { data: quote } = await db
     .from("quotes")
-    .select("id, is_multi_scenario, public_action_token, status, accepted_scenario_id")
+    .select("id, is_multi_scenario, public_action_token, status, accepted_scenario_id, service_type, move_date")
     .eq("quote_id", quoteId)
     .maybeSingle();
 
@@ -38,7 +39,7 @@ export async function POST(
   // Verify scenario belongs to this quote
   const { data: scenario } = await db
     .from("quote_scenarios")
-    .select("id, quote_id")
+    .select("id, quote_id, price, total_price, deposit_amount")
     .eq("id", scenarioId)
     .eq("quote_id", quote.id)
     .maybeSingle();
@@ -65,6 +66,33 @@ export async function POST(
     accepted_scenario_id: scenarioId,
     updated_at: now,
   };
+
+  // Apply the selected scenario's price to the quote so the full quote page,
+  // contract, and booking reflect what the client chose — not the engine
+  // base price. (Bug: accepting a scenario left custom_price at the base, so
+  // YG-30298 kept showing $500 after the client picked the $380 option.)
+  const scPrice =
+    typeof (scenario as { price?: number | null }).price === "number"
+      ? (scenario as { price: number }).price
+      : null;
+  if (scPrice != null && scPrice > 0) {
+    quoteUpdate.custom_price = scPrice;
+    const taxRate = 0.13;
+    const scTotal =
+      typeof (scenario as { total_price?: number | null }).total_price === "number"
+        ? (scenario as { total_price: number }).total_price
+        : Math.round(scPrice * (1 + taxRate));
+    const scDeposit =
+      typeof (scenario as { deposit_amount?: number | null }).deposit_amount === "number"
+        ? (scenario as { deposit_amount: number }).deposit_amount
+        : calculateDeposit(
+            String((quote as { service_type?: string | null }).service_type ?? "local_move"),
+            scTotal,
+            undefined,
+            (quote as { move_date?: string | null }).move_date ?? null,
+          );
+    quoteUpdate.deposit_amount = scDeposit;
+  }
   const currentStatus = String((quote as { status?: string }).status ?? "");
   if (currentStatus === "sent" || currentStatus === "draft") {
     quoteUpdate.status = "viewed";

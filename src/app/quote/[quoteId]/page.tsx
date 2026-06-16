@@ -265,13 +265,22 @@ export default async function QuotePage({
   const isMultiScenario = !!(quote as { is_multi_scenario?: boolean }).is_multi_scenario;
   const acceptedScenarioId = (quote as { accepted_scenario_id?: string | null }).accepted_scenario_id ?? null;
 
-  if (isMultiScenario && !acceptedScenarioId) {
+  if (isMultiScenario) {
     const { data: scenarios } = await admin
       .from("quote_scenarios")
       .select("*")
       .eq("quote_id", quote.id)
       .order("scenario_number");
 
+    // Honor accepted_scenario_id ONLY if it still resolves to a real scenario.
+    // A stale/dangling reference (e.g. scenarios were regenerated, creating new
+    // ids) must NOT suppress the picker — that left YG-30298 rendering the base
+    // engine price ($500) instead of the scenario options.
+    const acceptedExists =
+      !!acceptedScenarioId &&
+      (scenarios ?? []).some((s: { id?: string }) => s.id === acceptedScenarioId);
+
+    if (!acceptedExists) {
     const { getQuoteTotalWithTaxFromRow, calculateDeposit } = await import("./quote-shared");
     const { totalWithTax } = getQuoteTotalWithTaxFromRow(quote);
     const baseTotalWithTax = totalWithTax > 0 ? totalWithTax : null;
@@ -286,9 +295,11 @@ export default async function QuotePage({
         basePrice={(quote as { custom_price?: number | null }).custom_price ?? null}
         baseTotalWithTax={baseTotalWithTax}
         baseDepositAmount={baseDepositAmount}
+        serviceType={serviceTypeStr}
         moveDate={(quote as { move_date?: string | null }).move_date ?? null}
       />
     );
+    }
   }
 
   return (

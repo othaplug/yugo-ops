@@ -470,8 +470,9 @@ export function calculateDeposit(
   tier?: string,
   moveDate?: string | null,
 ): number {
-  // Global rule: any quote under $550 (total with tax) requires full payment at booking.
-  if (total < 550) return total;
+  // Global rule: any quote under $600 (total with tax) requires full payment at
+  // booking — no partial deposit. (Operator policy 2026-06-17, raised from $550.)
+  if (total < 600) return total;
 
   // Universal short-notice rule (operator decision 2026-06-11): bookings
   // less than 4 days from the move date require full payment at booking.

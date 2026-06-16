@@ -1231,8 +1231,8 @@ function labourOnlyTemplate(d: QuoteTemplateData): string {
   const total = d.customPrice ?? 0;
   const tax = Math.round(total * 0.13);
   const totalWithTax = total + tax;
-  // Global rule: quotes under $550 (with tax) require full payment at booking.
-  const deposit = totalWithTax < 550
+  // Global rule: quotes under $600 (with tax) require full payment at booking.
+  const deposit = totalWithTax < 600
     ? totalWithTax
     : Math.max(200, Math.round(totalWithTax * 0.5));
   const fullPayment = deposit >= totalWithTax;

@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { Check } from "@phosphor-icons/react";
-import { WINE, FOREST, CREAM, FOREST_BODY, FOREST_MUTED } from "./quote-shared";
+import {
+  WINE,
+  FOREST,
+  CREAM,
+  FOREST_BODY,
+  FOREST_MUTED,
+  calculateDeposit,
+} from "./quote-shared";
+import YugoLogo from "@/components/YugoLogo";
 
 export interface QuoteScenario {
   id: string;
@@ -27,15 +35,24 @@ interface Props {
   basePrice: number | null;
   baseTotalWithTax: number | null;
   baseDepositAmount: number | null;
+  serviceType?: string;
   moveDate: string | null;
   onSelected?: () => void;
 }
+
+const HERO_BG = "#2B0416";
+const HERO_TEXT = "#F9EDE4";
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "";
   try {
     const d = new Date(iso + "T00:00:00");
-    return d.toLocaleDateString("en-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    return d.toLocaleDateString("en-CA", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   } catch {
     return iso;
   }
@@ -61,9 +78,9 @@ export default function MultiScenarioSelector({
   quoteId,
   publicActionToken,
   scenarios,
-  basePrice,
   baseTotalWithTax,
   baseDepositAmount,
+  serviceType = "local_move",
   moveDate,
   onSelected,
 }: Props) {
@@ -76,72 +93,108 @@ export default function MultiScenarioSelector({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/quotes/${encodeURIComponent(quoteId)}/select-scenario`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scenario_id: selected, token: publicActionToken }),
-      });
+      const res = await fetch(
+        `/api/quotes/${encodeURIComponent(quoteId)}/select-scenario`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ scenario_id: selected, token: publicActionToken }),
+        },
+      );
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Selection failed");
       onSelected?.();
       // Reload so server re-renders with accepted_scenario_id set → shows full quote page
       window.location.reload();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+    } catch {
+      setError(
+        "We couldn't confirm that option just now. Please try again, or contact your move coordinator.",
+      );
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ background: CREAM }}
-    >
-      <div className="max-w-2xl mx-auto px-4 py-10 space-y-8">
-        {/* Header */}
-        <div className="space-y-2">
-          <p className="text-xs font-bold tracking-[0.18em] uppercase" style={{ color: FOREST_MUTED }}>
+    <div className="min-h-screen" style={{ background: CREAM }}>
+      {/* ── Deep-wine hero (matches the move quote page) ── */}
+      <div
+        className="px-5 pt-10 pb-12 text-center"
+        style={{ background: HERO_BG, color: HERO_TEXT }}
+      >
+        <div className="max-w-2xl mx-auto flex flex-col items-center">
+          <YugoLogo size={30} variant="cream" />
+          <p
+            className="text-[11px] font-bold tracking-[0.2em] uppercase mt-7"
+            style={{ color: "rgba(255,255,255,0.78)" }}
+          >
             Choose your moving date
           </p>
-          <h1 className="text-2xl font-bold leading-snug" style={{ color: WINE }}>
-            Select a scheduling option
+          <h1 className="font-hero text-[30px] md:text-[36px] leading-snug mt-1.5">
+            Select your scheduling option
           </h1>
-          <p className="text-sm leading-relaxed" style={{ color: FOREST_BODY }}>
-            We&rsquo;ve put together a few options for your move. Select the one that works best for you, all include the same service.
+          <p
+            className="text-[14px] leading-relaxed mt-3 max-w-md"
+            style={{ color: "rgba(255,255,255,0.9)" }}
+          >
+            We&rsquo;ve put together a few options for your move. Each includes
+            the same white-glove service, choose the date that works best for you.
           </p>
         </div>
+      </div>
 
-        {/* Scenario cards */}
-        <div className="space-y-3">
+      <div className="max-w-2xl mx-auto px-4 py-9 space-y-7">
+        {/* Scenario cards — premium, tier-style */}
+        <div className="space-y-4">
           {scenarios.map((sc) => {
-            const effectiveTotal = sc.total_price ?? baseTotalWithTax;
-            const effectiveDeposit = sc.deposit_amount ?? baseDepositAmount;
+            const total = sc.total_price ?? baseTotalWithTax;
+            const deposit =
+              sc.deposit_amount ??
+              (total != null
+                ? calculateDeposit(
+                    serviceType,
+                    total,
+                    undefined,
+                    sc.scenario_date ?? moveDate,
+                  )
+                : baseDepositAmount);
+            const fullPayment =
+              total != null && deposit != null && deposit >= total - 0.5;
             const effectiveDate = sc.scenario_date ?? moveDate;
             const isSelected = selected === sc.id;
+            const isRec = sc.is_recommended;
 
             return (
               <button
                 key={sc.id}
                 type="button"
                 onClick={() => setSelected(sc.id)}
-                className="w-full text-left rounded-xl border-2 p-4 transition-all"
+                className="w-full text-left rounded-2xl border p-6 transition-all"
                 style={{
-                  borderColor: isSelected ? FOREST : `${FOREST}30`,
-                  background: isSelected ? `${FOREST}08` : "white",
-                  boxShadow: isSelected ? `0 0 0 2px ${FOREST}20` : undefined,
+                  borderColor: isSelected
+                    ? FOREST
+                    : isRec
+                      ? `${FOREST}66`
+                      : "rgba(92,26,51,0.16)",
+                  background: "#FFFFFF",
+                  boxShadow: isSelected
+                    ? `0 0 0 2px ${FOREST}, 0 10px 30px rgba(44,62,45,0.12)`
+                    : "0 2px 16px rgba(92,26,51,0.06)",
                 }}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 space-y-1.5">
+                  <div className="min-w-0 space-y-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-base" style={{ color: WINE }}>
+                      <span
+                        className="font-hero text-[22px] leading-none"
+                        style={{ color: WINE }}
+                      >
                         {sc.label ?? `Option ${sc.scenario_number}`}
                       </span>
-                      {sc.is_recommended && (
+                      {isRec && (
                         <span
-                          className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                          style={{ background: `${FOREST}18`, color: FOREST }}
+                          className="text-[10px] font-bold uppercase tracking-[0.12em] px-2 py-1 rounded-full"
+                          style={{ background: `${FOREST}14`, color: FOREST }}
                         >
                           Recommended
                         </span>
@@ -149,52 +202,61 @@ export default function MultiScenarioSelector({
                     </div>
 
                     {effectiveDate && (
-                      <p className="text-sm font-medium" style={{ color: FOREST_BODY }}>
+                      <p className="text-[14px] font-medium" style={{ color: FOREST_BODY }}>
                         {fmtDate(effectiveDate)}
-                        {sc.scenario_time && <span className="text-sm ml-2 font-normal" style={{ color: FOREST_MUTED }}> · {fmtTime(sc.scenario_time)}</span>}
+                        {sc.scenario_time && (
+                          <span className="font-normal" style={{ color: FOREST_MUTED }}>
+                            {" "}
+                            · {fmtTime(sc.scenario_time)}
+                          </span>
+                        )}
                       </p>
                     )}
 
                     {sc.description && (
-                      <p className="text-sm leading-snug" style={{ color: FOREST_MUTED }}>
+                      <p className="text-[13px] leading-relaxed" style={{ color: FOREST_MUTED }}>
                         {sc.description}
                       </p>
                     )}
-
                     {sc.conditions_note && (
-                      <p className="text-xs leading-snug" style={{ color: FOREST_MUTED }}>
+                      <p className="text-[12px] leading-relaxed" style={{ color: FOREST_MUTED }}>
                         {sc.conditions_note}
                       </p>
                     )}
                   </div>
 
-                  <div className="shrink-0 flex flex-col items-end gap-1">
-                    <div
-                      className="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
-                      style={{
-                        borderColor: isSelected ? FOREST : `${FOREST}40`,
-                        background: isSelected ? FOREST : "transparent",
-                      }}
-                    >
-                      {isSelected && <Check className="w-3 h-3 text-white" weight="bold" />}
-                    </div>
+                  <div
+                    className="shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all"
+                    style={{
+                      borderColor: isSelected ? FOREST : `${FOREST}40`,
+                      background: isSelected ? FOREST : "transparent",
+                    }}
+                  >
+                    {isSelected && <Check className="w-3.5 h-3.5 text-white" weight="bold" />}
                   </div>
                 </div>
 
-                {/* Pricing */}
-                {effectiveTotal != null && (
-                  <div className="mt-3 pt-3 border-t flex items-center justify-between" style={{ borderColor: `${FOREST}18` }}>
-                    <span className="text-sm" style={{ color: FOREST_MUTED }}>Total (incl. HST)</span>
-                    <div className="text-right">
-                      <span className="text-lg font-bold" style={{ color: WINE }}>
-                        {fmtCurrency(effectiveTotal)}
+                {total != null && (
+                  <div
+                    className="mt-5 pt-4 border-t flex items-end justify-between"
+                    style={{ borderColor: "rgba(44,62,45,0.14)" }}
+                  >
+                    <div>
+                      <span
+                        className="text-[11px] font-bold uppercase tracking-[0.1em]"
+                        style={{ color: FOREST_MUTED }}
+                      >
+                        Total (incl. HST)
                       </span>
-                      {effectiveDeposit != null && (
-                        <p className="text-xs" style={{ color: FOREST_MUTED }}>
-                          Deposit: {fmtCurrency(effectiveDeposit)}
-                        </p>
-                      )}
+                      <p className="text-[12px] mt-1" style={{ color: FOREST_MUTED }}>
+                        {fullPayment
+                          ? "Paid in full at booking"
+                          : `${fmtCurrency(deposit)} to book · balance auto-charged 48h before your move`}
+                      </p>
                     </div>
+                    <span className="font-hero text-[30px] leading-none" style={{ color: WINE }}>
+                      {fmtCurrency(total)}
+                    </span>
                   </div>
                 )}
               </button>
@@ -203,21 +265,21 @@ export default function MultiScenarioSelector({
         </div>
 
         {/* Confirm */}
-        <div className="space-y-3">
-          {error && (
-            <p className="text-sm text-red-600">{error}</p>
-          )}
+        <div className="space-y-3 pt-1">
+          {error && <p className="text-[13px] text-center" style={{ color: WINE }}>{error}</p>}
           <button
             type="button"
             disabled={!selected || busy}
             onClick={() => void handleConfirm()}
-            className="w-full py-3.5 rounded-xl font-bold text-sm tracking-wide transition-opacity disabled:opacity-40"
+            className="w-full py-4 rounded-xl font-bold text-[13px] tracking-[0.08em] uppercase transition-opacity disabled:opacity-40"
             style={{ background: FOREST, color: CREAM }}
           >
             {busy ? "Confirming…" : "Confirm my selection"}
           </button>
-          <p className="text-xs text-center" style={{ color: FOREST_MUTED }}>
-            You&rsquo;ll review the contract and deposit after selecting your preferred date.
+          <p className="text-[12px] text-center leading-relaxed" style={{ color: FOREST_MUTED }}>
+            You&rsquo;ll review your contract and payment after selecting your
+            preferred date. Payment is taken in full no later than 48 hours
+            before your move.
           </p>
         </div>
       </div>
