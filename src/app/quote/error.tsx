@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { XCircle } from "@phosphor-icons/react";
-import { SafeText } from "@/components/SafeText";
 
 export default function QuoteError({
   error,
@@ -28,10 +27,8 @@ export default function QuoteError({
           Something went wrong
         </h1>
         <p className="text-[13px] text-[#4F4B47]">
-          <SafeText fallback="We couldn't load this quote. It may have expired or been removed.">
-            {error.message ||
-              "We couldn't load this quote. It may have expired or been removed."}
-          </SafeText>
+          We couldn&apos;t load your quote right now. Please try again, or reply
+          to your quote message and your move coordinator will help.
         </p>
         <button
           onClick={reset}

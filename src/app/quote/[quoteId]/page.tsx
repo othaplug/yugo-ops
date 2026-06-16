@@ -287,7 +287,6 @@ export default async function QuotePage({
         baseTotalWithTax={baseTotalWithTax}
         baseDepositAmount={baseDepositAmount}
         moveDate={(quote as { move_date?: string | null }).move_date ?? null}
-        onSelected={() => {}}
       />
     );
   }
