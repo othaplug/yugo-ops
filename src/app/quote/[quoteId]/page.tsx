@@ -17,6 +17,7 @@ import { fetchMoveProjectWithTree } from "@/lib/move-projects/fetch";
 import type { MoveProjectQuotePayload } from "./MoveProjectQuoteTimeline";
 import QuoteExpired from "./QuoteExpired";
 import { isQuoteExpiredForBooking } from "@/lib/quote-expiry";
+import { withStorageWeeklyPrice } from "@/lib/quotes/storage-pricing";
 import { randomBytes } from "crypto";
 import {
   GOOGLE_REVIEW_COUNT_LABEL_KEY,
@@ -214,9 +215,10 @@ export default async function QuotePage({
   ]);
 
   const contactEmail = contactResult?.data?.email ?? null;
-  const applicableAddons = (addonsResult?.data ?? []).filter((a) =>
-    a.applicable_service_types?.includes(quote.service_type),
-  );
+  const applicableAddons = (addonsResult?.data ?? [])
+    .filter((a) => a.applicable_service_types?.includes(quote.service_type))
+    // Secure storage is billed per week at a rate that scales with move size.
+    .map((a) => withStorageWeeklyPrice(a, quote.move_size));
 
   const totalCrews = crewCountResult?.count ?? 4;
   const movesOnDate = moveDateCountResult?.count ?? 0;

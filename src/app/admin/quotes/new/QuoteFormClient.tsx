@@ -137,6 +137,7 @@ import {
   getVisibleAddons,
   ESTATE_ADDON_UI_LINES,
 } from "@/lib/quotes/addon-visibility";
+import { withStorageWeeklyPrice } from "@/lib/quotes/storage-pricing";
 import {
   buildEstateScheduleLines,
   calculateEstateDays,
@@ -3557,12 +3558,16 @@ export default function QuoteFormClient({
       ...allAddons.filter((a) =>
         a.applicable_service_types.includes(serviceType),
       ),
-    ].sort((a, b) => (b.is_popular ? 1 : 0) - (a.is_popular ? 1 : 0));
+    ]
+      // Secure storage per-week rate scales with move size (engine is the
+      // source of truth; this keeps the admin add-on list in sync).
+      .map((a) => withStorageWeeklyPrice(a, moveSize))
+      .sort((a, b) => (b.is_popular ? 1 : 0) - (a.is_popular ? 1 : 0));
     if (serviceType === "local_move" || serviceType === "long_distance") {
       return getVisibleAddons(base, recommendedTier);
     }
     return base;
-  }, [allAddons, serviceType, recommendedTier]);
+  }, [allAddons, serviceType, recommendedTier, moveSize]);
 
   // ── Single-item assembly addon suppression ────────────────────────────
   // When a coordinator picks assembly on an individual item row in the

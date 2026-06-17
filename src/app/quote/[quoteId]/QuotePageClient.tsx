@@ -144,6 +144,7 @@ import {
   ESTATE_ADDON_SECTION_PREAMBLE,
   estateAddonDisplayName,
 } from "@/lib/quotes/addon-visibility";
+import { STORAGE_ADDON_SLUG, STORAGE_MAX_WEEKS } from "@/lib/quotes/storage-pricing";
 import { formatAddressForDisplay } from "@/lib/format-text";
 import { getDisplayLabel, VALUATION_TIER_LABELS } from "@/lib/displayLabels";
 import { SafeText } from "@/components/SafeText";
@@ -1028,14 +1029,23 @@ export default function QuotePageClient({
     [quote.move_size, trackEvent, trackEngagement],
   );
 
-  const updateQty = useCallback((id: string, qty: number) => {
-    setSelectedAddons((prev) => {
-      const next = new Map(prev);
-      const cur = next.get(id);
-      if (cur) next.set(id, { ...cur, quantity: Math.max(1, qty) });
-      return next;
-    });
-  }, []);
+  const updateQty = useCallback(
+    (id: string, qty: number) => {
+      // Storage is capped at STORAGE_MAX_WEEKS so the client total can't exceed
+      // what the engine charges (it clamps weeks server-side).
+      const isStorage =
+        allAddons.find((a) => a.id === id)?.slug === STORAGE_ADDON_SLUG;
+      const max = isStorage ? STORAGE_MAX_WEEKS : Number.POSITIVE_INFINITY;
+      setSelectedAddons((prev) => {
+        const next = new Map(prev);
+        const cur = next.get(id);
+        if (cur)
+          next.set(id, { ...cur, quantity: Math.min(max, Math.max(1, qty)) });
+        return next;
+      });
+    },
+    [allAddons],
+  );
 
   const updateTierIdx = useCallback((id: string, idx: number) => {
     setSelectedAddons((prev) => {

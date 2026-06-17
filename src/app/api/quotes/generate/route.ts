@@ -30,6 +30,7 @@ import {
   type OfficeScheduleFlags,
 } from "@/lib/pricing/non-residential-quote-calcs";
 import { resolveSingleItemLines, type SingleItemLine } from "@/lib/quotes/single-item-types";
+import { STORAGE_ADDON_SLUG, storageWeeklyRate, clampStorageWeeks } from "@/lib/quotes/storage-pricing";
 import {
   formatTruckBreakdownLine,
   formatTruckResidentialUpgradeLine,
@@ -969,6 +970,7 @@ async function calculateAddons(
   sb: SupabaseAdmin,
   selections: AddonSelection[] | undefined,
   baseTotal: number,
+  moveSize?: string | null,
 ): Promise<{
   total: number;
   breakdown: AddonBreakdownItem[];
@@ -999,7 +1001,14 @@ async function calculateAddons(
         cost = (addon.price as number);
         break;
       case "per_unit":
-        cost = (addon.price as number) * qty;
+        // Secure storage is billed per week at a size-based rate; quantity is
+        // the number of weeks (clamped 1–STORAGE_MAX_WEEKS). The DB price is a
+        // placeholder — storageWeeklyRate(moveSize) is the source of truth.
+        if ((addon.slug as string) === STORAGE_ADDON_SLUG) {
+          cost = storageWeeklyRate(moveSize) * clampStorageWeeks(qty);
+        } else {
+          cost = (addon.price as number) * qty;
+        }
         break;
       case "tiered": {
         const tiers = addon.tiers as { label: string; price: number }[] | null;
@@ -4460,7 +4469,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     roughBase = cfgNum(config, "white_glove_addon_rough_base", 800);
   }
 
-  const addonResult = await calculateAddons(sb, input.selected_addons, roughBase);
+  const addonResult = await calculateAddons(sb, input.selected_addons, roughBase, input.move_size);
 
   // Inventory volume modifier (local_move only)
   const invResult = useInventoryScoring
