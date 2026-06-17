@@ -52,8 +52,12 @@ async function runDeliveryPrepaidRecordedFlow(
 
   await issueDeliveryTrackingTokens(deliveryUuid);
 
+  const terminalStatus = ["delivered", "completed", "paid"].includes(
+    String(row.status || "").toLowerCase(),
+  );
   const shouldNotify =
-    opts.notifyMode === "always" || (opts.notifyMode === "only_if_newly_paid" && !wasPaid);
+    !terminalStatus &&
+    (opts.notifyMode === "always" || (opts.notifyMode === "only_if_newly_paid" && !wasPaid));
 
   if (shouldNotify) {
     await sendB2BTrackingNotifications(deliveryUuid);
