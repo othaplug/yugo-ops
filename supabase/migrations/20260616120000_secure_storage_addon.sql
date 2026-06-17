@@ -16,6 +16,13 @@ SELECT
   'Secure storage',
   'Full-service storage between move legs: our crew loads it into our climate-controlled, insured facility and redelivers when you''re ready. Billed per week.',
   65, 'per_unit', 'per week', NULL, NULL,
-  ARRAY['local_move','long_distance']::text[],
+  ARRAY['local_move','long_distance','single_item','white_glove','office_move']::text[],
   NULL, true, true, true, true, 50
 WHERE NOT EXISTS (SELECT 1 FROM public.addons a WHERE a.slug = 'secure_storage');
+
+-- Single-item moves use a flat $35/week rate (no bedroom size); the rest scale
+-- by move size. Rate logic lives in src/lib/quotes/storage-pricing.ts.
+UPDATE public.addons
+SET applicable_service_types =
+  ARRAY['local_move','long_distance','single_item','white_glove','office_move']::text[]
+WHERE slug = 'secure_storage';

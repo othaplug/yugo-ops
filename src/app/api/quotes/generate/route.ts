@@ -971,6 +971,7 @@ async function calculateAddons(
   selections: AddonSelection[] | undefined,
   baseTotal: number,
   moveSize?: string | null,
+  serviceType?: string | null,
 ): Promise<{
   total: number;
   breakdown: AddonBreakdownItem[];
@@ -1005,7 +1006,7 @@ async function calculateAddons(
         // the number of weeks (clamped 1–STORAGE_MAX_WEEKS). The DB price is a
         // placeholder — storageWeeklyRate(moveSize) is the source of truth.
         if ((addon.slug as string) === STORAGE_ADDON_SLUG) {
-          cost = storageWeeklyRate(moveSize) * clampStorageWeeks(qty);
+          cost = storageWeeklyRate(moveSize, serviceType) * clampStorageWeeks(qty);
         } else {
           cost = (addon.price as number) * qty;
         }
@@ -4469,7 +4470,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     roughBase = cfgNum(config, "white_glove_addon_rough_base", 800);
   }
 
-  const addonResult = await calculateAddons(sb, input.selected_addons, roughBase, input.move_size);
+  const addonResult = await calculateAddons(sb, input.selected_addons, roughBase, input.move_size, input.service_type);
 
   // Inventory volume modifier (local_move only)
   const invResult = useInventoryScoring

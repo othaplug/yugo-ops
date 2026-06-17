@@ -217,8 +217,9 @@ export default async function QuotePage({
   const contactEmail = contactResult?.data?.email ?? null;
   const applicableAddons = (addonsResult?.data ?? [])
     .filter((a) => a.applicable_service_types?.includes(quote.service_type))
-    // Secure storage is billed per week at a rate that scales with move size.
-    .map((a) => withStorageWeeklyPrice(a, quote.move_size));
+    // Secure storage is billed per week at a rate that scales with move size
+    // (single-item moves use a flat rate).
+    .map((a) => withStorageWeeklyPrice(a, quote.move_size, quote.service_type));
 
   const totalCrews = crewCountResult?.count ?? 4;
   const movesOnDate = moveDateCountResult?.count ?? 0;

@@ -3559,9 +3559,10 @@ export default function QuoteFormClient({
         a.applicable_service_types.includes(serviceType),
       ),
     ]
-      // Secure storage per-week rate scales with move size (engine is the
-      // source of truth; this keeps the admin add-on list in sync).
-      .map((a) => withStorageWeeklyPrice(a, moveSize))
+      // Secure storage per-week rate scales with move size, with a flat rate for
+      // single-item moves (engine is the source of truth; this keeps the admin
+      // add-on list in sync).
+      .map((a) => withStorageWeeklyPrice(a, moveSize, serviceType))
       .sort((a, b) => (b.is_popular ? 1 : 0) - (a.is_popular ? 1 : 0));
     if (serviceType === "local_move" || serviceType === "long_distance") {
       return getVisibleAddons(base, recommendedTier);

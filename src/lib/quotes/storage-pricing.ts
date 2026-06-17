@@ -38,8 +38,20 @@ const STORAGE_WEEKLY_RATE_BY_SIZE: Record<string, number> = {
 /** Default when move size is unknown — the 1BR rate (most common). */
 const STORAGE_DEFAULT_WEEKLY_RATE = 65;
 
-/** Resolve the per-week storage rate for a given move size. */
-export function storageWeeklyRate(moveSize?: string | null): number {
+/** Single-item moves have no bedroom size — flat rate for storing one piece. */
+const STORAGE_SINGLE_ITEM_WEEKLY_RATE = 35;
+
+/**
+ * Resolve the per-week storage rate. Single-item moves use a flat rate (one
+ * piece, no bedroom size); everything else scales by move size.
+ */
+export function storageWeeklyRate(
+  moveSize?: string | null,
+  serviceType?: string | null,
+): number {
+  if ((serviceType || "").toLowerCase() === "single_item") {
+    return STORAGE_SINGLE_ITEM_WEEKLY_RATE;
+  }
   const key = (moveSize || "").toLowerCase().trim();
   return STORAGE_WEEKLY_RATE_BY_SIZE[key] ?? STORAGE_DEFAULT_WEEKLY_RATE;
 }
@@ -57,7 +69,7 @@ export function clampStorageWeeks(weeks: number): number {
  */
 export function withStorageWeeklyPrice<
   T extends { slug?: string | null; price?: number | null },
->(addon: T, moveSize?: string | null): T {
+>(addon: T, moveSize?: string | null, serviceType?: string | null): T {
   if ((addon.slug || "") !== STORAGE_ADDON_SLUG) return addon;
-  return { ...addon, price: storageWeeklyRate(moveSize) };
+  return { ...addon, price: storageWeeklyRate(moveSize, serviceType) };
 }
