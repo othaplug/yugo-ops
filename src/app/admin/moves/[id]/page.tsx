@@ -414,9 +414,34 @@ export default async function MoveDetailPage({
     }
   }
 
+  // "New photos, please check" badge: any unread client-photo notification for
+  // this move. Read it, then mark those notifications read so the badge is a
+  // one-time signal cleared once the coordinator opens the move.
+  const { data: photoNotif } = await db
+    .from("in_app_notifications")
+    .select("id, created_at")
+    .eq("event_slug", "client_photos_uploaded")
+    .eq("source_id", move.id)
+    .eq("is_read", false)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const clientPhotosUpdate = photoNotif?.created_at
+    ? String(photoNotif.created_at)
+    : null;
+  if (clientPhotosUpdate) {
+    await db
+      .from("in_app_notifications")
+      .update({ is_read: true })
+      .eq("event_slug", "client_photos_uploaded")
+      .eq("source_id", move.id)
+      .eq("is_read", false);
+  }
+
   return (
     <MoveDetailClient
       move={move}
+      clientPhotosUpdate={clientPhotosUpdate}
       pmLinkedPeer={pmLinkedPeer}
       crews={crews ?? []}
       isOffice={isOffice}

@@ -225,6 +225,8 @@ interface MoveDetailClientProps {
     invoice_may_need_reissue?: boolean | null;
   }[];
   moveWaivers?: MoveWaiverRow[];
+  /** ISO timestamp of an unreviewed client photo upload → "new update" badge. */
+  clientPhotosUpdate?: string | null;
   pmLinkedPeer?: {
     id: string;
     move_code: string | null;
@@ -525,6 +527,7 @@ export default function MoveDetailClient({
   pmLinkedPeer = null,
   residentialMoveProject = null,
   resolvedAddons = [],
+  clientPhotosUpdate = null,
 }: MoveDetailClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -1028,6 +1031,11 @@ export default function MoveDetailClient({
             {(move as any).externally_booked && (
               <span className="dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">
                 Booked externally
+              </span>
+            )}
+            {clientPhotosUpdate && (
+              <span className="dt-badge tracking-[0.04em] text-[var(--yu3-wine)] bg-[var(--yu3-wine)]/10 border border-[var(--yu3-wine)]/25">
+                ● New photos · please check
               </span>
             )}
           </div>
@@ -2399,10 +2407,17 @@ export default function MoveDetailClient({
               : depositPaid + balanceDue;
         const contractInclForLabels =
           ctl.inclusive > 0 ? ctl.inclusive : quoteTotal;
-        const ledgerSumAfterTax = paymentLedger.reduce(
-          (s, row) => s + Number(row.pre_tax_amount) + Number(row.hst_amount),
-          0,
-        );
+        // "Collected" = money actually received (deposit / balance / payment).
+        // 'adjustment' rows are scope charges that INCREASE the balance owed —
+        // they are NOT collected money, so they must never count toward
+        // collected / recorded payments (the bug where a $60 scope charge read
+        // as "$68 collected").
+        const ledgerSumAfterTax = paymentLedger
+          .filter((row) => row.entry_type !== "adjustment")
+          .reduce(
+            (s, row) => s + Number(row.pre_tax_amount) + Number(row.hst_amount),
+            0,
+          );
         const totalPaidNum =
           move.total_paid != null && move.total_paid !== ""
             ? Number(move.total_paid)
@@ -2656,9 +2671,15 @@ export default function MoveDetailClient({
                               day: "numeric",
                             })}
                           </span>
-                          {row.settlement_method === "admin" && (
-                            <span className="text-[9px] text-[var(--yu3-ink-muted)] ml-1">
-                              (override)
+                          {row.settlement_method === "admin" &&
+                            row.entry_type !== "adjustment" && (
+                              <span className="text-[9px] text-[var(--yu3-ink-muted)] ml-1">
+                                (override)
+                              </span>
+                            )}
+                          {row.entry_type === "adjustment" && (
+                            <span className="text-[9px] font-semibold text-[var(--gold)] ml-1.5 uppercase tracking-wide">
+                              Added to balance · not collected
                             </span>
                           )}
                           {contextLine && (

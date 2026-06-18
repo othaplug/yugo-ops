@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
+import { notifyAllAdmins } from "@/lib/notifications";
 
 const MAX_CLIENT_PHOTOS = 10;
 const RETENTION_DAYS = 30;
@@ -59,7 +60,11 @@ export async function POST(
 
   const admin = createAdminClient();
 
-  const { data: move } = await admin.from("moves").select("id, status").eq("id", moveId).single();
+  const { data: move } = await admin
+    .from("moves")
+    .select("id, status, move_code, client_name")
+    .eq("id", moveId)
+    .single();
   if (!move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
   if (move.status === "completed" || move.status === "delivered" || move.status === "done") {
     return NextResponse.json({ error: "Cannot upload photos after move is completed" }, { status: 400 });
@@ -108,6 +113,25 @@ export async function POST(
       expires_at: expiresAt,
     });
     uploaded.push(path);
+  }
+
+  // Notify ops: the client added photos to their move. Drives the admin bell
+  // and the "new update, please check" badge on the move detail (derived from
+  // this unread notification). Fire-and-forget — never block the upload.
+  if (uploaded.length > 0) {
+    const who = String(move.client_name ?? "").trim() || "A client";
+    const n = uploaded.length;
+    notifyAllAdmins({
+      title: "New client photos",
+      body: `${who} uploaded ${n} photo${n === 1 ? "" : "s"} to ${move.move_code}.`,
+      icon: "image",
+      link: `/admin/moves/${move.move_code}`,
+      sourceType: "move",
+      sourceId: moveId,
+      eventSlug: "client_photos_uploaded",
+    }).catch((e) =>
+      console.error("[move-photos] notify failed:", e),
+    );
   }
 
   return NextResponse.json({ uploaded: uploaded.length, remaining: remaining - uploaded.length });
