@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
 import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
 import { schedulePostMoveClientSms } from "@/lib/moves/schedule-post-move-client-sms";
+import { sendSMS } from "@/lib/sms/sendSMS";
 import { createClientReferralIfNeeded } from "@/lib/client-referral";
 import { generateMovePDFs } from "@/lib/documents/generateMovePDFs";
 import { generatePostMoveDocuments } from "@/lib/post-move-documents";
@@ -317,6 +318,56 @@ export const persistActualMarginForMove = async (
  * Side effects after a move first becomes completed (review scheduling, PDFs, HubSpot, SMS, invoices).
  * Safe to skip when `wasAlreadyComplete` from `ensureJobCompleted`.
  */
+/**
+ * Immediate "your move is complete" thank-you SMS (luxury tone). Sent on
+ * completion, unconditionally — separate from the rating-gated review text that
+ * follows ~1h later. Idempotent via a status_events marker so a double
+ * completion (e.g. repair-from-evidence) can't double-send. Never throws.
+ */
+export const sendMoveCompleteThankYouSms = async (
+  admin: SupabaseClient,
+  moveId: string,
+): Promise<void> => {
+  try {
+    const { data: move } = await admin
+      .from("moves")
+      .select("id, client_phone, client_name, completed_at")
+      .eq("id", moveId)
+      .maybeSingle();
+    if (!move?.client_phone || !String(move.client_phone).trim()) return;
+    // Skip stale completions (e.g. a backfill weeks later) — only text fresh ones.
+    const completedAt = move.completed_at
+      ? new Date(move.completed_at as string)
+      : new Date();
+    if (Date.now() - completedAt.getTime() > 12 * 60 * 60 * 1000) return;
+    // Idempotency: don't send twice for the same move.
+    const { data: already } = await admin
+      .from("status_events")
+      .select("id")
+      .eq("entity_type", "move")
+      .eq("entity_id", moveId)
+      .eq("event_type", "move_complete_sms")
+      .limit(1)
+      .maybeSingle();
+    if (already) return;
+    const firstName =
+      (String(move.client_name ?? "").trim().split(/\s+/)[0]) || "there";
+    const body = `Hi ${firstName}, your move is complete. It was our privilege to care for your belongings today, thank you for choosing Yugo. If there is anything at all we can do for you, simply reply here.`;
+    const res = await sendSMS(String(move.client_phone).replace(/\s/g, ""), body);
+    await admin.from("status_events").insert({
+      entity_type: "move",
+      entity_id: moveId,
+      event_type: "move_complete_sms",
+      description: res.success
+        ? "Move-complete thank-you SMS sent"
+        : `Move-complete SMS failed: ${res.error ?? "unknown"}`,
+      icon: "check",
+    });
+  } catch (e) {
+    console.error("[move-complete-sms] failed:", e);
+  }
+};
+
 export const runMoveCompletionFollowUp = async (
   admin: SupabaseClient,
   moveId: string,
@@ -326,6 +377,11 @@ export const runMoveCompletionFollowUp = async (
   },
 ): Promise<void> => {
   syncDealStageByMoveId(moveId, "completed").catch(() => {});
+  // Immediate thank-you text (luxury tone). The rating-gated review text is
+  // scheduled separately ~1h later by schedulePostMoveClientSms below.
+  sendMoveCompleteThankYouSms(admin, moveId).catch((e) =>
+    console.error("[move-complete-sms] schedule failed:", e),
+  );
   // Review-ask EMAIL (unchanged: next-day via /api/cron/review-requests).
   createReviewRequestIfEligible(admin, moveId).catch((e) =>
     console.error("[review] create failed:", e),
