@@ -352,7 +352,11 @@ export const sendMoveCompleteThankYouSms = async (
     if (already) return;
     const firstName =
       (String(move.client_name ?? "").trim().split(/\s+/)[0]) || "there";
-    const body = `Hi ${firstName}, your move is complete. It was our privilege to care for your belongings today, thank you for choosing Yugo. If there is anything at all we can do for you, simply reply here.`;
+    const body = [
+      `Hi ${firstName},`,
+      `Your move is complete. It was our privilege to care for your belongings today, thank you for choosing Yugo.`,
+      `If there is anything at all we can do for you, simply reply here.`,
+    ].join("\n\n");
     const res = await sendSMS(String(move.client_phone).replace(/\s/g, ""), body);
     await admin.from("status_events").insert({
       entity_type: "move",

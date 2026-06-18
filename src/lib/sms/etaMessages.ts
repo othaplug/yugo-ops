@@ -17,14 +17,16 @@ export function buildETAMessage(messageType: string, data: ETAMessageData): stri
       return [
         `Hi ${firstName},`,
         `Your ${partner}Yugo crew is on the way. Estimated arrival in ${data.etaMinutes} minutes.`,
-        `We will keep you updated as your job progresses.\n${data.trackingLink}`,
+        `We will keep you updated as your job progresses.`,
+        `Track your move here:\n${data.trackingLink}`,
       ].join("\n\n");
 
     case "eta_15_min":
       return [
         `Hi ${firstName},`,
         `Your ${partner}Yugo crew is about 15 minutes away.`,
-        `Please ensure access is clear and parking is available.\n${data.trackingLink}`,
+        `Please ensure access is clear and parking is available.`,
+        `Track your move here:\n${data.trackingLink}`,
       ].join("\n\n");
 
     case "crew_arrived":
@@ -51,7 +53,8 @@ export function buildETAMessage(messageType: string, data: ETAMessageData): stri
       return [
         `Hi ${firstName},`,
         `We want to keep you informed. Your ${partner}Yugo crew is running approximately ${data.etaMinutes} minutes behind schedule.`,
-        `We appreciate your patience and will update you as soon as we can.\n${data.trackingLink}`,
+        `We appreciate your patience and will update you as soon as we can.`,
+        `Track your move here:\n${data.trackingLink}`,
       ].join("\n\n");
 
     default:

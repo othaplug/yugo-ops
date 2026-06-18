@@ -19,7 +19,9 @@ function clientSmsBody(
   estateMove: boolean,
 ): string {
   const name = firstName(clientName);
-  const link = trackUrl ? `\n${trackUrl}` : "";
+  // Put the tracking link in its own paragraph with a clear label, never a bare
+  // URL crammed under the message.
+  const link = trackUrl ? `\n\nTrack your ${jobType} here:\n${trackUrl}` : "";
 
   if (jobType === "move") {
     if (estateMove) {
