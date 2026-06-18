@@ -75,7 +75,10 @@ export default async function ReportsPage({
     supabase
       .from("moves")
       .select(
-        "id, scheduled_date, crew_id, actual_labour_cost, actual_hours, actual_crew_count, est_hours, crew_count, est_crew_size",
+        // actual_hours / actual_crew_count / crew_count are not columns on
+        // `moves`; selecting them errored the query and silently dropped all
+        // move ops data from reports.
+        "id, status, scheduled_date, completed_at, crew_id, actual_labour_cost, est_hours, est_crew_size",
       )
       .gte("scheduled_date", sixAgo),
 

@@ -213,10 +213,10 @@ export async function GET(req: NextRequest) {
     const trackedHours = sessionHoursMap[m.id] ?? null;
     const moveCostInput = {
       estimate: Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0) || 0,
-      actual_hours: trackedHours ?? m.actual_hours ?? null,
+      actual_hours: trackedHours ?? null,
       est_hours: m.est_hours ?? m.quoted_hours ?? null,
-      actual_crew_count: m.actual_crew_count ?? null,
       est_crew_size: m.est_crew_size ?? m.crew_size ?? null,
+      estimated_duration_minutes: m.estimated_duration_minutes ?? null,
       distance_km: m.distance_km ?? null,
       truck_primary: m.truck_primary ?? null,
       truck_secondary: m.truck_secondary ?? null,
@@ -225,6 +225,11 @@ export async function GET(req: NextRequest) {
       // Payment method determines whether processing fee applies
       balance_method: m.balance_method ?? null,
       deposit_method: m.deposit_method ?? null,
+      // Actual-cost snapshot recorded at completion — preferred over derivation.
+      actual_labour_cost: m.actual_labour_cost ?? null,
+      actual_fuel_cost: m.actual_fuel_cost ?? null,
+      actual_truck_cost: m.actual_truck_cost ?? null,
+      actual_supplies_cost: m.actual_supplies_cost ?? null,
     };
     const revenue = moveCostInput.estimate;
     const dayStr = scheduledDayKey(m);

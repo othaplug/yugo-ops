@@ -55,7 +55,14 @@ const terminalRowPatch = (
   completed_at: completedAt,
   updated_at: completedAt,
   eta_tracking_active: false,
-  ...(actualHours != null && actualHours > 0 ? { actual_hours: actualHours } : {}),
+  // `actual_hours` exists only on `deliveries`. Writing it to a `moves` row
+  // errored the UPDATE, so any move completed WITH tracked crew hours silently
+  // failed to mark complete (the "couldn't be marked as completed" bug). For
+  // moves, tracked hours are persisted instead via persistActualMarginForMove
+  // (baked into actual_labour_cost).
+  ...(jobType === "delivery" && actualHours != null && actualHours > 0
+    ? { actual_hours: actualHours }
+    : {}),
 });
 
 export type EnsureJobCompletedResult = {
@@ -283,10 +290,16 @@ export const persistActualMarginForMove = async (
 ): Promise<void> => {
   try {
     const { calcActualMargin } = await import("@/lib/pricing/engine");
+    // Only select columns that exist on `moves`. The old select referenced
+    // actual_hours / actual_crew_count / crew_count, which do NOT exist — so the
+    // query errored, moveForMargin came back null, and the margin snapshot was
+    // never persisted on ANY move. Real tracked hours arrive via the
+    // `actualHours` parameter; crew size falls back to est_crew_size; hours
+    // fall back to est_hours then the per-move duration estimate.
     const { data: moveForMargin } = await admin
       .from("moves")
       .select(
-        "actual_hours, est_hours, actual_crew_count, crew_count, truck_primary, distance_km, tier_selected, move_size, estimate",
+        "est_hours, est_crew_size, estimated_duration_minutes, truck_primary, distance_km, tier_selected, move_size, estimate",
       )
       .eq("id", moveId)
       .single();
@@ -294,12 +307,17 @@ export const persistActualMarginForMove = async (
     const { data: cfgRows } = await admin.from("platform_config").select("key, value");
     const cfg: Record<string, string> = {};
     for (const r of cfgRows ?? []) cfg[r.key] = r.value;
+    const durationHours =
+      moveForMargin.estimated_duration_minutes != null &&
+      Number(moveForMargin.estimated_duration_minutes) > 0
+        ? Number(moveForMargin.estimated_duration_minutes) / 60
+        : null;
     const marginResult = calcActualMargin(
       {
         actualHours,
-        estimatedHours: moveForMargin.est_hours ?? null,
-        actualCrew: moveForMargin.actual_crew_count ?? null,
-        crewSize: moveForMargin.crew_count ?? null,
+        estimatedHours: moveForMargin.est_hours ?? durationHours ?? null,
+        actualCrew: null,
+        crewSize: moveForMargin.est_crew_size ?? null,
         truckType: moveForMargin.truck_primary ?? null,
         distanceKm: moveForMargin.distance_km ?? null,
         tier: moveForMargin.tier_selected ?? null,

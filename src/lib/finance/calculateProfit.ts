@@ -158,6 +158,7 @@ export function calculateMoveProfitability(
     actual_crew_count?: number | null;
     est_crew_size?: number | null;
     crew_count?: number | null;
+    estimated_duration_minutes?: number | null;
     distance_km?: number | null;
     truck_primary?: string | null;
     truck_secondary?: string | null;
@@ -166,6 +167,13 @@ export function calculateMoveProfitability(
     estimate?: number | null;
     balance_method?: string | null;
     deposit_method?: string | null;
+    // Actual-cost snapshot persisted at completion (calcActualMargin). When
+    // present these reflect the real tracked hours/crew and are the source of
+    // truth — prefer them over re-deriving from defaults.
+    actual_labour_cost?: number | null;
+    actual_fuel_cost?: number | null;
+    actual_truck_cost?: number | null;
+    actual_supplies_cost?: number | null;
   },
   config: Record<string, string>,
   _monthlyMoveCountUnused: number,
@@ -174,14 +182,23 @@ export function calculateMoveProfitability(
   void _monthlyMoveCountUnused;
   const divisor = Math.max(1, spreadOpts?.jobsOnSameDay ?? 1);
   const revenue = Number(move.estimate ?? 0) || 0;
-  const hours = Number(move.actual_hours ?? move.est_hours ?? 4) || 4;
+  // Hours fallback chain: real tracked/actual hours → quoted est_hours → the
+  // per-move duration estimate (a single-item run is ~1h) → 4h only as a last
+  // resort. The old blanket 4h default badly inflated labour on short jobs
+  // (e.g. a 1.2h single-item move billed as 4h → $220 instead of ~$66).
+  const durationHours =
+    move.estimated_duration_minutes != null &&
+    Number(move.estimated_duration_minutes) > 0
+      ? Number(move.estimated_duration_minutes) / 60
+      : null;
+  const hours = Number(move.actual_hours ?? move.est_hours ?? durationHours ?? 4) || 4;
   const crewSize = Number(move.actual_crew_count ?? move.est_crew_size ?? move.crew_count ?? 2) || 2;
   // Loaded crew cost per mover-hour. Explicit `crew_hourly_cost` keeps
   // legacy behaviour; absent it, derive from wages + payroll burden.
   const explicitLoaded = cfg(config, "crew_hourly_cost", 0);
   const loadedPerMoverHour =
     explicitLoaded > 0 ? explicitLoaded : getAverageCrewLoadedRate(config);
-  const labour = crewSize * hours * loadedPerMoverHour;
+  const derivedLabour = crewSize * hours * loadedPerMoverHour;
 
   const distanceKm = Number(move.distance_km ?? 20) || 20;
   const fuel = distanceKm * 2 * cfg(config, "fuel_cost_per_km", 0.35);
@@ -225,12 +242,37 @@ export function calculateMoveProfitability(
     spreadOpts?.dailyOverheadBurn && spreadOpts.dailyOverheadBurn > 0
       ? spreadOpts.dailyOverheadBurn / divisor
       : 0;
+
+  // Prefer the actual-cost snapshot recorded at completion: it reflects the
+  // real tracked hours/crew, whereas the derivation above falls back to
+  // defaults when actual_hours isn't persisted (it isn't a column on `moves`).
+  // A recorded labour cost is the signal that a completion snapshot exists;
+  // when it does, trust the whole snapshot (truck legitimately = $0 on owned
+  // vehicles). No snapshot (move not completed) → keep the derived estimate.
+  const hasActualSnapshot =
+    move.actual_labour_cost != null && Number(move.actual_labour_cost) > 0;
+  const labour = hasActualSnapshot
+    ? Number(move.actual_labour_cost)
+    : derivedLabour;
+  const fuelFinal =
+    hasActualSnapshot && move.actual_fuel_cost != null
+      ? Number(move.actual_fuel_cost)
+      : fuel;
+  const truckFinal =
+    hasActualSnapshot && move.actual_truck_cost != null
+      ? Number(move.actual_truck_cost)
+      : truck;
+  const suppliesFinal =
+    hasActualSnapshot && move.actual_supplies_cost != null
+      ? Number(move.actual_supplies_cost)
+      : supplies;
+
   return buildCosts(
     revenue,
     labour,
-    fuel,
-    truck,
-    supplies,
+    fuelFinal,
+    truckFinal,
+    suppliesFinal,
     config,
     includeProcessingEstimate,
     ohShare,

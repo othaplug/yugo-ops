@@ -206,7 +206,10 @@ export async function notifyJobCompletedForCrewProfiles(
     .from(table)
     .select(
       jobType === "move"
-        ? "id, crew_id, assigned_members, completed_at, est_hours, actual_hours, service_type, tier_selected, satisfaction_rating, status, arrived_on_time"
+        // actual_hours is not a column on `moves` (selecting it errored the
+        // whole query and silently skipped crew profiling for every move).
+        // Tracked hours live in tracking_sessions, not here.
+        ? "id, crew_id, assigned_members, completed_at, est_hours, service_type, tier_selected, satisfaction_rating, status, arrived_on_time"
         : "id, crew_id, assigned_members, completed_at, actual_hours, status, score_arrived_late"
     )
     .eq("id", jobId)

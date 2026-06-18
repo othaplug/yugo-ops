@@ -33,7 +33,11 @@ export async function POST(
   // single .single() read could race the write/replica and false-404 a move
   // that was in fact just completed — the "Move not found" bug.
   const SELECT_COLS =
-    "id, move_code, client_email, client_name, from_address, to_address, status, completed_at, actual_hours, est_hours, actual_crew_count, crew_count, truck_primary, distance_km, tier_selected, move_size, estimate";
+    // NB: actual_hours / actual_crew_count / crew_count are NOT columns on
+    // `moves`. Selecting them made this query error, which returned null and
+    // surfaced as the false "Move not found" 404 on completion. Use the columns
+    // that exist (est_hours / est_crew_size / estimated_duration_minutes).
+    "id, move_code, client_email, client_name, from_address, to_address, status, completed_at, est_hours, est_crew_size, estimated_duration_minutes, truck_primary, distance_km, tier_selected, move_size, estimate";
   const fetchMove = async () => {
     const byId = await admin
       .from("moves")
@@ -116,12 +120,17 @@ export async function POST(
     const config: Record<string, string> = {};
     for (const r of configRows ?? []) config[r.key] = r.value;
 
+    const durationHours =
+      move.estimated_duration_minutes != null &&
+      Number(move.estimated_duration_minutes) > 0
+        ? Number(move.estimated_duration_minutes) / 60
+        : null;
     const marginResult = calcActualMargin(
       {
-        actualHours: move.actual_hours ?? null,
-        estimatedHours: move.est_hours ?? null,
-        actualCrew: move.actual_crew_count ?? null,
-        crewSize: move.crew_count ?? null,
+        actualHours: null,
+        estimatedHours: move.est_hours ?? durationHours ?? null,
+        actualCrew: null,
+        crewSize: move.est_crew_size ?? null,
         truckType: move.truck_primary ?? null,
         distanceKm: move.distance_km ?? null,
         tier: move.tier_selected ?? null,

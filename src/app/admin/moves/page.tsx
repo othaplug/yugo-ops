@@ -22,7 +22,7 @@ export default async function AllMovesPage() {
     // actual_hours, est_hours, etc. are used to recalculate margin for completed moves (matches profitability panel)
     // organizations join is used as a display-side fallback so PM-partner moves render as "PM Move" even
     // if their is_pm_move flag wasn't set at creation time (older create-route code paths).
-    "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, neighbourhood_tier, crew_id, created_at, margin_percent, margin_flag, est_margin_percent, contract_id, is_pm_move, organization_id, organizations:organization_id(vertical, type), actual_hours, est_hours, actual_crew_count, est_crew_size, distance_km, truck_primary, truck_secondary, move_size, balance_method, deposit_method";
+    "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, neighbourhood_tier, crew_id, created_at, margin_percent, margin_flag, est_margin_percent, contract_id, is_pm_move, organization_id, organizations:organization_id(vertical, type), est_hours, est_crew_size, estimated_duration_minutes, distance_km, truck_primary, truck_secondary, move_size, balance_method, deposit_method, actual_labour_cost, actual_fuel_cost, actual_truck_cost, actual_supplies_cost";
 
   const minimalMovesSelect =
     // Fallback if extended columns are missing in an older DB schema
@@ -159,10 +159,10 @@ export default async function AllMovesPage() {
         const costs = calculateMoveProfitability(
           {
             estimate: effectivePrice,
-            actual_hours: trackedHours ?? m.actual_hours ?? null,
+            actual_hours: trackedHours ?? null,
             est_hours: m.est_hours ?? null,
-            actual_crew_count: m.actual_crew_count ?? null,
             est_crew_size: m.est_crew_size ?? null,
+            estimated_duration_minutes: m.estimated_duration_minutes ?? null,
             distance_km: m.distance_km ?? null,
             truck_primary: m.truck_primary ?? null,
             truck_secondary: m.truck_secondary ?? null,
@@ -170,6 +170,10 @@ export default async function AllMovesPage() {
             service_type: m.service_type ?? null,
             balance_method: m.balance_method ?? null,
             deposit_method: m.deposit_method ?? null,
+            actual_labour_cost: m.actual_labour_cost ?? null,
+            actual_fuel_cost: m.actual_fuel_cost ?? null,
+            actual_truck_cost: m.actual_truck_cost ?? null,
+            actual_supplies_cost: m.actual_supplies_cost ?? null,
           },
           config,
           1,
