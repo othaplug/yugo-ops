@@ -166,6 +166,9 @@ export default function QuotesListV3Client({
       ["draft", "sent", "viewed"].includes(q.status),
     );
     const openValue = open.reduce((a, q) => a + (quoteAmountRaw(q) ?? 0), 0);
+    // Quotes that actually went out the door (have a sent timestamp), and their total value.
+    const sentQuotes = quotes.filter((q) => q.sent_at != null);
+    const sentValue = sentQuotes.reduce((a, q) => a + (quoteAmountRaw(q) ?? 0), 0);
     const accepted = quotes.filter((q) => q.status === "accepted").length;
     const expiring = quotes.filter((q) => {
       const i = expiryInfo(q.expires_at, q.status);
@@ -213,6 +216,12 @@ export default function QuotesListV3Client({
         id: "open-value",
         label: "Open value",
         value: formatCurrency(openValue),
+      },
+      {
+        id: "sent-value",
+        label: "Sent value",
+        value: formatCurrency(sentValue),
+        hint: `${sentQuotes.length} sent`,
       },
       {
         id: "accepted",
