@@ -979,5 +979,28 @@ export async function GET(
     buildingReportSubmittedAt:
       (m as { building_report_submitted_at?: string | null })
         .building_report_submitted_at ?? null,
+    // Don't re-prompt at buildings the crew has already documented. Once every
+    // address on this job has a crew-sourced (or verified) building profile,
+    // the building report is "done" — show it as complete, not as a new task.
+    buildingsAlreadyDocumented: await (async () => {
+      try {
+        const addrs = [m.from_address, m.to_address].filter(
+          (a): a is string => !!a && a.trim().length > 0,
+        );
+        if (addrs.length === 0) return false;
+        const { data: docs } = await admin
+          .from("building_profiles")
+          .select("address, source, verified")
+          .in("address", addrs);
+        const documented = (docs ?? []).filter(
+          (d) => d.source === "crew_report" || d.verified,
+        );
+        return addrs.every((a) =>
+          documented.some((d) => d.address === a),
+        );
+      } catch {
+        return false; // non-fatal: fall back to showing the card
+      }
+    })(),
   });
 }

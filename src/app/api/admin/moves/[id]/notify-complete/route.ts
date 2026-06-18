@@ -28,13 +28,33 @@ export async function POST(
   const { id: moveId } = await params;
   const admin = createAdminClient();
 
-  const { data: move, error } = await admin
-    .from("moves")
-    .select("id, move_code, client_email, client_name, from_address, to_address, status, completed_at, actual_hours, est_hours, actual_crew_count, crew_count, truck_primary, distance_km, tier_selected, move_size, estimate")
-    .eq("id", moveId)
-    .single();
+  // Look up by uuid OR move_code, with one retry. This endpoint fires right
+  // after the admin writes status=completed (and a router.refresh), so a
+  // single .single() read could race the write/replica and false-404 a move
+  // that was in fact just completed — the "Move not found" bug.
+  const SELECT_COLS =
+    "id, move_code, client_email, client_name, from_address, to_address, status, completed_at, actual_hours, est_hours, actual_crew_count, crew_count, truck_primary, distance_km, tier_selected, move_size, estimate";
+  const fetchMove = async () => {
+    const byId = await admin
+      .from("moves")
+      .select(SELECT_COLS)
+      .eq("id", moveId)
+      .maybeSingle();
+    if (byId.data) return byId.data;
+    const byCode = await admin
+      .from("moves")
+      .select(SELECT_COLS)
+      .eq("move_code", moveId)
+      .maybeSingle();
+    return byCode.data;
+  };
+  let move = await fetchMove();
+  if (!move) {
+    await new Promise((r) => setTimeout(r, 400));
+    move = await fetchMove();
+  }
 
-  if (error || !move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
+  if (!move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
 
   const status = (move.status || "").toLowerCase();
   if (status !== "completed" && status !== "delivered") {

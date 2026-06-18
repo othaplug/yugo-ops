@@ -293,6 +293,7 @@ interface JobDetail {
   /** Set when the crew has already submitted the post-move building report
    *  so the report card stays hidden on subsequent visits. */
   buildingReportSubmittedAt?: string | null;
+  buildingsAlreadyDocumented?: boolean;
   /** Residential multi-day move_projects context for this calendar day */
   moveProjectDay?: {
     projectId: string;
@@ -1741,7 +1742,7 @@ export default function CrewJobPage({
             </Link>
           )}
 
-          {jobCompleted && jobType === "move" && !job.buildingReportSubmittedAt && (
+          {jobCompleted && jobType === "move" && !job.buildingReportSubmittedAt && !job.buildingsAlreadyDocumented && (
             <CrewBuildingReportCard
               moveId={job.id}
               fromAddress={job.fromAddress}

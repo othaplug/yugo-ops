@@ -10,6 +10,7 @@ import {
 import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
 import {
   ensureJobCompleted,
+  repairJobCompletionFromEvidence,
   runDeliveryCompletionFollowUp,
   runMoveCompletionFollowUp,
 } from "@/lib/moves/complete-move-job";
@@ -164,24 +165,41 @@ export async function POST(req: NextRequest) {
       ? Math.round(((new Date(now).getTime() - sessionStartMs) / 3_600_000) * 100) / 100
       : null;
 
-  const { wasAlreadyComplete, ok: completeOk, error: completeErr } = await ensureJobCompleted(admin, {
+  let { wasAlreadyComplete, ok: completeOk } = await ensureJobCompleted(admin, {
     jobId: entityId,
     jobType: jobType as "move" | "delivery",
     completedAt: now,
     actualHours,
   });
 
+  // Mirror the SIGNED path: if ensureJobCompleted soft-fails (transient
+  // write race right after the skip insert), recover inline from evidence
+  // instead of erroring. The skip row IS the completion evidence, so never
+  // delete it on failure — that left the crew permanently unable to finish
+  // and stopped the tracking-session timer from closing (the original bug).
   if (!completeOk) {
-    console.error("[signoff/skip] ensureJobCompleted failed:", completeErr);
-    await admin.from("signoff_skips").delete().eq("id", insertedSkipId);
-    return NextResponse.json(
-      {
-        error:
-          "Could not mark this job complete in the system. Try again or contact the office.",
-        code: "COMPLETION_SYNC_FAILED",
-      },
-      { status: 503 },
+    const repair = await repairJobCompletionFromEvidence(
+      admin,
+      entityId,
+      jobType as "move" | "delivery",
     );
+    if (repair.ok) {
+      completeOk = true;
+      wasAlreadyComplete = !repair.transitioned;
+    } else {
+      console.error(
+        "[signoff/skip] repair after ensureJobCompleted failed:",
+        repair.error,
+      );
+      return NextResponse.json(
+        {
+          error:
+            "Sign-off was saved but the job could not be marked complete. Tap submit again or contact the office.",
+          code: "COMPLETION_SYNC_FAILED",
+        },
+        { status: 503 },
+      );
+    }
   }
 
   try {

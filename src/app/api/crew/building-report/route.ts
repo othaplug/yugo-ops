@@ -374,5 +374,12 @@ export async function POST(req: NextRequest) {
     moveCtx,
   )
   if (result.error) return NextResponse.json({ error: result.error }, { status: 500 })
+  // Same as the array branch: tag the move done so the card doesn't re-prompt.
+  if (body.moveId) {
+    await admin
+      .from("moves")
+      .update({ building_report_submitted_at: new Date().toISOString() })
+      .eq("id", body.moveId)
+  }
   return NextResponse.json(result)
 }
