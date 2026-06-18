@@ -29,6 +29,7 @@ import {
   signatureConfirmationEmail,
   estateConfirmationEmail,
   binRentalConfirmationEmail,
+  singleItemConfirmationEmail,
   statusUpdateEmailHtml,
   type TierConfirmationParams,
 } from "@/lib/email-templates";
@@ -442,8 +443,6 @@ export async function runPostPaymentActions(
           return;
         }
 
-        const tier = selectedTier ?? "signature";
-
         const TRUCK_DISPLAY: Record<string, string> = {
           sprinter: "Extended Sprinter Van",
           "16ft": "16ft Fully Equipped Truck",
@@ -451,6 +450,71 @@ export async function runPostPaymentActions(
           "24ft": "24ft Full-Size Moving Truck",
           "26ft": "26ft Maximum-Capacity Truck",
         };
+
+        // Single-item is NOT tiered (no Essential/Signature/Estate) and defaults
+        // to a 2-person crew. Use a dedicated non-tiered template that lists the
+        // actual items, so we never show a residential plan label or "3 movers".
+        if (quote.service_type === "single_item") {
+          const lines = Array.isArray(factors.single_item_lines)
+            ? (factors.single_item_lines as Array<{
+                item_description?: string;
+                quantity?: number;
+              }>)
+            : [];
+          const items = lines.map((l) => {
+            const name = (l.item_description || "").trim() || "Item";
+            const qty = Number(l.quantity) || 1;
+            return qty > 1 ? `${name} ×${qty}` : name;
+          });
+          const siCrew =
+            Number(factors.single_item_crew_estimated) ||
+            (move.crew_size as number) ||
+            (quote.est_crew_size as number) ||
+            2;
+          const siTruckKey =
+            (move.truck_info as string) || (quote.truck_primary as string) || "";
+          const siTruck =
+            TRUCK_DISPLAY[siTruckKey] || siTruckKey || "Dedicated moving vehicle";
+          const html = singleItemConfirmationEmail({
+            clientName,
+            moveCode: input.moveCode,
+            moveDate: quote.move_date,
+            timeWindow:
+              (move.arrival_window as string) || "Morning (8 AM – 12 PM)",
+            fromAddress: quote.from_address,
+            toAddress: quote.to_address,
+            crewSize: siCrew,
+            truckDisplayName: siTruck,
+            items,
+            totalWithTax,
+            depositPaid: depositAmount,
+            balanceRemaining: balanceAmount,
+            trackingUrl,
+            includes: [
+              "Professional handling and transport",
+              "Protective blanket wrapping for all items",
+              "Careful loading and unloading",
+              "Floor and entryway protection",
+            ],
+            welcomePackageUrl,
+            addonLines:
+              resolvedAddonLines.length > 0 ? resolvedAddonLines : undefined,
+          });
+          const emailFrom = await getEmailFrom();
+          await resend.emails.send({
+            from: emailFrom,
+            to: clientEmail,
+            subject: `Booking confirmed, ${input.moveCode}`,
+            html,
+            headers: {
+              Precedence: "auto",
+              "X-Auto-Response-Suppress": "All",
+            },
+          });
+          return;
+        }
+
+        const tier = selectedTier ?? "signature";
         const truckKey =
           (move.truck_info as string) || (quote.truck_primary as string) || "";
         const truckDisplayName =

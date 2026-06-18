@@ -2069,6 +2069,121 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
   `);
 }
 
+export interface SingleItemConfirmationParams {
+  clientName: string;
+  moveCode: string;
+  moveDate: string | null;
+  timeWindow: string;
+  fromAddress: string;
+  toAddress: string;
+  /** Crew size — single-item defaults to 2 (3 only for extra-heavy). */
+  crewSize: number;
+  truckDisplayName: string;
+  /** The items being moved, e.g. ["Bed frame", "Chaise"]. */
+  items: string[];
+  totalWithTax: number;
+  depositPaid: number;
+  balanceRemaining: number;
+  trackingUrl: string;
+  includes?: string[];
+  welcomePackageUrl?: string | null;
+  addonLines?: { name: string; qty?: number; price: number }[];
+}
+
+/**
+ * Single-item move confirmation. Single-item is NOT tiered (no Essential/
+ * Signature/Estate) — it lists the specific items and a crew size (2 by
+ * default), never a residential plan label.
+ */
+export function singleItemConfirmationEmail(
+  p: SingleItemConfirmationParams,
+): string {
+  const dateStr = confirmDateDisplay(p.moveDate);
+  const firstName =
+    (p.clientName || "").trim().split(/\s+/).filter(Boolean)[0] || "";
+  const headline = firstName
+    ? `Your move is confirmed, ${firstName}.`
+    : "Your move is confirmed.";
+  const crew = Math.max(1, Math.round(p.crewSize || 2));
+  const itemsList = (p.items || []).filter(Boolean);
+  const itemsHtml = itemsList.length
+    ? itemsList
+        .map(
+          (it) =>
+            `<div style="font-size:12px;color:${PREMIUM_BODY};line-height:2">${escapeHtmlEmail(it)}</div>`,
+        )
+        .join("")
+    : `<span style="color:${PREMIUM_BODY_MUTED}">Confirmed with your coordinator.</span>`;
+  const includesHtml = (p.includes || [])
+    .map(
+      (inc) =>
+        `<div style="font-size:12px;color:${PREMIUM_BODY};line-height:2">${inc}</div>`,
+    )
+    .join("");
+  const sB = `1px solid ${PREMIUM_RULE}`;
+  const sL = `padding:4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`;
+  const sV = `padding:4px 0;font-size:12px;color:${PREMIUM_BODY};font-weight:600;text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`;
+  const sVg = `${sV};color:#2D7A4F`;
+  return emailLayout(`
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;font-family:${PREMIUM_FONT};">Booking confirmed</div>
+    <h1 style="font-size:28px;font-weight:700;letter-spacing:0;margin:0 0 12px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};text-transform:none;">${headline}</h1>
+    <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 24px">
+      Everything is set. No surprises, just careful, professional handling of your items.
+    </p>
+
+    ${premiumSectionRule()}
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td style="padding:0;">
+      <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">Your move</div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;font-size:12px;border-collapse:collapse">
+        ${emailNestedKvRow({ borderTop: "none", labelStyle: sL, valueStyle: sV, label: "Date", valueHtml: escapeHtmlEmail(`${dateStr} · ${p.timeWindow}`) })}
+        ${emailNestedKvRow({ borderTop: sB, labelStyle: sL, valueStyle: sV, label: "From", valueHtml: emailMapLinkHtml(p.fromAddress) })}
+        ${emailNestedKvRow({ borderTop: sB, labelStyle: sL, valueStyle: sV, label: "To", valueHtml: emailMapLinkHtml(p.toAddress) })}
+        ${emailNestedKvRow({ borderTop: sB, labelStyle: sL, valueStyle: sV, label: "Crew", valueHtml: escapeHtmlEmail(`${crew}-person crew`) })}
+        ${emailNestedKvRow({ borderTop: sB, labelStyle: sL, valueStyle: sV, label: "Vehicle", valueHtml: escapeHtmlEmail(p.truckDisplayName) })}
+        ${emailNestedKvRow({ borderTop: sB, labelStyle: sL, valueStyle: sV, label: "Total", valueHtml: escapeHtmlEmail(`${formatCurrencyEmail(p.totalWithTax)} (guaranteed - no surprises)`) })}
+      </table>
+    </td></tr></table>
+
+    ${premiumSectionRule()}
+    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">Items we&apos;re moving</div>
+    <div style="font-size:12px;line-height:2">${itemsHtml}</div>
+
+    ${includesHtml ? `${premiumSectionRule()}
+    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">What&apos;s included</div>
+    <div style="font-size:12px;line-height:2">${includesHtml}</div>` : ""}
+
+    ${renderAddonLinesHtml(p.addonLines, { sectionRule: premiumSectionRule(), labelStyle: sL, valueStyle: sV, borderBetween: sB })}
+
+    ${premiumSectionRule()}
+    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">Before your move</div>
+    <div style="font-size:13px;color:${PREMIUM_BODY};line-height:1.8">
+      <div>&middot; You&apos;ll receive a reminder 48 hours before</div>
+      <div>&middot; A day-before SMS with your crew details and ETA window</div>
+      <div>&middot; Let us know if any piece needs disassembly and our team will handle it</div>
+    </div>
+
+    ${premiumSectionRule()}
+    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">Your tracking page</div>
+    <div style="font-size:13px;color:${PREMIUM_BODY_MUTED};line-height:1.6">Follow your move in real-time on move day:</div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;margin-bottom:20px;"><tr><td align="center">
+      ${premiumCompactWineCtaAnchor(p.trackingUrl, PREMIUM_TRACK_CTA_LABEL, "block")}
+    </td></tr></table>
+
+    <div style="background:${EMAIL_PREMIUM_ISLAND};border:1px solid ${PREMIUM_RULE};padding:${PREMIUM_CALLOUT_PAD};margin-bottom:16px;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;font-size:12px;border-collapse:collapse">
+        ${emailNestedKvRow({ borderTop: "none", labelStyle: sL, valueStyle: sVg, label: "Deposit paid", valueHtml: formatCurrencyEmail(p.depositPaid) })}
+        ${emailNestedKvRow({ borderTop: sB, labelStyle: sL, valueStyle: sV, label: "Balance remaining", valueHtml: formatCurrencyEmail(p.balanceRemaining) })}
+      </table>
+    </div>
+
+    <p style="font-size:12px;color:${PREMIUM_BODY_MUTED};margin:0 0 16px;text-align:center">
+      Looking forward to a smooth move.<br/>
+      <strong style="color:${PREMIUM_BODY}">- The Yugo Team</strong>
+    </p>
+  `);
+}
+
 export interface BinRentalConfirmationParams {
   clientName: string;
   moveCode: string;

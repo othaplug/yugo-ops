@@ -1958,8 +1958,10 @@ export default function TrackMoveClient({
             );
           })()}
 
-          {/* Tier scope briefing, tells crew what is and isn't included */}
-          {!isNonMoveProductTrack && !isWhiteGlove && (() => {
+          {/* Tier scope briefing, tells crew what is and isn't included.
+              Single-item moves are non-tiered, so they never show a tier scope
+              card (it would mislabel them "Essential"). */}
+          {!isNonMoveProductTrack && !isWhiteGlove && !isSingleItem && (() => {
             const rawTier = move.tier_selected || move.tier || move.service_tier || "";
             const tierKey = normalizeTierKey(rawTier);
             const ops = getTierOps(tierKey);

@@ -28,6 +28,7 @@ import { formatMoveDate } from "@/lib/date-format";
 import {
   essentialConfirmationEmail,
   signatureConfirmationEmail,
+  singleItemConfirmationEmail,
   estateConfirmationEmail,
   statusUpdateEmailHtml,
   type TierConfirmationParams,
@@ -160,6 +161,57 @@ export async function POST(
 
   /* ── 1. Tier-specific booking confirmation ── */
   try {
+    if (quote.service_type === "single_item") {
+      // Single-item is non-tiered, 2-person crew by default — dedicated template.
+      const factors = (quote.factors_applied ?? {}) as Record<string, unknown>;
+      const lines = Array.isArray(factors.single_item_lines)
+        ? (factors.single_item_lines as Array<{
+            item_description?: string;
+            quantity?: number;
+          }>)
+        : [];
+      const items = lines.map((l) => {
+        const name = (l.item_description || "").trim() || "Item";
+        const qty = Number(l.quantity) || 1;
+        return qty > 1 ? `${name} ×${qty}` : name;
+      });
+      const siCrew =
+        Number(factors.single_item_crew_estimated) ||
+        (move.crew_size as number) ||
+        (quote.est_crew_size as number) ||
+        2;
+      await resend.emails.send({
+        from: emailFrom,
+        to: clientEmail,
+        subject: `Booking confirmed, ${moveCode}`,
+        html: singleItemConfirmationEmail({
+          clientName,
+          moveCode,
+          moveDate: quote.move_date,
+          timeWindow,
+          fromAddress: quote.from_address,
+          toAddress: quote.to_address,
+          crewSize: siCrew,
+          truckDisplayName,
+          items,
+          totalWithTax,
+          depositPaid: depositAmount,
+          balanceRemaining: balanceAmount,
+          trackingUrl,
+          includes: [
+            "Professional handling and transport",
+            "Protective blanket wrapping for all items",
+            "Careful loading and unloading",
+            "Floor and entryway protection",
+          ],
+        }),
+        headers: {
+          Precedence: "auto",
+          "X-Auto-Response-Suppress": "All",
+        },
+      });
+      results.push({ name: "booking_confirmation", ok: true });
+    } else {
     const confirmParams: TierConfirmationParams = {
       clientName,
       moveCode,
@@ -216,6 +268,7 @@ export async function POST(
       },
     });
     results.push({ name: "booking_confirmation", ok: true });
+    }
   } catch (e) {
     results.push({
       name: "booking_confirmation",

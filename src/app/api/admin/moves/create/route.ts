@@ -689,11 +689,20 @@ export async function POST(req: NextRequest) {
       let quoteContactId: string | null = null;
       let scopedEstimatedDays = 1;
       let scopedDayBreakdown: unknown = [];
+      // Single-item lines from the quote, used to seed move_inventory (the
+      // single-item form sends no inventory array, so without this the move
+      // inventory comes up empty).
+      let scopedSingleItemLines: Array<{
+        item_description?: string;
+        quantity?: number;
+      }> = [];
       const quoteUuidRaw = (body.quote_uuid as string)?.trim();
       if (quoteUuidRaw) {
         const { data: quoteRow } = await db
           .from("quotes")
-          .select("id, contact_id, estimated_days, day_breakdown, hubspot_deal_id")
+          .select(
+            "id, contact_id, estimated_days, day_breakdown, hubspot_deal_id, factors_applied, quote_items",
+          )
           .eq("id", quoteUuidRaw)
           .maybeSingle();
         if (quoteRow?.id) {
@@ -706,6 +715,15 @@ export async function POST(req: NextRequest) {
           scopedEstimatedDays =
             typeof quoteRow.estimated_days === "number" ? quoteRow.estimated_days : 1;
           scopedDayBreakdown = quoteRow.day_breakdown ?? [];
+          const f = (quoteRow.factors_applied ?? {}) as Record<string, unknown>;
+          const linesFromFactors = Array.isArray(f.single_item_lines)
+            ? (f.single_item_lines as typeof scopedSingleItemLines)
+            : [];
+          const linesFromItems = Array.isArray(quoteRow.quote_items)
+            ? (quoteRow.quote_items as typeof scopedSingleItemLines)
+            : [];
+          scopedSingleItemLines =
+            linesFromFactors.length > 0 ? linesFromFactors : linesFromItems;
         }
       }
       if (typeof body.estimated_days === "number") {
@@ -795,6 +813,29 @@ export async function POST(req: NextRequest) {
               item_name: String(inv.item_name).trim(),
             });
           }
+        }
+      }
+
+      // Single-item: the form sends no inventory array, so seed move_inventory
+      // from the quote's single-item lines — otherwise the move + track page
+      // inventory is empty even though items were quoted.
+      const noInventorySent =
+        items.length === 0 &&
+        (!Array.isArray(body.inventory) || body.inventory.length === 0);
+      if (
+        serviceType === "single_item" &&
+        noInventorySent &&
+        scopedSingleItemLines.length > 0
+      ) {
+        for (const line of scopedSingleItemLines) {
+          const name = (line.item_description || "").trim();
+          if (!name) continue;
+          const qty = Number(line.quantity) || 1;
+          await db.from("move_inventory").insert({
+            move_id: moveId,
+            room: "Single Item",
+            item_name: qty > 1 ? `${name} x${qty}` : name,
+          });
         }
       }
 
