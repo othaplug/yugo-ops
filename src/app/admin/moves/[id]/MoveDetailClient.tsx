@@ -308,7 +308,7 @@ import { stripClientMessagesFromNotes } from "@/lib/internal-notes";
 import {
   formatCurrency,
   calcHST,
-  contractTaxLines,
+  contractTaxFromMove,
 } from "@/lib/format-currency";
 import { portfolioPmMoveServiceLabel, serviceTypeDisplayLabel } from "@/lib/displayLabels";
 import { serviceTypeHasTiers } from "@/lib/quote-service-types";
@@ -2398,7 +2398,7 @@ export default function MoveDetailClient({
         const consumerPaymentOverdueUi = portfolioPmBilling
           ? false
           : balanceUnpaid;
-        const ctl = contractTaxLines(estimate, Number(move.amount ?? 0));
+        const ctl = contractTaxFromMove(move);
         const quoteTotal =
           ctl.inclusive > 0
             ? ctl.inclusive

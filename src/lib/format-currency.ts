@@ -134,3 +134,43 @@ export function contractTaxLines(estimate: number, amount: number): {
   }
   return { preTax: 0, hst: 0, inclusive: 0 }
 }
+
+/**
+ * Robust contract tax breakdown for a move row — the single correct source for
+ * the contract / partner-statement totals shown on the move detail.
+ *
+ * Why this exists: the legacy `amount` column is stored inconsistently across
+ * move-creation paths — tax-INCLUSIVE on most rows (amount == estimate*1.13)
+ * but pre-tax on others. Feeding `amount` into `contractTaxLines` double-taxed
+ * every tax-inclusive row (e.g. a $5,876 contract rendered $6,640). The one
+ * field that is reliable across all rows is `estimate` = the pre-tax base
+ * (verified: deposit+balance == estimate*1.13 on well-formed moves).
+ *
+ * So we anchor on `estimate` and add HST. When the price was manually edited,
+ * `final_amount`/`total_price` hold the actual tax-INCLUSIVE total the client
+ * owes (which is NOT just estimate + HST), so we split HST back out of it
+ * instead of re-adding tax. `amount` is only a last-resort fallback when no
+ * pre-tax base exists at all.
+ */
+export function contractTaxFromMove(move: {
+  estimate?: number | string | null
+  final_amount?: number | string | null
+  total_price?: number | string | null
+  amount?: number | string | null
+}): { preTax: number; hst: number; inclusive: number } {
+  const preTaxBase = round2(Number(move.estimate ?? 0))
+  const editedTotal = round2(Number(move.final_amount ?? move.total_price ?? 0))
+  if (preTaxBase > 0) {
+    const normalInclusive = round2(preTaxBase * (1 + ONTARIO_HST_RATE))
+    // Edited to a total that is not simply estimate + HST → treat the edited
+    // number as the tax-inclusive total the client owes and split HST out.
+    if (editedTotal > 0 && Math.abs(editedTotal - normalInclusive) > 1) {
+      return splitOntarioTaxInclusive(editedTotal)
+    }
+    return ontarioHstBreakdownFromPreTax(preTaxBase)
+  }
+  if (editedTotal > 0) return splitOntarioTaxInclusive(editedTotal)
+  const amt = round2(Number(move.amount ?? 0))
+  if (amt > 0) return splitOntarioTaxInclusive(amt)
+  return { preTax: 0, hst: 0, inclusive: 0 }
+}
