@@ -18,10 +18,11 @@ export async function sendLeadAcknowledgment(lead: {
   const first = (lead.first_name || "there").trim() || "there"
 
   if (lead.phone && lead.phone.replace(/\D/g, "").length >= 10) {
-    const sms =
-      `Hi ${first}, thanks for reaching out to Yugo!\n` +
-      `We have received your inquiry and a member of our team will be in touch shortly with your personalized quote.\n` +
-      `The Yugo Team`
+    const sms = [
+      `Hi ${first},`,
+      `Thank you for reaching out to Yugo. We have received your inquiry and a member of our team will be in touch shortly with your personalized quote.`,
+      `The Yugo Team`,
+    ].join("\n\n")
     await sendSMS(lead.phone, sms).catch((e) => console.warn("[leads] ack SMS:", e))
   }
 
@@ -54,9 +55,11 @@ export async function sendLeadAcknowledgment(lead: {
 }
 
 export async function sendMissedCallSms(toPhone: string): Promise<void> {
-  const body =
-    "Hi, we noticed we missed your call. We would love to help! " +
-    "Reply with your name and move details, or we will call you back within 15 minutes. " +
-    `The Yugo Team, ${COORD_PHONE_DISPLAY}`
+  const body = [
+    `Hi there,`,
+    `We noticed we missed your call and would love to help.`,
+    `Reply with your name and move details, or we will call you back within 15 minutes.`,
+    `The Yugo Team, ${COORD_PHONE_DISPLAY}`,
+  ].join("\n\n")
   await sendSMS(toPhone, body).catch((e) => console.warn("[leads] missed call SMS:", e))
 }

@@ -199,9 +199,12 @@ export async function PATCH(
       if (order.client_phone) {
         sendSMS(
           order.client_phone,
-          `A note on your Yugo order ${order.order_number}: ${binsMissing} bin(s) were not returned. ` +
-            `A charge of $${missingCharge.toFixed(2)} ($${MISSING_BIN_FEE} per bin) has been applied to the card on file. ` +
+          [
+            `Hi,`,
+            `A quick note on your Yugo order ${order.order_number}: ${binsMissing} bin(s) were not returned.`,
+            `A charge of $${missingCharge.toFixed(2)} ($${MISSING_BIN_FEE} per bin) has been applied to the card on file.`,
             `Please reach us at (647) 370-4525 if you have any questions.`,
+          ].join("\n\n"),
         ).catch(() => {});
       }
     } else if (order.client_phone) {

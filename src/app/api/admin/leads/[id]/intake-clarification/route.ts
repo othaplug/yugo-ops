@@ -57,7 +57,12 @@ export async function POST(
     await sendEmail({ to: email, subject, html });
   }
   if (phone) {
-    const line = `${first}, this is ${coordName} from Yugo. ${message} Reply here or call ${coordPhone || "us"}.`;
+    const line = [
+      `Hi ${first},`,
+      `This is ${coordName} from Yugo.`,
+      message,
+      `Reply here anytime, or call ${coordPhone || "us"}.`,
+    ].join("\n\n");
     await sendSMS(phone, line);
   }
   if (!email && !phone) {

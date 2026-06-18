@@ -48,7 +48,11 @@ export async function POST(
   if (phone) {
     await sendSMS(
       phone,
-      `Hi ${firstName}, to prepare your Yugo quote please share quick room-by-room photos using this link: ${surveyUrl}`,
+      [
+        `Hi ${firstName},`,
+        `To prepare your Yugo quote, please share a few quick room-by-room photos.`,
+        `Share your photos here:\n${surveyUrl}`,
+      ].join("\n\n"),
     ).catch((err) => {
       console.error("[RequestPhotos] SMS error:", err);
     });

@@ -132,9 +132,12 @@ export async function PATCH(req: NextRequest) {
       if (order.client_phone) {
         sendSMS(
           order.client_phone,
-          `${binsMissing} bin(s) were not returned from order ${order.order_number}. ` +
-          `A charge of $${missingCharge.toFixed(2)} ($${MISSING_BIN_FEE}/bin) has been applied to your card on file. ` +
-          `Questions? Call (647) 370-4525`,
+          [
+            `Hi,`,
+            `A quick note on order ${order.order_number}: ${binsMissing} bin(s) were not returned.`,
+            `A charge of $${missingCharge.toFixed(2)} ($${MISSING_BIN_FEE} per bin) has been applied to your card on file.`,
+            `Any questions? Call us at (647) 370-4525.`,
+          ].join("\n\n"),
         ).catch(() => {});
       }
     } else if (order.client_phone) {

@@ -93,8 +93,17 @@ export async function sendSmartFollowUp(
   if (phoneOk) {
     const smsText =
       missingQuestions.length <= 2
-        ? `Hi ${first}, thanks for reaching out to Yugo! To get your quote ready: ${missingQuestions[0]!}${missingQuestions[1] ? ` Also: ${missingQuestions[1]}` : ""} The Yugo Team`
-        : `Hi ${first}, thanks for reaching out to Yugo! We have a few quick questions to finalize your quote. Check your email for details. The Yugo Team`
+        ? [
+            `Hi ${first},`,
+            `Thank you for reaching out to Yugo. To get your quote ready, could you let us know:`,
+            `${missingQuestions[0]!}${missingQuestions[1] ? `\n\n${missingQuestions[1]}` : ""}`,
+            `The Yugo Team`,
+          ].join("\n\n")
+        : [
+            `Hi ${first},`,
+            `Thank you for reaching out to Yugo. We have a few quick questions to finalize your quote, please check your email for the details.`,
+            `The Yugo Team`,
+          ].join("\n\n")
     await sendSMS(lead.phone!, smsText).catch((e) => console.warn("[leads] smart follow-up SMS:", e));
   }
 

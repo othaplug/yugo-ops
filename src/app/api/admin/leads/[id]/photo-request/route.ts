@@ -103,14 +103,14 @@ export async function POST(
   const phoneTo = (lead.phone && String(lead.phone).trim()) || "";
   if (phoneTo) {
     const firstName = first || "there";
-    const line =
-      `Hi ${firstName}, this is ${coordinatorName} from Yugo. ` +
-      `To prepare your personalized move quote, we would love to see your space. ` +
-      `Quick room photos help us plan accurately: ${surveyUrl} ` +
-      `Takes about five minutes. ` +
-      (coordinatorPhone
-        ? `Questions? Call me: ${coordinatorPhone}`
-        : "We are here to help with any questions.");
+    const line = [
+      `Hi ${firstName},`,
+      `This is ${coordinatorName} from Yugo. To prepare your personalized move quote, we would love to see your space. A few quick room photos help us plan accurately, and it takes about five minutes.`,
+      `Share your photos here:\n${surveyUrl}`,
+      coordinatorPhone
+        ? `Any questions? Call me anytime at ${coordinatorPhone}.`
+        : `We are here to help with any questions.`,
+    ].join("\n\n");
     await sendSMS(phoneTo, line);
   }
 

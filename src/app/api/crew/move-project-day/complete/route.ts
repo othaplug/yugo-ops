@@ -144,14 +144,22 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
       let bodySms = "";
       if (!nextDay) {
-        bodySms = `Hi ${first}, thanks for hosting us today. We finished ${dayWord.toLowerCase()} work for your move with Yugo. We will confirm any final steps with your coordinator shortly. Questions? Reply here or call (647) 370-4525.`;
+        bodySms = [
+          `Hi ${first},`,
+          `Thank you for hosting us today. We have finished ${dayWord.toLowerCase()} work for your move with Yugo, and we will confirm any final steps with your coordinator shortly.`,
+          `Any questions? Reply here anytime, or call (647) 370-4525.`,
+        ].join("\n\n");
       } else {
         const nd = typeof nextDay.date === "string" ? nextDay.date.slice(0, 10) : "";
         const nextLabel =
           typeof nextDay.label === "string" && nextDay.label.trim().length > 0
             ? nextDay.label.trim().toLowerCase()
             : labelForDayType(String(nextDay.day_type || "move")).toLowerCase();
-        bodySms = `Hi ${first}, we wrapped ${dayWord.toLowerCase()} for today. Next on ${nd}: ${nextLabel}. If you need anything tonight, reply here or call (647) 370-4525.`;
+        bodySms = [
+          `Hi ${first},`,
+          `We have wrapped ${dayWord.toLowerCase()} for today. Next on ${nd}: ${nextLabel}.`,
+          `If you need anything tonight, reply here anytime, or call (647) 370-4525.`,
+        ].join("\n\n");
       }
       const smsResult = await sendSMS(phone, bodySms);
       if (smsResult.success) {

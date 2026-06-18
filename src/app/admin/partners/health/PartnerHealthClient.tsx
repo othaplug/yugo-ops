@@ -131,7 +131,12 @@ The Yugo Team`;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to: partner.phone,
-          message: `Hi ${firstName}, just checking in from Yugo! It's been a while since your last job with us. Do you have any upcoming needs we can help with? We're here anytime. – Yugo Team`,
+          message: [
+            `Hi ${firstName},`,
+            `Just checking in from Yugo. It has been a while since your last job with us.`,
+            `Do you have any upcoming needs we can help with? We are here anytime.`,
+            `The Yugo Team`,
+          ].join("\n\n"),
           type: "partner_reengagement",
           related_id: partner.id,
           related_type: "organization",

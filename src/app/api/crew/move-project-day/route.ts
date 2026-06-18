@@ -106,7 +106,11 @@ export async function PATCH(req: NextRequest) {
           const first =
             typeof mv.client_name === "string" ? mv.client_name.trim().split(/\s+/)[0] || "there" : "there";
           const dayWord = labelForDayType(dayTypeLc).toLowerCase();
-          const bodySms = `Hi ${first}, your Yugo crew is on site today for ${dayWord}. If you need anything, text us here or call (647) 370-4525.`;
+          const bodySms = [
+            `Hi ${first},`,
+            `Your Yugo crew is on site today for ${dayWord}.`,
+            `If you need anything, text us here anytime, or call (647) 370-4525.`,
+          ].join("\n\n");
           const smsResult = await sendSMS(phone, bodySms);
           if (smsResult.success) {
             await db.from("move_project_days").update({ arrival_notice_sent: true }).eq("id", dayId);
