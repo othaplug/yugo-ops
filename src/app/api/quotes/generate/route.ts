@@ -235,7 +235,7 @@ interface QuoteInput {
    */
   tier_price_overrides?: Partial<
     Record<
-      "essential" | "signature" | "estate",
+      "essential" | "signature" | "estate" | "priority",
       { price?: number; reason?: string }
     >
   >;
@@ -5384,6 +5384,65 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     }
   }
 
+  // ── Per-tier overrides for OFFICE scope tiers (essential/signature/priority) ──
+  // Office keeps a flat 30% deposit on the overridden price. Kept separate from
+  // the residential block above because office uses `officeTiers` + the
+  // `priority` key, which the residential block never touches.
+  if (
+    officeTiers &&
+    input.tier_price_overrides &&
+    typeof input.tier_price_overrides === "object"
+  ) {
+    const taxRateOffice = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
+    const officeOverridesApplied: Array<{
+      tier: string;
+      original: number;
+      override: number;
+      reason: string;
+    }> = [];
+    const nextOfficeTiers: Record<string, TierResult> = { ...officeTiers };
+    for (const tk of ["essential", "signature", "priority"] as const) {
+      const ovEntry = input.tier_price_overrides[tk];
+      if (!ovEntry || typeof ovEntry !== "object") continue;
+      const ovPrice = Number(ovEntry.price);
+      if (!Number.isFinite(ovPrice) || ovPrice <= 0) continue;
+      const ovReason = String(ovEntry.reason ?? "").trim();
+      if (ovReason.length < 3) {
+        return NextResponse.json(
+          {
+            error: `Per-tier override on ${tk} requires a reason (at least 3 characters).`,
+          },
+          { status: 400 },
+        );
+      }
+      const t = officeTiers[tk];
+      if (!t) continue;
+      const newPrice = Math.round(ovPrice);
+      nextOfficeTiers[tk] = {
+        ...t,
+        price: newPrice,
+        tax: Math.round(newPrice * taxRateOffice),
+        total: Math.round(newPrice * (1 + taxRateOffice)),
+        deposit: Math.round(newPrice * 0.3),
+      };
+      officeOverridesApplied.push({
+        tier: tk,
+        original: t.price,
+        override: newPrice,
+        reason: ovReason,
+      });
+    }
+    if (officeOverridesApplied.length > 0) {
+      officeTiers = nextOfficeTiers;
+      // Keep the single-price fallback (Priority) in sync with the override.
+      custom_price = officeTiers.priority;
+      factors = {
+        ...factors,
+        tier_overrides_applied: officeOverridesApplied,
+      };
+    }
+  }
+
   const quoteOvr = parsePositivePreTaxOverride(input.quote_price_override);
   const quoteOvrReason = String(input.quote_price_override_reason ?? "").trim();
   if (quoteOvr !== undefined) {
@@ -6163,6 +6222,12 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
 
   if (tiers) {
     response.tiers = tiers;
+  } else if (officeTiers) {
+    // Office: surface the 3 scope tiers (so the form shows them + the per-tier
+    // override editor) AND the Priority single-price fallback.
+    response.tiers = officeTiers;
+    response.custom_price = custom_price;
+    response.deposit_amount = custom_price?.deposit ?? primaryPrice;
   } else {
     response.custom_price = custom_price;
     response.deposit_amount = custom_price?.deposit ?? primaryPrice;

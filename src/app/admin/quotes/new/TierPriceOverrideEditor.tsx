@@ -30,7 +30,7 @@ import {
   buildPriceOverrideReasonText,
 } from "@/lib/quotes/price-override-reasons";
 
-export type TierKey = "essential" | "signature" | "estate";
+export type TierKey = "essential" | "signature" | "estate" | "priority";
 
 export type TierOverrideEntry = { price: string; reason: string };
 export type TierPriceOverrideMap = Partial<Record<TierKey, TierOverrideEntry>>;
@@ -38,6 +38,11 @@ export type TierPriceOverrideMap = Partial<Record<TierKey, TierOverrideEntry>>;
 type Props = {
   value: TierPriceOverrideMap;
   onChange: (next: TierPriceOverrideMap) => void;
+  /** Which tiers to show, in order. Defaults to the residential set. Office
+   *  passes essential/signature/priority. */
+  tierOrder?: TierKey[];
+  /** Display labels per tier. Defaults to the residential labels. */
+  tierLabels?: Partial<Record<TierKey, string>>;
   /** Engine-natural prices for each tier (shown as the "was" price). Optional. */
   enginePrices?: Partial<Record<TierKey, number>>;
   /**
@@ -56,17 +61,24 @@ const TIER_LABELS: Record<TierKey, string> = {
   essential: "Essential",
   signature: "Signature",
   estate: "Estate",
+  priority: "Priority",
 };
+
+const DEFAULT_TIER_ORDER: TierKey[] = ["essential", "signature", "estate"];
 
 const fmt = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
 export default function TierPriceOverrideEditor({
   value,
   onChange,
+  tierOrder = DEFAULT_TIER_ORDER,
+  tierLabels,
   enginePrices,
   savedPrices,
   disabled = false,
 }: Props) {
+  const labelFor = (tier: TierKey) =>
+    tierLabels?.[tier] ?? TIER_LABELS[tier];
   const [expanded, setExpanded] = React.useState<TierKey | null>(null);
 
   const updateTier = (tier: TierKey, next: Partial<TierOverrideEntry> | null) => {
@@ -103,7 +115,7 @@ export default function TierPriceOverrideEditor({
       </div>
 
       <div className="flex flex-col gap-2">
-        {(["essential", "signature", "estate"] as const).map((tier) => {
+        {tierOrder.map((tier) => {
           const entry = value[tier];
           const engine = enginePrices?.[tier];
           const isExpanded = expanded === tier || !!entry;
@@ -141,7 +153,7 @@ export default function TierPriceOverrideEditor({
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-baseline gap-2 min-w-0">
                   <span className="text-[12px] font-semibold text-[var(--tx)]">
-                    {TIER_LABELS[tier]}
+                    {labelFor(tier)}
                   </span>
                   {typeof engine === "number" && (
                     <span className="text-[10px] text-[var(--tx2)]">

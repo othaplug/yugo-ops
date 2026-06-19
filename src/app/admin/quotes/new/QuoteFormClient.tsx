@@ -2015,9 +2015,18 @@ export default function QuoteFormClient({
   // engine-priced). Each tier carries its own price + reason.
   const [tierPriceOverrides, setTierPriceOverrides] = useState<
     Partial<
-      Record<"essential" | "signature" | "estate", { price: string; reason: string }>
+      Record<
+        "essential" | "signature" | "estate" | "priority",
+        { price: string; reason: string }
+      >
     >
   >({});
+  // The three tier keys for the current service. Office uses Priority as its
+  // third tier; everything tiered else uses Estate.
+  const activeTierKeys =
+    serviceType === "office_move"
+      ? (["essential", "signature", "priority"] as const)
+      : (["essential", "signature", "estate"] as const);
   const [quotePreTaxOverrideReason, setQuotePreTaxOverrideReason] =
     useState("");
 
@@ -2406,7 +2415,7 @@ export default function QuoteFormClient({
     if (!overrides || Object.keys(overrides).length === 0) return baseTiers;
     const TAX_RATE_FOR_PREVIEW = 0.13;
     const next: Record<string, TierResult> = { ...baseTiers };
-    for (const tk of ["essential", "signature", "estate"] as const) {
+    for (const tk of activeTierKeys) {
       const ov = overrides[tk];
       const base = baseTiers[tk];
       if (!ov || !base) continue;
@@ -2431,7 +2440,7 @@ export default function QuoteFormClient({
   const hasStaleTierOverride = useMemo(() => {
     const base = quoteResult?.tiers;
     if (!base) return false;
-    for (const tk of ["essential", "signature", "estate"] as const) {
+    for (const tk of activeTierKeys) {
       const ov = tierPriceOverrides[tk];
       if (!ov) continue;
       const p = parseFloat(ov.price);
@@ -5167,7 +5176,7 @@ export default function QuoteFormClient({
             string,
             { price: number; reason: string }
           > = {};
-          for (const tk of ["essential", "signature", "estate"] as const) {
+          for (const tk of activeTierKeys) {
             const entry = tierPriceOverrides[tk];
             if (!entry) continue;
             const p = parseFloat(entry.price);
@@ -5645,7 +5654,7 @@ export default function QuoteFormClient({
       | undefined;
     if (!base) return;
     const pendingParts: string[] = [];
-    for (const tk of ["essential", "signature", "estate"] as const) {
+    for (const tk of activeTierKeys) {
       const ov = tierPriceOverrides[tk];
       if (!ov) continue;
       const p = parseFloat(ov.price);
@@ -5727,7 +5736,7 @@ export default function QuoteFormClient({
       quoteResult?.tiers
     ) {
       const stale: string[] = [];
-      for (const tk of ["essential", "signature", "estate"] as const) {
+      for (const tk of activeTierKeys) {
         const entry = tierPriceOverrides[tk];
         if (!entry) continue;
         const overridePrice = parseFloat(entry.price);
@@ -11370,48 +11379,35 @@ export default function QuoteFormClient({
              all three tiers proportionally. They compose if both are
              set (per-tier applies first, then global ratio relative to
              whatever Essential ends up at). */}
-          {(serviceType === "local_move" || serviceType === "long_distance") && (
-            <div className="px-0 sm:px-0 pb-1 pt-4 mt-2">
-              <TierPriceOverrideEditor
-                value={tierPriceOverrides}
-                onChange={setTierPriceOverrides}
-                enginePrices={{
-                  essential:
-                    typeof quoteResult?.tiers?.essential?.price === "number"
-                      ? quoteResult.tiers.essential.price
-                      : undefined,
-                  signature:
-                    typeof quoteResult?.tiers?.signature?.price === "number"
-                      ? quoteResult.tiers.signature.price
-                      : undefined,
-                  estate:
-                    typeof quoteResult?.tiers?.estate?.price === "number"
-                      ? quoteResult.tiers.estate.price
-                      : undefined,
-                }}
-                // savedPrices mirrors enginePrices for the create form
-                // (both come from quoteResult.tiers, i.e. the
-                // last-generated quote). They diverge from the typed
-                // override the moment the operator edits a field,
-                // which is what the "Pending · regenerate" badge keys
-                // off of inside the editor.
-                savedPrices={{
-                  essential:
-                    typeof quoteResult?.tiers?.essential?.price === "number"
-                      ? quoteResult.tiers.essential.price
-                      : undefined,
-                  signature:
-                    typeof quoteResult?.tiers?.signature?.price === "number"
-                      ? quoteResult.tiers.signature.price
-                      : undefined,
-                  estate:
-                    typeof quoteResult?.tiers?.estate?.price === "number"
-                      ? quoteResult.tiers.estate.price
-                      : undefined,
-                }}
-              />
-            </div>
-          )}
+          {(serviceType === "local_move" ||
+            serviceType === "long_distance" ||
+            (serviceType === "office_move" && !!quoteResult?.tiers)) &&
+            (() => {
+              // Engine + saved prices keyed off the active tier set, so office
+              // surfaces Essential/Signature/Priority and residential
+              // Essential/Signature/Estate. Both mirror quoteResult.tiers (the
+              // last generated quote); they diverge the moment an override is
+              // typed, which drives the editor's "Pending · regenerate" badge.
+              const tierPrices: Partial<Record<string, number>> = {};
+              const resultTiers = quoteResult?.tiers as
+                | Record<string, { price?: number }>
+                | undefined;
+              for (const tk of activeTierKeys) {
+                const p = resultTiers?.[tk]?.price;
+                if (typeof p === "number") tierPrices[tk] = p;
+              }
+              return (
+                <div className="px-0 sm:px-0 pb-1 pt-4 mt-2">
+                  <TierPriceOverrideEditor
+                    value={tierPriceOverrides}
+                    onChange={setTierPriceOverrides}
+                    tierOrder={[...activeTierKeys]}
+                    enginePrices={tierPrices}
+                    savedPrices={tierPrices}
+                  />
+                </div>
+              );
+            })()}
 
           {/* Presentation mode selector — Estate recommended only.
              Coordinator picks how the client sees the quote.
