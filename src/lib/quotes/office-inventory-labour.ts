@@ -44,8 +44,8 @@ const CREW_EFFICIENCY = 0.8;
 const UNPACK_RATIO = 0.8;
 /** Fixed wall-clock overhead per job (site check-in, COI handoff, equipment, walkthroughs). */
 const OVERHEAD_HOURS = 1.5;
-/** Max productive wall-clock hours billed per day (commercial after-hours window). */
-const MAX_HOURS_PER_DAY = 10;
+/** Max productive hours per crew per day (commercial after-hours / weekend window). */
+const MAX_HOURS_PER_DAY = 12;
 
 /** Crew size from total volumeScore. Commercial crews start larger than residential. */
 function crewFromVolume(volumeScore: number): number {
@@ -88,6 +88,8 @@ export interface OfficeLabourEstimate {
   /** Count of recognized line items (catalog hits) and total units. */
   lineCount: number;
   unitCount: number;
+  /** Total units flagged IT/electronic (drives Signature IT-supplies). */
+  itItemCount: number;
   calibrationVersion: number;
 }
 
@@ -108,6 +110,7 @@ export function estimateOfficeLabour(
   let fullPackMin = 0;
   let lineCount = 0;
   let unitCount = 0;
+  let itItemCount = 0;
   let twoPersonPresent = false;
 
   for (const line of inventory) {
@@ -122,7 +125,10 @@ export function estimateOfficeLabour(
     handlingMin += qty * item.handlingMinutes;
     const packMin = qty * item.packMinutes;
     fullPackMin += packMin;
-    if (item.flags?.itElectronic) itPackMin += packMin;
+    if (item.flags?.itElectronic) {
+      itPackMin += packMin;
+      itItemCount += qty;
+    }
     if (item.flags?.twoPerson) twoPersonPresent = true;
   }
 
@@ -149,8 +155,13 @@ export function estimateOfficeLabour(
     // Tier may raise the crew floor (Priority runs a bigger team).
     const tierCrew = Math.max(crew, OFFICE_TIER_DEFINITIONS[tier].ops.crewMinimum);
     const manHours = perTierManHours[tier];
-    const wallClockHours = OVERHEAD_HOURS + manHours / (tierCrew * CREW_EFFICIENCY);
-    const days = Math.max(1, Math.ceil(wallClockHours / MAX_HOURS_PER_DAY));
+    // Productive wall-clock = crew-hours of real work spread across the crew.
+    // Day count is driven by productive hours against the daily window; the
+    // fixed per-job overhead is absorbed within those days, not added to the
+    // day math (otherwise a job a hair over a day boundary tips to an extra day).
+    const productiveWallClock = manHours / (tierCrew * CREW_EFFICIENCY);
+    const wallClockHours = OVERHEAD_HOURS + productiveWallClock;
+    const days = Math.max(1, Math.ceil(productiveWallClock / MAX_HOURS_PER_DAY));
     perTier[tier] = {
       manHours: round1(manHours),
       wallClockHours: round1(wallClockHours),
@@ -170,6 +181,7 @@ export function estimateOfficeLabour(
     perTier,
     lineCount,
     unitCount,
+    itItemCount,
     calibrationVersion: OFFICE_LABOUR_CALIBRATION_VERSION,
   };
 }
