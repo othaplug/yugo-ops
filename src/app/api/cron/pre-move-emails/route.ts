@@ -182,7 +182,11 @@ export async function GET(req: NextRequest) {
       "id, move_code, client_name, client_email, scheduled_date, balance_amount, balance_paid_at, deposit_paid_at, tier_selected, move_size, inventory_score, square_card_id",
     )
     .in("status", ["confirmed", "scheduled"])
-    .in("scheduled_date", [twoDaysOut, threeDaysOut])
+    // Catch-up window: today through 3 days out (was an exact two-day match).
+    // A move that slipped past its ideal reminder day still gets picked up here,
+    // gated once-only by balance_reminder_48hr_sent.
+    .gte("scheduled_date", toDateStr(0))
+    .lte("scheduled_date", threeDaysOut)
     .is("balance_reminder_48hr_sent", null)
     .is("balance_paid_at", null)
     .not("deposit_paid_at", "is", null);
@@ -190,19 +194,27 @@ export async function GET(req: NextRequest) {
   if (moves48 && moves48.length > 0) {
     for (const move of moves48) {
       if (!move.client_email) continue;
-      if (
-        !moveMatchesBalanceReminder48hWindow({
-          scheduledDate: move.scheduled_date,
-          twoDaysOutIso: twoDaysOut,
-          tierSelected: move.tier_selected,
-          serviceTier: null,
-          moveSize: move.move_size,
-          inventoryScore:
-            move.inventory_score != null ? Number(move.inventory_score) : null,
-        })
-      ) {
-        continue;
-      }
+      const isEstate48 =
+        String(move.tier_selected || "").toLowerCase().trim() === "estate";
+      // Estate keeps its exact packing-day window. Non-estate uses a catch-up
+      // window: any move 0-2 days out that has not been reminded yet (the
+      // balance_reminder_48hr_sent guard keeps it once-only). The old exact
+      // `=== twoDaysOut` match meant a single missed cron day skipped the final
+      // payment reminder forever — which is how this e-transfer client, who
+      // depends entirely on the email (no card to auto-charge), got no reminder.
+      const dueForReminder = isEstate48
+        ? moveMatchesBalanceReminder48hWindow({
+            scheduledDate: move.scheduled_date,
+            twoDaysOutIso: twoDaysOut,
+            tierSelected: move.tier_selected,
+            serviceTier: null,
+            moveSize: move.move_size,
+            inventoryScore:
+              move.inventory_score != null ? Number(move.inventory_score) : null,
+          })
+        : move.scheduled_date >= toDateStr(0) &&
+          move.scheduled_date <= twoDaysOut;
+      if (!dueForReminder) continue;
       const bal = Number(move.balance_amount || 0);
       if (bal <= 0) continue;
 
@@ -255,10 +267,18 @@ export async function GET(req: NextRequest) {
   const coordPhone5 =
     coordRows5?.find((r) => r.key === "coordinator_phone")?.value?.trim() || "";
 
+  // from_postal / to_postal are NOT columns on `moves`; selecting them errored
+  // the whole query and silently killed every elevator + parking reminder.
+  // The postal lives inside the address, so we select the address and extract
+  // the FSA for the downtown-parking heuristic.
+  const fsaFromAddress = (addr: string | null | undefined): string | null => {
+    const m = String(addr || "").match(/([A-Za-z]\d[A-Za-z])\s*\d[A-Za-z]\d/);
+    return m ? m[1].toUpperCase() : null;
+  };
   const { data: moves5 } = await supabase
     .from("moves")
     .select(
-      "id, move_code, client_name, client_email, scheduled_date, arrival_window, from_access, to_access, from_postal, to_postal, from_parking, to_parking, elevator_reminder_sent_at, parking_reminder_sent_at",
+      "id, move_code, client_name, client_email, scheduled_date, arrival_window, from_access, to_access, from_address, to_address, from_parking, to_parking, elevator_reminder_sent_at, parking_reminder_sent_at",
     )
     .in("status", ["confirmed", "scheduled"])
     .eq("scheduled_date", fiveDaysOut);
@@ -305,7 +325,15 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    if (!m.parking_reminder_sent_at && parkingReminderLikelyNeeded(m)) {
+    if (
+      !m.parking_reminder_sent_at &&
+      parkingReminderLikelyNeeded({
+        from_parking: m.from_parking,
+        to_parking: m.to_parking,
+        from_postal: fsaFromAddress(m.from_address),
+        to_postal: fsaFromAddress(m.to_address),
+      })
+    ) {
       const first = (m.client_name || "").trim().split(/\s+/)[0] || "there";
       const torontoParkingUrl =
         "https://www.toronto.ca/services-payments/streets-parking-transportation/";

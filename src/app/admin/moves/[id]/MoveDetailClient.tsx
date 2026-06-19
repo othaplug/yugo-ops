@@ -307,8 +307,8 @@ function isMoveInProgress(
 import { stripClientMessagesFromNotes } from "@/lib/internal-notes";
 import {
   formatCurrency,
-  calcHST,
   contractTaxFromMove,
+  splitOntarioTaxInclusive,
 } from "@/lib/format-currency";
 import { portfolioPmMoveServiceLabel, serviceTypeDisplayLabel } from "@/lib/displayLabels";
 import { serviceTypeHasTiers } from "@/lib/quote-service-types";
@@ -2603,7 +2603,7 @@ export default function MoveDetailClient({
                         }`
                       : portfolioPmBilling && !fullyPaid && ctl.inclusive > 0
                         ? `Contract total incl. Ontario HST (${formatCurrency(ctl.preTax)} + ${formatCurrency(ctl.hst)})`
-                        : `Balance due · +${formatCurrency(calcHST(balanceDue))} HST`}
+                        : `Balance due · incl. ${formatCurrency(splitOntarioTaxInclusive(balanceDue).hst)} HST`}
                   </span>
                 </div>
                 {portfolioPmBilling && !fullyPaid && (
