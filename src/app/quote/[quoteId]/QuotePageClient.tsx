@@ -478,6 +478,13 @@ export default function QuotePageClient({
     return typeof floor === "number" ? floor : null;
   })();
   const tiers = quote.tiers as Record<string, TierData> | null;
+  // Office scope tiers (Essential/Signature/Priority). Flows through the SAME
+  // tier-selection machinery as residential (selectedTier, basePrice, deposit),
+  // but deposit stays a flat 30% and there is no residential premium shell.
+  const isOfficeTiered =
+    quote.service_type === "office_move" &&
+    !!tiers &&
+    !!(tiers.essential && tiers.signature && tiers.priority);
 
   const quoteForDisplay = useMemo(
     () => ({
@@ -952,14 +959,20 @@ export default function QuotePageClient({
 
   /* ── Base price ── */
   const basePrice = useMemo(() => {
-    if (isResidential && selectedTier && tiers?.[selectedTier]) {
+    if ((isResidential || isOfficeTiered) && selectedTier && tiers?.[selectedTier]) {
       return tiers[selectedTier].price;
     }
     return quote.custom_price ?? 0;
-  }, [isResidential, selectedTier, tiers, quote.custom_price]);
+  }, [isResidential, isOfficeTiered, selectedTier, tiers, quote.custom_price]);
 
   /* ── Package label (for contract) ── */
   const packageLabel = useMemo(() => {
+    if (isOfficeTiered && selectedTier)
+      return (
+        { essential: "Essential", signature: "Signature", priority: "Priority" }[
+          selectedTier
+        ] ?? "Office"
+      );
     if (isResidential && selectedTier)
       return (
         residentialTierMeta[selectedTier]?.label ??
@@ -1176,6 +1189,10 @@ export default function QuotePageClient({
     if (quote.service_type === "bin_rental") {
       return grandTotal;
     }
+    if (isOfficeTiered) {
+      // Office keeps a flat 30% deposit across all tiers (the platform rule).
+      return Math.round(totalBeforeTax * 0.3);
+    }
     if (isResidential && selectedTier) {
       return calculateTieredDeposit(selectedTier, totalBeforeTax);
     }
@@ -1187,6 +1204,7 @@ export default function QuotePageClient({
     return calculateDeposit(quote.service_type, totalBeforeTax);
   }, [
     isResidential,
+    isOfficeTiered,
     selectedTier,
     quote.service_type,
     quote.deposit_amount,
@@ -1294,7 +1312,8 @@ export default function QuotePageClient({
       quoteId: quote.quote_id,
       serviceType: quote.service_type,
       whiteGloveKind: wgKind,
-      residentialTier: isResidential && selectedTier ? selectedTier : null,
+      residentialTier:
+        (isResidential || isOfficeTiered) && selectedTier ? selectedTier : null,
       packageLabel,
       fromAddress: quoteForDisplay.from_address,
       toAddress: quoteForDisplay.to_address,
@@ -2124,6 +2143,10 @@ export default function QuotePageClient({
               />
               <OfficeLayout
                 quote={quoteForDisplay}
+                tiers={isOfficeTiered ? tiers : null}
+                selectedTier={selectedTier}
+                onSelectTier={handleSelectTier}
+                recommendedTier={isOfficeTiered ? "priority" : null}
                 onConfirm={handleConfirm}
                 confirmed={confirmed}
               />
