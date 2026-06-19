@@ -13156,7 +13156,14 @@ export default function QuoteFormClient({
                         </div>
                       ));
                     })()
-                  : ["essential", "signature", "estate"].map((pkg) => {
+                  : serviceType === "office_move" ? (
+                  <p className="text-[10px] text-[var(--tx)] leading-snug">
+                    Commercial cargo liability on every package, with $5,000,000
+                    commercial general liability insurance and a Certificate of
+                    Insurance (COI) plus WSIB Certificate of Clearance for building
+                    management.
+                  </p>
+                  ) : ["essential", "signature", "estate"].map((pkg) => {
                   const included =
                     {
                       essential: "Released Value",
