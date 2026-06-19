@@ -96,6 +96,7 @@ import {
 } from "@/lib/quotes/quote-id";
 import { patchHubSpotDealJobNo } from "@/lib/hubspot/sync-deal-job-no";
 import { getResolvedMoveIncludeTitles } from "@/lib/quotes/residential-tier-quote-display";
+import { buildOfficeTierQuote } from "@/lib/quotes/office-quote-from-input";
 import { normalizePhone } from "@/lib/phone";
 import {
   computeWhiteGlovePricingBreakdown,
@@ -192,6 +193,14 @@ interface QuoteInput {
   office_after_hours?: boolean;
   office_weekend?: boolean;
   office_truck_count?: number;
+  /** Inventory-driven office quoting (Phase 4+). When present, office returns
+   *  3 scope tiers (Essential/Signature/Priority) instead of the legacy
+   *  workstation single-price. */
+  office_inventory?: { slug: string; quantity: number }[];
+  /** Selected-items / partial move — suppresses the $/sqft lower bound. */
+  office_partial_move?: boolean;
+  /** Estimated square footage actually moving (for the confidence band). */
+  office_moving_sqft?: number | null;
   // White glove — standalone engine (optional overrides)
   white_glove_crew_override?: number;
   white_glove_hours_override?: number;
@@ -4747,6 +4756,11 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   type FactorsObj = Record<string, unknown>;
   let tiers: Record<string, TierResult> | undefined;
   let custom_price: TierResult | undefined;
+  // Office scope tiers (Essential/Signature/Priority). Kept OUT of the
+  // residential `tiers` variable on purpose — that block is hardcoded to
+  // essential/signature/estate and would crash on office's `priority` key.
+  // Persisted directly alongside custom_price (= the recommended Priority tier).
+  let officeTiers: Record<string, TierResult> | undefined;
   let factors: FactorsObj = {};
   let residentialCratingTotal = 0;
   let estateSuppliesAllowance = 0;
@@ -4798,9 +4812,34 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       break;
     }
     case "office_move": {
-      const res = await calcOffice(sb, input, config, distInfo, neighbourhood, dateMult, addonResult);
-      custom_price = res.custom_price;
-      factors = res.factors;
+      const officeInv = (input.office_inventory ?? []).filter(
+        (l) => l && l.slug && Number(l.quantity) > 0,
+      );
+      if (officeInv.length > 0) {
+        // Inventory-driven scope tiers (Essential / Signature / Priority).
+        const oq = buildOfficeTierQuote(
+          officeInv,
+          {
+            afterHours: !!input.office_after_hours,
+            weekend: !!input.office_weekend,
+            partialMove: !!input.office_partial_move,
+            movingSqft: input.office_moving_sqft ?? null,
+            totalOriginSqft: input.square_footage ?? null,
+            distanceKm: distInfo?.distance_km ?? undefined,
+          },
+          {},
+        );
+        officeTiers = oq.tiers;
+        // Recommended (Priority) tier is the single-price headline / deposit
+        // source until the office layout renders all three (Phase 5).
+        custom_price = oq.recommended;
+        factors = oq.factors;
+      } else {
+        // Legacy workstation single-price (no inventory provided).
+        const res = await calcOffice(sb, input, config, distInfo, neighbourhood, dateMult, addonResult);
+        custom_price = res.custom_price;
+        factors = res.factors;
+      }
       break;
     }
     case "long_distance": {
@@ -5740,7 +5779,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       distance_km: distInfo?.distance_km ?? null,
       drive_time_min: distInfo?.drive_time_min ?? null,
       specialty_items: input.specialty_items ?? [],
-      tiers: tiers ?? null,
+      tiers: tiers ?? officeTiers ?? null,
       custom_price: custom_price?.price ?? null,
       system_price: enginePreTaxHeadline,
       override_price: quoteOvr !== undefined ? quoteOvr : null,
