@@ -80,6 +80,9 @@ import {
 } from "@/components/admin/WhiteGloveItemsEditor";
 import { computeWhiteGlovePricingBreakdown, estimateWhiteGloveHours, recommendWhiteGloveCrew } from "@/lib/quotes/white-glove-pricing";
 import OfficeMoveScopeSection from "./OfficeMoveScopeSection";
+import OfficeInventoryInput from "@/components/inventory/OfficeInventoryInput";
+import type { OfficeInventoryLine } from "@/lib/quotes/office-inventory-labour";
+import type { OfficeQuoteContext } from "@/lib/quotes/office-quote-engine";
 import BuildingProfileQuoteAlert from "./BuildingProfileQuoteAlert";
 import type { BuildingAccessFlag } from "@/lib/buildings/types";
 import type { ProjectQuoteBreakdown } from "@/lib/move-projects/residential-project-quote-lines";
@@ -1532,6 +1535,10 @@ export default function QuoteFormClient({
   const [officeFiling, setOfficeFiling] = useState("");
   const [officeBoardroomCount, setOfficeBoardroomCount] = useState(1);
   const [officeKitchen, setOfficeKitchen] = useState(false);
+  // Inventory-driven office quoting (Phase 6). When non-empty, the office quote
+  // returns 3 scope tiers instead of the legacy workstation single-price.
+  const [officeInventory, setOfficeInventory] = useState<OfficeInventoryLine[]>([]);
+  const [officeQuoteContext, setOfficeQuoteContext] = useState<OfficeQuoteContext>({});
   const [officeTruckCount, setOfficeTruckCount] = useState(1);
 
   // Residential assembly auto-detection — null = use auto, true/false = coordinator override
@@ -4796,6 +4803,19 @@ export default function QuoteFormClient({
         base.office_estimated_hours = officeEstHours || undefined;
         base.office_truck_count =
           officeTruckCount >= 2 ? officeTruckCount : undefined;
+        // Inventory-driven tiers: when the coordinator has built an office
+        // inventory, send it (plus the partial-move / moving-sqft context). The
+        // generate route then returns Essential/Signature/Priority tiers.
+        const officeInv = officeInventory.filter(
+          (l) => l.slug && Number(l.quantity) > 0,
+        );
+        if (officeInv.length > 0) {
+          base.office_inventory = officeInv;
+          base.office_partial_move = !!officeQuoteContext.partialMove;
+          base.office_moving_sqft = officeQuoteContext.movingSqft ?? undefined;
+          if (officeQuoteContext.afterHours) base.office_after_hours = true;
+          if (officeQuoteContext.weekend) base.office_weekend = true;
+        }
         if (multiPickupInventoryMode && perPickupInventory.length > 0) {
           base.inventory_items = perPickupInventory.flatMap((items, idx) =>
             items.map((it) => inventoryItemToPayload(it, idx)),
@@ -8547,6 +8567,12 @@ export default function QuoteFormClient({
 
               {serviceType === "office_move" && (
                 <div className="col-span-full space-y-3">
+                  <OfficeInventoryInput
+                    inventory={officeInventory}
+                    onInventoryChange={setOfficeInventory}
+                    context={officeQuoteContext}
+                    onContextChange={setOfficeQuoteContext}
+                  />
                   <OfficeMoveScopeSection
                     workstationsTotal={workstationCountN}
                     squareFootageStr={sqft}

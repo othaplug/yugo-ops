@@ -30,7 +30,10 @@ export const QUOTE_SERVICE_TYPE_DEFINITIONS: readonly QuoteServiceTypeDefinition
     value: "office_move",
     label: "Office",
     description: "Business, retail, salon, clinic relocation",
-    hasTiers: false,
+    // Inventory-driven scope tiers (Essential/Signature/Priority). Active once a
+    // quote actually carries office tiers; legacy single-price office quotes
+    // (no tiers) still fall back cleanly in create-move and the layout.
+    hasTiers: true,
     hasInventory: true,
   },
   {
