@@ -2153,6 +2153,7 @@ export default function QuotePageClient({
                 selectedTier={selectedTier}
                 onSelectTier={handleSelectTier}
                 recommendedTier={isOfficeTiered ? "priority" : null}
+                premiumShellKind={shellKind}
                 onConfirm={handleConfirm}
                 confirmed={confirmed}
               />

@@ -19,6 +19,10 @@ import {
   SIGNATURE_ON_SHELL,
   SIGNATURE_CTA,
 } from "../signature-quote-ui";
+import {
+  premiumShellInk,
+  type PremiumShellKind,
+} from "../quote-premium-shell";
 import { toTitleCase, formatAccessForDisplay } from "@/lib/format-text";
 import { formatMoveDate } from "@/lib/date-format";
 
@@ -38,6 +42,10 @@ interface Props {
   recommendedTier?: string | null;
   onConfirm: () => void;
   confirmed: boolean;
+  /** Premium page shell (wine when Priority selected, green for Signature). The
+   *  scope/crew sections below the cards adapt their ink so dark-on-dark text
+   *  doesn't disappear on the deep shell. */
+  premiumShellKind?: PremiumShellKind;
 }
 
 const OFFICE_TIER_ORDER = ["essential", "signature", "priority"] as const;
@@ -121,10 +129,25 @@ export default function OfficeLayout({
   recommendedTier,
   onConfirm,
   confirmed,
+  premiumShellKind = "none",
 }: Props) {
   const f = quote.factors_applied as Record<string, unknown> | null;
   const officeTiered =
     !!tiers && OFFICE_TIER_ORDER.every((k) => tiers[k] && tiers[k].price > 0);
+
+  // When a premium shell is on (Priority = wine, Signature = green), the page
+  // background is deep, so the scope/crew sections below the cards must use
+  // light ink. On the default cream shell they stay dark.
+  const ink = premiumShellInk(premiumShellKind);
+  const headingColor = ink ? ink.primary : "#2C3E2D";
+  const bodyColor = ink ? ink.body : FOREST;
+  const mutedColor = ink ? ink.muted : `${FOREST}80`;
+  const subtleColor = ink ? ink.subtle : `${FOREST}99`;
+  const eyebrowColor = ink ? ink.muted : "#5C5853";
+  const iconPrimary = ink ? ink.primary : WINE;
+  const iconSecondary = ink ? ink.body : FOREST;
+  const sectionBorderClass = ink ? "border-white/15" : "border-[var(--brd)]/30";
+  const badgeBg = ink ? "rgba(255,255,255,0.10)" : `${FOREST}08`;
 
   const scopeItems = (
     [
@@ -161,12 +184,12 @@ export default function OfficeLayout({
       <div className="text-center">
         <div
           className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full"
-          style={{ backgroundColor: `${FOREST}08` }}
+          style={{ backgroundColor: badgeBg }}
         >
-          <Building2 className="w-3.5 h-3.5" style={{ color: FOREST }} />
+          <Building2 className="w-3.5 h-3.5" style={{ color: bodyColor }} />
           <span
             className="text-[11px] font-semibold tracking-wide uppercase"
-            style={{ color: FOREST }}
+            style={{ color: bodyColor }}
           >
             Commercial Relocation
           </span>
@@ -176,12 +199,15 @@ export default function OfficeLayout({
       {/* ── Tiered packages ── */}
       {officeTiered && tiers ? (
         <div>
-          <h2 className="admin-section-h2 mb-1 text-center">
+          <h2
+            className="admin-section-h2 mb-1 text-center"
+            style={{ color: headingColor }}
+          >
             Choose your package
           </h2>
           <p
             className="text-[12px] text-center mb-5"
-            style={{ color: `${FOREST}80` }}
+            style={{ color: mutedColor }}
           >
             Three flat-rate packages. The difference is how much your team does
             versus how much Yugo handles.
@@ -215,6 +241,11 @@ export default function OfficeLayout({
                   className="relative flex flex-col overflow-hidden rounded-none"
                   style={{
                     background: th.bg,
+                    // A faint edge keeps dark cards distinct when the page shell
+                    // is the same family (e.g. wine Priority card on wine shell).
+                    border: isDark
+                      ? "1px solid rgba(255,255,255,0.14)"
+                      : "1px solid rgba(44,62,45,0.10)",
                     boxShadow: isSelected
                       ? "0 12px 40px rgba(44,62,45,0.18)"
                       : "0 2px 16px rgba(44,62,45,0.07)",
@@ -315,27 +346,35 @@ export default function OfficeLayout({
       ) : null}
 
       {/* ── Scope of Work ── */}
-      <div className="pt-6 border-t border-[var(--brd)]/30">
-        <h2 className="admin-section-h2 mb-4">Scope of work</h2>
+      <div className={`pt-6 border-t ${sectionBorderClass}`}>
+        <h2 className="admin-section-h2 mb-4" style={{ color: headingColor }}>
+          Scope of work
+        </h2>
         <div className="grid sm:grid-cols-2 gap-3">
           <div className="flex items-start gap-3">
-            <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
+            <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: iconPrimary }} />
             <div>
-              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">
+              <p
+                className="text-[9px] font-bold tracking-[0.14em] uppercase"
+                style={{ color: eyebrowColor }}
+              >
                 From
               </p>
-              <p className="text-[12px] font-medium" style={{ color: FOREST }}>
+              <p className="text-[12px] font-medium" style={{ color: bodyColor }}>
                 {quote.from_address}
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
+            <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: iconSecondary }} />
             <div>
-              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">
+              <p
+                className="text-[9px] font-bold tracking-[0.14em] uppercase"
+                style={{ color: eyebrowColor }}
+              >
                 To
               </p>
-              <p className="text-[12px] font-medium" style={{ color: FOREST }}>
+              <p className="text-[12px] font-medium" style={{ color: bodyColor }}>
                 {quote.to_address}
               </p>
             </div>
@@ -343,18 +382,18 @@ export default function OfficeLayout({
         </div>
 
         {scopeItems.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-[var(--brd)]/30">
+          <div className={`mt-4 pt-4 border-t ${sectionBorderClass}`}>
             <table className="w-full text-[12px]">
               <tbody>
                 {scopeItems.map((item, i) => (
                   <tr
                     key={i}
-                    className={i > 0 ? "border-t border-[var(--brd)]/30" : ""}
+                    className={i > 0 ? `border-t ${sectionBorderClass}` : ""}
                   >
-                    <td className="py-2 font-medium" style={{ color: FOREST }}>
+                    <td className="py-2 font-medium" style={{ color: bodyColor }}>
                       {item.label}
                     </td>
-                    <td className="py-2 text-right" style={{ color: `${FOREST}80` }}>
+                    <td className="py-2 text-right" style={{ color: mutedColor }}>
                       {item.value}
                     </td>
                   </tr>
@@ -367,33 +406,35 @@ export default function OfficeLayout({
 
       {/* ── Crew & logistics ── */}
       {(crew || trucks || quote.move_date) && (
-        <div className="pt-6 border-t border-[var(--brd)]/30">
-          <h2 className="admin-section-h2 mb-4">Crew &amp; logistics</h2>
+        <div className={`pt-6 border-t ${sectionBorderClass}`}>
+          <h2 className="admin-section-h2 mb-4" style={{ color: headingColor }}>
+            Crew &amp; logistics
+          </h2>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <Users className="w-5 h-5 mx-auto mb-1.5" style={{ color: WINE }} />
-              <p className="text-[13px] font-bold" style={{ color: FOREST }}>
+              <Users className="w-5 h-5 mx-auto mb-1.5" style={{ color: iconPrimary }} />
+              <p className="text-[13px] font-bold" style={{ color: bodyColor }}>
                 {crew ?? 4} crew
               </p>
-              <p className="text-[10px]" style={{ color: `${FOREST}60` }}>
+              <p className="text-[10px]" style={{ color: subtleColor }}>
                 Commercial team
               </p>
             </div>
             <div>
-              <Truck className="w-5 h-5 mx-auto mb-1.5" style={{ color: FOREST }} />
-              <p className="text-[13px] font-bold" style={{ color: FOREST }}>
+              <Truck className="w-5 h-5 mx-auto mb-1.5" style={{ color: iconSecondary }} />
+              <p className="text-[13px] font-bold" style={{ color: bodyColor }}>
                 {trucks ?? 1} truck{(trucks ?? 1) === 1 ? "" : "s"}
               </p>
-              <p className="text-[10px]" style={{ color: `${FOREST}60` }}>
+              <p className="text-[10px]" style={{ color: subtleColor }}>
                 Fleet on site
               </p>
             </div>
             <div>
-              <Calendar className="w-5 h-5 mx-auto mb-1.5" style={{ color: FOREST }} />
-              <p className="text-[13px] font-bold" style={{ color: FOREST }}>
+              <Calendar className="w-5 h-5 mx-auto mb-1.5" style={{ color: iconSecondary }} />
+              <p className="text-[13px] font-bold" style={{ color: bodyColor }}>
                 {quote.move_date ? formatMoveDate(quote.move_date) : "TBD"}
               </p>
-              <p className="text-[10px]" style={{ color: `${FOREST}60` }}>
+              <p className="text-[10px]" style={{ color: subtleColor }}>
                 Move date
               </p>
             </div>
