@@ -213,9 +213,11 @@ export function buildNonBinAgreementSections(p: NonBinAgreementBuildParams): { t
           ? `Released-value cargo liability applies at $0.60 per pound per article unless you purchase upgraded coverage shown on your quote. ${companyDisplayName} maintains $5,000,000 in commercial liability insurance. Where you select enhanced valuation or full-value protection, those terms on your quote govern.`
           : p.serviceType === "white_glove"
             ? `Standard Protection is included with your White Glove service: cargo liability at $5.00 per pound per article, total coverage up to $30,000, zero deductible. Eligible claims are resolved through full repair of any damaged item, or replacement at current market value where repair is not possible. Where you select an enhanced or full-replacement coverage rider shown on your quote, those terms govern. ${companyDisplayName} maintains $5,000,000 in commercial liability insurance.`
-            : `Released-value cargo liability applies at $0.60 per pound per article unless you purchase upgraded coverage shown on your quote. ${companyDisplayName} maintains $5,000,000 in commercial liability insurance. Where you select enhanced valuation or full-value protection, those terms on your quote govern.`;
+            : p.serviceType === "office_move"
+              ? `Commercial cargo liability applies to the furniture, equipment, and materials in your quote, with eligible claims resolved through full repair, or replacement at current market value where repair is not possible. ${companyDisplayName} carries $5,000,000 in commercial general liability insurance, and on request provides a Certificate of Insurance (COI) naming your building management along with a WSIB Certificate of Clearance. This coverage protects the physical handling of your property; it does not extend to business interruption, downtime, lost revenue, or consequential or indirect losses arising from the relocation. Where you declare individual high-value items or select upgraded coverage shown on your quote, those terms govern.`
+              : `Released-value cargo liability applies at $0.60 per pound per article unless you purchase upgraded coverage shown on your quote. ${companyDisplayName} maintains $5,000,000 in commercial liability insurance. Where you select enhanced valuation or full-value protection, those terms on your quote govern.`;
 
-  return [
+  const sections: { title: string; body: string }[] = [
     {
       title: "1. Service Description",
       body: serviceDescription(p),
@@ -261,6 +263,29 @@ export function buildNonBinAgreementSections(p: NonBinAgreementBuildParams): { t
       body: `${companyDisplayName} cannot be responsible for delays arising from events outside reasonable control: severe weather, road closures, traffic, elevator outages, labour disruptions, or government orders. We will reach out quickly and reschedule for the earliest suitable time, without penalty on our side except where unavoidable third-party costs apply.`,
     },
   ];
+
+  // Office / commercial relocations carry three additional clauses that matter
+  // to building management and to a business in motion. These mirror what
+  // high-end commercial movers warrant: COI + WSIB for the building, clear
+  // handling of technology and data, and a business-continuity boundary.
+  if (p.serviceType === "office_move") {
+    sections.push(
+      {
+        title: "12. Certificate of Insurance and Building Access",
+        body: `On request, ${companyDisplayName} will issue a Certificate of Insurance (COI) naming your building management, along with a WSIB Certificate of Clearance, in time for your freight-elevator and loading-dock bookings. You agree to confirm each building's requirements and to reserve the freight elevator and loading dock, submit any COI to building management by their deadline, complete contractor registration where required, and secure approved after-hours or weekend access windows at both the origin and destination. ${companyDisplayName} is not responsible for delays caused by building access, elevator availability, or documentation that was not arranged in time.`,
+      },
+      {
+        title: "13. Technology and Data",
+        body: `Where ${companyDisplayName} is engaged to handle IT and hardware, our crew safely disconnects, protects, transports, and reinstalls your equipment to its labeled destination. You remain responsible for backing up all data before move day and for any software, server, or network reconfiguration. ${companyDisplayName} is not responsible for data loss, software faults, or telecom and connectivity provisioning. We recommend verified backups before the move and that your team retains custody of confidential, sensitive, or high-security materials.`,
+      },
+      {
+        title: "14. Business Continuity",
+        body: `${companyDisplayName} will work to the schedule and floor plan agreed with you to keep disruption to a minimum, with a dedicated coordinator as your single point of contact. Our responsibility is limited to the careful physical handling of your property under the coverage above. We are not liable for business interruption, downtime, lost revenue, or third-party costs (including telecom or internet provisioning) arising from the relocation.`,
+      },
+    );
+  }
+
+  return sections;
 }
 
 export type BinAgreementBuildParams = {
