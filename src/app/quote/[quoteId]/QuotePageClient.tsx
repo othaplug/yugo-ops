@@ -682,7 +682,7 @@ export default function QuotePageClient({
   /** Estate (wine) or Signature (green), colour shell only; Estate-only copy uses `isEstateFlow`. */
   const shellKind: PremiumShellKind = isWhiteGlove
     ? "signature"
-    : premiumShellKind(isResidential, selectedTier);
+    : premiumShellKind(isResidential || isOfficeTiered, selectedTier);
   const premiumShell = shellKind !== "none";
   const darkInk = premiumShellInk(shellKind);
   const shellInk =
@@ -2130,17 +2130,23 @@ export default function QuotePageClient({
             </>
           ) : quote.service_type === "office_move" ? (
             <>
-              <InclusionsShowcase
-                ref={comparisonRef}
-                selectedTier={selectedTier}
-                isResidential={isResidential}
-                residentialTierFeatures={residentialTierFeatures}
-                truckPrimary={flooredTruckPrimary}
-                truckSecondary={quote.truck_secondary}
-                crewSize={flooredCrewSize}
-                assemblyRequired={quote.assembly_override ?? quote.assembly_required}
-                truckPricingNote={truckBreakdownClientNote}
-              />
+              {/* The residential inclusions showcase carries residential copy
+                  (released value, room-of-choice, "crew of 2") that does not fit
+                  a commercial move. Office tiered quotes carry their inclusions
+                  inside the tier cards, so suppress it there. */}
+              {!isOfficeTiered && (
+                <InclusionsShowcase
+                  ref={comparisonRef}
+                  selectedTier={selectedTier}
+                  isResidential={isResidential}
+                  residentialTierFeatures={residentialTierFeatures}
+                  truckPrimary={flooredTruckPrimary}
+                  truckSecondary={quote.truck_secondary}
+                  crewSize={flooredCrewSize}
+                  assemblyRequired={quote.assembly_override ?? quote.assembly_required}
+                  truckPricingNote={truckBreakdownClientNote}
+                />
+              )}
               <OfficeLayout
                 quote={quoteForDisplay}
                 tiers={isOfficeTiered ? tiers : null}

@@ -8,12 +8,15 @@ export type PremiumSurfaceInk =
   | (typeof SIGNATURE_ON_SHELL);
 
 export function premiumShellKind(
-  isResidential: boolean,
+  /** True for any tiered flow that gets premium shells (residential or office). */
+  isTiered: boolean,
   tier: string | null | undefined,
 ): PremiumShellKind {
-  if (!isResidential || !tier) return "none";
+  if (!isTiered || !tier) return "none";
   const t = tier.toLowerCase();
-  if (t === "estate") return "wine";
+  // Estate (residential) and Priority (office) both fly the wine shell;
+  // Signature (both) flies the green shell. Essential stays neutral.
+  if (t === "estate" || t === "priority") return "wine";
   if (t === "signature") return "signature";
   return "none";
 }

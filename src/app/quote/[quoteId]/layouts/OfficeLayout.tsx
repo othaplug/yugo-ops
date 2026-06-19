@@ -14,6 +14,11 @@ import {
   fmtPrice,
   calculateDeposit,
 } from "../quote-shared";
+import {
+  SIGNATURE_PAGE_BG,
+  SIGNATURE_ON_SHELL,
+  SIGNATURE_CTA,
+} from "../signature-quote-ui";
 import { toTitleCase, formatAccessForDisplay } from "@/lib/format-text";
 import { formatMoveDate } from "@/lib/date-format";
 
@@ -47,7 +52,66 @@ const TIER_TAGLINE: Record<string, string> = {
   priority: "We handle everything. Your team unlocks the door.",
 };
 
-const PRIORITY_BG = `linear-gradient(155deg, ${FOREST} 0%, #3E4D40 45%, #233024 100%)`;
+// Priority flies the wine card + shell (like residential Estate); Signature the
+// deep-green card + shell; Essential stays light. Mirrors the residential tiers.
+const PRIORITY_WINE_BG = `linear-gradient(155deg, ${WINE} 0%, #6B2848 42%, #3D1522 100%)`;
+
+interface CardTheme {
+  bg: string;
+  fg: string;
+  accent: string;
+  muted: string;
+  check: string;
+  tagline: string;
+  price: string;
+  btnBg: string;
+  btnFg: string;
+  recTag: string;
+}
+
+function cardTheme(key: string): CardTheme {
+  const sig = SIGNATURE_ON_SHELL;
+  if (key === "priority") {
+    return {
+      bg: PRIORITY_WINE_BG,
+      fg: "rgba(255,255,255,0.92)",
+      accent: "rgba(255,255,255,0.96)",
+      muted: "rgba(255,255,255,0.7)",
+      check: "rgba(255,255,255,0.9)",
+      tagline: "rgba(255,255,255,0.82)",
+      price: "rgba(255,255,255,0.96)",
+      btnBg: "rgba(255,255,255,0.95)",
+      btnFg: WINE,
+      recTag: "rgba(255,255,255,0.72)",
+    };
+  }
+  if (key === "signature") {
+    return {
+      bg: SIGNATURE_PAGE_BG,
+      fg: sig.body,
+      accent: sig.primary,
+      muted: sig.muted,
+      check: sig.kicker,
+      tagline: sig.body,
+      price: sig.primary,
+      btnBg: SIGNATURE_CTA,
+      btnFg: "#FFFFFF",
+      recTag: sig.kicker,
+    };
+  }
+  return {
+    bg: "#FFFFFF",
+    fg: FOREST,
+    accent: WINE,
+    muted: `${FOREST}70`,
+    check: FOREST,
+    tagline: `${FOREST}b0`,
+    price: WINE,
+    btnBg: FOREST,
+    btnFg: "#FFFFFF",
+    recTag: "#492A1D",
+  };
+}
 
 export default function OfficeLayout({
   quote,
@@ -126,9 +190,10 @@ export default function OfficeLayout({
             {OFFICE_TIER_ORDER.map((key) => {
               const t = tiers[key];
               if (!t) return null;
-              const isPriority = key === "priority";
               const isSelected = selectedTier === key;
               const isRec = key === recTier;
+              const isDark = key === "priority" || key === "signature";
+              const th = cardTheme(key);
 
               // Additive includes: show the delta over the previous tier.
               const prevKey =
@@ -144,34 +209,31 @@ export default function OfficeLayout({
                   )
                 : t.includes;
 
-              const fg = isPriority ? "rgba(255,255,255,0.92)" : FOREST;
-              const accent = isPriority ? "rgba(255,255,255,0.96)" : WINE;
-              const muted = isPriority ? "rgba(255,255,255,0.7)" : `${FOREST}70`;
-              const checkColor = isPriority ? "rgba(255,255,255,0.9)" : FOREST;
-
               return (
                 <div
                   key={key}
                   className="relative flex flex-col overflow-hidden rounded-none"
                   style={{
-                    background: isPriority ? PRIORITY_BG : "#FFFFFF",
+                    background: th.bg,
                     boxShadow: isSelected
                       ? "0 12px 40px rgba(44,62,45,0.18)"
                       : "0 2px 16px rgba(44,62,45,0.07)",
-                    outline: isSelected ? `2px solid ${isPriority ? "#FFFFFF" : FOREST}` : "none",
+                    outline: isSelected
+                      ? `2px solid ${isDark ? "#FFFFFF" : FOREST}`
+                      : "none",
                   }}
                 >
                   <div className="p-6 flex flex-col h-full">
                     <div className="flex items-center justify-between gap-2">
                       <h3
                         className="text-[15px] font-bold uppercase tracking-[0.12em] leading-none [font-family:var(--font-body)]"
-                        style={{ color: accent }}
+                        style={{ color: th.accent }}
                       >
                         {TIER_LABEL[key]}
                         {isRec && (
                           <span
                             className="ml-1.5 text-[8px] align-baseline tracking-[0.12em]"
-                            style={{ color: isPriority ? "rgba(255,255,255,0.7)" : "#492A1D" }}
+                            style={{ color: th.recTag }}
                           >
                             · RECOMMENDED
                           </span>
@@ -181,22 +243,22 @@ export default function OfficeLayout({
 
                     <p
                       className="text-[12px] mt-3 leading-relaxed min-h-[34px]"
-                      style={{ color: isPriority ? "rgba(255,255,255,0.82)" : `${FOREST}b0` }}
+                      style={{ color: th.tagline }}
                     >
                       {TIER_TAGLINE[key]}
                     </p>
 
                     <p
                       className="font-hero text-[30px] mt-3 leading-none tabular-nums"
-                      style={{ color: isPriority ? "rgba(255,255,255,0.96)" : WINE }}
+                      style={{ color: th.price }}
                     >
                       {fmtPrice(t.price)}
                     </p>
-                    <p className="text-[11px] mt-1 tabular-nums" style={{ color: muted }}>
+                    <p className="text-[11px] mt-1 tabular-nums" style={{ color: th.muted }}>
                       +{fmtPrice(t.tax)} HST · Total {fmtPrice(t.total)}
                     </p>
                     {perTierDays?.[key] != null && (
-                      <p className="text-[10px] mt-0.5" style={{ color: muted }}>
+                      <p className="text-[10px] mt-0.5" style={{ color: th.muted }}>
                         {perTierDays[key]} day{perTierDays[key] === 1 ? "" : "s"}
                         {crew ? ` · crew of ${crew}` : ""}
                       </p>
@@ -206,7 +268,7 @@ export default function OfficeLayout({
                       {prevKey && (
                         <p
                           className="text-[10px] font-bold uppercase tracking-[0.1em]"
-                          style={{ color: muted }}
+                          style={{ color: th.muted }}
                         >
                           Everything in {TIER_LABEL[prevKey]}, plus
                         </p>
@@ -215,11 +277,11 @@ export default function OfficeLayout({
                         <div key={i} className="flex items-start gap-2">
                           <Check
                             className="w-3.5 h-3.5 shrink-0 mt-0.5"
-                            style={{ color: checkColor }}
+                            style={{ color: th.check }}
                           />
                           <span
                             className="text-[12px] leading-snug"
-                            style={{ color: fg }}
+                            style={{ color: th.fg }}
                           >
                             {item}
                           </span>
@@ -231,10 +293,7 @@ export default function OfficeLayout({
                       type="button"
                       onClick={() => onSelectTier?.(key)}
                       className="mt-6 w-full py-3 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase transition-opacity hover:opacity-90"
-                      style={{
-                        backgroundColor: isPriority ? "rgba(255,255,255,0.95)" : FOREST,
-                        color: isPriority ? FOREST : "#FFFFFF",
-                      }}
+                      style={{ backgroundColor: th.btnBg, color: th.btnFg }}
                     >
                       {isSelected ? (
                         <span className="flex items-center justify-center gap-1.5">
@@ -244,7 +303,7 @@ export default function OfficeLayout({
                         `Select ${TIER_LABEL[key]}`
                       )}
                     </button>
-                    <p className="text-[10px] mt-2 text-center" style={{ color: muted }}>
+                    <p className="text-[10px] mt-2 text-center" style={{ color: th.muted }}>
                       {fmtPrice(t.deposit)} deposit · balance 48h before service
                     </p>
                   </div>
