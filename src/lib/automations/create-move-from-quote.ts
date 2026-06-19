@@ -7,6 +7,7 @@ import { generateWelcomePackageToken } from "@/lib/welcome-package-token";
 import { estimateMoveDurationFromQuoteRow } from "@/lib/jobs/duration-estimate";
 import { convertedRecordCodeFromQuoteId } from "@/lib/quotes/quote-id";
 import { serviceTypeHasTiers } from "@/lib/quote-service-types";
+import { ontarioHstBreakdownFromPreTax } from "@/lib/format-currency";
 import { inferRoomFromItem, isDeliveryServiceType, DELIVERY_ROOM_LABEL } from "@/lib/inventory-room-inference";
 
 /* ═══════════════════════════════════════════════════════════
@@ -170,10 +171,25 @@ export async function createMoveFromQuote(
       quote.tiers as Record<string, { price: number; total: number }>
     )[selectedTier];
     basePrice = tierData?.price ?? 0;
-    totalWithTax = tierData?.total ?? Math.round(basePrice * 1.13);
+    // The locked tier's pre-tax price is the single source of truth. Derive the
+    // tax-inclusive amount from it with the SAME HST function the contract
+    // display uses (contractTaxFromMove -> ontarioHstBreakdownFromPreTax) so
+    // `amount`, the balance, HubSpot, and the rendered contract can never drift
+    // from the tier. We no longer trust the stored tierData.total, which could
+    // diverge from price*1.13 and make the contract show a different number
+    // than what was stored/charged.
+    if (
+      tierData?.total != null &&
+      Math.abs(Number(tierData.total) - ontarioHstBreakdownFromPreTax(basePrice).inclusive) > 1
+    ) {
+      console.warn(
+        `[create-move-from-quote] tier "${selectedTier}" total ${tierData.total} does not equal price*1.13 (${ontarioHstBreakdownFromPreTax(basePrice).inclusive}); using the price-derived total so the contract stays consistent.`,
+      );
+    }
+    totalWithTax = ontarioHstBreakdownFromPreTax(basePrice).inclusive;
   } else {
     basePrice = quote.custom_price ?? 0;
-    totalWithTax = Math.round(basePrice * 1.13);
+    totalWithTax = ontarioHstBreakdownFromPreTax(basePrice).inclusive;
   }
 
   const balanceAmount = totalWithTax - input.depositAmount;
