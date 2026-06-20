@@ -33,6 +33,8 @@ export interface DispatchJob {
   crewId: string | null;
   crewName: string | null;
   crewSize: number;
+  /** Names of the movers actually assigned to this job (moves.assigned_members). */
+  crewMembers?: string[] | null;
   truckSize?: string;
   etaMinutes: number | null;
   fromLat?: number | null;
@@ -256,7 +258,14 @@ export default function JobCard({
             <span className="font-semibold text-[var(--tx)]">
               {job.crewName || "Crew"}
             </span>
-            <span className="text-[var(--tx3)]">· {job.crewSize} movers</span>
+            <span className="text-[var(--tx3)]">
+              · {job.crewSize} {job.crewSize === 1 ? "mover" : "movers"}
+            </span>
+            {job.crewMembers && job.crewMembers.length > 0 && (
+              <span className="basis-full pl-[1.375rem] text-[var(--tx3)]">
+                {job.crewMembers.join(", ")}
+              </span>
+            )}
           </>
         ) : (
           <span className="font-bold text-[var(--yu3-warning)] flex items-center gap-1">

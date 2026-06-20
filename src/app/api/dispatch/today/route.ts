@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     admin
       .from("moves")
       .select(
-        "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at, completed_at"
+        "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at, completed_at, est_crew_size, crew_size, assigned_members, assigned_crew_name"
       )
       .eq("scheduled_date", targetDate)
       .neq("status", "cancelled")
@@ -202,7 +202,7 @@ export async function GET(req: NextRequest) {
     const { data: mFresh, error: mErr } = await admin
       .from("moves")
       .select(
-        "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at, completed_at",
+        "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at, completed_at, est_crew_size, crew_size, assigned_members, assigned_crew_name",
       )
       .eq("scheduled_date", targetDate)
       .neq("status", "cancelled")
@@ -224,7 +224,7 @@ export async function GET(req: NextRequest) {
   }
 
   const MOVE_DISPATCH_SELECT =
-    "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at, completed_at";
+    "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at, completed_at, est_crew_size, crew_size, assigned_members, assigned_crew_name";
 
   const projectDayByMoveId = new Map<
     string,
@@ -368,6 +368,7 @@ export async function GET(req: NextRequest) {
     crewId: string | null;
     crewName: string | null;
     crewSize: number;
+    crewMembers: string[];
     truckSize?: string;
     etaMinutes: number | null;
     fromLat: number | null;
@@ -425,7 +426,22 @@ export async function GET(req: NextRequest) {
 
   for (const m of movesList) {
     const crew = m.crew_id ? crewMap.get(m.crew_id) : null;
-    const members = m.crew_id ? membersByTeam.get(m.crew_id) || (crew?.members as string[]) || [] : [];
+    // Prefer the movers actually assigned to THIS move (moves.assigned_members)
+    // over the crew team's full roster — a job often runs with a subset of the
+    // team, and the team roster (crew_members) was showing the wrong count
+    // (e.g. "Alpha · 1 movers" when John/Gary/Che were assigned). Fall back to
+    // the team roster names, then to est_crew_size for the count.
+    const assignedNames = Array.isArray(m.assigned_members)
+      ? (m.assigned_members as unknown[]).map((n) => String(n).trim()).filter(Boolean)
+      : [];
+    const teamRoster = m.crew_id
+      ? membersByTeam.get(m.crew_id) || (crew?.members as string[]) || []
+      : [];
+    const members = assignedNames.length > 0 ? assignedNames : teamRoster;
+    const crewSize =
+      members.length > 0
+        ? members.length
+        : Number(m.est_crew_size) || Number(m.crew_size) || 0;
     const row = m as typeof m & { completed_at?: string | null };
     let effectiveStatusNorm = normalizedMoveRowForBoard(m.status, m.stage, row.completed_at ?? null);
     if (!terminalDispatchStatus(m.status) && moveIdsWithEvidence.has(m.id)) {
@@ -477,8 +493,9 @@ export async function GET(req: NextRequest) {
       status: effectiveStatusNorm || "scheduled",
       stage: displayStageMove,
       crewId: m.crew_id || null,
-      crewName: crew?.name || null,
-      crewSize: Array.isArray(members) ? members.length : 0,
+      crewName: crew?.name || (m.assigned_crew_name ? String(m.assigned_crew_name) : null),
+      crewSize,
+      crewMembers: members,
       etaMinutes: m.eta_current_minutes ?? null,
       fromLat: m.from_lat != null ? Number(m.from_lat) : null,
       fromLng: m.from_lng != null ? Number(m.from_lng) : null,
@@ -523,6 +540,7 @@ export async function GET(req: NextRequest) {
       crewId: d.crew_id || null,
       crewName: crew?.name || null,
       crewSize: Array.isArray(members) ? members.length : 0,
+      crewMembers: Array.isArray(members) ? members : [],
       etaMinutes: d.eta_current_minutes ?? null,
       fromLat: d.pickup_lat != null ? Number(d.pickup_lat) : null,
       fromLng: d.pickup_lng != null ? Number(d.pickup_lng) : null,
