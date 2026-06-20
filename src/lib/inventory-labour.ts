@@ -29,8 +29,16 @@
  *        assembly serially through one mover. Lowers wall-clock on small,
  *        assembly-heavy moves (~5h → ~4h on a light 1BR) and clears the
  *        false "underpriced" labour-rate flag that the inflated hours caused.
+ *  - v4: shipped 2026-06-19. Floor-as-base hours model. The old
+ *        `Math.max(minHours, computed)` pinned every 3BR+ move to its size
+ *        floor (e.g. 8h for a 4BR) because the per-crew inventory math sits
+ *        below the luxury floor — so adding items never changed the estimate
+ *        and the three tier values collapsed onto one number. Now the size
+ *        floor covers a TYPICAL load (BASELINE_SCORE_BY_SIZE) and inventory
+ *        above that baseline adds wall-clock on top. Loads at/under baseline
+ *        are unchanged; heavier loads climb above the floor monotonically.
  */
-export const LABOUR_CALIBRATION_VERSION = 3;
+export const LABOUR_CALIBRATION_VERSION = 4;
 
 const DISASSEMBLY_BY_SIZE: Record<string, number> = {
   studio: 0.25,
@@ -68,6 +76,29 @@ const MIN_HOURS_BY_SIZE: Record<string, number> = {
   "4br": 8.0,
   "5br_plus": 10.0,
   partial: 2.5,
+};
+
+/**
+ * Typical inventory score for a move of each size — the load the size
+ * floor (MIN_HOURS_BY_SIZE) is assumed to already cover. Inventory ABOVE
+ * this baseline adds wall-clock on top of the floor (v4 floor-as-base
+ * model), so a heavier-than-typical home climbs past its floor while a
+ * typical / sparse home stays exactly on it.
+ *
+ * Values are representative inventory scores (item weight points), aligned
+ * with the crew/truck score breakpoints (crew 3 @30, 4 @55, 5 @80; truck
+ * 24ft @65, 26ft @85). A "typical" 4BR lands ~65; the 54-item 4BR that
+ * triggered this fix scored ~85 and now reads ~9–9.5h instead of a pinned
+ * 8–8.5h.
+ */
+const BASELINE_SCORE_BY_SIZE: Record<string, number> = {
+  studio: 8,
+  partial: 8,
+  "1br": 18,
+  "2br": 35,
+  "3br": 50,
+  "4br": 65,
+  "5br_plus": 85,
 };
 
 /**
@@ -398,14 +429,36 @@ export function estimateLabourFromScore(
     }
   }
 
-  totalHours = Math.round(totalHours * 2) / 2;
-
   if (options?.whiteGloveHoursMultiplier) {
-    totalHours = Math.round(totalHours * 1.35 * 2) / 2;
+    totalHours = totalHours * 1.35;
   }
 
+  // ── Floor-as-base hours model (v4) ────────────────────────────────────────
+  // The per-size floor (MIN_HOURS_BY_SIZE) is a luxury-positioning minimum
+  // that sits ABOVE what the per-crew inventory math produces for a typical
+  // load — a 54-item 4BR computes ~6h while the 4BR floor is 8h. The old
+  // `Math.max(minHours, totalHours)` therefore pinned every 3BR+ to the floor:
+  // adding items never moved the estimate and the three tiers collapsed onto
+  // one value (reported 2026-06-19).
+  //
+  // New model: the floor covers a TYPICAL load for the size; inventory ABOVE
+  // that size's baseline score adds wall-clock on top, so more items always
+  // means more hours. Load + unload is the inventory-proportional work, scaled
+  // by the surplus fraction so only above-typical inventory adds time. Loads
+  // at/under baseline still land exactly on the floor — no change to light-job
+  // quotes or the labour-rate validation. The raw inventory computation is
+  // kept as a `max` safety net for drive/assembly-heavy jobs that already
+  // exceed the floor on their own.
   const minHours = MIN_HOURS_BY_SIZE[sizeKey] ?? 3.0;
-  totalHours = Math.max(minHours, totalHours);
+  const baselineScore = BASELINE_SCORE_BY_SIZE[sizeKey] ?? 0;
+  const surplusScore = Math.max(0, inventoryScore - baselineScore);
+  const variableHours = loadHours + unloadHours;
+  const surplusHours =
+    inventoryScore > 0 ? variableHours * (surplusScore / inventoryScore) : 0;
+  const floorBasedHours = minHours + surplusHours;
+  totalHours = Math.max(floorBasedHours, totalHours);
+
+  totalHours = Math.round(totalHours * 2) / 2;
 
   // Truck thresholds shifted 2026-06-11 to match engine's score-based
   // recommender (recommendedTruckFromInventoryScore in generate/route.ts).

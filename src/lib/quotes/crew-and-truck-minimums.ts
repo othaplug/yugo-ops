@@ -113,9 +113,42 @@ export function getPackerMinimum(moveSize: string | null | undefined): number {
 }
 
 /**
+ * Rank a truck string. Exact rank keys map to their index. Free-form
+ * recommendations larger than a single 26ft truck — e.g. the labour
+ * estimator's "26ft + trailer or 2 trucks" for score > 95 — rank ABOVE
+ * the top of TRUCK_SIZE_RANK so they are never treated as "unknown".
+ * Returns -1 only when nothing recognisable is found.
+ */
+export function truckRankIndex(truck: string | null | undefined): number {
+  if (!truck) return -1;
+  const exact = (TRUCK_SIZE_RANK as readonly string[]).indexOf(truck);
+  if (exact !== -1) return exact;
+  const t = truck.toLowerCase();
+  // A trailer or a second truck is above the largest single truck we rank.
+  if (t.includes("trailer") || t.includes("2 truck") || t.includes("two truck")) {
+    return TRUCK_SIZE_RANK.length; // > 26ft
+  }
+  // Fall back to the largest tier named anywhere in a free-form string.
+  if (t.includes("26")) return TRUCK_SIZE_RANK.indexOf("26ft");
+  if (t.includes("24")) return TRUCK_SIZE_RANK.indexOf("24ft");
+  if (t.includes("20")) return TRUCK_SIZE_RANK.indexOf("20ft");
+  if (t.includes("16")) return TRUCK_SIZE_RANK.indexOf("16ft");
+  if (t.includes("sprinter")) return 0;
+  return -1;
+}
+
+/**
  * Floor a truck pick to the minimum for the move size. If the pick is
  * already >= the floor, returns it unchanged. If smaller / unknown,
  * returns the floor.
+ *
+ * NOTE: previously this only matched exact rank keys, so a recommendation
+ * like "26ft + trailer or 2 trucks" (emitted by estimateLabourFromScore
+ * once the inventory score crosses 95) was treated as unknown and silently
+ * DOWNGRADED to the move-size floor — e.g. a 4BR's "26ft + trailer" became
+ * "24ft". That made the displayed truck SHRINK as items were added past the
+ * 95-point threshold. truckRankIndex now ranks the trailer tier above 26ft
+ * so an above-floor recommendation is kept as-is instead of being floored.
  */
 export function floorTruckByMoveSize(
   truck: TruckKey | string | null | undefined,
@@ -123,10 +156,7 @@ export function floorTruckByMoveSize(
 ): TruckKey {
   const floor = getTruckMinimum(moveSize);
   const floorIdx = TRUCK_SIZE_RANK.indexOf(floor);
-  const truckIdx =
-    truck && (TRUCK_SIZE_RANK as readonly string[]).includes(truck as string)
-      ? TRUCK_SIZE_RANK.indexOf(truck as TruckKey)
-      : -1;
+  const truckIdx = truckRankIndex(truck as string | null | undefined);
   if (truckIdx === -1 || truckIdx < floorIdx) return floor;
   return truck as TruckKey;
 }
