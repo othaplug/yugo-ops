@@ -35,7 +35,7 @@ import {
   getOutlookMsoHeadBlock,
   wrapOutlookFluidHybridInner,
 } from "@/lib/email/email-responsive-css";
-import { formatCurrencyEmail } from "@/lib/format-currency";
+import { formatCurrencyEmail, formatCurrency } from "@/lib/format-currency";
 import { formatAccessForDisplay } from "@/lib/format-text";
 import {
   TIER_LABELS as DISPLAY_TIER_LABELS,
@@ -566,15 +566,16 @@ function tierCards(
         ? `<span style="display:inline-block;padding:2px 9px;font-size:7px;font-weight:700;background-color:${isRec ? badgeRecBg : badgeMutedBg};color:${isRec ? badgeRecFg : badgeMutedFg};margin-left:8px;letter-spacing:0.5px;text-transform:uppercase;vertical-align:middle;">${badgeText}</span>`
         : "";
 
-      const includesRows = isRec
-        ? (t.includes || [])
-            .filter(Boolean)
-            .map(
-              (item) =>
-                `<tr><td style="color:${bulletColor} !important;-webkit-text-fill-color:${bulletColor};font-size:10px;padding:4px 0;vertical-align:top;width:16px;line-height:1.5;">—</td><td style="color:${lineColor} !important;-webkit-text-fill-color:${lineColor};font-size:11px;padding:4px 0;line-height:1.5;">${item}</td></tr>`,
-            )
-            .join("")
-        : "";
+      // Recommended tier shows the full list; the others show their top items
+      // so the cards aren't empty (price-only) next to the featured tier.
+      const allIncludes = (t.includes || []).filter(Boolean);
+      const shownIncludes = isRec ? allIncludes : allIncludes.slice(0, 5);
+      const includesRows = shownIncludes
+        .map(
+          (item) =>
+            `<tr><td style="color:${bulletColor} !important;-webkit-text-fill-color:${bulletColor};font-size:10px;padding:4px 0;vertical-align:top;width:16px;line-height:1.5;">—</td><td style="color:${lineColor} !important;-webkit-text-fill-color:${lineColor};font-size:11px;padding:4px 0;line-height:1.5;">${item}</td></tr>`,
+        )
+        .join("");
 
       // HST + total disclosure under each price. Canadian clients
       // expect to see what they actually pay at checkout — bare
@@ -589,14 +590,14 @@ function tierCards(
         typeof (t as { total?: number }).total === "number"
           ? (t as { total?: number }).total!
           : t.price + tierTax;
-      const hstLine = `<div style="font-family:${EMAIL_SANS_STACK};font-size:11px;font-weight:500;color:${lineColor} !important;-webkit-text-fill-color:${lineColor};margin-top:4px;margin-bottom:${isRec ? "14px" : "2px"};opacity:0.85;">+ ${formatCurrencyEmail(tierTax)} HST · Total ${formatCurrencyEmail(tierTotal)}</div>`;
+      const hstLine = `<div style="font-family:${EMAIL_SANS_STACK};font-size:11px;font-weight:500;color:${lineColor} !important;-webkit-text-fill-color:${lineColor};margin-top:4px;margin-bottom:${isRec ? "14px" : "2px"};opacity:0.85;">+ ${formatCurrency(tierTax)} HST · Total ${formatCurrency(tierTotal)}</div>`;
 
       const cardContent = `
         <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:${cardBg};border:${borderStyle};margin-bottom:12px;">
           <tr>
             <td class="${cellClass}" style="padding:${padVal};background-color:${cardBg};">
               <div style="${titleBase}color:${titleColor} !important;-webkit-text-fill-color:${titleColor};">${label}${badge}</div>
-              <div style="font-family:${HERO_FONT};font-size:${priceSz};font-weight:400;color:${priceColor} !important;-webkit-text-fill-color:${priceFill};line-height:1;margin-bottom:4px;">${formatCurrencyEmail(t.price)}</div>
+              <div style="font-family:${HERO_FONT};font-size:${priceSz};font-weight:400;color:${priceColor} !important;-webkit-text-fill-color:${priceFill};line-height:1;margin-bottom:4px;">${formatCurrency(t.price)}</div>
               ${hstLine}
               ${includesRows ? `<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:4px;">${includesRows}</table>` : ""}
             </td>
@@ -638,7 +639,7 @@ function priceCard(label: string, price: number, note: string): string {
       <tr>
         <td align="center" class="yugo-on-wine" style="background-color:${CARD};border:1px solid ${ACCENT_ROSE_MUTED}55;padding:24px 22px;">
           <div style="${labelStyle}">${label}</div>
-          <div style="${priceStyle}">${formatCurrencyEmail(price)}</div>
+          <div style="${priceStyle}">${formatCurrency(price)}</div>
           <div style="${noteStyle}">${note}</div>
         </td>
       </tr>
