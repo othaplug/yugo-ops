@@ -3,7 +3,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { createPartnerNotification } from "@/lib/notifications";
 import { logActivity } from "@/lib/activity";
-import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
+import {
+  fetchCrewAssignmentSnapshot,
+  resolveAssignedMembers,
+} from "@/lib/crew-job-snapshot";
 import { collectB2BDeliveryCalibrationData } from "@/lib/learning/engine";
 import { syncDealStageByDeliveryId } from "@/lib/hubspot/sync-deal-stage";
 import { ensureB2bDeliverySchedule } from "@/lib/calendar/ensure-b2b-delivery-schedule";
@@ -37,7 +40,7 @@ export async function PATCH(
 
   const { data: existing } = await admin
     .from("deliveries")
-    .select("status, stage, crew_id, organization_id, delivery_number, customer_name")
+    .select("status, stage, crew_id, assigned_members, organization_id, delivery_number, customer_name")
     .eq("id", id)
     .single();
 
@@ -120,7 +123,14 @@ export async function PATCH(
         }
         updates.assigned_members = deduped;
       } else {
-        updates.assigned_members = snap.assigned_members;
+        // No explicit members: keep an existing subset on the same crew; only
+        // snapshot the full roster on a genuinely new crew.
+        updates.assigned_members = resolveAssignedMembers({
+          previousCrewId: existing?.crew_id as string | null | undefined,
+          nextCrewId: cid,
+          existingMembers: (existing as { assigned_members?: unknown })?.assigned_members,
+          snapshotMembers: snap.assigned_members,
+        });
       }
     } else {
       updates.crew_id = null;

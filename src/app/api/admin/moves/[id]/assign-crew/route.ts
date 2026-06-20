@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
-import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
+import {
+  fetchCrewAssignmentSnapshot,
+  resolveAssignedMembers,
+} from "@/lib/crew-job-snapshot";
 
 export async function POST(
   req: NextRequest,
@@ -20,12 +23,26 @@ export async function POST(
   const admin = createAdminClient();
   const snap = await fetchCrewAssignmentSnapshot(admin, body.crew_id);
 
+  // Preserve a previously chosen member subset when the crew is unchanged;
+  // only snapshot the full roster on a genuinely new crew.
+  const { data: existing } = await admin
+    .from("moves")
+    .select("crew_id, assigned_members")
+    .eq("id", moveId)
+    .maybeSingle();
+  const assigned_members = resolveAssignedMembers({
+    previousCrewId: existing?.crew_id as string | null | undefined,
+    nextCrewId: body.crew_id,
+    existingMembers: existing?.assigned_members,
+    snapshotMembers: snap.assigned_members,
+  });
+
   const { error } = await admin
     .from("moves")
     .update({
       crew_id: body.crew_id,
       status: "scheduled",
-      assigned_members: snap.assigned_members,
+      assigned_members,
       assigned_crew_name: snap.assigned_crew_name,
     })
     .eq("id", moveId);

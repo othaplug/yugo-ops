@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { isDispatchJobInProgress } from "@/lib/dispatch-job-in-progress";
-import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
+import {
+  fetchCrewAssignmentSnapshot,
+  resolveAssignedMembers,
+} from "@/lib/crew-job-snapshot";
 import { logAudit } from "@/lib/audit";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 
@@ -36,9 +39,10 @@ export async function PATCH(req: NextRequest) {
     const codeCol = jobType === "move" ? "move_code" : "delivery_number";
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId);
 
+    const selectCols = "id, status, stage, crew_id, assigned_members";
     const { data: existing } = isUuid
-      ? await admin.from(table).select("id, status, stage").eq("id", jobId).maybeSingle()
-      : await admin.from(table).select("id, status, stage").ilike(codeCol, jobId).maybeSingle();
+      ? await admin.from(table).select(selectCols).eq("id", jobId).maybeSingle()
+      : await admin.from(table).select(selectCols).ilike(codeCol, jobId).maybeSingle();
 
     if (!existing) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
@@ -108,7 +112,14 @@ export async function PATCH(req: NextRequest) {
         update.assigned_members = members.filter((m) => typeof m === "string" && m.trim());
         update.assigned_crew_name = snap.assigned_crew_name;
       } else {
-        update.assigned_members = snap.assigned_members;
+        // No explicit members: keep an existing subset when the crew is the
+        // same; only snapshot the full roster on a genuinely new crew.
+        update.assigned_members = resolveAssignedMembers({
+          previousCrewId: (existing as { crew_id?: string | null }).crew_id,
+          nextCrewId: trimmedCrew,
+          existingMembers: (existing as { assigned_members?: unknown }).assigned_members,
+          snapshotMembers: snap.assigned_members,
+        });
         update.assigned_crew_name = snap.assigned_crew_name;
       }
     } else {
