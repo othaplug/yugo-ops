@@ -72,7 +72,7 @@ export async function checkAvailability(
   const { data: existingMoves } = await admin
     .from("moves")
     .select("id, crew_id, arrival_window, truck_primary")
-    .eq("move_date", date)
+    .eq("scheduled_date", date)
     .in("status", ["scheduled", "confirmed", "en_route_to_pickup", "in_progress", "pending_approval"]);
 
   const movesOnDate = existingMoves ?? [];
@@ -158,7 +158,7 @@ export async function checkAvailability(
   const { data: nextDayMoves } = await admin
     .from("moves")
     .select("id, crew_id, arrival_window, truck_primary")
-    .eq("move_date", nextDay)
+    .eq("scheduled_date", nextDay)
     .in("status", ["scheduled", "confirmed", "en_route_to_pickup", "in_progress", "pending_approval"]);
 
   const nextDayMpCrew = await sumMoveProjectCrewDemandForDate(admin, nextDay);
@@ -213,21 +213,21 @@ export async function autoScheduleMove(
   const { data: move } = await admin
     .from("moves")
     .select(
-      "id, move_date, arrival_window, crew_count, truck_primary, service_type, tier_selected, estimate, has_piano"
+      "id, scheduled_date, arrival_window, est_crew_size, truck_primary, service_type, tier_selected, estimate"
     )
     .eq("id", moveId)
     .single();
 
-  if (!move?.move_date) return;
+  if (!move?.scheduled_date) return;
 
   if (move.service_type === "bin_rental") return;
 
-  const crewSize = (move.crew_count as number) ?? 2;
+  const crewSize = (move.est_crew_size as number) ?? 2;
   const truckType = (move.truck_primary as string) ?? "16ft";
   const window = (move.arrival_window as string) ?? "8AM-10AM";
 
   const availability = await checkAvailability(
-    move.move_date as string,
+    move.scheduled_date as string,
     window,
     crewSize,
     truckType
@@ -239,10 +239,10 @@ export async function autoScheduleMove(
       {
         service_type: move.service_type as string | null,
         tier_selected: move.tier_selected as string | null,
-        has_piano: move.has_piano as boolean | undefined,
+        has_piano: false,
         estimate: move.estimate as number | null,
       },
-      move.move_date as string
+      move.scheduled_date as string
     );
 
     if (recommended.length > 0) {
@@ -261,8 +261,8 @@ export async function autoScheduleMove(
       await notifyAdmins("move_scheduled", {
         moveId,
         subject: `Auto-scheduled: ${moveCode}`,
-        body: `Move ${moveCode} auto-scheduled, ${move.move_date} ${window}. Crew: ${best.crew.name ?? "assigned"}.`,
-        description: `Move ${moveCode} auto-scheduled, ${move.move_date} ${window}. Crew: ${best.crew.name ?? "assigned"}.`,
+        body: `Move ${moveCode} auto-scheduled, ${move.scheduled_date} ${window}. Crew: ${best.crew.name ?? "assigned"}.`,
+        description: `Move ${moveCode} auto-scheduled, ${move.scheduled_date} ${window}. Crew: ${best.crew.name ?? "assigned"}.`,
       }).catch(() => {});
     } else {
       // No crew profiles yet — mark as scheduled (unassigned crew)
@@ -293,8 +293,8 @@ export async function autoScheduleMove(
     await notifyAdmins("scheduling_conflict", {
       moveId,
       subject: `Scheduling conflict: ${moveCode}`,
-      body: `New booking ${moveCode}: requested ${move.move_date} ${window} is fully booked. ${alts.length} alternative slot(s) available.`,
-      description: `New booking ${moveCode}: requested ${move.move_date} ${window} is fully booked. ${alts.length} alternative slot(s) available.`,
+      body: `New booking ${moveCode}: requested ${move.scheduled_date} ${window} is fully booked. ${alts.length} alternative slot(s) available.`,
+      description: `New booking ${moveCode}: requested ${move.scheduled_date} ${window} is fully booked. ${alts.length} alternative slot(s) available.`,
     }).catch(() => {});
   } else {
     // No availability at all
@@ -306,8 +306,8 @@ export async function autoScheduleMove(
     await notifyAdmins("no_availability", {
       moveId,
       subject: `URGENT, no availability: ${moveCode}`,
-      body: `New booking ${moveCode} for ${move.move_date}, no crew or truck available. Needs immediate manual resolution.`,
-      description: `New booking ${moveCode} for ${move.move_date}, no crew or truck available. Needs immediate manual resolution.`,
+      body: `New booking ${moveCode} for ${move.scheduled_date}, no crew or truck available. Needs immediate manual resolution.`,
+      description: `New booking ${moveCode} for ${move.scheduled_date}, no crew or truck available. Needs immediate manual resolution.`,
     }).catch(() => {});
   }
 }
