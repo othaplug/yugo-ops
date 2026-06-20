@@ -11753,7 +11753,7 @@ export default function QuoteFormClient({
                 type="button"
                 onClick={() =>
                   quoteResult &&
-                  window.open(`/quote/${quoteResult.quote_id}`, "_blank")
+                  window.open(`/quote/${quoteResult.quote_id}?preview=1`, "_blank")
                 }
                 disabled={!quoteResult}
                 className="admin-btn admin-btn-lg admin-btn-secondary w-full sm:w-auto sm:shrink-0"

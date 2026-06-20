@@ -373,6 +373,7 @@ export default function QuotePageClient({
   openPaymentRetry = false,
   moveProjectData = null,
   googleReviewCountLabel = DEFAULT_GOOGLE_REVIEW_COUNT_LABEL,
+  isAdminPreview = false,
 }: {
   quote: Quote;
   addons: Addon[];
@@ -398,6 +399,8 @@ export default function QuotePageClient({
   moveProjectData?: MoveProjectQuotePayload | null;
   /** Trust bar headline from platform_config `google_review_count_label` */
   googleReviewCountLabel?: string;
+  /** Suppress all engagement tracking when admin is previewing the quote */
+  isAdminPreview?: boolean;
 }) {
   const isResidential = quote.service_type === "local_move" && !!quote.tiers;
   /**
@@ -799,6 +802,7 @@ export default function QuotePageClient({
 
   const trackEngagement = useCallback(
     (event_type: string, event_data?: Record<string, unknown>) => {
+      if (isAdminPreview) return;
       if (String(quote.status || "").toLowerCase() === "draft") return;
       const elapsed = Math.round((Date.now() - pageStartTime.current) / 1000);
       const device =
@@ -823,6 +827,7 @@ export default function QuotePageClient({
 
   const trackEvent = useCallback(
     (event_type: string, metadata?: Record<string, unknown>) => {
+      if (isAdminPreview) return;
       if (String(quote.status || "").toLowerCase() === "draft") return;
       fetch("/api/quotes/track", {
         method: "POST",

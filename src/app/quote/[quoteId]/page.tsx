@@ -42,6 +42,9 @@ export default async function QuotePage({
   const sp = (await searchParams) ?? {};
   const actionRaw = sp.action;
   const action = Array.isArray(actionRaw) ? actionRaw[0] : actionRaw;
+  const previewRaw = sp.preview;
+  const isAdminPreview =
+    previewRaw === "1" || previewRaw === "true" || (Array.isArray(previewRaw) && previewRaw[0] === "1");
   const retryRaw = sp.retry;
   const retryParam = Array.isArray(retryRaw) ? retryRaw[0] : retryRaw;
   const openPaymentRetry =
@@ -145,7 +148,8 @@ export default async function QuotePage({
 
   // Mark as viewed + record event (server-side, fire-and-forget)
   // Use .eq("status", "sent") as a condition so only the first view triggers the HubSpot note
-  if (quote.status === "draft" || quote.status === "sent") {
+  // Skip entirely when admin is previewing via ?preview=1
+  if (!isAdminPreview && (quote.status === "draft" || quote.status === "sent")) {
     admin
       .from("quotes")
       .update({ status: "viewed", viewed_at: new Date().toISOString() })
@@ -329,6 +333,7 @@ export default async function QuotePage({
       openPaymentRetry={openPaymentRetry && String(quote.status || "").toLowerCase() === "payment_failed"}
       moveProjectData={moveProjectData}
       googleReviewCountLabel={googleReviewCountLabel}
+      isAdminPreview={isAdminPreview}
     />
   );
 }

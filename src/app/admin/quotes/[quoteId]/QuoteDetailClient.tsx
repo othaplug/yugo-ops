@@ -1195,7 +1195,7 @@ export default function QuoteDetailClient({
             </button>
             {quote.quote_url && (
               <a
-                href={quote.quote_url}
+                href={`${quote.quote_url}${quote.quote_url.includes("?") ? "&" : "?"}preview=1`}
                 target="_blank"
                 rel="noreferrer"
                 className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
