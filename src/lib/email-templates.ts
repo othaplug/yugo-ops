@@ -349,7 +349,7 @@ const ESTATE_GEORGIA = "'Instrument Serif',Georgia,'Times New Roman',serif";
 /** Estate booking confirmation (wine shell only): locked palette, cream type, sage CTA. */
 const ESTATE_WINE_SURFACE_PAGE = "#2B0416";
 const ESTATE_WINE_SURFACE_INK = "#F9EDE4";
-const ESTATE_WINE_SURFACE_MUTED = "rgba(249,237,228,0.72)";
+const ESTATE_WINE_SURFACE_MUTED = "rgba(249,237,228,0.88)";
 const ESTATE_WINE_SURFACE_ROSE = "#E8C4D0";
 const ESTATE_WINE_SURFACE_BORDER = "rgba(249,237,228,0.24)";
 const ESTATE_WINE_SAGE_CTA_BG = "#B5C9B6";

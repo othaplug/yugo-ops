@@ -298,12 +298,12 @@ __YUGO_FOOTER_TOP_PROMO__
                 <strong style="color:${FOOTER_LEGAL_TEXT};font-weight:600;">Yugo Inc.</strong>
                 <a href="${mapsUrl}" style="color:${FOOTER_LINK_WINE};text-decoration:underline;margin-left:6px;">${addrLine1} ${addrLine2}, ${addrLine3}, Canada</a>
               </p>
-              <p style="margin:14px 0 0;font-size:10px;color:#888888;">
+              <p style="margin:14px 0 0;font-size:10px;color:#666666;">
                 We are always here to help. <a href="${mailtoContact}" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">Email us</a>
                 <span style="color:#cccccc;"> &middot; </span>
                 <a href="${tel}" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">Call ${escapeHtml(contactPhone)}</a>
               </p>
-              <p style="margin:12px 0 0;font-size:10px;color:#aaaaaa;">
+              <p style="margin:12px 0 0;font-size:10px;color:#707070;">
                 <a href="${privacyUrl}" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">Privacy policy</a>
                 <span style="color:#cccccc;margin:0 8px;">|</span>
                 <a href="${termsUrl}" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">Terms of use</a>
