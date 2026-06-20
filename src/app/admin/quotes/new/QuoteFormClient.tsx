@@ -79,7 +79,7 @@ import {
   type WhiteGloveItemRow,
 } from "@/components/admin/WhiteGloveItemsEditor";
 import { computeWhiteGlovePricingBreakdown, estimateWhiteGloveHours, recommendWhiteGloveCrew } from "@/lib/quotes/white-glove-pricing";
-import OfficeMoveScopeSection from "./OfficeMoveScopeSection";
+// OfficeMoveScopeSection removed — office uses OfficeInventoryInput as its single scope input.
 import OfficeInventoryInput from "@/components/inventory/OfficeInventoryInput";
 import type { OfficeInventoryLine } from "@/lib/quotes/office-inventory-labour";
 import type { OfficeQuoteContext } from "@/lib/quotes/office-quote-engine";
@@ -8138,10 +8138,11 @@ export default function QuoteFormClient({
                 </div>
               )}
 
-              {/* ── 5c. Inventory (Residential / Long distance / Office) ── */}
+              {/* ── 5c. Inventory (Residential / Long distance) ──
+                  Office uses its own OfficeInventoryInput below, not this
+                  residential item catalog / box-score picker. */}
               {(serviceType === "local_move" ||
-                serviceType === "long_distance" ||
-                serviceType === "office_move") &&
+                serviceType === "long_distance") &&
                 itemWeights.length > 0 && (
                   <>
                     <div className="pt-5 pb-5" aria-hidden />
@@ -8217,11 +8218,7 @@ export default function QuoteFormClient({
                                   });
                                 }
                               }}
-                              mode={
-                                serviceType === "office_move"
-                                  ? "commercial"
-                                  : "residential"
-                              }
+                              mode={"residential"}
                             />
                           </div>
                         ))}
@@ -8260,11 +8257,7 @@ export default function QuoteFormClient({
                         onBoxCountChange={(n) =>
                           setClientBoxCount(n > 0 ? String(n) : "")
                         }
-                        mode={
-                          serviceType === "office_move"
-                            ? "commercial"
-                            : "residential"
-                        }
+                        mode={"residential"}
                       />
                     )}
                   </>
@@ -8370,8 +8363,11 @@ export default function QuoteFormClient({
                 <div className="pt-5 pb-5" aria-hidden />
               )}
 
-              {/* ── Office fields ── */}
-              {serviceType === "office_move" && (
+              {/* ── Legacy workstation "Office move details" ──
+                  Replaced by the inventory-driven OfficeInventoryInput below.
+                  Kept in code but never rendered (the engine uses office_inventory,
+                  not these workstation fields, when an inventory is provided). */}
+              {false && serviceType === "office_move" && (
                 <div className="space-y-2">
                   <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
                     Office move details
@@ -8576,27 +8572,15 @@ export default function QuoteFormClient({
 
               {serviceType === "office_move" && (
                 <div className="col-span-full space-y-3">
+                  {/* The inventory-driven OfficeInventoryInput is the single
+                      office scope input. The legacy workstation-day
+                      OfficeMoveScopeSection was removed — crew, trucks, days,
+                      and the 3 tier prices all come from the inventory now. */}
                   <OfficeInventoryInput
                     inventory={officeInventory}
                     onInventoryChange={setOfficeInventory}
                     context={officeQuoteContext}
                     onContextChange={setOfficeQuoteContext}
-                  />
-                  <OfficeMoveScopeSection
-                    workstationsTotal={workstationCountN}
-                    squareFootageStr={sqft}
-                    serverRoom={hasIt}
-                    scheduleLabel={timingPref}
-                    afterHoursContext={officeTimingAfterHoursHint}
-                    extraPickupStopCount={extraPickupStopCount}
-                    extraDropoffStopCount={extraDropoffStopCount}
-                    daysOverride={officeMoveScopeDaysOverride}
-                    onDaysOverrideChange={setOfficeMoveScopeDaysOverride}
-                    additionalMoveDay={officeScopeAdditionalMoveDay}
-                    onAdditionalMoveDayChange={setOfficeScopeAdditionalMoveDay}
-                    config={config}
-                    onToggleMultiPickup={handleMoveScopeToggleMultiPickup}
-                    onToggleMultiDelivery={handleMoveScopeToggleMultiDelivery}
                   />
                 </div>
               )}
@@ -11916,7 +11900,12 @@ export default function QuoteFormClient({
                           // the right rail reflects $680 the moment it
                           // is typed, not only after Regenerate.
                           tiers={previewTiers ?? quoteResult.tiers}
-                          recommendedTier={recommendedTier}
+                          tierOrder={activeTierKeys}
+                          recommendedTier={
+                            serviceType === "office_move"
+                              ? "priority"
+                              : recommendedTier
+                          }
                           estateMultiDayUplift={(() => {
                             const f = quoteResult.factors as
                               | Record<string, unknown>
@@ -13607,7 +13596,9 @@ export default function QuoteFormClient({
                 );
               })()}
 
-            {quoteResult?.labour_validation && (
+            {/* Office is priced by inventory scope, not crew-hours, so the
+                residential labour-rate ceiling check does not apply. */}
+            {quoteResult?.labour_validation && serviceType !== "office_move" && (
               <div
                 className={[
                   "p-3 rounded-lg mt-3 text-sm border",
@@ -13975,14 +13966,16 @@ function TiersDisplay({
   tiers,
   recommendedTier = "signature",
   estateMultiDayUplift = 0,
+  tierOrder = ["essential", "signature", "estate"],
 }: {
   tiers: Record<string, TierResult>;
   recommendedTier?: string;
   /** Pre-tax amount included in Estate tier for multi-day loaded labour vs single-day baseline (from generate factors). */
   estateMultiDayUplift?: number;
+  /** Tier keys in display order. Office passes essential/signature/priority. */
+  tierOrder?: readonly string[];
 }) {
   const isV2 = useQuoteFormIsV2();
-  const tierOrder = ["essential", "signature", "estate"] as const;
   const tierColors = useMemo(
     () => getResidentialTierCardStyles(isV2),
     [isV2],
@@ -13991,6 +13984,7 @@ function TiersDisplay({
     essential: "Essential",
     signature: "Signature",
     estate: "Estate",
+    priority: "Priority",
   };
 
   return (
