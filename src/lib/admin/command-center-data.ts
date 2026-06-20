@@ -668,9 +668,18 @@ export const loadCommandCenterData = async () => {
       created_at?: string | null
     }
 
+  // Revenue is attributed to a month by SERVICE DATE (when the job is/was
+  // scheduled), consistently for every move. Previously this preferred
+  // payment_marked_paid_at, so a move's revenue jumped months the moment a
+  // deposit/balance auto-charge or payment webhook flipped its paid flag
+  // overnight (e.g. MV-30270, scheduled Jun 22, was marked paid Jun 19 and
+  // shifted the "this month" total with no human action). Bucketing by
+  // scheduled_date keeps a June job in June regardless of when it settles, so
+  // the figure no longer churns from background payment crons. (The total
+  // still rises as jobs become paid — that part is real, realized revenue.)
   const getMoveDate = (m: Record<string, unknown>) => {
     const ts = String(
-      m.payment_marked_paid_at || m.scheduled_date || m.created_at || "",
+      m.scheduled_date || m.payment_marked_paid_at || m.created_at || "",
     )
     return ts ? new Date(ts) : new Date(0)
   }
