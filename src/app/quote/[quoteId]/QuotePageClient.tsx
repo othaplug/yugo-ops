@@ -985,6 +985,65 @@ export default function QuotePageClient({
     );
   }, [isResidential, selectedTier, quote.service_type, residentialTierMeta]);
 
+  /* ── Admin-selected add-ons baked into the quote price ──
+     The engine bakes coordinator-selected add-ons INTO the tier price
+     (basePrice = tiers[selectedTier].price), so they are shown read-only as
+     "already included" and are removed from the interactive list below.
+     Re-toggling them would double-charge: basePrice already includes them and
+     addonTotal would add them again. Mirrors the White Glove
+     coordinatorInsurance reflect-don't-recharge pattern. */
+  const adminIncludedAddons = useMemo(() => {
+    const raw = (quote as { selected_addons?: unknown }).selected_addons;
+    if (!Array.isArray(raw)) return [];
+    const out: {
+      addon_id: string;
+      slug: string;
+      name: string;
+      quantity: number;
+      subtotal: number;
+    }[] = [];
+    for (const r of raw) {
+      const row = (r ?? {}) as {
+        addon_id?: unknown;
+        slug?: unknown;
+        name?: unknown;
+        quantity?: unknown;
+        subtotal?: unknown;
+        price?: unknown;
+      };
+      const slug = String(row.slug ?? "").trim();
+      // enhanced_insurance is reflected separately (coordinatorInsurance / WG).
+      if (slug === "enhanced_insurance") continue;
+      const id = String(row.addon_id ?? "").trim();
+      if (!id && !slug) continue;
+      // Saved payload is the raw selection shape ({slug, addon_id, quantity,
+      // tier_index}) with no friendly name — resolve the display name from the
+      // addon catalog, falling back to any stored name, then the slug.
+      const catalog =
+        allAddons.find((a) => a.id === id) ??
+        allAddons.find((a) => a.slug === slug);
+      const name =
+        String(row.name ?? "").trim() ||
+        catalog?.name ||
+        slug ||
+        "Add-on";
+      const qty = Number(row.quantity);
+      const sub = Number(row.subtotal ?? row.price);
+      out.push({
+        addon_id: id || (catalog?.id ?? ""),
+        slug: slug || (catalog?.slug ?? ""),
+        name,
+        quantity: Number.isFinite(qty) && qty > 0 ? qty : 1,
+        subtotal: Number.isFinite(sub) ? sub : 0,
+      });
+    }
+    return out;
+  }, [quote, allAddons]);
+  const adminIncludedAddonIds = useMemo(
+    () => new Set(adminIncludedAddons.map((a) => a.addon_id).filter(Boolean)),
+    [adminIncludedAddons],
+  );
+
   /* ── Applicable add-ons (Estate hides items bundled in-package, see getVisibleAddons / addon-visibility) ── */
   const applicableAddons = useMemo(() => {
     const serviceOk = (a: (typeof allAddons)[number]) =>
@@ -999,6 +1058,9 @@ export default function QuotePageClient({
     const base = allAddons.filter(
       (a) =>
         serviceOk(a) &&
+        // Hide add-ons the coordinator already baked into the price; they show
+        // in the read-only "Included in your quote" block instead.
+        !adminIncludedAddonIds.has(a.id) &&
         !(
           quote.service_type === "white_glove" &&
           WHITE_GLOVE_HIDDEN_ADDON_SLUGS.has(a.slug)
@@ -1012,7 +1074,7 @@ export default function QuotePageClient({
       return getVisibleAddons(base, selectedTier);
     }
     return base.filter((a) => !a.excluded_tiers?.includes(selectedTier));
-  }, [allAddons, selectedTier, quote.service_type]);
+  }, [allAddons, selectedTier, quote.service_type, adminIncludedAddonIds]);
 
   /* ── Add-on helpers ── */
   const toggleAddon = useCallback(
@@ -2460,6 +2522,7 @@ export default function QuotePageClient({
               <AddOnsSection
                 addons={applicableAddons}
                 allAddons={allAddons}
+                includedAddons={adminIncludedAddons}
                 selectedAddons={selectedAddons}
                 basePrice={basePrice}
                 addonTotal={addonTotal}
@@ -5725,9 +5788,15 @@ function ValuationProtectionCard({
             >
               {upgradeTierData.rate_description}
             </p>
-            {upgradeData.assumed_shipment_value > 0 && (
+            {(upgradeTierData.max_per_shipment ?? 0) > 0 && (
               <p className="text-[11px]" style={{ color: inkMuted }}>
-                Covers up to {fmtPrice(upgradeData.assumed_shipment_value)}{" "}
+                {/* Coverage statement must use the TARGET tier's actual limit
+                    (full_replacement = $100,000 per move), not the upgrade's
+                    assumed_shipment_value (a per-move-size pricing assumption,
+                    e.g. $50k for a 4BR) — otherwise a Signature client sees
+                    "Covers up to $50,000" while upgrading into the $100,000
+                    Estate-level package. */}
+                Covers up to {fmtPrice(upgradeTierData.max_per_shipment!)}{" "}
                 total{" "}
                 {journeyCopy === "delivery"
                   ? "shipment"
@@ -6055,6 +6124,7 @@ function FallbackPrice({
 function AddOnsSection({
   addons,
   allAddons,
+  includedAddons = [],
   selectedAddons,
   basePrice,
   addonTotal,
@@ -6076,6 +6146,14 @@ function AddOnsSection({
 }: {
   addons: Addon[];
   allAddons: Addon[];
+  /** Coordinator-selected add-ons already baked into basePrice; shown read-only. */
+  includedAddons?: {
+    addon_id: string;
+    slug: string;
+    name: string;
+    quantity: number;
+    subtotal: number;
+  }[];
   selectedAddons: Map<string, AddonSelection>;
   basePrice: number;
   addonTotal: number;
@@ -6228,6 +6306,63 @@ function AddOnsSection({
           </>
         )}
       </div>
+
+      {includedAddons.length > 0 && (
+        <div
+          className={`mb-6 rounded-xl border px-4 py-3 ${
+            premiumChrome ? premiumBorder : "border-[#2C3E2D]/15"
+          } ${addonRowOnBgClass}`}
+        >
+          <p
+            className="text-[11px] uppercase tracking-[0.18em] font-semibold mb-2"
+            style={{
+              color: premiumChrome && shellText ? shellText.kicker : FOREST,
+            }}
+          >
+            Included in your quote
+          </p>
+          <ul className="space-y-1.5">
+            {includedAddons.map((a) => (
+              <li
+                key={a.addon_id || a.slug || a.name}
+                className="flex items-center justify-between text-[13px]"
+              >
+                <span
+                  className="flex items-center gap-2"
+                  style={{
+                    color:
+                      premiumChrome && shellText ? shellText.body : "#2C3E2D",
+                  }}
+                >
+                  <Check
+                    className="w-3.5 h-3.5 shrink-0"
+                    style={{ color: toggleOnColor }}
+                  />
+                  {a.name}
+                  {a.quantity > 1 ? ` × ${a.quantity}` : ""}
+                </span>
+                <span
+                  className="text-[12px] font-medium"
+                  style={{
+                    color:
+                      premiumChrome && shellText ? shellText.kicker : "#2C3E2D",
+                  }}
+                >
+                  Included
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p
+            className="text-[11px] mt-2 leading-snug"
+            style={{
+              color: premiumChrome && shellText ? shellText.body : "#5A6B5C",
+            }}
+          >
+            Already added by your coordinator and reflected in your price above.
+          </p>
+        </div>
+      )}
 
       <div
         className={
