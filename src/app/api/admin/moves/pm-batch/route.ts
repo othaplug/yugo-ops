@@ -237,7 +237,14 @@ export async function POST(req: NextRequest) {
   const batchMailRows: PmBatchMailDetailRow[] = [];
 
   const status = draft ? "pending_approval" : "confirmed";
-  const coordinatorName = user?.email?.trim() || "Coordinator";
+  // Store the coordinator's NAME, not their email. Falls back to the email's
+  // local part, then a generic label.
+  const coordinatorMeta = (user as { user_metadata?: { full_name?: string } } | null)
+    ?.user_metadata?.full_name;
+  const coordinatorName =
+    (typeof coordinatorMeta === "string" && coordinatorMeta.trim()) ||
+    user?.email?.split("@")[0]?.trim() ||
+    "Coordinator";
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!;

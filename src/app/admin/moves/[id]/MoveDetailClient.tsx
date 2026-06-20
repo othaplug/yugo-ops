@@ -2216,7 +2216,13 @@ export default function MoveDetailClient({
                 Coordinator
               </span>
               <div className="text-[13px] font-medium text-[var(--yu3-ink)]">
-                {move.coordinator_name || "-"}
+                {(() => {
+                  const c = (move.coordinator_name || "").trim();
+                  if (!c) return "-";
+                  // Legacy rows stored the coordinator's email here; show the
+                  // name part rather than the full address.
+                  return c.includes("@") ? c.split("@")[0] : c;
+                })()}
               </div>
             </div>
             {isCompleted ? (
