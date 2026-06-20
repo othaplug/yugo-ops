@@ -1,6 +1,6 @@
 import { sendEmail } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
-import { adminNotificationLayout } from "@/lib/email/admin-templates";
+import { partnerShipmentNotificationEmail } from "@/lib/email-templates";
 import { signTrackToken } from "@/lib/track-token";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -45,7 +45,7 @@ function itemSummary(row: InboundShipmentNotifyRow): string {
 }
 
 function wrapHtml(title: string, inner: string): string {
-  return adminNotificationLayout(inner, title);
+  return partnerShipmentNotificationEmail(title, inner);
 }
 
 async function hqAddress(): Promise<string> {

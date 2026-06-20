@@ -1078,6 +1078,20 @@ export function b2bOneOffDeliveredEmail(params: {
   return emailLayout(inner, "booking");
 }
 
+/**
+ * Partner-facing shipment notification email (created, in_transit, stored, etc.).
+ * Uses the premium client shell — no INTERNAL badge, no internal footer.
+ */
+export function partnerShipmentNotificationEmail(title: string, innerHtml: string): string {
+  const content = `
+    <div style="${PREMIUM_EYEBROW_UPPER};margin-bottom:8px;">Shipment update</div>
+    <div style="font-size:20px;font-weight:700;margin:0 0 16px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};letter-spacing:0;text-transform:none;">${escapeHtmlEmail(title)}</div>
+    <div style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;">${innerHtml}</div>
+    <p style="font-size:11px;color:${PREMIUM_BODY_MUTED};line-height:1.5;margin-top:20px;">Questions? ${escapeHtmlEmail(getClientSupportEmail())} · (647) 370-4525</p>
+  `;
+  return emailLayout(content, "booking");
+}
+
 export function trackingLinkEmail(params: {
   clientName: string;
   trackUrl: string;
