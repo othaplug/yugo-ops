@@ -219,7 +219,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                         <span className="text-[10px] font-semibold uppercase" style={{ color: WINE }}>Delivery</span>
                         <span className="text-[10px] ml-2" style={{ color: `${FOREST}70` }}>{fmtShort(leg.delivery_date)}</span>
                         <div className="text-[10px] mt-0.5" style={{ color: `${FOREST}60` }}>
-                          {(leg.event_crew ?? 0) > 0 && `${leg.event_crew} movers`}{leg.event_hours ? ` · ~${leg.event_hours}h` : ""}
+                          {(leg.event_crew ?? 0) > 0 && `${leg.event_crew}-person crew`}
                         </div>
                       </div>
                       <span className="text-[var(--text-base)] font-bold tabular-nums shrink-0" style={{ color: FOREST }}>
@@ -230,9 +230,6 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                       <div className="flex-1 min-w-0">
                         <span className="text-[10px] font-semibold uppercase" style={{ color: FOREST }}>Return</span>
                         <span className="text-[10px] ml-2" style={{ color: `${FOREST}70` }}>{fmtShort(leg.return_date)}</span>
-                        {leg.return_hours && !isSameDay && returnAmt > 0 ? (
-                          <div className="text-[10px] mt-0.5" style={{ color: `${FOREST}60` }}>~{leg.return_hours}h estimated</div>
-                        ) : null}
                       </div>
                       <span className="text-[10px] tabular-nums shrink-0 italic" style={{ color: `${FOREST}60` }}>
                         {isSameDay || returnAmt === 0 ? "Included in day rate" : fmtPrice(Math.round(displayAmt * returnAmt / ((leg.delivery_charge ?? 0) + returnAmt)))}
@@ -273,7 +270,6 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                     <div className="pl-7 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px]" style={{ color: `${FOREST}60` }}>
                       {crewSize > 0 && <span className="flex items-center gap-1"><Users className="w-3 h-3" />{crewSize} movers</span>}
                       {truckSize && <span className="flex items-center gap-1"><Truck className="w-3 h-3" />{truckSize} truck</span>}
-                      {deliveryHours && <span>~{deliveryHours}h</span>}
                     </div>
                   </div>
                   <span className="text-[15px] font-bold tabular-nums shrink-0" style={{ color: FOREST }}>
@@ -312,7 +308,6 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                       </div>
                       <div className="pl-7 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px]" style={{ color: `${FOREST}60` }}>
                         <span>Same crew, no re-briefing needed</span>
-                        {returnHours && <span>~{returnHours}h estimated</span>}
                       </div>
                     </div>
                     <span className="text-[15px] font-bold tabular-nums shrink-0" style={{ color: FOREST }}>
