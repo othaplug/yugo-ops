@@ -190,7 +190,8 @@ export default function BuildingEditorClient({ initial }: { initial: BuildingPro
   const totals = useMemo(() => accessModelTotals(model, 60), [model])
   const effectiveComplexity = form.complexity_override ?? model.complexityRating
 
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (opts?: { verifyNow?: boolean }) => {
+    const verifiedValue = opts?.verifyNow === true ? true : form.verified
     setSaving(true)
     setErr(null)
     try {
@@ -233,13 +234,14 @@ export default function BuildingEditorClient({ initial }: { initial: BuildingPro
         complexity_rating: effectiveComplexity,
         crew_notes: form.crew_notes.trim() || null,
         coordinator_notes: form.coordinator_notes.trim() || null,
-        verified: form.verified,
-        verified_at: form.verified ? (initial?.verified_at ?? new Date().toISOString()) : null,
+        verified: verifiedValue,
+        verified_at: verifiedValue ? (initial?.verified_at ?? new Date().toISOString()) : null,
       }
       const url = isNew ? "/api/admin/buildings" : `/api/admin/buildings/${String(initial?.id)}`
       const res = await fetch(url, { method: isNew ? "POST" : "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
       const data = await res.json()
       if (!res.ok) { setErr(typeof data.error === "string" ? data.error : "Save failed"); return }
+      if (verifiedValue && !form.verified) set("verified", true)
       if (isNew && data.building?.id) router.replace(`/admin/buildings/${data.building.id}`)
       else router.refresh()
     } catch {
@@ -415,7 +417,12 @@ export default function BuildingEditorClient({ initial }: { initial: BuildingPro
 
         <div className="flex items-center justify-between mt-8 pt-6 border-t border-[var(--brd)]">
           <Link href="/admin/buildings" className="text-[12px] text-[var(--tx3)] hover:text-[var(--tx)]">Cancel</Link>
-          <button type="button" onClick={handleSave} disabled={saving || !form.address.trim()} className="inline-flex items-center justify-center h-9 px-5 rounded-[var(--yu3-r-md)] bg-[var(--yu3-wine)] text-[var(--yu3-on-wine)] text-[13px] font-semibold hover:bg-[var(--yu3-wine-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">{saving ? "Saving…" : isNew ? "Add building" : "Save changes"}</button>
+          <div className="flex items-center gap-2">
+            {!isNew && !form.verified && (
+              <button type="button" onClick={() => handleSave({ verifyNow: true })} disabled={saving || !form.address.trim()} className="inline-flex items-center justify-center h-9 px-4 rounded-[var(--yu3-r-md)] bg-[#2C3E2D] text-white text-[13px] font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">{saving ? "Saving…" : "Verify & publish"}</button>
+            )}
+            <button type="button" onClick={() => handleSave()} disabled={saving || !form.address.trim()} className="inline-flex items-center justify-center h-9 px-5 rounded-[var(--yu3-r-md)] bg-[var(--yu3-wine)] text-[var(--yu3-on-wine)] text-[13px] font-semibold hover:bg-[var(--yu3-wine-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">{saving ? "Saving…" : isNew ? "Add building" : form.verified ? "Save changes" : "Save draft"}</button>
+          </div>
         </div>
       </div>
     </PageContent>

@@ -13,6 +13,7 @@ import {
   Badge,
 } from "@/design-system/admin/primitives";
 import type { BuildingProfileRow } from "@/lib/buildings/types";
+import { deriveAccessModel, inferArchetype } from "@/lib/buildings/access-model";
 import BackButton from "../components/BackButton";
 
 const ELEVATOR_LABELS: Record<string, string> = {
@@ -24,13 +25,31 @@ const ELEVATOR_LABELS: Record<string, string> = {
 };
 
 const BUILDING_TYPE_LABELS: Record<string, string> = {
-  residential: "Residential",
+  detached_house: "Detached house",
+  semi_detached: "Semi-detached",
+  townhouse: "Townhouse / row",
+  walk_up: "Walk-up",
+  mid_rise: "Mid-rise",
+  high_rise: "High-rise",
   mixed_use: "Mixed-use",
+  loft_heritage: "Loft / heritage",
   commercial: "Commercial",
+  other: "Other",
+  residential: "Residential",
   condo_tower: "Condo tower",
   low_rise: "Low-rise",
   townhouse_complex: "Townhouse complex",
 };
+
+const ARCHETYPE_LABELS: Record<string, string> = {
+  house: "House",
+  walk_up: "Walk-up",
+  elevator: "Elevator",
+  two_stage: "Two-stage",
+};
+
+const archetypeOf = (b: BuildingProfileRow): string | null =>
+  (b.access_archetype as string | null) ?? inferArchetype(b as unknown as Record<string, unknown>);
 
 const SOURCE_LABELS: Record<string, string> = {
   coordinator_visit: "Coordinator visit",
@@ -98,6 +117,7 @@ function BuildingCard({
   }, [building.id, onVerified]);
 
   const rating = building.complexity_rating ?? 1;
+  const model = deriveAccessModel(building as unknown as Record<string, unknown>);
 
   return (
     <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] overflow-hidden">
@@ -118,6 +138,11 @@ function BuildingCard({
             <p className="text-[14px] font-semibold text-[var(--yu3-ink-strong)] truncate">
               {building.building_name || building.address}
             </p>
+            {archetypeOf(building) && (
+              <span className="inline-flex items-center rounded-full border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface-subtle)] px-2 py-0.5 text-[10px] font-semibold text-[var(--yu3-ink-muted)]">
+                {ARCHETYPE_LABELS[archetypeOf(building)!] ?? archetypeOf(building)}
+              </span>
+            )}
             {building.verified ? (
               <StatusPill tone="success">Verified</StatusPill>
             ) : (
@@ -307,6 +332,19 @@ function BuildingCard({
                 )}
               </div>
 
+              {model.schedulingFlags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {model.schedulingFlags.map((f) => (
+                    <span
+                      key={f.key}
+                      className="inline-flex items-center rounded-full border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] px-2 py-0.5 text-[10px] text-[var(--yu3-ink-muted)]"
+                    >
+                      {f.label}
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {building.crew_notes && (
                 <NoteBox label="Crew notes" text={building.crew_notes} />
               )}
@@ -404,6 +442,7 @@ export default function BuildingsAdminClient({
   const [search, setSearch] = useState("");
   const [complexityFilter, setComplexityFilter] = useState("");
   const [verifiedFilter, setVerifiedFilter] = useState("");
+  const [archetypeFilter, setArchetypeFilter] = useState("");
   const [rows, setRows] = useState<BuildingProfileRow[]>(initial);
   const [loading, setLoading] = useState(false);
 
@@ -447,6 +486,7 @@ export default function BuildingsAdminClient({
       return false;
     if (verifiedFilter === "verified" && !b.verified) return false;
     if (verifiedFilter === "unverified" && b.verified) return false;
+    if (archetypeFilter && archetypeOf(b) !== archetypeFilter) return false;
     return true;
   });
 
@@ -540,9 +580,21 @@ export default function BuildingsAdminClient({
             />
           </div>
           <Select
+            value={archetypeFilter}
+            onChange={(e) => setArchetypeFilter(e.target.value)}
+            className="w-full sm:w-[min(100%,180px)] shrink-0"
+            aria-label="Filter by building type"
+          >
+            <option value="">All types</option>
+            <option value="house">House</option>
+            <option value="walk_up">Walk-up</option>
+            <option value="elevator">Elevator</option>
+            <option value="two_stage">Two-stage</option>
+          </Select>
+          <Select
             value={complexityFilter}
             onChange={(e) => setComplexityFilter(e.target.value)}
-            className="w-full sm:w-[min(100%,200px)] shrink-0"
+            className="w-full sm:w-[min(100%,180px)] shrink-0"
             aria-label="Filter by complexity"
           >
             <option value="">All complexity</option>
@@ -570,7 +622,7 @@ export default function BuildingsAdminClient({
           {filtered.length === 0 && (
             <div className="text-center py-12 rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)]">
               <p className="text-[13px] text-[var(--yu3-ink)]">
-                {search || complexityFilter || verifiedFilter
+                {search || complexityFilter || verifiedFilter || archetypeFilter
                   ? "No buildings match your filters."
                   : "No buildings cataloged yet."}
               </p>
