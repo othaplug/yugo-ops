@@ -2416,7 +2416,9 @@ export default function QuoteDetailClient({
 
             {/* Move Details */}
             <div className="pb-5">
-              <h2 className="admin-section-h2 mb-3">Move Details</h2>
+              <h2 className="admin-section-h2 mb-3">
+                {quote.service_type === "event" ? "Event Details" : "Move Details"}
+              </h2>
               <div className="space-y-2 text-[11px]">
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)]">Service</span>
@@ -2424,48 +2426,140 @@ export default function QuoteDetailClient({
                     {serviceTypeDisplayLabel(quote.service_type)}
                   </span>
                 </div>
-                {quote.move_size && (
-                  <div className="flex justify-between">
-                    <span className="text-[var(--tx3)]">Size</span>
-                    <span className="text-[var(--tx)] font-medium">
-                      {moveSizeDisplayLabel(quote.move_size)}
-                    </span>
-                  </div>
+
+                {/* ── Event-specific details ── */}
+                {quote.service_type === "event" ? (() => {
+                  const f = (factors ?? {}) as Record<string, unknown>;
+                  const isMulti = f.event_mode === "multi" && Array.isArray(f.event_legs);
+                  const legs = isMulti ? (f.event_legs as Array<Record<string, unknown>>) : [];
+                  const legCount = legs.length;
+                  const eventName = f.event_name as string | null;
+                  const isLuxury = !!f.event_is_luxury;
+                  const crewCount = (quote.est_crew_size ?? f.event_crew) as number | null;
+                  const crewOverride = !!f.event_crew_coordinator_override;
+                  const truckLbl = quote.truck_primary
+                    ? (displayLabel(quote.truck_primary) || toTitleCase(quote.truck_primary))
+                    : null;
+
+                  // Hours: per-day × n legs, or single value
+                  const perLegHours = legs.length > 0
+                    ? (legs[0].event_hours as number | null)
+                    : (f.event_hours as number | null) ?? quote.est_hours;
+                  const allSameHours = legs.every(l => l.event_hours === perLegHours);
+                  const hoursDisplay = isMulti && legCount > 0
+                    ? allSameHours
+                      ? `~${perLegHours}h per day × ${legCount} days`
+                      : legs.map((l, i) => `Day ${i + 1}: ~${l.event_hours}h`).join(" · ")
+                    : perLegHours ? `~${perLegHours}h` : null;
+
+                  // Distance: from pre-computed summary or per-leg
+                  const distanceSummary = (f.event_distance_summary as string | null)
+                    ?? (f.event_leg_distances as Array<{label: string; km: number}> | null)
+                      ?.map(d => `${d.label}: ${d.km} km`)
+                      .join(" · ")
+                    ?? (quote.distance_km ? `${quote.distance_km} km` : null);
+
+                  return (
+                    <>
+                      {eventName && (
+                        <div className="flex justify-between">
+                          <span className="text-[var(--tx3)]">Event</span>
+                          <span className="text-[var(--tx)] font-medium">{eventName}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-[var(--tx3)]">Tier</span>
+                        <span className="text-[var(--tx)] font-medium">
+                          {isLuxury ? "Luxury / White glove" : "Standard"}
+                        </span>
+                      </div>
+                      {isMulti && (
+                        <div className="flex justify-between">
+                          <span className="text-[var(--tx3)]">Round trips</span>
+                          <span className="text-[var(--tx)] font-medium">{legCount}</span>
+                        </div>
+                      )}
+                      {truckLbl && (
+                        <div className="flex justify-between">
+                          <span className="text-[var(--tx3)]">Vehicle</span>
+                          <span className="text-[var(--tx)] font-medium">{truckLbl}</span>
+                        </div>
+                      )}
+                      {crewCount && (
+                        <div className="flex justify-between gap-2">
+                          <span className="text-[var(--tx3)] shrink-0">Crew</span>
+                          <span className="text-[var(--tx)] font-medium text-right">
+                            {crewCount}-person dedicated team{isMulti ? ", all days" : ""}
+                            {crewOverride && (
+                              <span className="block text-[9px] text-[var(--tx3)] font-normal">
+                                Coordinator set · system estimate overridden
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      {hoursDisplay && (
+                        <div className="flex justify-between gap-2">
+                          <span className="text-[var(--tx3)] shrink-0">Duration</span>
+                          <span className="text-[var(--tx)] font-medium text-right">{hoursDisplay}</span>
+                        </div>
+                      )}
+                      {distanceSummary && (
+                        <div className="flex justify-between gap-2">
+                          <span className="text-[var(--tx3)] shrink-0">Distance</span>
+                          <span className="text-[var(--tx)] font-medium text-right">{distanceSummary}</span>
+                        </div>
+                      )}
+                    </>
+                  );
+                })() : (
+                  /* ── Non-event details (unchanged) ── */
+                  <>
+                    {quote.move_size && (
+                      <div className="flex justify-between">
+                        <span className="text-[var(--tx3)]">Size</span>
+                        <span className="text-[var(--tx)] font-medium">
+                          {moveSizeDisplayLabel(quote.move_size)}
+                        </span>
+                      </div>
+                    )}
+                    {quote.truck_primary && (
+                      <div className="flex justify-between">
+                        <span className="text-[var(--tx3)]">Vehicle</span>
+                        <span className="text-[var(--tx)] font-medium">
+                          {displayLabel(quote.truck_primary) ||
+                            toTitleCase(quote.truck_primary)}
+                        </span>
+                      </div>
+                    )}
+                    {(quote.est_crew_size ?? (factors as any)?.est_crew_size) && (
+                      <div className="flex justify-between">
+                        <span className="text-[var(--tx3)]">Crew</span>
+                        <span className="text-[var(--tx)] font-medium">
+                          {quote.est_crew_size ?? (factors as any)?.est_crew_size}
+                          -person crew
+                        </span>
+                      </div>
+                    )}
+                    {quote.est_hours && (
+                      <div className="flex justify-between">
+                        <span className="text-[var(--tx3)]">Est. Hours</span>
+                        <span className="text-[var(--tx)] font-medium">
+                          ~{quote.est_hours}h
+                        </span>
+                      </div>
+                    )}
+                    {quote.distance_km && (
+                      <div className="flex justify-between">
+                        <span className="text-[var(--tx3)]">Distance</span>
+                        <span className="text-[var(--tx)] font-medium">
+                          {quote.distance_km} km
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
-                {quote.truck_primary && (
-                  <div className="flex justify-between">
-                    <span className="text-[var(--tx3)]">Vehicle</span>
-                    <span className="text-[var(--tx)] font-medium">
-                      {displayLabel(quote.truck_primary) ||
-                        toTitleCase(quote.truck_primary)}
-                    </span>
-                  </div>
-                )}
-                {(quote.est_crew_size ?? (factors as any)?.est_crew_size) && (
-                  <div className="flex justify-between">
-                    <span className="text-[var(--tx3)]">Crew</span>
-                    <span className="text-[var(--tx)] font-medium">
-                      {quote.est_crew_size ?? (factors as any)?.est_crew_size}
-                      -person crew
-                    </span>
-                  </div>
-                )}
-                {quote.est_hours && (
-                  <div className="flex justify-between">
-                    <span className="text-[var(--tx3)]">Est. Hours</span>
-                    <span className="text-[var(--tx)] font-medium">
-                      ~{quote.est_hours}h
-                    </span>
-                  </div>
-                )}
-                {quote.distance_km && (
-                  <div className="flex justify-between">
-                    <span className="text-[var(--tx3)]">Distance</span>
-                    <span className="text-[var(--tx)] font-medium">
-                      {quote.distance_km} km
-                    </span>
-                  </div>
-                )}
+
                 {quote.move_id && (
                   <div className="flex justify-between">
                     <span className="text-[var(--tx3)]">Move</span>
