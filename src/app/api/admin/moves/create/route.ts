@@ -902,7 +902,10 @@ export async function POST(req: NextRequest) {
         const baseUrl = getEmailBaseUrl();
         const moveCode = move.move_code || getMoveCode({ id: moveId });
         const jobIdDisplay = formatJobId(moveCode, "move");
-        const depositPaid = Math.round(estimate * 0.25);
+        const depositPaid =
+          moveType === "event" || moveType === "specialty"
+            ? estimate // full payment at booking
+            : Math.round(estimate * 0.25);
         const trackUrl = `${baseUrl}/track/move/${getTrackMoveSlug({ move_code: move.move_code, id: moveId })}?token=${signTrackToken("move", moveId)}`;
 
         let html: string;
