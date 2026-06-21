@@ -2111,37 +2111,6 @@ export default function QuotePageClient({
             </div>
           )}
 
-          {/* ═══ SEASONAL PRICING BANNER ═══ */}
-          {(() => {
-            // White Glove is single custom pricing, the price-by-month strip
-            // doesn't apply.
-            if (isWhiteGlove || booked || !quote.move_date) return null;
-            const moveMonth =
-              new Date(quote.move_date + "T00:00:00").getMonth() + 1;
-            const PEAK_MODS: Record<number, number> = {
-              6: 1.1,
-              7: 1.15,
-              8: 1.15,
-            };
-            const peakMod = PEAK_MODS[moveMonth];
-            if (!peakMod) return null;
-            const savings = Math.round(grandTotal * (1 - 1 / peakMod));
-            if (savings <= 75) return null;
-            return (
-              <div className="mb-6">
-                <SeasonalPricingPreview
-                  basePrice={Math.round(grandTotal / peakMod)}
-                  selectedMonth={moveMonth}
-                  compact
-                  onDarkBackground={premiumShell}
-                  /* Fix #9: pass the actual move date so the chart suppresses
-                     the "you could save by moving in X" nudge when the move
-                     is <30 days out (the date is effectively locked). */
-                  moveDateIso={quote.move_date}
-                />
-              </div>
-            );
-          })()}
 
           {/* ═══ Tier cards (residential) or service-type layouts ═══ */}
           {/* Fix #8: ClientBuildingIntelCard moved out of this section
