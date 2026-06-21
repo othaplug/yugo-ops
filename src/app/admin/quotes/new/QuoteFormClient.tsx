@@ -14120,12 +14120,18 @@ function EventPriceDisplay({
           Total: {fmtPrice(t.total)}
         </span>
       </div>
-      <div
-        className={`flex items-center justify-between text-[11px] ${card.muted}`}
-      >
-        <span>Full payment at booking</span>
-        <span className={ink.deposit}>{fmtPrice(t.deposit)}</span>
-      </div>
+      {t.deposit >= t.total ? (
+        <div className={`text-[10px] font-semibold ${ink.deposit}`}>
+          Full payment at booking · No balance due
+        </div>
+      ) : (
+        <div
+          className={`flex items-center justify-between text-[11px] ${card.muted}`}
+        >
+          <span>Deposit due now</span>
+          <span className={ink.deposit}>{fmtPrice(t.deposit)}</span>
+        </div>
+      )}
     </>
   );
 
