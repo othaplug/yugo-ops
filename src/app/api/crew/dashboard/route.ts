@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
   const moveSelect =
     "id, move_code, client_name, from_address, to_address, scheduled_date, scheduled_time, status, move_type, crew_id, event_group_id, event_phase, event_name, weather_brief, weather_alert, completed_at, from_access, to_access, access_notes, quote_id";
   const deliverySelect =
-    "id, delivery_number, customer_name, client_name, pickup_address, delivery_address, scheduled_date, time_slot, status, items, crew_id, booking_type, created_by_source, pickup_access, delivery_access";
+    "id, delivery_number, customer_name, client_name, pickup_address, delivery_address, scheduled_date, time_slot, delivery_window, scheduled_start, preferred_time, status, items, crew_id, booking_type, created_by_source, pickup_access, delivery_access";
 
   const [movesRes, deliveriesRes] = await Promise.all([
     supabase
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
       .eq("crew_id", payload.teamId)
       .eq("scheduled_date", today)
       .order("scheduled_date")
-      .order("time_slot"),
+      .order("scheduled_start", { nullsFirst: true }),
   ]);
 
   const queryErrors = [movesRes.error, deliveriesRes.error].filter(Boolean);
@@ -166,6 +166,7 @@ export async function GET(req: NextRequest) {
     jobTypeLabel: string;
     itemCount?: number;
     scheduledTime: string;
+    sortMinutes?: number;
     status: string;
     completedAt?: string | null;
     isRecurring?: boolean;
@@ -191,7 +192,8 @@ export async function GET(req: NextRequest) {
   const jobs: Job[] = [];
 
   for (const m of moves) {
-    const time = m.scheduled_time || "9:00 AM";
+    const time = m.scheduled_time || "Time TBD";
+    const moveSortMinutes = parseTimeLoose(m.scheduled_time) ?? NO_TIME_SORT;
     const eventPhase = (m.event_phase as string | null) || null;
     const eventName = (m.event_name as string | null) || null;
     const eventJobTypeLabel = eventName
@@ -246,6 +248,7 @@ export async function GET(req: NextRequest) {
       toAddress: m.to_address || "-",
       jobTypeLabel: eventJobTypeLabel ?? (m.move_type === "office" ? "Office · Commercial" : "Residential"),
       scheduledTime: time,
+      sortMinutes: moveSortMinutes,
       status: effectiveStatus,
       completedAt: effectiveCompletedAt,
       eventPhase,
@@ -259,7 +262,18 @@ export async function GET(req: NextRequest) {
 
   for (const d of deliveries) {
     const items = normalizeDeliveryItemsList(d.items);
-    const time = d.time_slot || "2:00 PM";
+    // The real delivery time lives in scheduled_start / delivery_window — most
+    // deliveries have a null time_slot. Reading only time_slot (and defaulting
+    // to "2:00 PM") mis-displayed AND mis-ordered every morning delivery.
+    const dWin = (d as { delivery_window?: string | null }).delivery_window;
+    const dStart = (d as { scheduled_start?: string | null }).scheduled_start;
+    const dPref = (d as { preferred_time?: string | null }).preferred_time;
+    const time =
+      d.time_slot || dWin || formatClock(dStart) || dPref || "Time TBD";
+    const deliverySortMinutes =
+      clockToMinutes(dStart) ??
+      parseTimeLoose(d.time_slot || dWin || dPref) ??
+      NO_TIME_SORT;
     const createdSrc = String((d as { created_by_source?: string | null }).created_by_source || "").toLowerCase();
     const isRec = createdSrc === "recurring_schedule";
     const bType = (d.booking_type as string | null) || null;
@@ -276,6 +290,7 @@ export async function GET(req: NextRequest) {
       jobTypeLabel: typeLabel,
       itemCount: items.length,
       scheduledTime: time,
+      sortMinutes: deliverySortMinutes,
       status: d.status || "scheduled",
       completedAt: null,
       isRecurring: isRec,
@@ -287,10 +302,13 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  // Sort by the structured time key (scheduled_start / scheduled_time), not by
+  // re-parsing the display string. Ties break by job id for a stable order.
   jobs.sort((a, b) => {
-    const tA = parseTime(a.scheduledTime);
-    const tB = parseTime(b.scheduledTime);
-    return tA - tB;
+    const tA = typeof a.sortMinutes === "number" ? a.sortMinutes : NO_TIME_SORT;
+    const tB = typeof b.sortMinutes === "number" ? b.sortMinutes : NO_TIME_SORT;
+    if (tA !== tB) return tA - tB;
+    return String(a.id).localeCompare(String(b.id));
   });
 
   const realPreSample = jobs.filter((j) => !isCrewSampleDashboardJobId(j.id));
@@ -435,6 +453,36 @@ function parseTime(s: string): number {
   if (ampm === "pm" && h < 12) h += 12;
   if (ampm === "am" && h === 12) h = 0;
   return h * 60 + min;
+}
+
+/** Jobs with no resolvable time sort to the end (never to a fabricated 2 PM). */
+const NO_TIME_SORT = 99 * 60;
+
+/** Minutes-since-midnight from a 24h DB clock value like "09:00:00". */
+function clockToMinutes(hhmm: string | null | undefined): number | null {
+  if (!hhmm) return null;
+  const m = String(hhmm).match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+}
+
+/** Pretty 12h time ("9:00 AM") from a 24h DB clock value. */
+function formatClock(hhmm: string | null | undefined): string | null {
+  const mins = clockToMinutes(hhmm);
+  if (mins == null) return null;
+  let h = Math.floor(mins / 60);
+  const min = mins % 60;
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h}:${String(min).padStart(2, "0")} ${ampm}`;
+}
+
+/** parseTime, but null (not 0/midnight) when the string carries no time. */
+function parseTimeLoose(s: string | null | undefined): number | null {
+  if (!s) return null;
+  if (!/\d/.test(s)) return null;
+  return parseTime(s);
 }
 
 /**
