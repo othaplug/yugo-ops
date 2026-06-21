@@ -545,6 +545,23 @@ const CREW_BUILDING_ELEVATOR_LABELS: Record<string, string> = {
   stairs_only: "Stairs only",
 };
 
+const BUILDING_TYPE_EMAIL_LABELS: Record<string, string> = {
+  detached_house: "Detached house",
+  semi_detached: "Semi-detached house",
+  townhouse: "Townhouse / row",
+  walk_up: "Walk-up apartment",
+  mid_rise: "Mid-rise (elevator)",
+  high_rise: "High-rise condo",
+  mixed_use: "Mixed-use / over shops",
+  loft_heritage: "Loft / heritage",
+  commercial: "Commercial / office",
+  other: "Other",
+  residential: "Residential",
+  condo_tower: "Condo tower",
+  low_rise: "Low-rise",
+  townhouse_complex: "Townhouse complex",
+};
+
 /** Crew-submitted building profile: coordinator email with context and CTA to verify. */
 export function buildingProfileCrewReportAdminEmailHtml(params: {
   isUpdate: boolean;
@@ -554,6 +571,8 @@ export function buildingProfileCrewReportAdminEmailHtml(params: {
   elevatorSystemKey: string;
   estimatedExtraMinutesPerTrip: number;
   accessSummaryLines: string[];
+  buildingType?: string | null;
+  accessArchetype?: string | null;
   crewNotes: string | null;
   photoCount: number;
   timesReportedByCrew: number;
@@ -570,14 +589,25 @@ export function buildingProfileCrewReportAdminEmailHtml(params: {
     CREW_BUILDING_ELEVATOR_LABELS[params.elevatorSystemKey] ||
     params.elevatorSystemKey.replace(/_/g, " ");
   const typeLbl = organizationTypeLabel(params.partnerOrgType);
-  const partnerLine =
-    params.partnerOrgName && typeLbl
+  // A B2C move is a direct retail client, not a partner — never render the
+  // client's own name under a "Partner" label (the client already shows in the
+  // related-move row). Only B2B-style orgs get a partner line.
+  const isDirectConsumer = (params.partnerOrgType || "").toLowerCase() === "b2c";
+  const partnerLine = isDirectConsumer
+    ? ""
+    : params.partnerOrgName && typeLbl
       ? `${params.partnerOrgName} · ${typeLbl}`
       : params.partnerOrgName
         ? params.partnerOrgName
         : typeLbl
           ? `Partner type: ${typeLbl}`
           : "";
+  const accountRow = isDirectConsumer
+    ? `<tr><td style="${ADMIN_LABEL_TD}">Account</td><td style="color:${TEXT};padding:4px 0;">Direct client (B2C)</td></tr>`
+    : "";
+  const buildingTypeRow = params.buildingType
+    ? `<tr><td style="${ADMIN_LABEL_TD}">Building type</td><td style="color:${TEXT};padding:4px 0;font-weight:600;">${escapeHtml(BUILDING_TYPE_EMAIL_LABELS[params.buildingType] || params.buildingType.replace(/_/g, " "))}</td></tr>`
+    : "";
   const notesRaw = params.crewNotes?.trim() || ""
   const notesForEmail =
     notesRaw.length > 1200 ? `${notesRaw.slice(0, 1200)}\u2026` : notesRaw
@@ -631,7 +661,9 @@ export function buildingProfileCrewReportAdminEmailHtml(params: {
     <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border:1px solid rgba(44,62,45,0.10);padding:16px 20px;margin-bottom:20px;">
       <table style="width:100%;font-size:13px;border-collapse:collapse;font-family:${BTN_FONT};">
         ${moveBlock}
+        ${accountRow}
         ${partnerRow}
+        ${buildingTypeRow}
         ${routeBlock}
         <tr><td style="${ADMIN_LABEL_TD}">Elevator / vertical</td><td style="color:${TEXT};padding:4px 0;">${escapeHtml(elevatorLabel)}</td></tr>
         <tr><td style="${ADMIN_LABEL_TD}">Extra time (est.)</td><td style="color:${TEXT};padding:4px 0;">${params.estimatedExtraMinutesPerTrip} minutes per trip (model estimate from crew inputs)</td></tr>

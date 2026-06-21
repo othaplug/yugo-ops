@@ -122,6 +122,8 @@ type SavedBuildingRow = {
   crew_notes: string | null
   photo_urls: string[] | null
   times_moved_here: number | null
+  building_type: string | null
+  access_archetype: string | null
 }
 
 const sendBuildingProfileAdminNotify = async (
@@ -147,6 +149,8 @@ const sendBuildingProfileAdminNotify = async (
     elevatorSystemKey: (row.elevator_system || "standard").toLowerCase(),
     estimatedExtraMinutesPerTrip: Math.round(Number(row.estimated_extra_minutes_per_trip) || 0),
     accessSummaryLines,
+    buildingType: row.building_type,
+    accessArchetype: row.access_archetype,
     crewNotes: row.crew_notes,
     photoCount,
     timesReportedByCrew: Math.max(1, Math.round(Number(row.times_moved_here) || 1)),
