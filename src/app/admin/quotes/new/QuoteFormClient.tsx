@@ -9227,59 +9227,66 @@ export default function QuoteFormClient({
 
               {/* ── Event fields ── */}
               {serviceType === "event" && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
+                <div className="space-y-6">
+
+                  {/* ── 1. IDENTITY ─────────────────────────────── */}
+                  <div className="space-y-3">
                     <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                      Event Details
+                      Event details
                     </h3>
-                    <Field label="Event Name">
-                      <input
-                        value={eventName}
-                        onChange={(e) => setEventName(e.target.value)}
-                        placeholder="e.g. L'Oréal Beauty Event"
-                        className={fieldInput}
-                      />
-                    </Field>
-                    <label className="flex items-start gap-2 cursor-pointer rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
-                      <input
-                        type="checkbox"
-                        checked={eventLuxury}
-                        onChange={(e) => setEventLuxury(e.target.checked)}
-                        className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
-                      />
-                      <div>
-                        <span className="text-[11px] font-semibold text-[var(--tx)]">
-                          Luxury / White glove event
-                        </span>
-                        <p className="text-[10px] text-[var(--tx2)] mt-0.5 leading-snug">
-                          High-value furniture, art, or premium brand events,
-                          uses white glove crew rate.
-                        </p>
-                      </div>
-                    </label>
-                    <label className="flex items-start gap-2 cursor-pointer rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
+
+                    {/* Name + service type */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Field label="Event name">
+                        <input
+                          value={eventName}
+                          onChange={(e) => setEventName(e.target.value)}
+                          placeholder="e.g. L'Oréal Beauty Event"
+                          className={fieldInput}
+                        />
+                      </Field>
+                      <Field label="Service level">
+                        <div className="flex rounded-lg border border-[var(--brd)] overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => setEventLuxury(false)}
+                            className={`flex-1 py-2 text-[11px] font-semibold transition-colors ${!eventLuxury ? "bg-[var(--admin-primary-fill)] text-white" : "bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                          >
+                            Standard
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEventLuxury(true)}
+                            className={`flex-1 py-2 text-[11px] font-semibold transition-colors ${eventLuxury ? "bg-[var(--admin-primary-fill)] text-white" : "bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                          >
+                            Luxury / White glove
+                          </button>
+                        </div>
+                        {eventLuxury && (
+                          <p className="text-[10px] text-[var(--tx3)] mt-1 leading-snug">
+                            White glove crew rate. Basic setup included.
+                          </p>
+                        )}
+                      </Field>
+                    </div>
+
+                    {/* B2B */}
+                    <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={eventIsB2b}
                         onChange={(e) => setEventIsB2b(e.target.checked)}
-                        className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
+                        className={`${checkboxAccentClass} w-3.5 h-3.5`}
                       />
-                      <div>
-                        <span className="text-[11px] font-semibold text-[var(--tx)]">
-                          Commercial / B2B client
-                        </span>
-                        <p className="text-[10px] text-[var(--tx2)] mt-0.5 leading-snug">
-                          Showroom, brand, or business client. Enables business name and invoice terms.
-                        </p>
-                      </div>
+                      <span className="text-[11px] text-[var(--tx2)]">Commercial / B2B client</span>
                     </label>
                     {eventIsB2b && (
-                      <div className="space-y-2 pl-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-5">
                         <Field label="Business name">
                           <input
                             value={b2bBusinessName}
                             onChange={(e) => setB2bBusinessName(e.target.value)}
-                            placeholder="e.g. Calacatta Stone Co."
+                            placeholder="Company or brand name"
                             className={fieldInput}
                           />
                         </Field>
@@ -9287,7 +9294,9 @@ export default function QuoteFormClient({
                           <select
                             value={eventB2bInvoiceTerms}
                             onChange={(e) =>
-                              setEventB2bInvoiceTerms(e.target.value as "on_completion" | "net_15")
+                              setEventB2bInvoiceTerms(
+                                e.target.value as "on_completion" | "net_15",
+                              )
                             }
                             className={fieldInput}
                           >
@@ -9297,96 +9306,9 @@ export default function QuoteFormClient({
                         </Field>
                       </div>
                     )}
-                    {!eventMulti && (
-                      <>
-                        <label className="flex items-start gap-2 cursor-pointer rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
-                          <input
-                            type="checkbox"
-                            checked={eventSameLocationSingle}
-                            onChange={(e) => {
-                              const on = e.target.checked;
-                              setEventSameLocationSingle(on);
-                              if (on) setEventReturnRateSingle("80");
-                              else if (
-                                eventReturnRateSingle === "80" ||
-                                eventReturnRateSingle === "85"
-                              )
-                                setEventReturnRateSingle("auto");
-                            }}
-                            className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
-                          />
-                          <div>
-                            <span className="text-[11px] font-semibold text-[var(--tx)]">
-                              Same location, items moved within venue
-                            </span>
-                            <p className="text-[10px] text-[var(--tx2)] mt-0.5 leading-snug">
-                              On-site event: no road transit, no truck
-                              surcharge, return day priced at a reduced rate
-                              (default 85%).
-                            </p>
-                          </div>
-                        </label>
-                        <Field label="Return rate (return day vs delivery day)">
-                          <select
-                            value={eventReturnRateSingle}
-                            onChange={(e) =>
-                              setEventReturnRateSingle(
-                                e.target.value as typeof eventReturnRateSingle,
-                              )
-                            }
-                            className={fieldInput}
-                          >
-                            {EVENT_LEG_RETURN_RATE_OPTIONS.map((o) => (
-                              <option key={o.value} value={o.value}>
-                                {o.label}
-                              </option>
-                            ))}
-                          </select>
-                          {eventReturnRateSingle === "custom" ? (
-                            <input
-                              type="number"
-                              min={25}
-                              max={100}
-                              value={eventReturnRateCustomSingle}
-                              onChange={(e) =>
-                                setEventReturnRateCustomSingle(e.target.value)
-                              }
-                              placeholder="% of delivery day"
-                              className={`${fieldInput} mt-1 max-w-[200px]`}
-                            />
-                          ) : null}
-                        </Field>
-                      </>
-                    )}
-                    {!eventMulti && !eventSameLocationSingle && (
-                      <Field label="Truck type">
-                        <select
-                          value={eventTruckType}
-                          onChange={(e) => setEventTruckType(e.target.value)}
-                          className={fieldInput}
-                        >
-                          {eventTruckOptions.filter(
-                            (o) => o.value !== "none",
-                          ).map((o) => (
-                            <option key={o.value} value={o.value}>
-                              {o.label}
-                            </option>
-                          ))}
-                        </select>
-                        <p className="text-[9px] text-[var(--tx3)] mt-1">
-                          Select 20ft+ for large events with significant
-                          inventory.
-                        </p>
-                      </Field>
-                    )}
-                    {!eventMulti && eventSameLocationSingle ? (
-                      <p className="text-[10px] text-[var(--tx2)] rounded-lg border border-[var(--brd)] px-3 py-2 bg-[var(--bg)]">
-                        Truck:{" "}
-                        <strong className="text-[var(--tx)]">No truck</strong>,
-                        on-site event (no road transit for this program).
-                      </p>
-                    ) : null}
-                    <label className="flex items-start gap-2 cursor-pointer rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
+
+                    {/* Multi-event toggle */}
+                    <label className="flex items-start gap-2.5 cursor-pointer rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)] hover:border-[var(--gold)]/40 transition-colors">
                       <input
                         type="checkbox"
                         checked={eventMulti}
@@ -9395,32 +9317,31 @@ export default function QuoteFormClient({
                           if (on) {
                             setEventLegs([
                               {
-                                label: "Event 1",
-                                from_address: fromAddress,
-                                to_address: venueAddress,
-                                from_access: fromAccess,
-                                to_access: toAccess,
-                                move_date: moveDate,
-                                event_return_date: eventSameDay
-                                  ? moveDate
-                                  : eventReturnDate,
+                                label: "Day 1",
+                                from_address: fromAddress || "",
+                                to_address: venueAddress || toAddress || "",
+                                from_access: fromAccess || "",
+                                to_access: toAccess || "",
+                                move_date: moveDate || "",
+                                event_return_date: eventReturnDate || "",
                                 event_same_day: eventSameDay,
-                                event_same_location_onsite: false,
-                                event_leg_truck_type: eventTruckType,
-                                event_return_rate_preset: "auto",
-                                event_return_rate_custom: "",
+                                event_same_location_onsite: eventSameLocationSingle,
+                                event_leg_truck_type: eventTruckType || "sprinter",
+                                event_return_rate_preset:
+                                  eventReturnRateSingle as EventLegForm["event_return_rate_preset"],
+                                event_return_rate_custom: eventReturnRateCustomSingle,
                               },
                               {
-                                label: "Event 2",
+                                label: "Day 2",
                                 from_address: "",
                                 to_address: "",
-                                from_access: fromAccess,
-                                to_access: toAccess,
+                                from_access: fromAccess || "",
+                                to_access: toAccess || "",
                                 move_date: "",
                                 event_return_date: "",
                                 event_same_day: false,
                                 event_same_location_onsite: false,
-                                event_leg_truck_type: "sprinter",
+                                event_leg_truck_type: eventTruckType || "sprinter",
                                 event_return_rate_preset: "auto",
                                 event_return_rate_custom: "",
                               },
@@ -9434,786 +9355,35 @@ export default function QuoteFormClient({
                             setMoveDate(z.move_date);
                             setEventReturnDate(z.event_return_date);
                             setEventSameDay(z.event_same_day);
+                            setEventSameLocationSingle(z.event_same_location_onsite);
+                            setEventReturnRateSingle(z.event_return_rate_preset);
+                            setEventReturnRateCustomSingle(z.event_return_rate_custom);
                           }
                           setEventMulti(on);
                         }}
-                        className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
+                        className={`${checkboxAccentClass} w-3.5 h-3.5 mt-0.5 shrink-0`}
                       />
                       <div>
                         <span className="text-[11px] font-semibold text-[var(--tx)]">
                           Multi-event quote
                         </span>
                         <p className="text-[10px] text-[var(--tx2)] mt-0.5 leading-snug">
-                          Bundle 2+ delivery & return pairs (different venues or
-                          dates) into one quote and one total.
+                          Bundle 2+ round trips (different venues or dates) into one quote.
                         </p>
                       </div>
                     </label>
                   </div>
 
-                  {!eventMulti && (
-                    <>
-                      <div className="space-y-2">
-                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                          Venue
-                        </h3>
-                        {eventSameLocationSingle ? (
-                          <p className="text-[11px] text-[var(--tx2)] rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
-                            Venue matches origin, on-site event (no separate
-                            venue address).
-                          </p>
-                        ) : (
-                          <MultiStopAddressField
-                            label="Venue / Event Address *"
-                            placeholder="Restaurant XYZ, 100 King St W"
-                            stops={[
-                              { address: venueAddress },
-                              ...extraVenueStops,
-                            ]}
-                            onChange={(stops) => {
-                              setVenueAddress(stops[0]?.address ?? "");
-                              setExtraVenueStops(stops.slice(1));
-                            }}
-                            inputClassName={fieldInput}
-                          />
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                          Delivery (Day 1)
-                        </h3>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Field label="Delivery Date *">
-                            <input
-                              type="date"
-                              value={moveDate}
-                              onChange={(e) => setMoveDate(e.target.value)}
-                              required
-                              className={fieldInput}
-                            />
-                          </Field>
-                          <Field label="Delivery Time">
-                            <select
-                              value={arrivalWindow}
-                              onChange={(e) => setArrivalWindow(e.target.value)}
-                              className={fieldInput}
-                            >
-                              {TIME_WINDOW_OPTIONS.map((label) => (
-                                <option key={label} value={label}>
-                                  {label}
-                                </option>
-                              ))}
-                            </select>
-                          </Field>
-                        </div>
-                        {eventLuxury ? (
-                          <div className="rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)] space-y-2">
-                            <p className="text-[11px] text-[var(--tx)] font-medium">
-                              Basic setup and placement: Included with luxury
-                              rate.
-                            </p>
-                            <p className="text-[10px] text-[var(--tx2)]">
-                              Add complex setup (staging, signage, assembly) for
-                              an additional fee:
-                            </p>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={eventComplexSetup}
-                                onChange={(e) =>
-                                  setEventComplexSetup(e.target.checked)
-                                }
-                                className="accent-[var(--gold)] w-3.5 h-3.5"
-                              />
-                              <span className="text-[11px] text-[var(--tx2)]">
-                                Complex setup (paid add-on)
-                              </span>
-                            </label>
-                            {eventComplexSetup && (
-                              <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
-                                <Field label="Complex setup duration">
-                                  <select
-                                    value={eventSetupHours}
-                                    onChange={(e) =>
-                                      setEventSetupHours(Number(e.target.value))
-                                    }
-                                    className={`${fieldInput} w-40`}
-                                  >
-                                    <option value={1}>1 hour, $150</option>
-                                    <option value={2}>2 hours, $275</option>
-                                    <option value={3}>3 hours, $400</option>
-                                    <option value={99}>Half day, $600</option>
-                                  </select>
-                                </Field>
-                                <Field label="Setup Instructions">
-                                  <textarea
-                                    value={eventSetupInstructions}
-                                    onChange={(e) =>
-                                      setEventSetupInstructions(e.target.value)
-                                    }
-                                    rows={2}
-                                    placeholder="Staging, signage, assembly details…"
-                                    className={`${fieldInput} resize-none`}
-                                  />
-                                </Field>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-3">
-                              <span className="text-[10px] font-medium text-[var(--tx)]">
-                                Setup required (paid)
-                              </span>
-                              <button
-                                type="button"
-                                role="switch"
-                                aria-checked={eventSetupRequired}
-                                onClick={() =>
-                                  setEventSetupRequired(!eventSetupRequired)
-                                }
-                                className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${eventSetupRequired ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                              >
-                                <span
-                                  className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${eventSetupRequired ? "translate-x-4" : ""}`}
-                                />
-                              </button>
-                            </div>
-                            {eventSetupRequired && (
-                              <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
-                                <Field label="Setup Duration">
-                                  <select
-                                    value={eventSetupHours}
-                                    onChange={(e) =>
-                                      setEventSetupHours(Number(e.target.value))
-                                    }
-                                    className={`${fieldInput} w-40`}
-                                  >
-                                    <option value={1}>1 hour, $150</option>
-                                    <option value={2}>2 hours, $275</option>
-                                    <option value={3}>3 hours, $400</option>
-                                    <option value={99}>Half day, $600</option>
-                                  </select>
-                                </Field>
-                                <Field label="Setup Instructions">
-                                  <textarea
-                                    value={eventSetupInstructions}
-                                    onChange={(e) =>
-                                      setEventSetupInstructions(e.target.value)
-                                    }
-                                    rows={2}
-                                    placeholder="Arrange display tables, hang banners, etc."
-                                    className={`${fieldInput} resize-none`}
-                                  />
-                                </Field>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                          Return (Day 2+)
-                        </h3>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={eventSameDay}
-                            onChange={(e) => setEventSameDay(e.target.checked)}
-                            className="accent-[var(--gold)] w-3.5 h-3.5"
-                          />
-                          <span className="text-[11px] text-[var(--tx2)]">
-                            Same Day Event, delivery and return on same day
-                          </span>
-                        </label>
-                        {!eventSameDay ? (
-                          <div className="grid grid-cols-2 gap-2">
-                            <Field label="Return Date *">
-                              <input
-                                type="date"
-                                value={eventReturnDate}
-                                onChange={(e) =>
-                                  setEventReturnDate(e.target.value)
-                                }
-                                required={!eventSameDay}
-                                className={fieldInput}
-                              />
-                            </Field>
-                            <Field label="Return Time">
-                              <select
-                                value={preferredTime || "morning"}
-                                onChange={(e) =>
-                                  setPreferredTime(e.target.value)
-                                }
-                                className={fieldInput}
-                              >
-                                <option value="morning">
-                                  Morning (7 AM – 12 PM)
-                                </option>
-                                <option value="afternoon">
-                                  Afternoon (12 PM – 5 PM)
-                                </option>
-                                <option value="evening">
-                                  Evening (5 PM – 9 PM)
-                                </option>
-                              </select>
-                            </Field>
-                          </div>
-                        ) : (
-                          <Field label="Pickup Time After Event">
-                            <select
-                              value={eventPickupTimeAfter}
-                              onChange={(e) =>
-                                setEventPickupTimeAfter(e.target.value)
-                              }
-                              className={`${fieldInput} w-56`}
-                            >
-                              <option value="Evening 6–9 PM">
-                                Evening 6–9 PM
-                              </option>
-                              <option value="Evening 8–10 PM">
-                                Evening 8–10 PM
-                              </option>
-                              <option value="After midnight">
-                                After midnight
-                              </option>
-                              <option value="Next morning">Next morning</option>
-                            </select>
-                          </Field>
-                        )}
-                      </div>
-                    </>
-                  )}
-
-                  {eventMulti && (
-                    <div className="space-y-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <p className="text-[11px] text-[var(--tx2)] leading-snug">
-                          Each row is one round trip (origin → venue → return).
-                          Event items below apply to all legs unless you add
-                          per-leg items later.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={addEventLeg}
-                          className="admin-btn admin-btn-sm admin-btn-secondary shrink-0"
-                        >
-                          <Plus className="w-3 h-3" aria-hidden /> Add event
-                        </button>
-                      </div>
-                      {eventLegs.map((leg, idx) => (
-                        <div
-                          key={idx}
-                          className="rounded-xl border border-[var(--brd)] p-3 space-y-3 bg-[var(--card)]/30"
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[var(--brd)]/50">
-                            <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--gold)]">
-                              Round trip {idx + 1}
-                              {leg.label?.trim() ? (
-                                <span className="text-[var(--tx2)] font-semibold normal-case">
-                                  , {leg.label.trim()}
-                                </span>
-                              ) : null}
-                            </span>
-                            {eventLegs.length > 1 ? (
-                              <button
-                                type="button"
-                                onClick={() => removeEventLeg(idx)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all"
-                                aria-label={`Delete ${leg.label?.trim() || `event ${idx + 1}`}`}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" aria-hidden />
-                                Delete
-                              </button>
-                            ) : null}
-                          </div>
-                          <Field label="Label">
-                            <input
-                              value={leg.label}
-                              onChange={(e) =>
-                                setEventLegs((prev) =>
-                                  prev.map((L, i) =>
-                                    i === idx
-                                      ? { ...L, label: e.target.value }
-                                      : L,
-                                  ),
-                                )
-                              }
-                              placeholder={`Event ${idx + 1}`}
-                              className={fieldInput}
-                            />
-                          </Field>
-                          <AddressAutocomplete
-                            value={leg.from_address}
-                            onRawChange={(v) =>
-                              setEventLegs((prev) =>
-                                prev.map((L, i) =>
-                                  i === idx ? { ...L, from_address: v } : L,
-                                ),
-                              )
-                            }
-                            onChange={(r) =>
-                              setEventLegs((prev) =>
-                                prev.map((L, i) =>
-                                  i === idx
-                                    ? { ...L, from_address: r.fullAddress }
-                                    : L,
-                                ),
-                              )
-                            }
-                            placeholder="Origin / warehouse"
-                            label="Origin *"
-                            required
-                            className={fieldInput}
-                          />
-                          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-2">
-                            <Field label="Origin access">
-                              <select
-                                value={leg.from_access}
-                                onChange={(e) =>
-                                  setEventLegs((prev) =>
-                                    prev.map((L, i) =>
-                                      i === idx
-                                        ? { ...L, from_access: e.target.value }
-                                        : L,
-                                    ),
-                                  )
-                                }
-                                className={fieldInput}
-                              >
-                                {ACCESS_OPTIONS.map((o) => (
-                                  <option
-                                    key={o.value || "empty"}
-                                    value={o.value}
-                                  >
-                                    {o.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </Field>
-                            <Field label="Venue access">
-                              <select
-                                value={leg.to_access}
-                                onChange={(e) =>
-                                  setEventLegs((prev) =>
-                                    prev.map((L, i) =>
-                                      i === idx
-                                        ? { ...L, to_access: e.target.value }
-                                        : L,
-                                    ),
-                                  )
-                                }
-                                className={fieldInput}
-                              >
-                                {ACCESS_OPTIONS.map((o) => (
-                                  <option
-                                    key={`v-${o.value || "empty"}`}
-                                    value={o.value}
-                                  >
-                                    {o.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </Field>
-                          </div>
-                          <label className="flex items-start gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={leg.event_same_location_onsite}
-                              onChange={(e) => {
-                                const on = e.target.checked;
-                                setEventLegs((prev) =>
-                                  prev.map((L, i) =>
-                                    i === idx
-                                      ? {
-                                          ...L,
-                                          event_same_location_onsite: on,
-                                          to_address: on
-                                            ? L.from_address
-                                            : L.to_address,
-                                          event_return_rate_preset: on
-                                            ? "80"
-                                            : L.event_return_rate_preset ===
-                                                  "80" ||
-                                                L.event_return_rate_preset ===
-                                                  "85"
-                                              ? "auto"
-                                              : L.event_return_rate_preset,
-                                        }
-                                      : L,
-                                  ),
-                                );
-                              }}
-                              className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
-                            />
-                            <span className="text-[11px] text-[var(--tx2)] leading-snug">
-                              Same location, items moved within venue (on-site
-                              event)
-                            </span>
-                          </label>
-                          {!leg.event_same_location_onsite ? (
-                            <AddressAutocomplete
-                              value={leg.to_address}
-                              onRawChange={(v) =>
-                                setEventLegs((prev) =>
-                                  prev.map((L, i) =>
-                                    i === idx ? { ...L, to_address: v } : L,
-                                  ),
-                                )
-                              }
-                              onChange={(r) =>
-                                setEventLegs((prev) =>
-                                  prev.map((L, i) =>
-                                    i === idx
-                                      ? { ...L, to_address: r.fullAddress }
-                                      : L,
-                                  ),
-                                )
-                              }
-                              placeholder="Venue address"
-                              label="Venue *"
-                              required
-                              className={fieldInput}
-                            />
-                          ) : (
-                            <p className="text-[10px] text-[var(--tx3)] rounded-lg border border-[var(--brd)] px-3 py-2 bg-[var(--bg)]">
-                              Venue same as origin, no road transit for this
-                              leg.
-                            </p>
-                          )}
-                          {!leg.event_same_location_onsite && (
-                            <Field label="Truck (this leg)">
-                              <select
-                                value={leg.event_leg_truck_type}
-                                onChange={(e) =>
-                                  setEventLegs((prev) =>
-                                    prev.map((L, i) =>
-                                      i === idx
-                                        ? {
-                                            ...L,
-                                            event_leg_truck_type:
-                                              e.target.value,
-                                          }
-                                        : L,
-                                    ),
-                                  )
-                                }
-                                className={fieldInput}
-                              >
-                                {eventTruckOptions.filter(
-                                  (o) => o.value !== "none",
-                                ).map((o) => (
-                                  <option key={o.value} value={o.value}>
-                                    {o.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </Field>
-                          )}
-                          {!leg.event_same_day && (
-                            <Field label="Return rate">
-                              <select
-                                value={leg.event_return_rate_preset}
-                                onChange={(e) =>
-                                  setEventLegs((prev) =>
-                                    prev.map((L, i) =>
-                                      i === idx
-                                        ? {
-                                            ...L,
-                                            event_return_rate_preset: e.target
-                                              .value as EventLegForm["event_return_rate_preset"],
-                                          }
-                                        : L,
-                                    ),
-                                  )
-                                }
-                                className={fieldInput}
-                              >
-                                {EVENT_LEG_RETURN_RATE_OPTIONS.map((o) => (
-                                  <option key={o.value} value={o.value}>
-                                    {o.label}
-                                  </option>
-                                ))}
-                              </select>
-                              {leg.event_return_rate_preset === "custom" ? (
-                                <input
-                                  type="number"
-                                  min={25}
-                                  max={100}
-                                  value={leg.event_return_rate_custom}
-                                  onChange={(e) =>
-                                    setEventLegs((prev) =>
-                                      prev.map((L, i) =>
-                                        i === idx
-                                          ? {
-                                              ...L,
-                                              event_return_rate_custom:
-                                                e.target.value,
-                                            }
-                                          : L,
-                                      ),
-                                    )
-                                  }
-                                  placeholder="% of delivery day"
-                                  className={`${fieldInput} mt-1 max-w-[200px]`}
-                                />
-                              ) : null}
-                            </Field>
-                          )}
-                          <div className="grid grid-cols-2 gap-2">
-                            <Field label="Delivery date *">
-                              <input
-                                type="date"
-                                value={leg.move_date}
-                                onChange={(e) =>
-                                  setEventLegs((prev) =>
-                                    prev.map((L, i) =>
-                                      i === idx
-                                        ? { ...L, move_date: e.target.value }
-                                        : L,
-                                    ),
-                                  )
-                                }
-                                className={fieldInput}
-                              />
-                            </Field>
-                          </div>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={leg.event_same_day}
-                              onChange={(e) =>
-                                setEventLegs((prev) =>
-                                  prev.map((L, i) =>
-                                    i === idx
-                                      ? {
-                                          ...L,
-                                          event_same_day: e.target.checked,
-                                        }
-                                      : L,
-                                  ),
-                                )
-                              }
-                              className="accent-[var(--gold)] w-3.5 h-3.5"
-                            />
-                            <span className="text-[11px] text-[var(--tx2)]">
-                              Same-day return
-                            </span>
-                          </label>
-                          {!leg.event_same_day ? (
-                            <Field label="Return date *">
-                              <input
-                                type="date"
-                                value={leg.event_return_date}
-                                onChange={(e) =>
-                                  setEventLegs((prev) =>
-                                    prev.map((L, i) =>
-                                      i === idx
-                                        ? {
-                                            ...L,
-                                            event_return_date: e.target.value,
-                                          }
-                                        : L,
-                                    ),
-                                  )
-                                }
-                                className={fieldInput}
-                              />
-                            </Field>
-                          ) : null}
-                        </div>
-                      ))}
-
-                      <button
-                        type="button"
-                        onClick={addEventLeg}
-                        className="admin-btn admin-btn-secondary w-full border-dashed"
-                      >
-                        <Plus className="w-4 h-4" aria-hidden /> Add event
-                      </button>
-
-                      <div className="space-y-2">
-                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                          Setup (program)
-                        </h3>
-                        <p className="text-[10px] text-[var(--tx3)]">
-                          One setup fee for the bundled program (not per venue).
-                        </p>
-                        {eventLuxury ? (
-                          <div className="rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)] space-y-2">
-                            <p className="text-[11px] text-[var(--tx)] font-medium">
-                              Basic setup and placement: Included with luxury
-                              rate.
-                            </p>
-                            <p className="text-[10px] text-[var(--tx2)]">
-                              Add complex setup (staging, signage, assembly) for
-                              an additional fee:
-                            </p>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={eventComplexSetup}
-                                onChange={(e) =>
-                                  setEventComplexSetup(e.target.checked)
-                                }
-                                className="accent-[var(--gold)] w-3.5 h-3.5"
-                              />
-                              <span className="text-[11px] text-[var(--tx2)]">
-                                Complex setup
-                              </span>
-                            </label>
-                            {eventComplexSetup && (
-                              <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
-                                <Field label="Complex setup duration">
-                                  <select
-                                    value={eventSetupHours}
-                                    onChange={(e) =>
-                                      setEventSetupHours(Number(e.target.value))
-                                    }
-                                    className={`${fieldInput} w-40`}
-                                  >
-                                    <option value={1}>1 hour, $150</option>
-                                    <option value={2}>2 hours, $275</option>
-                                    <option value={3}>3 hours, $400</option>
-                                    <option value={99}>Half day, $600</option>
-                                  </select>
-                                </Field>
-                                <Field label="Instructions">
-                                  <textarea
-                                    value={eventSetupInstructions}
-                                    onChange={(e) =>
-                                      setEventSetupInstructions(e.target.value)
-                                    }
-                                    rows={2}
-                                    className={`${fieldInput} resize-none`}
-                                  />
-                                </Field>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-3">
-                              <span className="text-[10px] font-medium text-[var(--tx)]">
-                                Setup required (paid)
-                              </span>
-                              <button
-                                type="button"
-                                role="switch"
-                                aria-checked={eventSetupRequired}
-                                onClick={() =>
-                                  setEventSetupRequired(!eventSetupRequired)
-                                }
-                                className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${eventSetupRequired ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                              >
-                                <span
-                                  className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${eventSetupRequired ? "translate-x-4" : ""}`}
-                                />
-                              </button>
-                            </div>
-                            {eventSetupRequired && (
-                              <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
-                                <Field label="Setup Duration">
-                                  <select
-                                    value={eventSetupHours}
-                                    onChange={(e) =>
-                                      setEventSetupHours(Number(e.target.value))
-                                    }
-                                    className={`${fieldInput} w-40`}
-                                  >
-                                    <option value={1}>1 hour, $150</option>
-                                    <option value={2}>2 hours, $275</option>
-                                    <option value={3}>3 hours, $400</option>
-                                    <option value={99}>Half day, $600</option>
-                                  </select>
-                                </Field>
-                                <Field label="Setup Instructions">
-                                  <textarea
-                                    value={eventSetupInstructions}
-                                    onChange={(e) =>
-                                      setEventSetupInstructions(e.target.value)
-                                    }
-                                    rows={2}
-                                    placeholder="Arrange display tables, hang banners, etc."
-                                    className={`${fieldInput} resize-none`}
-                                  />
-                                </Field>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-
-                      <Field label="Pickup time after event (same-day legs)">
-                        <select
-                          value={eventPickupTimeAfter}
-                          onChange={(e) =>
-                            setEventPickupTimeAfter(e.target.value)
-                          }
-                          className={`${fieldInput} max-w-xs`}
-                        >
-                          <option value="Evening 6–9 PM">Evening 6–9 PM</option>
-                          <option value="Evening 8–10 PM">
-                            Evening 8–10 PM
-                          </option>
-                          <option value="After midnight">After midnight</option>
-                          <option value="Next morning">Next morning</option>
-                        </select>
-                      </Field>
-                    </div>
-                  )}
-
-                  <div className="space-y-2 rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
+                  {/* ── 2. ITEMS BEING MOVED ─────────────────────── */}
+                  <div className="space-y-2.5">
                     <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                      Crew & hours
+                      Items being moved
                     </h3>
-                    <p className="text-[10px] text-[var(--tx2)] leading-snug">
-                      Pricing is hours-based: crew × hours × rate, plus truck,
-                      distance, and wrapping surcharges. Override crew or hours
-                      when you have a better read than the system estimate.
+                    <p className="text-[10px] text-[var(--tx3)] -mt-1 leading-snug">
+                      Item type and weight drive crew size, hours, and wrapping surcharges.
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <Field label="Crew override (optional)">
-                        <input
-                          type="number"
-                          min={2}
-                          max={8}
-                          step={1}
-                          value={eventCrewOverride}
-                          onChange={(e) => setEventCrewOverride(e.target.value)}
-                          placeholder="e.g. 3"
-                          className={fieldInput}
-                        />
-                      </Field>
-                      <Field label="Billable hours override (optional)">
-                        <input
-                          type="number"
-                          min={0.5}
-                          max={24}
-                          step={0.5}
-                          value={eventHoursOverride}
-                          onChange={(e) =>
-                            setEventHoursOverride(e.target.value)
-                          }
-                          placeholder="e.g. 3.5"
-                          className={fieldInput}
-                        />
-                      </Field>
-                    </div>
-                  </div>
 
-                  {/* Event Items */}
-                  <div className="space-y-2">
-                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                      Event items
-                    </h3>
-                    <p className="text-[10px] text-[var(--tx2)] leading-snug">
-                      Use item type and &ldquo;Needs wrapping&rdquo; so the
-                      engine can price light box runs differently from porcelain
-                      or AV that needs protection both ways.
-                    </p>
+                    {/* Quick-add chips */}
                     <div className="flex flex-wrap gap-1.5">
                       {EVENT_QUICK_ADD_PRESETS.map((p) => (
                         <button
@@ -10235,36 +9405,34 @@ export default function QuoteFormClient({
                           }
                           className={eventQuickAddBtnClass}
                         >
-                          <Plus
-                            className="w-3 h-3 mr-0.5 shrink-0"
-                            aria-hidden
-                          />
+                          <Plus className="w-3 h-3 mr-0.5 shrink-0" aria-hidden />
                           <span className="text-left leading-tight max-w-[11rem]">
                             {p.name}
                           </span>
                         </button>
                       ))}
                     </div>
+
+                    {/* Item rows */}
                     <div className="space-y-2">
                       {eventItems.map((item, idx) => (
                         <div
                           key={idx}
                           className="rounded-lg border border-[var(--brd)] p-2.5 space-y-2 bg-[var(--card)]/40"
                         >
-                          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-2">
+                          {/* Name + qty + remove */}
+                          <div className="flex gap-2 items-start">
                             <input
                               type="text"
                               value={item.name}
                               onChange={(e) =>
                                 setEventItems((prev) =>
                                   prev.map((it, i) =>
-                                    i === idx
-                                      ? { ...it, name: e.target.value }
-                                      : it,
+                                    i === idx ? { ...it, name: e.target.value } : it,
                                   ),
                                 )
                               }
-                              placeholder="Description"
+                              placeholder="Item description"
                               className={`${fieldInput} flex-1 min-w-0`}
                             />
                             <input
@@ -10275,40 +9443,35 @@ export default function QuoteFormClient({
                                 setEventItems((prev) =>
                                   prev.map((it, i) =>
                                     i === idx
-                                      ? {
-                                          ...it,
-                                          quantity: Number(e.target.value) || 1,
-                                        }
+                                      ? { ...it, quantity: Number(e.target.value) || 1 }
                                       : it,
                                   ),
                                 )
                               }
-                              className="w-16 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-center text-[var(--tx)] shrink-0"
+                              className="w-14 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-center text-[var(--tx)] shrink-0"
                               aria-label="Quantity"
                             />
                             <button
                               type="button"
                               onClick={() =>
-                                setEventItems((prev) =>
-                                  prev.filter((_, i) => i !== idx),
-                                )
+                                setEventItems((prev) => prev.filter((_, i) => i !== idx))
                               }
-                              className="text-[var(--tx3)] hover:text-red-400 text-sm shrink-0 self-start sm:self-center"
+                              className="text-[var(--tx3)] hover:text-red-400 transition-colors p-1 shrink-0"
                               aria-label="Remove item"
                             >
-                              ×
+                              <X className="w-3.5 h-3.5" />
                             </button>
                           </div>
-                          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-2">
-                            <Field label="Item type (handling)">
+
+                          {/* Type + weight */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <Field label="Handling type">
                               <select
                                 value={item.item_type || "furniture"}
                                 onChange={(e) =>
                                   setEventItems((prev) =>
                                     prev.map((it, i) =>
-                                      i === idx
-                                        ? { ...it, item_type: e.target.value }
-                                        : it,
+                                      i === idx ? { ...it, item_type: e.target.value } : it,
                                     ),
                                   )
                                 }
@@ -10321,7 +9484,7 @@ export default function QuoteFormClient({
                                 ))}
                               </select>
                             </Field>
-                            <Field label="Weight tier">
+                            <Field label="Weight">
                               <select
                                 value={item.weight_category || "standard"}
                                 onChange={(e) => {
@@ -10345,17 +9508,14 @@ export default function QuoteFormClient({
                                 {eventWeightTierOpts.map((o) => (
                                   <option key={o.value} value={o.value}>
                                     {o.label}
-                                    {o.shortHint !== "Base"
-                                      ? ` (${o.shortHint})`
-                                      : ""}
                                   </option>
                                 ))}
                               </select>
                             </Field>
                           </div>
-                          {tierRequiresActualWeight(
-                            item.weight_category || "",
-                          ) ? (
+
+                          {/* Actual weight if tier requires it */}
+                          {tierRequiresActualWeight(item.weight_category || "") && (
                             <Field label="Actual weight (lbs)">
                               <input
                                 type="number"
@@ -10381,9 +9541,11 @@ export default function QuoteFormClient({
                                 className={fieldInput}
                               />
                             </Field>
-                          ) : null}
-                          <div className="flex flex-wrap gap-3">
-                            <label className="flex items-center gap-2 cursor-pointer">
+                          )}
+
+                          {/* Wrapping flags */}
+                          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                            <label className="flex items-center gap-1.5 cursor-pointer">
                               <input
                                 type="checkbox"
                                 checked={item.requires_wrapping}
@@ -10391,10 +9553,7 @@ export default function QuoteFormClient({
                                   setEventItems((prev) =>
                                     prev.map((it, i) =>
                                       i === idx
-                                        ? {
-                                            ...it,
-                                            requires_wrapping: e.target.checked,
-                                          }
+                                        ? { ...it, requires_wrapping: e.target.checked }
                                         : it,
                                     ),
                                   )
@@ -10402,10 +9561,10 @@ export default function QuoteFormClient({
                                 className={`${checkboxAccentClass} w-3.5 h-3.5`}
                               />
                               <span className="text-[11px] text-[var(--tx2)]">
-                                Needs wrapping / white-glove handling
+                                Needs wrapping
                               </span>
                             </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
+                            <label className="flex items-center gap-1.5 cursor-pointer">
                               <input
                                 type="checkbox"
                                 checked={item.requires_protection}
@@ -10413,11 +9572,7 @@ export default function QuoteFormClient({
                                   setEventItems((prev) =>
                                     prev.map((it, i) =>
                                       i === idx
-                                        ? {
-                                            ...it,
-                                            requires_protection:
-                                              e.target.checked,
-                                          }
+                                        ? { ...it, requires_protection: e.target.checked }
                                         : it,
                                     ),
                                   )
@@ -10429,25 +9584,24 @@ export default function QuoteFormClient({
                               </span>
                             </label>
                           </div>
-                          <Field label="Notes (optional)">
-                            <input
-                              type="text"
-                              value={item.notes}
-                              onChange={(e) =>
-                                setEventItems((prev) =>
-                                  prev.map((it, i) =>
-                                    i === idx
-                                      ? { ...it, notes: e.target.value }
-                                      : it,
-                                  ),
-                                )
-                              }
-                              placeholder="Access, dock, client expectations…"
-                              className={fieldInput}
-                            />
-                          </Field>
+
+                          {/* Notes */}
+                          <input
+                            type="text"
+                            value={item.notes}
+                            onChange={(e) =>
+                              setEventItems((prev) =>
+                                prev.map((it, i) =>
+                                  i === idx ? { ...it, notes: e.target.value } : it,
+                                ),
+                              )
+                            }
+                            placeholder="Notes: dock, client expectations, special handling…"
+                            className={`${fieldInput} text-[10px] placeholder:text-[var(--tx3)]`}
+                          />
                         </div>
                       ))}
+
                       <button
                         type="button"
                         onClick={() =>
@@ -10466,75 +9620,733 @@ export default function QuoteFormClient({
                         }
                         className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--tx)] hover:underline"
                       >
-                        <Plus className="w-3 h-3" aria-hidden /> Add blank row
+                        <Plus className="w-3 h-3" aria-hidden /> Add item
                       </button>
                     </div>
                   </div>
 
-                  {/* Additional Services */}
-                  <div className="space-y-2">
+                  {/* ── 3. LOGISTICS ─────────────────────────────── */}
+                  <div className="space-y-3">
                     <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                      Additional Services
+                      Logistics
                     </h3>
-                    {[
-                      "Furniture assembly at venue",
-                      "Signage installation",
-                      "Staging and arrangement",
-                      "Overnight storage at Yugo facility",
-                    ].map((svc) => (
-                      <label
-                        key={svc}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={eventAdditionalServices.includes(svc)}
-                          onChange={(e) =>
-                            setEventAdditionalServices((prev) =>
-                              e.target.checked
-                                ? [...prev, svc]
-                                : prev.filter((s) => s !== svc),
-                            )
-                          }
-                          className="accent-[var(--gold)] w-3.5 h-3.5"
-                        />
-                        <span className="text-[11px] text-[var(--tx2)]">
-                          {svc}
-                        </span>
-                      </label>
-                    ))}
+
+                    {!eventMulti ? (
+                      /* Single event */
+                      <div className="rounded-lg border border-[var(--brd)] px-3 py-3 bg-[var(--bg)] space-y-3">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={eventSameLocationSingle}
+                            onChange={(e) => {
+                              const on = e.target.checked;
+                              setEventSameLocationSingle(on);
+                              if (on) setEventReturnRateSingle("80");
+                              else if (
+                                eventReturnRateSingle === "80" ||
+                                eventReturnRateSingle === "85"
+                              )
+                                setEventReturnRateSingle("auto");
+                            }}
+                            className={`${checkboxAccentClass} w-3.5 h-3.5`}
+                          />
+                          <span className="text-[11px] text-[var(--tx2)]">
+                            On-site event (no transit — items repositioned within venue)
+                          </span>
+                        </label>
+
+                        {!eventSameLocationSingle && (
+                          <>
+                            {/* Venue address */}
+                            <AddressAutocomplete
+                              value={venueAddress}
+                              onRawChange={(v) => setVenueAddress(v)}
+                              onChange={(r) => setVenueAddress(r.fullAddress)}
+                              placeholder="Venue address"
+                              label="Venue *"
+                              required
+                              className={fieldInput}
+                            />
+
+                            {/* Access */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <Field label="Origin access">
+                                <select
+                                  value={fromAccess}
+                                  onChange={(e) => setFromAccess(e.target.value)}
+                                  className={fieldInput}
+                                >
+                                  {ACCESS_OPTIONS.map((o) => (
+                                    <option key={`oa-${o.value || "empty"}`} value={o.value}>
+                                      {o.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </Field>
+                              <Field label="Venue access">
+                                <select
+                                  value={toAccess}
+                                  onChange={(e) => setToAccess(e.target.value)}
+                                  className={fieldInput}
+                                >
+                                  {ACCESS_OPTIONS.map((o) => (
+                                    <option key={`va-${o.value || "empty"}`} value={o.value}>
+                                      {o.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </Field>
+                            </div>
+
+                            {/* Date + truck */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <Field label="Delivery date *">
+                                <input
+                                  type="date"
+                                  value={moveDate}
+                                  onChange={(e) => setMoveDate(e.target.value)}
+                                  className={fieldInput}
+                                />
+                              </Field>
+                              <Field label="Truck">
+                                <select
+                                  value={eventTruckType}
+                                  onChange={(e) => setEventTruckType(e.target.value)}
+                                  className={fieldInput}
+                                >
+                                  {eventTruckOptions
+                                    .filter((o) => o.value !== "none")
+                                    .map((o) => (
+                                      <option key={o.value} value={o.value}>
+                                        {o.label}
+                                      </option>
+                                    ))}
+                                </select>
+                              </Field>
+                            </div>
+
+                            {/* Same-day return */}
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={eventSameDay}
+                                onChange={(e) => setEventSameDay(e.target.checked)}
+                                className={`${checkboxAccentClass} w-3.5 h-3.5`}
+                              />
+                              <span className="text-[11px] text-[var(--tx2)]">
+                                Same-day return (crew picks up later same day)
+                              </span>
+                            </label>
+
+                            {eventSameDay ? (
+                              <Field label="Pickup time after event">
+                                <select
+                                  value={eventPickupTimeAfter}
+                                  onChange={(e) =>
+                                    setEventPickupTimeAfter(e.target.value)
+                                  }
+                                  className={`${fieldInput} max-w-xs`}
+                                >
+                                  <option value="Evening 6–9 PM">Evening 6–9 PM</option>
+                                  <option value="Evening 8–10 PM">Evening 8–10 PM</option>
+                                  <option value="After midnight">After midnight</option>
+                                  <option value="Next morning">Next morning</option>
+                                </select>
+                              </Field>
+                            ) : (
+                              <div className="grid grid-cols-2 gap-2">
+                                <Field label="Return date *">
+                                  <input
+                                    type="date"
+                                    value={eventReturnDate}
+                                    onChange={(e) => setEventReturnDate(e.target.value)}
+                                    className={fieldInput}
+                                  />
+                                </Field>
+                                <Field label="Return rate">
+                                  <select
+                                    value={eventReturnRateSingle}
+                                    onChange={(e) =>
+                                      setEventReturnRateSingle(
+                                        e.target.value as typeof eventReturnRateSingle,
+                                      )
+                                    }
+                                    className={fieldInput}
+                                  >
+                                    {EVENT_LEG_RETURN_RATE_OPTIONS.map((o) => (
+                                      <option key={o.value} value={o.value}>
+                                        {o.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  {eventReturnRateSingle === "custom" && (
+                                    <input
+                                      type="number"
+                                      min={25}
+                                      max={100}
+                                      value={eventReturnRateCustomSingle}
+                                      onChange={(e) =>
+                                        setEventReturnRateCustomSingle(e.target.value)
+                                      }
+                                      placeholder="% of delivery"
+                                      className={`${fieldInput} mt-1 max-w-[140px]`}
+                                    />
+                                  )}
+                                </Field>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      /* Multi-event legs */
+                      <div className="space-y-3">
+                        {eventLegs.map((leg, idx) => (
+                          <div
+                            key={idx}
+                            className="rounded-xl border border-[var(--brd)] bg-[var(--card)]/30 overflow-hidden"
+                          >
+                            {/* Leg header bar */}
+                            <div className="flex items-center justify-between gap-2 px-3 py-2 bg-[var(--bg)] border-b border-[var(--brd)]/50">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--gold)] shrink-0">
+                                  Trip {idx + 1}
+                                </span>
+                                <input
+                                  value={leg.label}
+                                  onChange={(e) =>
+                                    setEventLegs((prev) =>
+                                      prev.map((L, i) =>
+                                        i === idx ? { ...L, label: e.target.value } : L,
+                                      ),
+                                    )
+                                  }
+                                  placeholder={`Day ${idx + 1}`}
+                                  className="text-[11px] font-semibold bg-transparent border-0 outline-none text-[var(--tx)] placeholder:text-[var(--tx3)] min-w-0 flex-1"
+                                  aria-label="Trip label"
+                                />
+                              </div>
+                              {eventLegs.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeEventLeg(idx)}
+                                  className="text-[var(--tx3)] hover:text-red-400 transition-colors p-1 shrink-0"
+                                  aria-label={`Remove trip ${idx + 1}`}
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Leg body */}
+                            <div className="p-3 space-y-3">
+                              {/* Origin */}
+                              <AddressAutocomplete
+                                value={leg.from_address}
+                                onRawChange={(v) =>
+                                  setEventLegs((prev) =>
+                                    prev.map((L, i) =>
+                                      i === idx ? { ...L, from_address: v } : L,
+                                    ),
+                                  )
+                                }
+                                onChange={(r) =>
+                                  setEventLegs((prev) =>
+                                    prev.map((L, i) =>
+                                      i === idx
+                                        ? { ...L, from_address: r.fullAddress }
+                                        : L,
+                                    ),
+                                  )
+                                }
+                                placeholder="Origin / warehouse"
+                                label="Origin *"
+                                required
+                                className={fieldInput}
+                              />
+
+                              {/* On-site toggle */}
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={leg.event_same_location_onsite}
+                                  onChange={(e) => {
+                                    const on = e.target.checked;
+                                    setEventLegs((prev) =>
+                                      prev.map((L, i) =>
+                                        i === idx
+                                          ? {
+                                              ...L,
+                                              event_same_location_onsite: on,
+                                              to_address: on
+                                                ? L.from_address
+                                                : L.to_address,
+                                              event_return_rate_preset: on
+                                                ? "80"
+                                                : L.event_return_rate_preset ===
+                                                      "80" ||
+                                                    L.event_return_rate_preset === "85"
+                                                  ? "auto"
+                                                  : L.event_return_rate_preset,
+                                            }
+                                          : L,
+                                      ),
+                                    );
+                                  }}
+                                  className={`${checkboxAccentClass} w-3.5 h-3.5`}
+                                />
+                                <span className="text-[11px] text-[var(--tx2)]">
+                                  On-site (no transit — items stay at venue)
+                                </span>
+                              </label>
+
+                              {/* Venue */}
+                              {!leg.event_same_location_onsite ? (
+                                <AddressAutocomplete
+                                  value={leg.to_address}
+                                  onRawChange={(v) =>
+                                    setEventLegs((prev) =>
+                                      prev.map((L, i) =>
+                                        i === idx ? { ...L, to_address: v } : L,
+                                      ),
+                                    )
+                                  }
+                                  onChange={(r) =>
+                                    setEventLegs((prev) =>
+                                      prev.map((L, i) =>
+                                        i === idx
+                                          ? { ...L, to_address: r.fullAddress }
+                                          : L,
+                                      ),
+                                    )
+                                  }
+                                  placeholder="Venue address"
+                                  label="Venue *"
+                                  required
+                                  className={fieldInput}
+                                />
+                              ) : (
+                                <p className="text-[10px] text-[var(--tx3)] rounded-lg border border-[var(--brd)] px-3 py-2 bg-[var(--bg)]">
+                                  Venue same as origin — no road transit.
+                                </p>
+                              )}
+
+                              {/* Access row */}
+                              <div className="grid grid-cols-2 gap-2">
+                                <Field label="Origin access">
+                                  <select
+                                    value={leg.from_access}
+                                    onChange={(e) =>
+                                      setEventLegs((prev) =>
+                                        prev.map((L, i) =>
+                                          i === idx
+                                            ? { ...L, from_access: e.target.value }
+                                            : L,
+                                        ),
+                                      )
+                                    }
+                                    className={fieldInput}
+                                  >
+                                    {ACCESS_OPTIONS.map((o) => (
+                                      <option
+                                        key={`o-${idx}-${o.value || "empty"}`}
+                                        value={o.value}
+                                      >
+                                        {o.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </Field>
+                                <Field label="Venue access">
+                                  <select
+                                    value={leg.to_access}
+                                    onChange={(e) =>
+                                      setEventLegs((prev) =>
+                                        prev.map((L, i) =>
+                                          i === idx
+                                            ? { ...L, to_access: e.target.value }
+                                            : L,
+                                        ),
+                                      )
+                                    }
+                                    className={fieldInput}
+                                  >
+                                    {ACCESS_OPTIONS.map((o) => (
+                                      <option
+                                        key={`v-${idx}-${o.value || "empty"}`}
+                                        value={o.value}
+                                      >
+                                        {o.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </Field>
+                              </div>
+
+                              {/* Date + truck */}
+                              <div className="grid grid-cols-2 gap-2">
+                                <Field label="Delivery date *">
+                                  <input
+                                    type="date"
+                                    value={leg.move_date}
+                                    onChange={(e) =>
+                                      setEventLegs((prev) =>
+                                        prev.map((L, i) =>
+                                          i === idx
+                                            ? { ...L, move_date: e.target.value }
+                                            : L,
+                                        ),
+                                      )
+                                    }
+                                    className={fieldInput}
+                                  />
+                                </Field>
+                                {!leg.event_same_location_onsite && (
+                                  <Field label="Truck">
+                                    <select
+                                      value={leg.event_leg_truck_type}
+                                      onChange={(e) =>
+                                        setEventLegs((prev) =>
+                                          prev.map((L, i) =>
+                                            i === idx
+                                              ? {
+                                                  ...L,
+                                                  event_leg_truck_type: e.target.value,
+                                                }
+                                              : L,
+                                          ),
+                                        )
+                                      }
+                                      className={fieldInput}
+                                    >
+                                      {eventTruckOptions
+                                        .filter((o) => o.value !== "none")
+                                        .map((o) => (
+                                          <option key={o.value} value={o.value}>
+                                            {o.label}
+                                          </option>
+                                        ))}
+                                    </select>
+                                  </Field>
+                                )}
+                              </div>
+
+                              {/* Return */}
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={leg.event_same_day}
+                                  onChange={(e) =>
+                                    setEventLegs((prev) =>
+                                      prev.map((L, i) =>
+                                        i === idx
+                                          ? { ...L, event_same_day: e.target.checked }
+                                          : L,
+                                      ),
+                                    )
+                                  }
+                                  className={`${checkboxAccentClass} w-3.5 h-3.5`}
+                                />
+                                <span className="text-[11px] text-[var(--tx2)]">
+                                  Same-day return
+                                </span>
+                              </label>
+
+                              {leg.event_same_day ? (
+                                <Field label="Pickup time after event">
+                                  <select
+                                    value={eventPickupTimeAfter}
+                                    onChange={(e) =>
+                                      setEventPickupTimeAfter(e.target.value)
+                                    }
+                                    className={`${fieldInput} max-w-xs`}
+                                  >
+                                    <option value="Evening 6–9 PM">Evening 6–9 PM</option>
+                                    <option value="Evening 8–10 PM">
+                                      Evening 8–10 PM
+                                    </option>
+                                    <option value="After midnight">After midnight</option>
+                                    <option value="Next morning">Next morning</option>
+                                  </select>
+                                </Field>
+                              ) : (
+                                <div className="grid grid-cols-2 gap-2">
+                                  <Field label="Return date *">
+                                    <input
+                                      type="date"
+                                      value={leg.event_return_date}
+                                      onChange={(e) =>
+                                        setEventLegs((prev) =>
+                                          prev.map((L, i) =>
+                                            i === idx
+                                              ? {
+                                                  ...L,
+                                                  event_return_date: e.target.value,
+                                                }
+                                              : L,
+                                          ),
+                                        )
+                                      }
+                                      className={fieldInput}
+                                    />
+                                  </Field>
+                                  <Field label="Return rate">
+                                    <select
+                                      value={leg.event_return_rate_preset}
+                                      onChange={(e) =>
+                                        setEventLegs((prev) =>
+                                          prev.map((L, i) =>
+                                            i === idx
+                                              ? {
+                                                  ...L,
+                                                  event_return_rate_preset: e.target
+                                                    .value as EventLegForm["event_return_rate_preset"],
+                                                }
+                                              : L,
+                                          ),
+                                        )
+                                      }
+                                      className={fieldInput}
+                                    >
+                                      {EVENT_LEG_RETURN_RATE_OPTIONS.map((o) => (
+                                        <option key={o.value} value={o.value}>
+                                          {o.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    {leg.event_return_rate_preset === "custom" && (
+                                      <input
+                                        type="number"
+                                        min={25}
+                                        max={100}
+                                        value={leg.event_return_rate_custom}
+                                        onChange={(e) =>
+                                          setEventLegs((prev) =>
+                                            prev.map((L, i) =>
+                                              i === idx
+                                                ? {
+                                                    ...L,
+                                                    event_return_rate_custom:
+                                                      e.target.value,
+                                                  }
+                                                : L,
+                                            ),
+                                          )
+                                        }
+                                        placeholder="% of delivery"
+                                        className={`${fieldInput} mt-1 max-w-[140px]`}
+                                      />
+                                    )}
+                                  </Field>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+
+                        <button
+                          type="button"
+                          onClick={addEventLeg}
+                          className="admin-btn admin-btn-secondary w-full border-dashed"
+                        >
+                          <Plus className="w-4 h-4" aria-hidden /> Add round trip
+                        </button>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="space-y-2 rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
+                  {/* ── 4. SETUP & OPTIONS ───────────────────────── */}
+                  <div className="space-y-2.5">
                     <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                      Pricing
+                      Setup &amp; options
                     </h3>
-                    <p className="text-[10px] text-[var(--tx2)] leading-snug">
-                      After you generate, the card shows the system pre-tax
-                      total. Use an override only when the model does not match
-                      reality — reasons are stored on the quote for reporting.
-                    </p>
-                    <Field label="Admin pre-tax override (optional)">
-                      <input
-                        type="number"
-                        min={1}
-                        step={1}
-                        value={eventPreTaxOverride}
-                        onChange={(e) => setEventPreTaxOverride(e.target.value)}
-                        placeholder="e.g. 1100"
-                        className={fieldInput}
-                      />
-                    </Field>
-                    <Field label="Override reason (required if overriding)">
-                      <textarea
-                        value={eventOverrideReason}
-                        onChange={(e) => setEventOverrideReason(e.target.value)}
-                        rows={2}
-                        placeholder="e.g. Negotiated rate for repeat client; matching competitor; similar job was 2.5 hrs"
-                        className={`${fieldInput} resize-none`}
-                      />
-                    </Field>
+
+                    {/* Setup */}
+                    {eventLuxury ? (
+                      <div className="rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)] space-y-2">
+                        <p className="text-[11px] text-[var(--tx)] font-medium">
+                          Basic setup and placement: Included with luxury rate.
+                        </p>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={eventComplexSetup}
+                            onChange={(e) => setEventComplexSetup(e.target.checked)}
+                            className={`${checkboxAccentClass} w-3.5 h-3.5`}
+                          />
+                          <span className="text-[11px] text-[var(--tx2)]">
+                            Complex setup (staging, signage, assembly) +fee
+                          </span>
+                        </label>
+                        {eventComplexSetup && (
+                          <div className="pl-5 space-y-2">
+                            <Field label="Duration">
+                              <select
+                                value={eventSetupHours}
+                                onChange={(e) =>
+                                  setEventSetupHours(Number(e.target.value))
+                                }
+                                className={`${fieldInput} w-44`}
+                              >
+                                <option value={1}>1 hour — $150</option>
+                                <option value={2}>2 hours — $275</option>
+                                <option value={3}>3 hours — $400</option>
+                                <option value={99}>Half day — $600</option>
+                              </select>
+                            </Field>
+                            <Field label="Instructions">
+                              <textarea
+                                value={eventSetupInstructions}
+                                onChange={(e) =>
+                                  setEventSetupInstructions(e.target.value)
+                                }
+                                rows={2}
+                                className={`${fieldInput} resize-none`}
+                              />
+                            </Field>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={eventSetupRequired}
+                            onChange={(e) => setEventSetupRequired(e.target.checked)}
+                            className={`${checkboxAccentClass} w-3.5 h-3.5`}
+                          />
+                          <span className="text-[11px] text-[var(--tx2)]">
+                            Setup service required (paid)
+                          </span>
+                        </label>
+                        {eventSetupRequired && (
+                          <div className="pl-5 space-y-2">
+                            <Field label="Duration">
+                              <select
+                                value={eventSetupHours}
+                                onChange={(e) =>
+                                  setEventSetupHours(Number(e.target.value))
+                                }
+                                className={`${fieldInput} w-44`}
+                              >
+                                <option value={1}>1 hour — $150</option>
+                                <option value={2}>2 hours — $275</option>
+                                <option value={3}>3 hours — $400</option>
+                                <option value={99}>Half day — $600</option>
+                              </select>
+                            </Field>
+                            <Field label="Instructions">
+                              <textarea
+                                value={eventSetupInstructions}
+                                onChange={(e) =>
+                                  setEventSetupInstructions(e.target.value)
+                                }
+                                rows={2}
+                                placeholder="Arrange display tables, hang banners, etc."
+                                className={`${fieldInput} resize-none`}
+                              />
+                            </Field>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Additional services */}
+                    <div className="space-y-1.5 pt-1">
+                      {[
+                        "Furniture assembly at venue",
+                        "Signage installation",
+                        "Staging and arrangement",
+                        "Overnight storage at Yugo facility",
+                      ].map((svc) => (
+                        <label key={svc} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={eventAdditionalServices.includes(svc)}
+                            onChange={(e) => {
+                              setEventAdditionalServices((prev) =>
+                                e.target.checked
+                                  ? [...prev, svc]
+                                  : prev.filter((s) => s !== svc),
+                              );
+                            }}
+                            className={`${checkboxAccentClass} w-3.5 h-3.5`}
+                          />
+                          <span className="text-[11px] text-[var(--tx2)]">{svc}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
+
+                  {/* ── 5. CREW GUIDANCE ─────────────────────────── */}
+                  <div className="space-y-2.5">
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                      Crew guidance
+                    </h3>
+                    <p className="text-[10px] text-[var(--tx3)] leading-snug">
+                      Pricing: crew × hours × rate + truck and surcharges. System estimates
+                      from items and distance. Override only when you know better.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="Crew override">
+                        <input
+                          type="number"
+                          min={2}
+                          max={8}
+                          step={1}
+                          value={eventCrewOverride}
+                          onChange={(e) => setEventCrewOverride(e.target.value)}
+                          placeholder="System default"
+                          className={fieldInput}
+                        />
+                      </Field>
+                      <Field label="Hours override">
+                        <input
+                          type="number"
+                          min={0.5}
+                          max={24}
+                          step={0.5}
+                          value={eventHoursOverride}
+                          onChange={(e) => setEventHoursOverride(e.target.value)}
+                          placeholder="System default"
+                          className={fieldInput}
+                        />
+                      </Field>
+                    </div>
+                  </div>
+
+                  {/* ── 6. PRICING OVERRIDE ──────────────────────── */}
+                  <div className="space-y-2.5">
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                      Pricing override
+                    </h3>
+                    <p className="text-[10px] text-[var(--tx3)] leading-snug">
+                      Use only when the model doesn&apos;t match reality. Reason is stored
+                      on the quote for reporting.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Field label="Admin pre-tax override">
+                        <input
+                          type="number"
+                          value={eventPreTaxOverride}
+                          onChange={(e) => setEventPreTaxOverride(e.target.value)}
+                          placeholder="e.g. 1100"
+                          className={fieldInput}
+                        />
+                      </Field>
+                      <Field label="Override reason">
+                        <input
+                          type="text"
+                          value={eventOverrideReason}
+                          onChange={(e) => setEventOverrideReason(e.target.value)}
+                          placeholder="Negotiated rate, matching competitor…"
+                          className={fieldInput}
+                        />
+                      </Field>
+                    </div>
+                  </div>
+
                 </div>
               )}
 
