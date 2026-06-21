@@ -42,6 +42,10 @@ const BOOKABLE_STATUSES = new Set([
   "in_progress",
   "pending",
   "completed",
+  // Deliveries (B2B jobs) spend most of their life as "delivered"; without it
+  // here the calendar sync skipped every delivered job, so B2B jobs never
+  // landed on the calendar.
+  "delivered",
   "no_show",
 ]);
 

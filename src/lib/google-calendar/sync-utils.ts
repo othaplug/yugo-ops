@@ -1,6 +1,6 @@
 import "server-only";
 import { isGCalConfigured } from "./client";
-import { syncJobToGCal } from "./sync-job";
+import { syncJobToGCal, type GCalSyncResult } from "./sync-job";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   fetchBaselineHoursBySize,
@@ -70,60 +70,61 @@ export function triggerMoveGCalSync(moveId: string): void {
   })();
 }
 
-/** Fire-and-forget GCal sync for a delivery row. Reads fresh from DB, updates gcal_event_id. */
+/** Awaitable GCal sync for a single delivery. Reads fresh from DB, updates gcal_event_id. */
+export async function syncDeliveryGCalNow(deliveryId: string): Promise<GCalSyncResult["action"] | "not_configured" | "not_found"> {
+  if (!isGCalConfigured()) return "not_configured";
+  const db = createAdminClient();
+  // Pull every field used by resolveDeliveryDisplayTimes().
+  const { data: d } = await db
+    .from("deliveries")
+    .select("id, delivery_number, client_name, customer_name, service_type, delivery_type, category, status, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_minutes, estimated_duration_hours, from_address, pickup_address, to_address, delivery_address, crew_id, notes, gcal_event_id")
+    .eq("id", deliveryId)
+    .single();
+  if (!d) return "not_found";
+
+  let crewName: string | null = null;
+  if (d.crew_id) {
+    const { data: crew } = await db.from("crews").select("name").eq("id", d.crew_id).single();
+    crewName = crew?.name ?? null;
+  }
+
+  const [block, deliveryDurMap] = await Promise.all([
+    fetchSingleJobBlock("delivery", deliveryId),
+    fetchDeliveryDurationByType(),
+  ]);
+  const { startHHMM, durationMinutes } = resolveDeliveryJobTimes(
+    d as Record<string, unknown>,
+    block,
+    deliveryDurMap,
+  );
+
+  const result = await syncJobToGCal({
+    jobType: "delivery",
+    jobId: deliveryId,
+    jobCode: String(d.delivery_number || deliveryId),
+    clientName: String(d.client_name || d.customer_name || ""),
+    serviceType: String(d.service_type || "b2b_delivery"),
+    status: String(d.status || "confirmed"),
+    scheduledDate: d.scheduled_date ? String(d.scheduled_date).slice(0, 10) : null,
+    startTime: startHHMM,
+    estimatedDurationMinutes:
+      durationMinutes ??
+      (d.estimated_duration_minutes != null ? Number(d.estimated_duration_minutes) : null),
+    fromAddress: String(d.from_address || d.pickup_address || "").trim() || null,
+    toAddress: String(d.to_address || d.delivery_address || "").trim() || null,
+    crewName,
+    notes: d.notes ? String(d.notes) : null,
+    existingEventId: (d as { gcal_event_id?: string | null }).gcal_event_id ?? null,
+  });
+
+  if (result.eventId !== undefined) {
+    await db.from("deliveries").update({ gcal_event_id: result.eventId }).eq("id", deliveryId);
+  }
+  return result.action;
+}
+
+/** Fire-and-forget GCal sync for a delivery row. */
 export function triggerDeliveryGCalSync(deliveryId: string): void {
   if (!isGCalConfigured()) return;
-  void (async () => {
-    try {
-      const db = createAdminClient();
-      // Pull every field used by resolveDeliveryDisplayTimes().
-      const { data: d } = await db
-        .from("deliveries")
-        .select("id, delivery_number, client_name, customer_name, service_type, delivery_type, category, status, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_minutes, estimated_duration_hours, from_address, pickup_address, to_address, delivery_address, crew_id, notes, gcal_event_id")
-        .eq("id", deliveryId)
-        .single();
-      if (!d) return;
-
-      let crewName: string | null = null;
-      if (d.crew_id) {
-        const { data: crew } = await db.from("crews").select("name").eq("id", d.crew_id).single();
-        crewName = crew?.name ?? null;
-      }
-
-      const [block, deliveryDurMap] = await Promise.all([
-        fetchSingleJobBlock("delivery", deliveryId),
-        fetchDeliveryDurationByType(),
-      ]);
-      const { startHHMM, durationMinutes } = resolveDeliveryJobTimes(
-        d as Record<string, unknown>,
-        block,
-        deliveryDurMap,
-      );
-
-      const result = await syncJobToGCal({
-        jobType: "delivery",
-        jobId: deliveryId,
-        jobCode: String(d.delivery_number || deliveryId),
-        clientName: String(d.client_name || d.customer_name || ""),
-        serviceType: String(d.service_type || "b2b_delivery"),
-        status: String(d.status || "confirmed"),
-        scheduledDate: d.scheduled_date ? String(d.scheduled_date).slice(0, 10) : null,
-        startTime: startHHMM,
-        estimatedDurationMinutes:
-          durationMinutes ??
-          (d.estimated_duration_minutes != null ? Number(d.estimated_duration_minutes) : null),
-        fromAddress: String(d.from_address || d.pickup_address || "").trim() || null,
-        toAddress: String(d.to_address || d.delivery_address || "").trim() || null,
-        crewName,
-        notes: d.notes ? String(d.notes) : null,
-        existingEventId: (d as { gcal_event_id?: string | null }).gcal_event_id ?? null,
-      });
-
-      if (result.eventId !== undefined) {
-        await db.from("deliveries").update({ gcal_event_id: result.eventId }).eq("id", deliveryId);
-      }
-    } catch {
-      // non-critical
-    }
-  })();
+  void syncDeliveryGCalNow(deliveryId).catch(() => {});
 }
