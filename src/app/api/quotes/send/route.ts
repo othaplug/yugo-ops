@@ -251,9 +251,48 @@ export async function POST(req: NextRequest) {
       const truckLbl = quote.truck_primary ? String(quote.truck_primary) : "Sprinter";
       if (isEvMulti) {
         const legs = factors.event_legs as Array<Record<string, unknown>>;
-        eventLegBlocks = legs.map((leg) => {
-          const del = Number(leg.delivery_charge ?? 0);
-          const ret = Number(leg.return_charge ?? 0);
+        const setupFeeEmail = Number(factors.setup_fee ?? 0);
+        const overrideTotal = Number(quote.custom_price ?? 0);
+        const subTotalEmail = overrideTotal - setupFeeEmail;
+
+        // Equal split when all legs share the same scope
+        const refLeg = legs[0];
+        const legsAreEqual =
+          legs.length > 1 &&
+          legs.every(
+            (l) =>
+              l.event_crew === refLeg.event_crew &&
+              l.event_hours === refLeg.event_hours &&
+              l.same_day === refLeg.same_day,
+          );
+
+        // Proportional scale factor for unequal legs
+        const engineLegSum = legs.reduce(
+          (a, l) => a + Number(l.delivery_charge ?? 0) + Number(l.return_charge ?? 0),
+          0,
+        );
+        const needsScale = !legsAreEqual && engineLegSum > 0 && Math.abs(engineLegSum - subTotalEmail) > 1;
+
+        let remaining = subTotalEmail;
+        eventLegBlocks = legs.map((leg, idx) => {
+          const rawDel = Number(leg.delivery_charge ?? 0);
+          const rawRet = Number(leg.return_charge ?? 0);
+          const isSameDay = !!leg.same_day;
+          const isLast = idx === legs.length - 1;
+
+          let legDisplay: number;
+          if (legsAreEqual) {
+            const perLeg = Math.floor(subTotalEmail / legs.length);
+            legDisplay = isLast ? remaining : perLeg;
+            remaining -= isLast ? 0 : perLeg;
+          } else if (needsScale) {
+            const scaled = isLast ? remaining : Math.round(((rawDel + rawRet) / engineLegSum) * subTotalEmail);
+            legDisplay = scaled;
+            remaining -= isLast ? 0 : scaled;
+          } else {
+            legDisplay = rawDel + rawRet;
+          }
+
           return {
             label: String(leg.label ?? "Event"),
             deliveryDay: fmtEmailDay(leg.delivery_date as string),
@@ -261,9 +300,10 @@ export async function POST(req: NextRequest) {
             origin: String(leg.from_address ?? quote.from_address ?? ""),
             venue: String(leg.to_address ?? ""),
             crewLine: `${leg.event_crew ?? quote.est_crew_size ?? 2} movers · ${truckLbl}`,
-            delivery: del,
-            ret,
-            legSubtotal: del + ret,
+            delivery: isSameDay ? legDisplay : Math.round(legDisplay * rawDel / Math.max(rawDel + rawRet, 1)),
+            ret: isSameDay ? 0 : legDisplay - Math.round(legDisplay * rawDel / Math.max(rawDel + rawRet, 1)),
+            legSubtotal: legDisplay,
+            sameDay: isSameDay,
           };
         });
       } else {

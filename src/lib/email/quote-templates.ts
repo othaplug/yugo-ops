@@ -302,6 +302,7 @@ export interface QuoteTemplateData {
     delivery: number;
     ret: number;
     legSubtotal: number;
+    sameDay?: boolean;
   }[];
   eventDeposit?: number | null;
   // Labour Only
@@ -1164,16 +1165,16 @@ function eventTemplate(d: QuoteTemplateData): string {
           borderTop: "none",
           labelStyle: evMoneyLbl,
           valueStyle: evMoneyVal,
-          label: "DELIVERY",
+          label: leg.sameDay ? "DELIVERY & RETURN" : "DELIVERY",
           valueHtml: formatCurrencyEmail(leg.delivery),
         })}
-        ${emailNestedKvRow({
+        ${!leg.sameDay && leg.ret > 0 ? emailNestedKvRow({
           borderTop: evLegRule,
           labelStyle: evMoneyLbl,
           valueStyle: evMoneyVal,
           label: "RETURN",
           valueHtml: formatCurrencyEmail(leg.ret),
-        })}
+        }) : ""}
         ${emailNestedKvRow({
           borderTop: `2px solid ${SHELL_BORDER}`,
           labelStyle: `${evMoneyLbl};padding-top:14px`,
@@ -1204,7 +1205,7 @@ function eventTemplate(d: QuoteTemplateData): string {
         <div><strong style="color:${SHELL_TX}">Total:</strong> ${formatCurrencyEmail(total)}</div>
         <div>HST (13%): ${formatCurrencyEmail(tax)}</div>
         <div><strong style="color:${SHELL_TX}">Grand Total:</strong> ${formatCurrencyEmail(grand)}</div>
-        <div style="margin-top:6px">Deposit to confirm: <strong style="color:${EMAIL_WINE}">${formatCurrencyEmail(deposit)}</strong></div>
+        <div style="margin-top:6px">${deposit >= grand ? "Full payment at booking" : "Deposit to confirm"}: <strong style="color:${EMAIL_WINE}">${formatCurrencyEmail(deposit)}</strong></div>
       </div>
     </div>
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
