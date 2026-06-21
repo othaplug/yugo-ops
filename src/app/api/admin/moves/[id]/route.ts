@@ -87,8 +87,8 @@ export async function PATCH(
       }
 
       const [{ data: approvedChanges }, { data: approvedExtras }] = await Promise.all([
-        admin.from("move_change_requests").select("fee_cents").eq("move_id", id).eq("status", "approved"),
-        admin.from("extra_items").select("fee_cents").eq("job_id", id).eq("job_type", "move").eq("status", "approved"),
+        admin.from("move_change_requests").select("fee_cents").eq("move_id", id).eq("status", "approved").eq("payment_charged", false),
+        admin.from("extra_items").select("fee_cents").eq("job_id", id).eq("job_type", "move").eq("status", "approved").eq("payment_charged", false),
       ]);
       const additionalCents =
         (approvedChanges ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0) +
@@ -184,8 +184,8 @@ export async function PATCH(
       }
 
       const [{ data: approvedChanges }, { data: approvedExtras }] = await Promise.all([
-        admin.from("move_change_requests").select("fee_cents").eq("move_id", id).eq("status", "approved"),
-        admin.from("extra_items").select("fee_cents").eq("job_id", id).eq("job_type", "move").eq("status", "approved"),
+        admin.from("move_change_requests").select("fee_cents").eq("move_id", id).eq("status", "approved").eq("payment_charged", false),
+        admin.from("extra_items").select("fee_cents").eq("job_id", id).eq("job_type", "move").eq("status", "approved").eq("payment_charged", false),
       ]);
       const additionalCents =
         (approvedChanges ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0) +
@@ -276,8 +276,8 @@ export async function PATCH(
 
       // Include approved change-request and extra-item fees, matching the client-side balanceDue calculation
       const [{ data: chargeChanges }, { data: chargeExtras }] = await Promise.all([
-        admin.from("move_change_requests").select("fee_cents").eq("move_id", id).eq("status", "approved"),
-        admin.from("extra_items").select("fee_cents").eq("job_id", id).eq("job_type", "move").eq("status", "approved"),
+        admin.from("move_change_requests").select("fee_cents").eq("move_id", id).eq("status", "approved").eq("payment_charged", false),
+        admin.from("extra_items").select("fee_cents").eq("job_id", id).eq("job_type", "move").eq("status", "approved").eq("payment_charged", false),
       ]);
       const chargeAdditionalCents =
         (chargeChanges ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0) +

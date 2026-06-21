@@ -5,6 +5,7 @@ import { extraItemApprovalEmail } from "@/lib/email-templates";
 import { getResend } from "@/lib/resend";
 import { buildPublicMoveTrackUrl } from "@/lib/notifications/public-track-url";
 import { getEmailFrom } from "@/lib/email/send";
+import { chargeApprovedFeeOnCard } from "@/lib/charge-approved-fee";
 
 /** PATCH: Approve or reject an extra item */
 export async function PATCH(
@@ -27,11 +28,43 @@ export async function PATCH(
     })
     .eq("id", itemId)
     .eq("job_id", id)
-    .select("id, status, description")
+    .select("id, status, description, payment_charged")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Auto-charge the approved fee to the card on file so it settles immediately
+  // instead of lingering as an outstanding balance. Best-effort: if there is no
+  // card or the charge declines, the item stays approved and the fee shows as
+  // due so an admin can collect it manually.
+  let charge: { charged: boolean; reason?: string } = { charged: false };
+  if (
+    status === "approved" &&
+    feeCents > 0 &&
+    !(data as { payment_charged?: boolean }).payment_charged
+  ) {
+    const result = await chargeApprovedFeeOnCard({
+      admin,
+      moveId: id,
+      feeInclusive: feeCents / 100,
+      label: `Extra item — ${(data as { description?: string }).description || "Added item"}`,
+      idemSuffix: itemId,
+    });
+    if (result.charged) {
+      await admin
+        .from("extra_items")
+        .update({
+          payment_charged: true,
+          square_payment_id: result.squarePaymentId,
+          charged_at: new Date().toISOString(),
+        })
+        .eq("id", itemId);
+      charge = { charged: true };
+    } else {
+      charge = { charged: false, reason: result.reason };
+    }
+  }
 
   if (status === "approved" && process.env.RESEND_API_KEY) {
     const { data: move } = await admin
@@ -65,5 +98,5 @@ export async function PATCH(
     }
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json({ ...data, charge });
 }

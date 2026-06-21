@@ -80,13 +80,15 @@ export async function POST(
         .from("move_change_requests")
         .select("fee_cents")
         .eq("move_id", moveId)
-        .eq("status", "approved"),
+        .eq("status", "approved")
+        .eq("payment_charged", false),
       admin
         .from("extra_items")
         .select("fee_cents")
         .eq("job_id", moveId)
         .eq("job_type", "move")
-        .eq("status", "approved"),
+        .eq("status", "approved")
+        .eq("payment_charged", false),
     ]);
     const changeFeesCents = (changeFeesRes.data ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
     const extraFeesCents = (extraFeesRes.data ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);

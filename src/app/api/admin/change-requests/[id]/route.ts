@@ -6,6 +6,7 @@ import { getResend } from "@/lib/resend";
 import { buildPublicMoveTrackUrl } from "@/lib/notifications/public-track-url";
 import { getEmailFrom } from "@/lib/email/send";
 import { triggerMoveGCalSync } from "@/lib/google-calendar/sync-utils";
+import { chargeApprovedFeeOnCard } from "@/lib/charge-approved-fee";
 
 /** Parse and apply approved change request to move data globally */
 async function applyApprovedChange(
@@ -173,9 +174,35 @@ export async function PATCH(
 
     const { data: requestWithFee } = await admin
       .from("move_change_requests")
-      .select("fee_cents")
+      .select("fee_cents, payment_charged")
       .eq("id", id)
       .single();
+
+    // Auto-charge the approved fee to the card on file (best-effort) so it
+    // settles immediately instead of lingering as an outstanding balance.
+    if (
+      status === "approved" &&
+      (requestWithFee?.fee_cents ?? 0) > 0 &&
+      !requestWithFee?.payment_charged
+    ) {
+      const result = await chargeApprovedFeeOnCard({
+        admin,
+        moveId: request.move_id,
+        feeInclusive: Number(requestWithFee?.fee_cents ?? 0) / 100,
+        label: `Change request — ${request.type}`,
+        idemSuffix: id,
+      });
+      if (result.charged) {
+        await admin
+          .from("move_change_requests")
+          .update({
+            payment_charged: true,
+            square_payment_id: result.squarePaymentId,
+            charged_at: new Date().toISOString(),
+          })
+          .eq("id", id);
+      }
+    }
 
     const { data: move } = await admin
       .from("moves")

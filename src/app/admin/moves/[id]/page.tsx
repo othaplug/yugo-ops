@@ -212,13 +212,15 @@ export default async function MoveDetailPage({
       .from("move_change_requests")
       .select("fee_cents")
       .eq("move_id", move.id)
-      .eq("status", "approved"),
+      .eq("status", "approved")
+      .eq("payment_charged", false),
     db
       .from("extra_items")
       .select("fee_cents")
       .eq("job_id", move.id)
       .eq("job_type", "move")
-      .eq("status", "approved"),
+      .eq("status", "approved")
+      .eq("payment_charged", false),
     db
       .from("eta_sms_log")
       .select("message_type, sent_at, eta_minutes, twilio_sid")

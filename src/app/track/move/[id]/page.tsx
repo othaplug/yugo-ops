@@ -98,13 +98,15 @@ export default async function TrackMovePage({
     .from("move_change_requests")
     .select("fee_cents")
     .eq("move_id", move.id)
-    .eq("status", "approved");
+    .eq("status", "approved")
+    .eq("payment_charged", false);
   const { data: approvedExtras } = await supabase
     .from("extra_items")
     .select("fee_cents")
     .eq("job_id", move.id)
     .eq("job_type", "move")
-    .eq("status", "approved");
+    .eq("status", "approved")
+    .eq("payment_charged", false);
   const changeFeesCents = (approvedChanges ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
   const extraFeesCents = (approvedExtras ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
   const additionalFeesCents = changeFeesCents + extraFeesCents;
