@@ -5032,6 +5032,14 @@ export default function QuoteFormClient({
           base.b2b_payment_method = eventB2bInvoiceTerms === "net_15" ? "invoice" : "card";
           if (eventB2bInvoiceTerms === "net_15") base.b2b_invoice_terms = "net_15";
         }
+        const crewN = Number(eventCrewOverride);
+        if (eventCrewOverride !== "" && Number.isFinite(crewN) && crewN >= 2) {
+          base.event_crew_override = crewN;
+        }
+        const hoursN = Number(eventHoursOverride);
+        if (eventHoursOverride !== "" && Number.isFinite(hoursN) && hoursN > 0) {
+          base.event_hours_override = hoursN;
+        }
       }
       if (serviceType === "labour_only") {
         base.labour_weekend = labourWeekend || undefined;
@@ -9904,54 +9912,56 @@ export default function QuoteFormClient({
                               </select>
                             </Field>
                           )}
-                          <Field label="Return rate">
-                            <select
-                              value={leg.event_return_rate_preset}
-                              onChange={(e) =>
-                                setEventLegs((prev) =>
-                                  prev.map((L, i) =>
-                                    i === idx
-                                      ? {
-                                          ...L,
-                                          event_return_rate_preset: e.target
-                                            .value as EventLegForm["event_return_rate_preset"],
-                                        }
-                                      : L,
-                                  ),
-                                )
-                              }
-                              className={fieldInput}
-                            >
-                              {EVENT_LEG_RETURN_RATE_OPTIONS.map((o) => (
-                                <option key={o.value} value={o.value}>
-                                  {o.label}
-                                </option>
-                              ))}
-                            </select>
-                            {leg.event_return_rate_preset === "custom" ? (
-                              <input
-                                type="number"
-                                min={25}
-                                max={100}
-                                value={leg.event_return_rate_custom}
+                          {!leg.event_same_day && (
+                            <Field label="Return rate">
+                              <select
+                                value={leg.event_return_rate_preset}
                                 onChange={(e) =>
                                   setEventLegs((prev) =>
                                     prev.map((L, i) =>
                                       i === idx
                                         ? {
                                             ...L,
-                                            event_return_rate_custom:
-                                              e.target.value,
+                                            event_return_rate_preset: e.target
+                                              .value as EventLegForm["event_return_rate_preset"],
                                           }
                                         : L,
                                     ),
                                   )
                                 }
-                                placeholder="% of delivery day"
-                                className={`${fieldInput} mt-1 max-w-[200px]`}
-                              />
-                            ) : null}
-                          </Field>
+                                className={fieldInput}
+                              >
+                                {EVENT_LEG_RETURN_RATE_OPTIONS.map((o) => (
+                                  <option key={o.value} value={o.value}>
+                                    {o.label}
+                                  </option>
+                                ))}
+                              </select>
+                              {leg.event_return_rate_preset === "custom" ? (
+                                <input
+                                  type="number"
+                                  min={25}
+                                  max={100}
+                                  value={leg.event_return_rate_custom}
+                                  onChange={(e) =>
+                                    setEventLegs((prev) =>
+                                      prev.map((L, i) =>
+                                        i === idx
+                                          ? {
+                                              ...L,
+                                              event_return_rate_custom:
+                                                e.target.value,
+                                            }
+                                          : L,
+                                      ),
+                                    )
+                                  }
+                                  placeholder="% of delivery day"
+                                  className={`${fieldInput} mt-1 max-w-[200px]`}
+                                />
+                              ) : null}
+                            </Field>
+                          )}
                           <div className="grid grid-cols-2 gap-2">
                             <Field label="Delivery date *">
                               <input
@@ -12842,20 +12852,34 @@ export default function QuoteFormClient({
                         : "-"}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[var(--tx3)]">Drive Time</span>
-                  <span className="text-[var(--tx)]">
-                    {quoteResult.drive_time_min
-                      ? `${quoteResult.drive_time_min} min`
-                      : "-"}
-                  </span>
-                </div>
+                {!(quoteResult.service_type === "event" && quoteResult.factors?.event_mode === "multi") && (
+                  <div className="flex justify-between">
+                    <span className="text-[var(--tx3)]">Drive Time</span>
+                    <span className="text-[var(--tx)]">
+                      {quoteResult.drive_time_min
+                        ? `${quoteResult.drive_time_min} min`
+                        : "-"}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)]">
                     {quoteDetailDateLabel(serviceType)}
                   </span>
                   <span className="text-[var(--tx)]">
-                    {quoteResult.move_date || "-"}
+                    {(() => {
+                      if (
+                        quoteResult.service_type === "event" &&
+                        quoteResult.factors?.event_mode === "multi" &&
+                        Array.isArray(quoteResult.factors?.event_legs)
+                      ) {
+                        const legs = quoteResult.factors.event_legs as Array<{ delivery_date?: string }>;
+                        const dates = legs.map((l) => l.delivery_date).filter(Boolean) as string[];
+                        if (dates.length >= 2) return `${dates[0]} – ${dates[dates.length - 1]}`;
+                        if (dates.length === 1) return dates[0];
+                      }
+                      return quoteResult.move_date || "-";
+                    })()}
                   </span>
                 </div>
                 {quoteResult.service_type === "white_glove" &&
@@ -13036,7 +13060,11 @@ export default function QuoteFormClient({
                   <Users className="w-3.5 h-3.5 text-[var(--gold)]" />
                   <span className="text-[var(--tx)]">
                     {quoteResult.labour.crewSize}-person crew{" "}
-                    <span className="text-[var(--tx3)]">(recommended)</span>
+                    <span className="text-[var(--tx3)]">
+                      {quoteResult.factors?.event_crew_coordinator_override === true
+                        ? "(coordinator override)"
+                        : "(recommended)"}
+                    </span>
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -14283,7 +14311,7 @@ function EventPriceDisplay({
       <div
         className={`flex items-center justify-between text-[11px] ${card.muted}`}
       >
-        <span>Deposit (25% pre-tax)</span>
+        <span>Full payment at booking</span>
         <span className={ink.deposit}>{fmtPrice(t.deposit)}</span>
       </div>
     </>
@@ -14317,96 +14345,109 @@ function EventPriceDisplay({
     ) : null;
 
   if (isMulti && eventLegs.length > 0) {
+    const firstDate = eventLegs[0]?.delivery_date;
+    const lastDate = eventLegs[eventLegs.length - 1]?.delivery_date;
+    const dateRange =
+      firstDate && lastDate && firstDate !== lastDate
+        ? `${fmtShortEventAdmin(firstDate)} – ${fmtShortEventAdmin(lastDate)}`
+        : firstDate
+          ? fmtShortEventAdmin(firstDate)
+          : null;
+
     return (
       <div className={`${pricePanelShell} space-y-3`}>
-        <div className="flex items-center justify-between gap-2">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-2">
           <div>
             <span className={`text-[13px] font-bold ${ink.accent}`}>
               Event quote
             </span>
-            <p
-              className={`text-[9px] mt-0.5 font-medium uppercase tracking-wide ${card.muted}`}
-            >
-              Multi-event bundle, {eventLegs.length} round trip
-              {eventLegs.length === 1 ? "" : "s"}
+            <p className={`text-[9px] mt-0.5 font-medium uppercase tracking-wide ${card.muted}`}>
+              {eventLegs.length} round trip{eventLegs.length !== 1 ? "s" : ""}
+              {dateRange ? ` · ${dateRange}` : ""}
             </p>
           </div>
-          <span
-            className={`text-2xl sm:text-3xl font-black tabular-nums shrink-0 ${ink.accent}`}
-          >
+          <span className={`text-2xl sm:text-3xl font-black tabular-nums shrink-0 ${ink.accent}`}>
             {fmtPrice(t.price)}
           </span>
         </div>
-        <div className="space-y-3 text-[11px]">
-          {eventLegs.map((leg, idx) => (
-            <div key={idx} className={`p-3 space-y-2 ${card.legPanel}`}>
-              <p
-                className={`text-[9px] font-bold tracking-wider uppercase ${ink.accent}`}
-              >
-                {leg.label?.trim() || `Event ${idx + 1}`}
-              </p>
-              {(leg.from_address || leg.to_address) && (
-                <p
-                  className={`text-[9px] leading-snug opacity-90 ${card.muted}`}
-                >
-                  {leg.from_address || "Origin"} → {leg.to_address || "Venue"}
-                </p>
-              )}
-              <p className={`text-[9px] opacity-80 ${card.muted}`}>
-                Deliver {fmtShortEventAdmin(leg.delivery_date)} → Return{" "}
-                {fmtShortEventAdmin(leg.return_date)}
-                {leg.same_day ? " (same day)" : ""}
-                {leg.is_on_site ? (
-                  <span className={`ml-1 font-semibold ${card.body}`}>
-                    · On-site Event
+
+        {/* Per-day leg cards */}
+        <div className="space-y-2 text-[11px]">
+          {eventLegs.map((leg, idx) => {
+            const legTotal = (leg.delivery_charge ?? 0) + (leg.return_charge ?? 0);
+            const hasReturn = !leg.same_day && (leg.return_charge ?? 0) > 0;
+            const returnRatePct = leg.return_discount !== undefined
+              ? Math.round(leg.return_discount * 100)
+              : null;
+
+            return (
+              <div key={idx} className={`rounded-lg p-3 space-y-2 ${card.legPanel}`}>
+                {/* Leg header: label + day total */}
+                <div className="flex items-center justify-between gap-2">
+                  <p className={`text-[9px] font-bold tracking-wider uppercase ${ink.accent}`}>
+                    {leg.label?.trim() || `Day ${idx + 1}`}
+                    {leg.delivery_date ? (
+                      <span className={`ml-1.5 normal-case font-normal ${card.muted}`}>
+                        {fmtShortEventAdmin(leg.delivery_date)}
+                      </span>
+                    ) : null}
+                  </p>
+                  <span className={`text-[12px] font-bold tabular-nums shrink-0 ${card.body}`}>
+                    {fmtPrice(legTotal)}
                   </span>
+                </div>
+
+                {/* Address */}
+                {(leg.from_address || leg.to_address) && !leg.is_on_site && (
+                  <p className={`text-[9px] leading-snug ${card.muted}`}>
+                    {leg.from_address || "Origin"} → {leg.to_address || "Venue"}
+                  </p>
+                )}
+                {leg.is_on_site && (
+                  <p className={`text-[9px] ${card.muted}`}>On-site event</p>
+                )}
+
+                {/* Crew/hours line */}
+                {leg.event_crew && leg.event_hours ? (
+                  <p className={`text-[9px] ${card.muted}`}>
+                    {leg.event_crew}-person crew · {leg.event_hours}hr
+                    {leg.same_day ? " (delivery + same-day return)" : " delivery"}
+                  </p>
                 ) : null}
-              </p>
-              <div className="flex justify-between gap-2">
-                <span className={card.muted}>
-                  Delivery ({fmtShortEventAdmin(leg.delivery_date)})
-                  {leg.event_crew && leg.event_hours ? (
-                    <span className="ml-1 opacity-75">
-                      {leg.event_crew}-person crew, {leg.event_hours}hr
-                    </span>
-                  ) : null}
-                </span>
-                <span
-                  className={`font-medium tabular-nums shrink-0 ${card.body}`}
-                >
-                  {fmtPrice(leg.delivery_charge ?? 0)}
-                </span>
+
+                {/* Delivery + return lines — only when there IS a separate return */}
+                {hasReturn ? (
+                  <div className={`space-y-1 pt-1.5 border-t ${card.borderTop}`}>
+                    <div className="flex justify-between gap-2">
+                      <span className={card.muted}>Delivery</span>
+                      <span className={`tabular-nums ${card.body}`}>{fmtPrice(leg.delivery_charge ?? 0)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className={card.muted}>
+                        Return
+                        {returnRatePct !== null ? (
+                          <span className="ml-1 opacity-60">{returnRatePct}%</span>
+                        ) : null}
+                      </span>
+                      <span className={`tabular-nums ${card.body}`}>{fmtPrice(leg.return_charge ?? 0)}</span>
+                    </div>
+                  </div>
+                ) : leg.same_day ? (
+                  <p className={`text-[9px] ${card.muted}`}>Return included in day rate</p>
+                ) : null}
               </div>
-              <div className="flex justify-between gap-2">
-                <span className={card.muted}>
-                  Return ({fmtShortEventAdmin(leg.return_date)})
-                  {leg.return_discount !== undefined ? (
-                    <span className="ml-1 opacity-75">
-                      {Math.round(leg.return_discount * 100)}% of leg delivery
-                    </span>
-                  ) : returnDiscount !== undefined ? (
-                    <span className="ml-1 opacity-75">
-                      {Math.round(returnDiscount * 100)}% of leg delivery
-                    </span>
-                  ) : null}
-                </span>
-                <span
-                  className={`font-medium tabular-nums shrink-0 ${card.body}`}
-                >
-                  {fmtPrice(leg.return_charge ?? 0)}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
+
           {(setupFee ?? 0) > 0 && (
             <div className="flex justify-between">
               <span className={card.muted}>Setup service (program)</span>
-              <span className={`font-medium ${card.body}`}>
-                {fmtPrice(setupFee!)}
-              </span>
+              <span className={`font-medium ${card.body}`}>{fmtPrice(setupFee!)}</span>
             </div>
           )}
         </div>
+
         {totalsFooter}
         {includesBlock}
       </div>
