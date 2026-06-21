@@ -8,6 +8,8 @@
     "unlock-next": "node -e \"const fs=require('fs');for(const p of ['.next/lock','.next/dev/lock']){try{fs.unlinkSync(p)}catch(e){if(e.code!=='ENOENT')throw e}}\"",
     "build:resume": "npm run unlock-next && npm run build",
     "lint": "eslint .",
+    "check:db": "node scripts/check-db-columns.mjs",
+    "db:gen-types": "supabase gen types typescript --linked > src/lib/database.types.ts",
     "start": "next start",
     "db:push": "npx supabase db push --include-all",
     "db:repair:drop-20260331-slot": "npx supabase migration repair --status reverted 20260331120000 --linked",

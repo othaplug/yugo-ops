@@ -446,13 +446,16 @@ export async function POST(
 
     const crewMemberNames: string[] = [];
     if (payload.teamId) {
+      // crew_members has `name` + `team_id` (not first_name/last_name/crew_id) —
+      // the old select+filter both referenced phantom columns, so the proof of
+      // delivery always recorded an empty crew list.
       const { data: members } = await admin
         .from("crew_members")
-        .select("first_name, last_name")
-        .eq("crew_id", payload.teamId)
+        .select("name")
+        .eq("team_id", payload.teamId)
         .eq("is_active", true);
       for (const m of members || []) {
-        crewMemberNames.push(`${m.first_name} ${(m.last_name || "").charAt(0)}.`);
+        if (m.name) crewMemberNames.push(String(m.name));
       }
     }
 
