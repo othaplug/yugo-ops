@@ -1641,7 +1641,7 @@ export default function QuoteFormClient({
   const [eventReturnRateCustomSingle, setEventReturnRateCustomSingle] =
     useState("");
   const [eventIsB2b, setEventIsB2b] = useState(false);
-  const [eventB2bInvoiceTerms, setEventB2bInvoiceTerms] = useState<"on_completion" | "net_30">("on_completion");
+  const [eventB2bInvoiceTerms, setEventB2bInvoiceTerms] = useState<"on_completion" | "net_15">("on_completion");
   const [eventLegs, setEventLegs] = useState<EventLegForm[]>(() => [
     {
       label: "Event 1",
@@ -2188,7 +2188,7 @@ export default function QuoteFormClient({
       if (d.b2bBusinessName) setB2bBusinessName(d.b2bBusinessName as string);
       if (d.eventName) setEventName(d.eventName as string);
       if (d.eventIsB2b) setEventIsB2b(d.eventIsB2b as boolean);
-      if (d.eventB2bInvoiceTerms) setEventB2bInvoiceTerms(d.eventB2bInvoiceTerms as "on_completion" | "net_30");
+      if (d.eventB2bInvoiceTerms) setEventB2bInvoiceTerms(d.eventB2bInvoiceTerms as "on_completion" | "net_15");
       if (d.labourDescription)
         setLabourDescription(d.labourDescription as string);
       if (d.itemDescription) setItemDescription(d.itemDescription as string);
@@ -5029,8 +5029,8 @@ export default function QuoteFormClient({
         }
         if (eventIsB2b) {
           base.b2b_business_name = b2bBusinessName.trim() || undefined;
-          base.b2b_payment_method = eventB2bInvoiceTerms === "net_30" ? "invoice" : "card";
-          if (eventB2bInvoiceTerms === "net_30") base.b2b_invoice_terms = "net_30";
+          base.b2b_payment_method = eventB2bInvoiceTerms === "net_15" ? "invoice" : "card";
+          if (eventB2bInvoiceTerms === "net_15") base.b2b_invoice_terms = "net_15";
         }
       }
       if (serviceType === "labour_only") {
@@ -9275,16 +9275,16 @@ export default function QuoteFormClient({
                             className={fieldInput}
                           />
                         </Field>
-                        <Field label="Payment terms">
+                        <Field label="Payment terms (partners only)">
                           <select
                             value={eventB2bInvoiceTerms}
                             onChange={(e) =>
-                              setEventB2bInvoiceTerms(e.target.value as "on_completion" | "net_30")
+                              setEventB2bInvoiceTerms(e.target.value as "on_completion" | "net_15")
                             }
                             className={fieldInput}
                           >
                             <option value="on_completion">Pay on completion</option>
-                            <option value="net_30">Net 30 invoice</option>
+                            <option value="net_15">Net 15 invoice</option>
                           </select>
                         </Field>
                       </div>

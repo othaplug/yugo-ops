@@ -386,11 +386,11 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                   <Check className="w-4 h-4" /> Confirmed
                 </span>
               ) : (
-                `Confirm Event Booking ${fmtPrice(deposit)} Deposit`
+                `Confirm & Book — ${fmtPrice(price + tax)}`
               )}
             </button>
             <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
-              25% deposit &middot; Balance of {fmtPrice(price + tax - deposit)} due before event
+              Full payment at booking &middot; No balance due
             </p>
           </div>
         </div>

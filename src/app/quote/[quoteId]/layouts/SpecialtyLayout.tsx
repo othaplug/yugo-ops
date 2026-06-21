@@ -251,11 +251,11 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
                   <Check className="w-4 h-4" /> Selected
                 </span>
               ) : (
-                `Proceed \u2014 ${fmtPrice(deposit)} Deposit`
+                `Proceed — ${fmtPrice(price + tax)}`
               )}
             </button>
             <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
-              {price < 5000 ? "30%" : "50%"} deposit · Balance due 48 hours before your service
+              Full payment at booking &middot; No balance due
             </p>
           </div>
         </div>

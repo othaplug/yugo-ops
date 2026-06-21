@@ -502,12 +502,12 @@ export function calculateDeposit(
       if (total < 3000) return 150;
       return Math.round(total * 0.1);
     case "specialty":
-      return total < 5000 ? Math.round(total * 0.3) : Math.round(total * 0.5);
+      return total; // full payment at booking
     case "b2b_oneoff":
     case "b2b_delivery":
       return 100;
     case "event":
-      return Math.max(300, Math.round(total * 0.25));
+      return total; // full payment at booking
     case "labour_only":
       // Operator change 2026-06-11: labour-only bookings made 4+ days
       // out require a flat $150 deposit (not 50%). Under-4-days short-

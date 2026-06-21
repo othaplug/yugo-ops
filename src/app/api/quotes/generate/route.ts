@@ -342,7 +342,7 @@ interface QuoteInput {
   b2b_weight_category?: string;
   b2b_special_instructions?: string;
   b2b_payment_method?: "card" | "invoice";
-  /** When payment is invoice: on_completion | net_15 | net_30 */
+  /** When payment is invoice: on_completion | net_15 */
   b2b_invoice_terms?: string;
   b2b_retailer_source?: string;
   /** Dimensional B2B pricing */
@@ -3075,7 +3075,7 @@ async function calcSpecialty(
   price += addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
-  const deposit = await calculateDeposit(sb, "specialty", price, input.move_date);
+  const deposit = price; // full payment at booking for specialty
 
   const spFeatures = await fetchTierFeatures(sb, "specialty", "custom");
   const specialtyIncludes = spFeatures.length > 0 ? spFeatures : [
@@ -3792,8 +3792,7 @@ async function calcEvent(
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
   const total = price + tax;
-  const minDeposit = cfgNum(config, "event_min_deposit", 300);
-  const deposit = Math.max(minDeposit, Math.ceil(price * 0.25));
+  const deposit = price; // full payment at booking for event
 
   const eventIncludes = buildEventIncludesList(input);
 
@@ -3965,8 +3964,7 @@ async function calcMultiEvent(
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
   const total = price + tax;
-  const minDeposit = cfgNum(config, "event_min_deposit", 300);
-  const deposit = Math.max(minDeposit, Math.ceil(price * 0.25));
+  const deposit = price; // full payment at booking for event
 
   const eventDistanceSummary = distLabels
     .map((d, idx) =>
@@ -5062,10 +5060,9 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     const taxR = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
     const newPrice = custom_price.price + globalCratingTotal;
     const newTax = Math.round(newPrice * taxR);
-    const minEvDep = cfgNum(config, "event_min_deposit", 300);
     const newDeposit =
       svcType === "event"
-        ? Math.max(minEvDep, Math.ceil(newPrice * 0.25))
+        ? newPrice // full payment at booking for event
         : custom_price.deposit;
     custom_price = {
       ...custom_price,
@@ -5082,7 +5079,6 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     if (evOvr !== undefined) {
       const evReason = String(input.event_pre_tax_override_reason || "").trim();
       const taxR = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
-      const minEvDep = cfgNum(config, "event_min_deposit", 300);
       factors = {
         ...factors,
         event_system_pre_tax_total_before_override: custom_price.price,
@@ -5095,7 +5091,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         price: evOvr,
         tax: Math.round(evOvr * taxR),
         total: evOvr + Math.round(evOvr * taxR),
-        deposit: Math.max(minEvDep, Math.ceil(evOvr * 0.25)),
+        deposit: evOvr, // full payment at booking for event
       };
     }
   }
@@ -5496,9 +5492,8 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     async function depositAfterOverride(preTax: number): Promise<number> {
       const tot = Math.round(preTax * (1 + taxOvr));
       if (daysOutForDep < 4) return tot;
-      if (svcType === "event") {
-        const minDeposit = cfgNum(config, "event_min_deposit", 300);
-        return Math.max(minDeposit, Math.ceil(preTax * 0.25));
+      if (svcType === "event" || svcType === "specialty") {
+        return tot; // full payment at booking
       }
       if (svcType === "labour_only") {
         // Flat $150 deposit when booked 4+ days out (operator change
