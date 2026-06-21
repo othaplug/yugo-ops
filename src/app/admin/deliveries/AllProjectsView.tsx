@@ -123,6 +123,32 @@ export default function AllDeliveriesView({
   >(initialView || "deliveries");
   const [createDropOpen, setCreateDropOpen] = useState(false);
   const createDropRef = useRef<HTMLDivElement>(null);
+  const [gcalSyncing, setGcalSyncing] = useState(false);
+  const [gcalMsg, setGcalMsg] = useState<string | null>(null);
+
+  const syncCalendar = async () => {
+    if (gcalSyncing) return;
+    setGcalSyncing(true);
+    setGcalMsg(null);
+    try {
+      const res = await fetch("/api/admin/deliveries/gcal-resync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setGcalMsg(typeof data.error === "string" ? data.error : "Sync failed");
+        return;
+      }
+      const synced = (data.results?.created ?? 0) + (data.results?.updated ?? 0);
+      setGcalMsg(`Synced ${synced} of ${data.considered ?? 0} to the calendar.`);
+    } catch {
+      setGcalMsg("Sync failed");
+    } finally {
+      setGcalSyncing(false);
+    }
+  };
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -252,12 +278,25 @@ export default function AllDeliveriesView({
             title="All deliveries"
             description="Every delivery across partners, day-rates, and one-off B2B jobs."
             actions={
-              <div className="relative" ref={createDropRef}>
-                <CreateButton
-                  onClick={() => setCreateDropOpen((v) => !v)}
-                  title="New delivery"
-                  label="Add delivery"
-                />
+              <div className="flex items-center gap-2">
+                {gcalMsg && (
+                  <span className="text-[11px] text-[var(--yu3-ink-muted)] max-w-[200px] truncate">{gcalMsg}</span>
+                )}
+                <button
+                  type="button"
+                  onClick={syncCalendar}
+                  disabled={gcalSyncing}
+                  title="Push all deliveries to Google Calendar"
+                  className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[var(--yu3-r-md)] border border-[var(--yu3-line)] text-[12px] font-semibold text-[var(--yu3-ink)] hover:bg-[var(--yu3-bg-surface-subtle)] disabled:opacity-50 transition-colors"
+                >
+                  {gcalSyncing ? "Syncing…" : "Sync to calendar"}
+                </button>
+                <div className="relative" ref={createDropRef}>
+                  <CreateButton
+                    onClick={() => setCreateDropOpen((v) => !v)}
+                    title="New delivery"
+                    label="Add delivery"
+                  />
                 {createDropOpen && (
                   <div className="absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] py-1.5 shadow-[var(--yu3-shadow-lg)]">
                     {[
@@ -293,6 +332,7 @@ export default function AllDeliveriesView({
                     ))}
                   </div>
                 )}
+                </div>
               </div>
             }
           />
