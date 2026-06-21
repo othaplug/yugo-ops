@@ -1494,6 +1494,7 @@ export default function CrewJobPage({
             </span>
           )}
         </div>
+        {!(job.isMultiStop && (job.moveStops?.length ?? 0) > 1) && (
         <div className="border-t border-[var(--yu3-line-subtle)] pt-4">
           <div className="flex gap-3.5">
             <div className="flex flex-col items-center shrink-0 pt-1">
@@ -1539,6 +1540,7 @@ export default function CrewJobPage({
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* ── Multi-stop list — every pickup/drop-off in plan order ──
