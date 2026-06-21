@@ -75,9 +75,13 @@ export async function syncDeliveryGCalNow(deliveryId: string): Promise<GCalSyncR
   if (!isGCalConfigured()) return "not_configured";
   const db = createAdminClient();
   // Pull every field used by resolveDeliveryDisplayTimes().
+  // NOTE: deliveries has NO service_type / from_address / to_address columns
+  // (it uses delivery_type/category, pickup_address, delivery_address).
+  // Selecting a non-existent column errors the WHOLE query and returns null,
+  // which previously made every delivery sync silently report "not found".
   const { data: d } = await db
     .from("deliveries")
-    .select("id, delivery_number, client_name, customer_name, service_type, delivery_type, category, status, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_minutes, estimated_duration_hours, from_address, pickup_address, to_address, delivery_address, crew_id, notes, gcal_event_id")
+    .select("id, delivery_number, client_name, customer_name, delivery_type, category, status, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_minutes, estimated_duration_hours, pickup_address, delivery_address, crew_id, notes, gcal_event_id")
     .eq("id", deliveryId)
     .single();
   if (!d) return "not_found";
@@ -103,7 +107,7 @@ export async function syncDeliveryGCalNow(deliveryId: string): Promise<GCalSyncR
     jobId: deliveryId,
     jobCode: String(d.delivery_number || deliveryId),
     clientName: String(d.client_name || d.customer_name || ""),
-    serviceType: String(d.service_type || "b2b_delivery"),
+    serviceType: String(d.delivery_type || d.category || "b2b_delivery"),
     status: String(d.status || "confirmed"),
     scheduledDate: d.scheduled_date ? String(d.scheduled_date).slice(0, 10) : null,
     startTime: startHHMM,
