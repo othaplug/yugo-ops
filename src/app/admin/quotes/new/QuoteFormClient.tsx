@@ -14172,6 +14172,35 @@ function EventPriceDisplay({
           ? fmtShortEventAdmin(firstDate)
           : null;
 
+    // Equal split when all legs have the same scope; proportional otherwise.
+    const setupFeeMulti = (eventLegs[0] as unknown as Record<string, number>)?.setup_fee ?? 0;
+    const subTotalMulti = t.price - setupFeeMulti;
+    const refLeg = eventLegs[0];
+    const legsAreEqual =
+      eventLegs.length > 1 &&
+      eventLegs.every(
+        (l) =>
+          l.event_crew === refLeg.event_crew &&
+          l.event_hours === refLeg.event_hours &&
+          l.same_day === refLeg.same_day,
+      );
+    const legDisplayAmounts: number[] = eventLegs.map((leg, idx) => {
+      if (legsAreEqual) {
+        const perLeg = Math.floor(subTotalMulti / eventLegs.length);
+        const remainder = subTotalMulti - perLeg * eventLegs.length;
+        return idx === eventLegs.length - 1 ? perLeg + remainder : perLeg;
+      }
+      // Proportional
+      const engineAmounts = eventLegs.map((l) => (l.delivery_charge ?? 0) + (l.return_charge ?? 0));
+      const engineSum = engineAmounts.reduce((a, b) => a + b, 0);
+      if (engineSum === 0) return 0;
+      const scaled = engineAmounts.map((amt, i) => {
+        if (i === engineAmounts.length - 1) return subTotalMulti - engineAmounts.slice(0, -1).reduce((a, v, j) => a + Math.round((v / engineSum) * subTotalMulti), 0);
+        return Math.round((amt / engineSum) * subTotalMulti);
+      });
+      return scaled[idx] ?? 0;
+    });
+
     return (
       <div className={`${pricePanelShell} space-y-3`}>
         {/* Header */}
@@ -14193,7 +14222,7 @@ function EventPriceDisplay({
         {/* Per-day leg cards */}
         <div className="space-y-2 text-[11px]">
           {eventLegs.map((leg, idx) => {
-            const legTotal = (leg.delivery_charge ?? 0) + (leg.return_charge ?? 0);
+            const legTotal = legDisplayAmounts[idx] ?? (leg.delivery_charge ?? 0) + (leg.return_charge ?? 0);
             const hasReturn = !leg.same_day && (leg.return_charge ?? 0) > 0;
             const returnRatePct = leg.return_discount !== undefined
               ? Math.round(leg.return_discount * 100)

@@ -89,17 +89,37 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
     !!f.event_has_on_site_leg ||
     (isMulti && eventLegs.some((l) => l.is_on_site));
 
-  // Proportional scaling: when an admin override makes the line items not sum to price,
-  // scale each leg's displayed amounts so the breakdown adds up correctly.
+  // Per-leg display amounts: equal split when legs have identical scope (same
+  // crew, hours, same-day flag); proportional scaling otherwise.
   const multiLegDisplayAmounts: number[] = [];
   if (isMulti && eventLegs.length > 0) {
-    const engineAmounts = eventLegs.map(
-      (leg) => (leg.delivery_charge ?? 0) + (leg.return_charge ?? 0),
-    );
-    const engineTotal = engineAmounts.reduce((a, b) => a + b, 0) + setupFee;
-    const lineTotal = price; // what the client actually pays (pre-tax)
-    const scaledAmounts = scaleToTotal(engineAmounts, lineTotal - setupFee);
-    scaledAmounts.forEach((amt) => multiLegDisplayAmounts.push(amt));
+    const subTotal = price - setupFee;
+    const ref = eventLegs[0];
+    const legsAreEqual =
+      eventLegs.length > 1 &&
+      eventLegs.every(
+        (l) =>
+          l.event_crew === ref.event_crew &&
+          l.event_hours === ref.event_hours &&
+          l.same_day === ref.same_day,
+      );
+
+    if (legsAreEqual) {
+      const perLeg = Math.floor(subTotal / eventLegs.length);
+      const remainder = subTotal - perLeg * eventLegs.length;
+      eventLegs.forEach((_, idx) =>
+        multiLegDisplayAmounts.push(
+          idx === eventLegs.length - 1 ? perLeg + remainder : perLeg,
+        ),
+      );
+    } else {
+      const engineAmounts = eventLegs.map(
+        (leg) => (leg.delivery_charge ?? 0) + (leg.return_charge ?? 0),
+      );
+      scaleToTotal(engineAmounts, subTotal).forEach((amt) =>
+        multiLegDisplayAmounts.push(amt),
+      );
+    }
   }
 
   return (
