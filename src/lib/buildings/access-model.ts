@@ -1,5 +1,3 @@
-import type { BuildingProfileRow } from "./types";
-
 /**
  * Building access model — turns the typed, building-type-aware access fields on
  * a building_profiles row into a precise, named set of time drivers plus the
@@ -37,7 +35,7 @@ export type AccessModel = {
   recommendExtraCrew: boolean;
 };
 
-type Row = Partial<BuildingProfileRow> & Record<string, unknown>;
+type Row = Record<string, unknown>;
 
 const num = (v: unknown): number | null => {
   const n = typeof v === "string" ? parseFloat(v) : typeof v === "number" ? v : NaN;
