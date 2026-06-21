@@ -1640,6 +1640,8 @@ export default function QuoteFormClient({
   >("auto");
   const [eventReturnRateCustomSingle, setEventReturnRateCustomSingle] =
     useState("");
+  const [eventIsB2b, setEventIsB2b] = useState(false);
+  const [eventB2bInvoiceTerms, setEventB2bInvoiceTerms] = useState<"on_completion" | "net_30">("on_completion");
   const [eventLegs, setEventLegs] = useState<EventLegForm[]>(() => [
     {
       label: "Event 1",
@@ -2128,6 +2130,8 @@ export default function QuoteFormClient({
       moveSize,
       b2bBusinessName,
       eventName,
+      eventIsB2b,
+      eventB2bInvoiceTerms,
       labourDescription,
       itemDescription,
       specialtyType,
@@ -2149,6 +2153,8 @@ export default function QuoteFormClient({
       moveSize,
       b2bBusinessName,
       eventName,
+      eventIsB2b,
+      eventB2bInvoiceTerms,
       labourDescription,
       itemDescription,
       specialtyType,
@@ -2181,6 +2187,8 @@ export default function QuoteFormClient({
       }
       if (d.b2bBusinessName) setB2bBusinessName(d.b2bBusinessName as string);
       if (d.eventName) setEventName(d.eventName as string);
+      if (d.eventIsB2b) setEventIsB2b(d.eventIsB2b as boolean);
+      if (d.eventB2bInvoiceTerms) setEventB2bInvoiceTerms(d.eventB2bInvoiceTerms as "on_completion" | "net_30");
       if (d.labourDescription)
         setLabourDescription(d.labourDescription as string);
       if (d.itemDescription) setItemDescription(d.itemDescription as string);
@@ -5018,6 +5026,11 @@ export default function QuoteFormClient({
             eventReturnRateCustomSingle.trim()
               ? Number(eventReturnRateCustomSingle)
               : undefined;
+        }
+        if (eventIsB2b) {
+          base.b2b_business_name = b2bBusinessName.trim() || undefined;
+          base.b2b_payment_method = eventB2bInvoiceTerms === "net_30" ? "invoice" : "card";
+          if (eventB2bInvoiceTerms === "net_30") base.b2b_invoice_terms = "net_30";
         }
       }
       if (serviceType === "labour_only") {
@@ -9236,6 +9249,46 @@ export default function QuoteFormClient({
                         </p>
                       </div>
                     </label>
+                    <label className="flex items-start gap-2 cursor-pointer rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
+                      <input
+                        type="checkbox"
+                        checked={eventIsB2b}
+                        onChange={(e) => setEventIsB2b(e.target.checked)}
+                        className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
+                      />
+                      <div>
+                        <span className="text-[11px] font-semibold text-[var(--tx)]">
+                          Commercial / B2B client
+                        </span>
+                        <p className="text-[10px] text-[var(--tx2)] mt-0.5 leading-snug">
+                          Showroom, brand, or business client. Enables business name and invoice terms.
+                        </p>
+                      </div>
+                    </label>
+                    {eventIsB2b && (
+                      <div className="space-y-2 pl-1">
+                        <Field label="Business name">
+                          <input
+                            value={b2bBusinessName}
+                            onChange={(e) => setB2bBusinessName(e.target.value)}
+                            placeholder="e.g. Calacatta Stone Co."
+                            className={fieldInput}
+                          />
+                        </Field>
+                        <Field label="Payment terms">
+                          <select
+                            value={eventB2bInvoiceTerms}
+                            onChange={(e) =>
+                              setEventB2bInvoiceTerms(e.target.value as "on_completion" | "net_30")
+                            }
+                            className={fieldInput}
+                          >
+                            <option value="on_completion">Pay on completion</option>
+                            <option value="net_30">Net 30 invoice</option>
+                          </select>
+                        </Field>
+                      </div>
+                    )}
                     {!eventMulti && (
                       <>
                         <label className="flex items-start gap-2 cursor-pointer rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">

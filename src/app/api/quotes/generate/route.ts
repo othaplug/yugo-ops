@@ -3808,6 +3808,9 @@ async function calcEvent(
     factors: {
       event_mode: "single",
       event_name: input.event_name || null,
+      b2b_business_name: input.b2b_business_name || null,
+      b2b_payment_method: input.b2b_business_name ? (input.b2b_payment_method ?? "card") : null,
+      b2b_invoice_terms: input.b2b_payment_method === "invoice" ? (input.b2b_invoice_terms?.trim() || "on_completion") : null,
       delivery_date: input.move_date || null,
       return_date: input.event_return_date || null,
       delivery_charge: del,
@@ -3987,6 +3990,9 @@ async function calcMultiEvent(
     factors: {
       event_mode: "multi",
       event_name: input.event_name || null,
+      b2b_business_name: input.b2b_business_name || null,
+      b2b_payment_method: input.b2b_business_name ? (input.b2b_payment_method ?? "card") : null,
+      b2b_invoice_terms: input.b2b_payment_method === "invoice" ? (input.b2b_invoice_terms?.trim() || "on_completion") : null,
       event_legs: legBreakdown,
       event_leg_distances: distLabels,
       event_distance_summary: eventDistanceSummary,
