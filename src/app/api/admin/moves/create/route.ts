@@ -902,10 +902,8 @@ export async function POST(req: NextRequest) {
         const baseUrl = getEmailBaseUrl();
         const moveCode = move.move_code || getMoveCode({ id: moveId });
         const jobIdDisplay = formatJobId(moveCode, "move");
-        const depositPaid =
-          moveType === "event" || moveType === "specialty"
-            ? estimate // full payment at booking
-            : Math.round(estimate * 0.25);
+        // No deposit is assumed collected at move creation — admin marks it explicitly.
+        const depositPaid = 0;
         const trackUrl = `${baseUrl}/track/move/${getTrackMoveSlug({ move_code: move.move_code, id: moveId })}?token=${signTrackToken("move", moveId)}`;
 
         let html: string;

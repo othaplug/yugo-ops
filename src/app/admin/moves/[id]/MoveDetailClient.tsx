@@ -683,9 +683,9 @@ export default function MoveDetailClient({
       move.estimate ??
       0,
   );
-  const depositPaid = Number(
-    move.deposit_amount ?? Math.round(estimate * 0.25),
-  );
+  // Only treat money as collected when the admin has explicitly recorded it.
+  // Never infer a 25% deposit — if deposit_amount is null, nothing is collected yet.
+  const depositPaid = Number(move.deposit_amount ?? 0);
   const baseBalance = Number(move.balance_amount ?? estimate - depositPaid);
   const balanceDue = baseBalance + additionalFeesCents / 100;
   const scheduledDateLocal = parseDateOnly(move.scheduled_date);
@@ -2727,7 +2727,7 @@ export default function MoveDetailClient({
               !balanceJustSettled &&
               !isBalancePaid && (
               <div className="px-4 py-3 border-t border-[var(--yu3-line-subtle)] flex flex-wrap items-center gap-2">
-                {!move.deposit_paid_at && depositPaid > 0 && (
+                {!move.deposit_paid_at && (
                   <button
                     type="button"
                     disabled={paymentBtnLoading !== null}
