@@ -31,6 +31,7 @@ import YugoMarketingFooter from "@/components/YugoMarketingFooter";
 import TipConfirmation from "@/components/tracking/TipConfirmation";
 import ExperienceRatingSection from "@/components/tracking/ExperienceRatingSection";
 import TrackingAgreementModal from "./TrackingAgreementModal";
+import SuppliesUpsell, { type SupplyCatalogItem } from "./SuppliesUpsell";
 import InventoryChangeRequestModal from "@/components/tracking/InventoryChangeRequestModal";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import {
@@ -559,6 +560,9 @@ export default function TrackMoveClient({
   companyContactEmail = process.env.NEXT_PUBLIC_YUGO_EMAIL || "support@helloyugo.com",
   coordinatorName = null,
   coordinatorPhone = null,
+  suppliesCatalog = [],
+  suppliesHasCardOnFile = false,
+  suppliesUseSandbox = false,
 }: {
   move: any;
   crew: { id: string; name: string; members?: string[] } | null;
@@ -644,6 +648,12 @@ export default function TrackMoveClient({
   coordinatorName?: string | null;
   /** Optional phone for coordinator. Falls back to YUGO_PHONE if missing. */
   coordinatorPhone?: string | null;
+  /** Self-purchasable supply add-ons (empty when move is past/cancelled). */
+  suppliesCatalog?: SupplyCatalogItem[];
+  /** Whether the move has a Square card on file for one-tap supplies checkout. */
+  suppliesHasCardOnFile?: boolean;
+  /** Square environment flag for the supplies card-form fallback. */
+  suppliesUseSandbox?: boolean;
 }) {
   const router = useRouter();
   const params = useParams();
@@ -3650,6 +3660,16 @@ export default function TrackMoveClient({
                     "bin_rental"
                   }
                   serviceType={String(move.service_type || "").toLowerCase()}
+                />
+              )}
+
+              {suppliesCatalog.length > 0 && !isNonMoveProductTrack && (
+                <SuppliesUpsell
+                  moveId={move.id}
+                  token={token}
+                  catalog={suppliesCatalog}
+                  hasCardOnFile={suppliesHasCardOnFile}
+                  useSandbox={suppliesUseSandbox}
                 />
               )}
 

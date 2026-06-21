@@ -49,6 +49,41 @@ export default function TrackMovePreviewActivePage() {
           crewChangeRequest={null}
           binOrder={null}
           quotePickupStops={null}
+          suppliesHasCardOnFile
+          suppliesCatalog={[
+            {
+              slug: "packing_materials",
+              name: "Packing materials kit",
+              description: "Boxes, tape, bubble wrap, paper. Enough for 1-2BR.",
+              price: 89,
+              price_type: "flat",
+              unit_label: null,
+            },
+            {
+              slug: "wardrobe_boxes",
+              name: "Wardrobe boxes",
+              description: "Tall boxes for hanging clothes. Returned after.",
+              price: 15,
+              price_type: "per_unit",
+              unit_label: "per box",
+            },
+            {
+              slug: "mattress_bag",
+              name: "Mattress bag",
+              description: "Sealed plastic mattress protection.",
+              price: 12,
+              price_type: "per_unit",
+              unit_label: "per mattress",
+            },
+            {
+              slug: "picture_crating",
+              name: "Picture/mirror crating",
+              description: "Custom cardboard crate for large frames.",
+              price: 40,
+              price_type: "per_unit",
+              unit_label: "per piece",
+            },
+          ]}
         />
       </div>
     </div>

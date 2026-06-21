@@ -150,6 +150,38 @@ export default async function TrackMovePage({
     .eq("move_id", move.id)
     .maybeSingle();
 
+  // Supplies a client can self-purchase from the track page (reuses the
+  // residential supply add-ons). Only shown before the move, paid one-tap on
+  // the card on file (or a new card), delivered with the crew on move day.
+  const SUPPLY_SLUGS = [
+    "packing_materials",
+    "wardrobe_boxes",
+    "mattress_bag",
+    "picture_crating",
+  ];
+  const { data: suppliesRows } = await supabase
+    .from("addons")
+    .select("slug, name, description, price, price_type, unit_label, display_order")
+    .in("slug", SUPPLY_SLUGS)
+    .eq("active", true)
+    .order("display_order", { ascending: true });
+  const suppliesCatalog = (suppliesRows ?? []).map((a) => ({
+    slug: a.slug as string,
+    name: a.name as string,
+    description: (a.description as string) ?? null,
+    price: Number(a.price) || 0,
+    price_type: a.price_type as string,
+    unit_label: (a.unit_label as string) ?? null,
+  }));
+  const moveStatusLc = String(move.status || "").toLowerCase();
+  const suppliesEligible = !["completed", "cancelled", "canceled"].includes(
+    moveStatusLc,
+  );
+  const hasCardOnFile = Boolean(move.square_card_id || move.square_customer_id);
+  const squareUseSandbox =
+    (process.env.SQUARE_ENVIRONMENT || "").toLowerCase() === "sandbox" ||
+    (process.env.NEXT_PUBLIC_SQUARE_USE_SANDBOX || "").toLowerCase() === "true";
+
   const icCfg = await getFeatureConfig([
     "change_request_enabled",
     "change_request_per_score_rate",
@@ -340,6 +372,9 @@ export default async function TrackMovePage({
       moveProjectForTrack={moveProjectForTrack}
       coordinatorName={trackCoordinatorName}
       coordinatorPhone={trackCoordinatorPhone}
+      suppliesCatalog={suppliesEligible ? suppliesCatalog : []}
+      suppliesHasCardOnFile={hasCardOnFile}
+      suppliesUseSandbox={squareUseSandbox}
     />
   );
 }
