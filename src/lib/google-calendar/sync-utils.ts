@@ -114,8 +114,8 @@ export async function syncDeliveryGCalNow(deliveryId: string): Promise<GCalSyncR
     estimatedDurationMinutes:
       durationMinutes ??
       (d.estimated_duration_minutes != null ? Number(d.estimated_duration_minutes) : null),
-    fromAddress: String(d.from_address || d.pickup_address || "").trim() || null,
-    toAddress: String(d.to_address || d.delivery_address || "").trim() || null,
+    fromAddress: String(d.pickup_address || "").trim() || null,
+    toAddress: String(d.delivery_address || "").trim() || null,
     crewName,
     notes: d.notes ? String(d.notes) : null,
     existingEventId: (d as { gcal_event_id?: string | null }).gcal_event_id ?? null,
