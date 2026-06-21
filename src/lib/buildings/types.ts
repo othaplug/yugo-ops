@@ -53,6 +53,24 @@ export type BuildingProfileRow = {
   last_move_date: string | null
   created_at: string | null
   updated_at: string | null
+  // ── Typed access model (phase 1) ──
+  access_archetype: "house" | "walk_up" | "elevator" | "two_stage" | null
+  entrance_steps_band: "none" | "few" | "porch" | "many" | null
+  interior_levels: number | null
+  staircase_type: "open" | "narrow" | "tight_turn" | "spiral" | null
+  truck_spot: "driveway" | "street" | "far" | "laneway" | null
+  unit_floor: number | null
+  stair_flights: number | null
+  stair_type: "straight" | "switchback" | "spiral" | "exterior" | null
+  stair_width_band: "roomy" | "standard" | "tight" | null
+  elevator_type: "freight" | "passenger" | "both" | "none" | null
+  elevator_window_minutes: number | null
+  one_move_per_day: boolean | null
+  coi_required: boolean | null
+  coi_deposit: number | null
+  carry_band: "short" | "medium" | "long" | "very_long" | null
+  two_stage_transfer: boolean | null
+  lobby_walk_band: "short" | "medium" | "long" | null
 }
 
 /** Coordinator or client checklist flags when no DB profile exists */
