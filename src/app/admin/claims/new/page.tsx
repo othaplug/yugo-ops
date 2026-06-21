@@ -13,7 +13,7 @@ export default async function NewClaimPage() {
       .order("scheduled_date", { ascending: false })
       .limit(100),
     db.from("deliveries")
-      .select("id, customer_name, client_name, delivery_number, from_address, to_address, scheduled_date")
+      .select("id, customer_name, client_name, delivery_number, pickup_address, delivery_address, scheduled_date")
       .order("scheduled_date", { ascending: false })
       .limit(100),
   ]);
@@ -32,7 +32,7 @@ export default async function NewClaimPage() {
         id: d.id,
         label: `${d.delivery_number || ""}, ${d.customer_name || d.client_name || "Unknown"}`,
         clientName: d.customer_name || d.client_name || "",
-        address: [d.from_address, d.to_address].filter(Boolean).join(" → "),
+        address: [d.pickup_address, d.delivery_address].filter(Boolean).join(" → "),
         date: d.scheduled_date || "",
       }))}
     />

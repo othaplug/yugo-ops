@@ -1214,7 +1214,7 @@ export async function runPostPaymentActionsB2BDelivery(
         if (!isGCalConfigured()) return;
         const { data: delivery } = await supabase
           .from("deliveries")
-          .select("id, scheduled_date, time_slot, estimated_duration_minutes, from_address, to_address, gcal_event_id")
+          .select("id, scheduled_date, time_slot, scheduled_start, estimated_duration_minutes, pickup_address, delivery_address, gcal_event_id")
           .eq("delivery_number", input.deliveryNumber)
           .single();
         if (!delivery) return;
@@ -1226,10 +1226,10 @@ export async function runPostPaymentActionsB2BDelivery(
           serviceType: String(quote.service_type || "b2b_delivery"),
           status: "confirmed",
           scheduledDate: delivery.scheduled_date ? String(delivery.scheduled_date).slice(0, 10) : null,
-          startTime: delivery.time_slot ? String(delivery.time_slot).slice(0, 5) : null,
+          startTime: delivery.scheduled_start ? String(delivery.scheduled_start).slice(0, 5) : null,
           estimatedDurationMinutes: delivery.estimated_duration_minutes != null ? Number(delivery.estimated_duration_minutes) : null,
-          fromAddress: delivery.from_address ? String(delivery.from_address) : null,
-          toAddress: delivery.to_address ? String(delivery.to_address) : null,
+          fromAddress: delivery.pickup_address ? String(delivery.pickup_address) : null,
+          toAddress: delivery.delivery_address ? String(delivery.delivery_address) : null,
           crewName: null,
           notes: null,
           existingEventId: (delivery as { gcal_event_id?: string | null }).gcal_event_id ?? null,

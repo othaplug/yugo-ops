@@ -28,7 +28,7 @@ async function applyConfiguredCalendarOverride(): Promise<void> {
 }
 
 const BOOKABLE_MOVE_STATUSES = ["confirmed", "booked", "scheduled", "deposit_paid", "paid", "in_progress", "completed", "no_show"];
-const BOOKABLE_DELIVERY_STATUSES = ["confirmed", "booked", "scheduled", "deposit_paid", "paid", "in_progress", "pending", "completed", "no_show"];
+const BOOKABLE_DELIVERY_STATUSES = ["confirmed", "booked", "scheduled", "deposit_paid", "paid", "in_progress", "pending", "completed", "delivered", "no_show"];
 
 /**
  * POST /api/admin/gcal/sync
@@ -111,10 +111,10 @@ export async function POST(req: NextRequest) {
       .in("status", BOOKABLE_MOVE_STATUSES),
     db
       .from("deliveries")
-      // Pull every field used by resolveDeliveryDisplayTimes().
-      .select("id, delivery_number, client_name, service_type, delivery_type, category, status, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_minutes, estimated_duration_hours, from_address, to_address, crew_id, notes, gcal_event_id")
-      .in("status", BOOKABLE_DELIVERY_STATUSES)
-      .not("service_type", "eq", "bin_rental"),
+      // deliveries has NO service_type/from_address/to_address columns — use the
+      // real ones (delivery_type/category, pickup_address, delivery_address).
+      .select("id, delivery_number, client_name, customer_name, delivery_type, category, status, scheduled_date, time_slot, delivery_window, preferred_time, scheduled_start, scheduled_end, estimated_duration_minutes, estimated_duration_hours, pickup_address, delivery_address, crew_id, notes, gcal_event_id")
+      .in("status", BOOKABLE_DELIVERY_STATUSES),
     db.from("crews").select("id, name"),
     db.from("crew_schedule_blocks").select("reference_type, reference_id, block_start, block_end"),
     fetchBaselineHoursBySize(),
@@ -399,16 +399,16 @@ function buildDeliveryInput(
     jobType: "delivery",
     jobId: String(d.id),
     jobCode: String(d.delivery_number || d.id),
-    clientName: String(d.client_name || ""),
-    serviceType: String(d.service_type || "b2b_delivery"),
+    clientName: String(d.client_name || d.customer_name || ""),
+    serviceType: String(d.delivery_type || d.category || "b2b_delivery"),
     status: String(d.status || ""),
     scheduledDate: d.scheduled_date ? String(d.scheduled_date).slice(0, 10) : null,
     startTime: startHHMM,
     estimatedDurationMinutes:
       durationMinutes ??
       (d.estimated_duration_minutes != null ? Number(d.estimated_duration_minutes) : null),
-    fromAddress: d.from_address ? String(d.from_address) : null,
-    toAddress: d.to_address ? String(d.to_address) : null,
+    fromAddress: d.pickup_address ? String(d.pickup_address) : null,
+    toAddress: d.delivery_address ? String(d.delivery_address) : null,
     crewName: crewMap && crewId ? (crewMap[crewId] ?? null) : null,
     notes: d.notes ? String(d.notes) : null,
     existingEventId: d.gcal_event_id ? String(d.gcal_event_id) : null,

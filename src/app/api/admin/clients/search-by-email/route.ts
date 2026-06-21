@@ -56,9 +56,9 @@ export async function POST(req: NextRequest) {
 
   const { data: prevMove } = await admin
     .from("moves")
-    .select("move_number, move_date, move_size, from_address, to_address")
+    .select("move_number:move_code, move_date:scheduled_date, move_size, from_address, to_address")
     .eq("contact_id", contact.id)
-    .order("move_date", { ascending: false })
+    .order("scheduled_date", { ascending: false })
     .limit(1)
     .maybeSingle();
 
