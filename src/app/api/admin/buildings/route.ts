@@ -115,6 +115,24 @@ export async function POST(req: NextRequest) {
     verified: !!body.verified,
     verified_at: body.verified ? new Date().toISOString() : null,
     verified_by: body.verified_by ? String(body.verified_by) : null,
+    // ── Typed access model (phase 1) ──
+    access_archetype: body.access_archetype ? String(body.access_archetype) : null,
+    entrance_steps_band: body.entrance_steps_band ? String(body.entrance_steps_band) : null,
+    interior_levels: body.interior_levels != null ? Number(body.interior_levels) : null,
+    staircase_type: body.staircase_type ? String(body.staircase_type) : null,
+    truck_spot: body.truck_spot ? String(body.truck_spot) : null,
+    unit_floor: body.unit_floor != null ? Number(body.unit_floor) : null,
+    stair_flights: body.stair_flights != null ? Number(body.stair_flights) : null,
+    stair_type: body.stair_type ? String(body.stair_type) : null,
+    stair_width_band: body.stair_width_band ? String(body.stair_width_band) : null,
+    elevator_type: body.elevator_type ? String(body.elevator_type) : null,
+    elevator_window_minutes: body.elevator_window_minutes != null ? Number(body.elevator_window_minutes) : null,
+    one_move_per_day: !!body.one_move_per_day,
+    coi_required: !!body.coi_required,
+    coi_deposit: body.coi_deposit != null ? Number(body.coi_deposit) : null,
+    carry_band: body.carry_band ? String(body.carry_band) : null,
+    two_stage_transfer: !!body.two_stage_transfer,
+    lobby_walk_band: body.lobby_walk_band ? String(body.lobby_walk_band) : null,
   }
 
   const { data, error } = await sb.from("building_profiles").insert(insert).select("*").single()
