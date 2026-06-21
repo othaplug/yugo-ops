@@ -48,6 +48,19 @@ type EventLegFactor = {
   event_type_label?: string;
 };
 
+/** Scale an array of amounts so they sum exactly to `target`, giving the remainder to the last item. */
+function scaleToTotal(amounts: number[], target: number): number[] {
+  const engineSum = amounts.reduce((a, b) => a + b, 0);
+  if (engineSum === 0 || Math.abs(engineSum - target) < 2) return amounts;
+  let remaining = target;
+  return amounts.map((amt, idx) => {
+    if (idx === amounts.length - 1) return remaining;
+    const scaled = Math.round((amt / engineSum) * target);
+    remaining -= scaled;
+    return scaled;
+  });
+}
+
 export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
   const f = (quote.factors_applied ?? {}) as Record<string, unknown>;
   const price = quote.custom_price ?? 0;
@@ -75,6 +88,19 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
     !!f.event_same_location_onsite ||
     !!f.event_has_on_site_leg ||
     (isMulti && eventLegs.some((l) => l.is_on_site));
+
+  // Proportional scaling: when an admin override makes the line items not sum to price,
+  // scale each leg's displayed amounts so the breakdown adds up correctly.
+  const multiLegDisplayAmounts: number[] = [];
+  if (isMulti && eventLegs.length > 0) {
+    const engineAmounts = eventLegs.map(
+      (leg) => (leg.delivery_charge ?? 0) + (leg.return_charge ?? 0),
+    );
+    const engineTotal = engineAmounts.reduce((a, b) => a + b, 0) + setupFee;
+    const lineTotal = price; // what the client actually pays (pre-tax)
+    const scaledAmounts = scaleToTotal(engineAmounts, lineTotal - setupFee);
+    scaledAmounts.forEach((amt) => multiLegDisplayAmounts.push(amt));
+  }
 
   return (
     <section className="mb-10 space-y-8">
@@ -106,7 +132,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
             </h2>
             {isMulti && (
               <p className="text-[11px] mt-1.5 font-medium" style={{ color: `${FOREST}80` }}>
-                Multi-event quote, {eventLegs.length} delivery & return pairs bundled together
+                {eventLegs.length} round trips included in this quote
               </p>
             )}
           </div>
@@ -178,37 +204,43 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
         <div className="divide-y" style={{ borderColor: "#E2DDD5" }}>
           {isMulti ? (
             <>
-              {eventLegs.map((leg, idx) => (
-                <div key={idx} className="px-5 py-4 space-y-3">
-                  <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: WINE }}>
-                    {leg.label || `Event ${idx + 1}`}
-                  </p>
-                  <div className="flex items-start justify-between gap-4 pl-2 border-l-2" style={{ borderColor: `${WINE}40` }}>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-[10px] font-semibold uppercase" style={{ color: WINE }}>Delivery</span>
-                      <span className="text-[10px] ml-2" style={{ color: `${FOREST}70` }}>{fmtShort(leg.delivery_date)}</span>
-                      <div className="text-[10px] mt-0.5" style={{ color: `${FOREST}60` }}>
-                        {(leg.event_crew ?? 0) > 0 && `${leg.event_crew} movers`} {leg.event_hours ? `· ~${leg.event_hours}h` : ""}
+              {eventLegs.map((leg, idx) => {
+                const displayAmt = multiLegDisplayAmounts[idx] ?? (leg.delivery_charge ?? 0) + (leg.return_charge ?? 0);
+                const returnAmt = leg.return_charge ?? 0;
+                const isSameDay = !!leg.same_day;
+
+                return (
+                  <div key={idx} className="px-5 py-4 space-y-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: WINE }}>
+                      {leg.label || `Event ${idx + 1}`}
+                    </p>
+                    <div className="flex items-start justify-between gap-4 pl-2 border-l-2" style={{ borderColor: `${WINE}40` }}>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[10px] font-semibold uppercase" style={{ color: WINE }}>Delivery</span>
+                        <span className="text-[10px] ml-2" style={{ color: `${FOREST}70` }}>{fmtShort(leg.delivery_date)}</span>
+                        <div className="text-[10px] mt-0.5" style={{ color: `${FOREST}60` }}>
+                          {(leg.event_crew ?? 0) > 0 && `${leg.event_crew} movers`}{leg.event_hours ? ` · ~${leg.event_hours}h` : ""}
+                        </div>
                       </div>
+                      <span className="text-[var(--text-base)] font-bold tabular-nums shrink-0" style={{ color: FOREST }}>
+                        {fmtPrice(isSameDay || returnAmt === 0 ? displayAmt : Math.round(displayAmt * (leg.delivery_charge ?? 0) / ((leg.delivery_charge ?? 0) + returnAmt)))}
+                      </span>
                     </div>
-                    <span className="text-[var(--text-base)] font-bold tabular-nums shrink-0" style={{ color: FOREST }}>
-                      {fmtPrice(leg.delivery_charge ?? 0)}
-                    </span>
-                  </div>
-                  <div className="flex items-start justify-between gap-4 pl-2 border-l-2" style={{ borderColor: `${FOREST}40` }}>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-[10px] font-semibold uppercase" style={{ color: FOREST }}>Return</span>
-                      <span className="text-[10px] ml-2" style={{ color: `${FOREST}70` }}>{fmtShort(leg.return_date)}</span>
-                      {leg.return_hours ? (
-                        <div className="text-[10px] mt-0.5" style={{ color: `${FOREST}60` }}>~{leg.return_hours}h estimated</div>
-                      ) : null}
+                    <div className="flex items-start justify-between gap-4 pl-2 border-l-2" style={{ borderColor: `${FOREST}40` }}>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[10px] font-semibold uppercase" style={{ color: FOREST }}>Return</span>
+                        <span className="text-[10px] ml-2" style={{ color: `${FOREST}70` }}>{fmtShort(leg.return_date)}</span>
+                        {leg.return_hours && !isSameDay && returnAmt > 0 ? (
+                          <div className="text-[10px] mt-0.5" style={{ color: `${FOREST}60` }}>~{leg.return_hours}h estimated</div>
+                        ) : null}
+                      </div>
+                      <span className="text-[10px] tabular-nums shrink-0 italic" style={{ color: `${FOREST}60` }}>
+                        {isSameDay || returnAmt === 0 ? "Included in day rate" : fmtPrice(Math.round(displayAmt * returnAmt / ((leg.delivery_charge ?? 0) + returnAmt)))}
+                      </span>
                     </div>
-                    <span className="text-[var(--text-base)] font-bold tabular-nums shrink-0" style={{ color: FOREST }}>
-                      {fmtPrice(leg.return_charge ?? 0)}
-                    </span>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {hasSetup && (
                 <div className="px-5 py-4">
                   <div className="flex items-start justify-between gap-4">
@@ -324,50 +356,45 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
           </h2>
         </div>
         <div className="p-5 md:p-6">
-          <table className="w-full text-[12px] mb-4">
-            <tbody>
-              {isMulti
-                ? eventLegs.map((leg, idx) => (
-                    <Fragment key={idx}>
-                      {(leg.delivery_charge ?? 0) > 0 && (
-                        <tr className={idx > 0 ? "border-t" : undefined} style={idx > 0 ? { borderColor: "#E2DDD5" } : undefined}>
+          {/* Line items — only shown when there are multiple components to break down */}
+          {(isMulti && multiLegDisplayAmounts.length > 1) || (!isMulti && (hasSetup || hasReturn)) ? (
+            <table className="w-full text-[12px] mb-4">
+              <tbody>
+                {isMulti
+                  ? eventLegs.map((leg, idx) => {
+                      const displayAmt = multiLegDisplayAmounts[idx] ?? 0;
+                      return displayAmt > 0 ? (
+                        <tr key={idx} className={idx > 0 ? "border-t" : undefined} style={idx > 0 ? { borderColor: "#E2DDD5" } : undefined}>
                           <td className="py-2" style={{ color: `${FOREST}80` }}>
                             {leg.label || `Event ${idx + 1}`}, Delivery ({fmtShort(leg.delivery_date)})
+                            {leg.same_day ? <span className="ml-1 text-[10px] italic">+ same-day return</span> : null}
                           </td>
-                          <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(leg.delivery_charge ?? 0)}</td>
+                          <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(displayAmt)}</td>
                         </tr>
-                      )}
-                      {(leg.return_charge ?? 0) > 0 && (
-                        <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
-                          <td className="py-2" style={{ color: `${FOREST}80` }}>
-                            {leg.label || `Event ${idx + 1}`}, Return ({fmtShort(leg.return_date)})
-                          </td>
-                          <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(leg.return_charge ?? 0)}</td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  ))
-                : null}
-              {!isMulti && deliveryCharge > 0 && (
-                <tr>
-                  <td className="py-2" style={{ color: `${FOREST}80` }}>Delivery ({fmtShort(deliveryDate)})</td>
-                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(deliveryCharge)}</td>
-                </tr>
-              )}
-              {hasSetup && (
-                <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
-                  <td className="py-2" style={{ color: `${FOREST}80` }}>{isMulti ? "Setup (program)" : "Setup at venue"}</td>
-                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(setupFee)}</td>
-                </tr>
-              )}
-              {!isMulti && hasReturn && (
-                <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
-                  <td className="py-2" style={{ color: `${FOREST}80` }}>Return ({fmtShort(returnDate ?? null)})</td>
-                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(returnCharge)}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                      ) : null;
+                    })
+                  : null}
+                {!isMulti && deliveryCharge > 0 && (
+                  <tr>
+                    <td className="py-2" style={{ color: `${FOREST}80` }}>Delivery ({fmtShort(deliveryDate)})</td>
+                    <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(deliveryCharge)}</td>
+                  </tr>
+                )}
+                {hasSetup && (
+                  <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
+                    <td className="py-2" style={{ color: `${FOREST}80` }}>{isMulti ? "Setup (program)" : "Setup at venue"}</td>
+                    <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(setupFee)}</td>
+                  </tr>
+                )}
+                {!isMulti && hasReturn && (
+                  <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
+                    <td className="py-2" style={{ color: `${FOREST}80` }}>Return ({fmtShort(returnDate ?? null)})</td>
+                    <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(returnCharge)}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          ) : null}
           <div className="border-t-2 pt-4 text-center" style={{ borderColor: `${FOREST}30` }}>
             <p className="text-[36px] md:text-[44px] [font-family:var(--font-body)]" style={{ color: WINE }}>
               {fmtPrice(price)}
