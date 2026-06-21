@@ -2,6 +2,7 @@
 
 import { Warning, Buildings } from "@phosphor-icons/react";
 import { estimatedTripsFromInventoryScore } from "@/lib/buildings/complexity-pricing";
+import { deriveAccessModel } from "@/lib/buildings/access-model";
 import { InfoHint } from "@/components/ui/InfoHint";
 
 type Profile = Record<string, unknown>;
@@ -33,8 +34,10 @@ export default function BuildingProfileQuoteAlert({
   inventoryScore: number;
 }) {
   if (!profile) return null;
-  const rating = Number(profile.complexity_rating) || 1;
+  const model = deriveAccessModel(profile);
+  const rating = Number(profile.complexity_rating) || model.complexityRating || 1;
   if (rating < 3) return null;
+  const opsFlags = model.schedulingFlags;
 
   const extra = Number(profile.estimated_extra_minutes_per_trip) || 0;
   const trips = estimatedTripsFromInventoryScore(inventoryScore);
@@ -143,20 +146,17 @@ export default function BuildingProfileQuoteAlert({
             </div>
           ) : null}
           <div className="flex flex-wrap gap-1.5 pt-0.5">
-            {rating >= 4 ? (
-              <span className="inline-flex items-center rounded-full border border-red-200/80 bg-white/70 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-red-900">
-                Pre-move site check recommended
+            {opsFlags.map((f) => (
+              <span
+                key={f.key}
+                className="inline-flex items-center rounded-full border border-[var(--brd)]/60 bg-white/70 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--tx2)]"
+              >
+                {f.label}
               </span>
-            ) : null}
-            {extra >= 10 ? (
+            ))}
+            {model.recommendExtraCrew ? (
               <span className="inline-flex items-center rounded-full border border-amber-200/80 bg-white/70 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-950">
                 Consider extra crew
-              </span>
-            ) : null}
-            {typeof profile.elevator_max_hours === "number" &&
-            profile.elevator_max_hours > 0 ? (
-              <span className="inline-flex items-center rounded-full border border-[var(--brd)]/50 bg-white/70 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--tx2)]">
-                Elevator booking max {profile.elevator_max_hours} hours
               </span>
             ) : null}
           </div>
