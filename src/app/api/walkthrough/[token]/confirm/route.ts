@@ -32,21 +32,17 @@ export async function POST(
 
   const { data: move } = await admin
     .from("moves")
-    .select("id, move_code, client_name, walkthrough_remote_confirmed")
+    .select("id, move_code, client_name")
     .eq("id", moveId)
     .maybeSingle();
 
   if (!move) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (move.walkthrough_remote_confirmed) {
-    return NextResponse.json({ ok: true, alreadyConfirmed: true });
-  }
-
+  // walkthrough_remote_confirmed[_at] columns were never migrated.
+  // walkthrough_completed[_at] are the persisted flags.
   await admin
     .from("moves")
     .update({
-      walkthrough_remote_confirmed: true,
-      walkthrough_remote_confirmed_at: new Date().toISOString(),
       walkthrough_completed: true,
       walkthrough_completed_at: new Date().toISOString(),
     })

@@ -78,7 +78,7 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
   const { data: activeMoves } = await admin
     .from("moves")
     .select(
-      "id, move_code, client_name, client_phone, from_address, to_address, to_lat, to_lng, tier_selected, dedicated_coordinator, crew_id, scheduled_date, scheduled_end, time_slot"
+      "id, move_code, client_name, client_phone, from_address, to_address, to_lat, to_lng, tier_selected, dedicated_coordinator, crew_id, scheduled_date, scheduled_end, arrival_window"
     )
     .eq("eta_tracking_active", true)
     .in("status", ["in_progress", "en_route"]);
@@ -178,7 +178,7 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
     }
 
     // Crew running 10+ mins behind scheduled arrival — notify client, admin
-    const scheduledEndMs = getScheduledEndMs(move.scheduled_date, move.scheduled_end, move.time_slot);
+    const scheduledEndMs = getScheduledEndMs(move.scheduled_date, move.scheduled_end, move.arrival_window);
     const now = Date.now();
     const isLate = scheduledEndMs != null && etaMinutes >= LATE_THRESHOLD_MINUTES && (now - scheduledEndMs) >= LATE_THRESHOLD_MINUTES * 60 * 1000;
     if (isLate && smsEnabled) {

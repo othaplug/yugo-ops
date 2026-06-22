@@ -64,7 +64,7 @@ export async function GET(
     if (invoice.organization_id) {
       const { data: org } = await supabase
         .from("organizations")
-        .select("id, name, email, contact_name, billing_address")
+        .select("id, name, email, contact_name, address")
         .eq("id", invoice.organization_id)
         .single();
       organization = org as Record<string, unknown> | null;

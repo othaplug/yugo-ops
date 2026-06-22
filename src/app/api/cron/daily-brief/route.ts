@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
   // ── Today's moves ──
   const { data: moves } = await supabase
     .from("moves")
-    .select("id, move_code, client_name, tier, service_type, arrival_window, total_price, amount, crew_id, from_access, specialty_items, status")
+    .select("id, move_code, client_name, tier, service_type, arrival_window, total_price, amount, crew_id, from_access, status")
     .in("status", ["confirmed", "scheduled", "in_progress", "confirmed_pending_schedule", "confirmed_unassigned"])
     .eq("scheduled_date", today);
 
@@ -94,10 +94,9 @@ export async function GET(req: NextRequest) {
       const floorStr = floors ? floors[0] : "upper floor";
       alerts.push(`${job.move_code || job.id}: Walk-up ${floorStr} at pickup, allow extra time`);
     }
-    const specialties = job.specialty_items as Record<string, unknown> | null;
-    if (specialties?.piano_grand || specialties?.piano_upright) {
-      alerts.push(`${job.move_code || job.id}: Piano, specialty crew required`);
-    }
+    // moves.specialty_items column was never migrated; specialty alerts now
+    // come from the linked quote's factors_applied JSON if anywhere. Skipping
+    // here keeps the brief running.
     if ((job.tier || "").toLowerCase() === "estate") {
       alerts.push(`${job.move_code || job.id}: Estate tier, white glove standard`);
     }

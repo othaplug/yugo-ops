@@ -103,23 +103,12 @@ export async function sendNotification(
   // Per-user channel MUTE, read best-effort so a not-yet-applied migration can
   // never break notifications (selecting a missing column would error and fail
   // closed). Defaults to "not muted" when the columns aren't present.
-  let mutedEmail = false;
-  let mutedSms = false;
-  let mutedPush = false;
-  try {
-    const { data: mute } = await supabase
-      .from("platform_users")
-      .select("notif_mute_email, notif_mute_sms, notif_mute_push")
-      .eq("user_id", recipientUserId)
-      .maybeSingle();
-    if (mute) {
-      mutedEmail = (mute as { notif_mute_email?: boolean }).notif_mute_email === true;
-      mutedSms = (mute as { notif_mute_sms?: boolean }).notif_mute_sms === true;
-      mutedPush = (mute as { notif_mute_push?: boolean }).notif_mute_push === true;
-    }
-  } catch {
-    /* columns absent (migration not applied) — treat as not muted */
-  }
+  // The per-user notification mute columns (notif_mute_email / _sms / _push)
+  // were designed but never migrated. Treat every user as not-muted; the
+  // per-event preference row below is the only opt-out path today.
+  const mutedEmail = false;
+  const mutedSms = false;
+  const mutedPush = false;
 
   const { data: prefs } = await supabase
     .from("notification_preferences")

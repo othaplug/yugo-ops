@@ -161,7 +161,7 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
       db
         .from("moves")
         .select(
-          "id, move_code, client_name, client_email, contact_id, organization_id, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, crew_id, created_at, margin_percent",
+          "id, move_code, client_name, client_email, organization_id, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, crew_id, created_at, margin_percent",
         )
         .order("created_at", { ascending: false })
         .limit(LIMIT),
@@ -177,7 +177,7 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
       db
         .from("organizations")
         .select(
-          "id, name, type, vertical, primary_contact_name, primary_contact_email, primary_contact_phone, contract_status, created_at",
+          "id, name, type, vertical, contact_name, email, phone, onboarding_status, created_at",
         )
         .order("created_at", { ascending: false })
         .limit(LIMIT),
@@ -186,7 +186,7 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
       db
         .from("invoices")
         .select(
-          "id, invoice_number, client_name, organization_id, move_id, amount, status, created_at, updated_at, paid_at",
+          "id, invoice_number, client_name, organization_id, move_id, amount, status, created_at, updated_at",
         )
         .order("created_at", { ascending: false })
         .limit(LIMIT),

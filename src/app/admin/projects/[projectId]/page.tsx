@@ -7,8 +7,8 @@ import ProjectDetailClient from "./ProjectDetailClient";
 export async function generateMetadata({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
   const db = createAdminClient();
-  const { data: project } = await db.from("projects").select("name").eq("id", projectId).single();
-  const name = project?.name ? `Project ${project.name}` : "Project";
+  const { data: project } = await db.from("projects").select("project_name").eq("id", projectId).single();
+  const name = project?.project_name ? `Project ${project.project_name}` : "Project";
   return { title: name };
 }
 

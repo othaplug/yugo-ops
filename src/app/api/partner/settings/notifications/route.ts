@@ -10,7 +10,10 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const admin = createAdminClient();
 
-  // Save core notification settings — always supported
+  // Save core notification settings. The email_delivery_updates /
+  // email_daily_summary / email_invoice_ready columns were never migrated,
+  // so those toggles are accepted in the request body but only round-trip
+  // through client localStorage — see GET below for the default reply.
   await admin
     .from("organizations")
     .update({
@@ -18,24 +21,6 @@ export async function POST(req: NextRequest) {
       customer_notification_message: body.customer_notification_message || null,
     })
     .eq("id", primaryOrgId);
-
-  // Attempt to save email preference flags (columns may not exist on all envs — fail silently)
-  if (
-    typeof body.email_delivery_updates === "boolean" ||
-    typeof body.email_daily_summary === "boolean" ||
-    typeof body.email_invoice_ready === "boolean"
-  ) {
-    try {
-      await admin
-        .from("organizations")
-        .update({
-          email_delivery_updates: body.email_delivery_updates ?? true,
-          email_daily_summary: body.email_daily_summary ?? false,
-          email_invoice_ready: body.email_invoice_ready ?? true,
-        })
-        .eq("id", primaryOrgId);
-    } catch { /* column may not exist yet, preferences stored in client localStorage */ }
-  }
 
   return NextResponse.json({ ok: true });
 }
@@ -48,13 +33,13 @@ export async function GET() {
   const admin = createAdminClient();
   const { data } = await admin
     .from("organizations")
-    .select("customer_notifications_enabled, customer_notification_message, email_delivery_updates, email_daily_summary, email_invoice_ready")
+    .select("customer_notifications_enabled, customer_notification_message")
     .eq("id", primaryOrgId)
     .single();
 
-  return NextResponse.json(data || {
-    customer_notifications_enabled: false,
-    customer_notification_message: null,
+  return NextResponse.json({
+    customer_notifications_enabled: data?.customer_notifications_enabled ?? false,
+    customer_notification_message: data?.customer_notification_message ?? null,
     email_delivery_updates: true,
     email_daily_summary: false,
     email_invoice_ready: true,

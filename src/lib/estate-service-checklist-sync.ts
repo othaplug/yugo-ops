@@ -23,7 +23,7 @@ export async function applyEstateServiceChecklistAutomation(
   const { data: move, error } = await admin
     .from("moves")
     .select(
-      "id, tier_selected, service_tier, status, stage, scheduled_date, move_size, inventory_score, estate_service_checklist",
+      "id, tier_selected, status, stage, scheduled_date, move_size, inventory_score, estate_service_checklist",
     )
     .eq("id", moveId)
     .single();

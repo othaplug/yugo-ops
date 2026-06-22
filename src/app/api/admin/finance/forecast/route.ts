@@ -99,7 +99,7 @@ export async function GET(req: Request) {
       .not("status", "eq", "cancelled"),
 
     db.from("quotes")
-      .select("id, status, tiers, custom_price, move_date, engagement_summary")
+      .select("id, status, tiers, custom_price, move_date")
       .in("status", ["sent", "viewed"]),
 
     db.from("deliveries")
@@ -116,8 +116,10 @@ export async function GET(req: Request) {
       .select("id, status, created_at, accepted_at")
       .gte("created_at", lastMonthStart),
 
+    // claims.amount column doesn't exist in the live schema; the open-claims
+    // tally is held at 0 until the column lands.
     db.from("claims")
-      .select("id, amount")
+      .select("id")
       .in("status", ["open", "pending"]),
 
     db.from("quote_requests")

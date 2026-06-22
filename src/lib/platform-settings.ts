@@ -46,24 +46,12 @@ const DEFAULT_OFFICE: OfficeLocation = {
   radiusM: 200,
 };
 
-/** Server-side: read office/HQ location from platform_settings. */
+/**
+ * Server-side: HQ location. The office_lat/lng/address/radius_m columns were
+ * never migrated onto platform_settings, so this always returns the
+ * compiled-in default. Migrate the columns then read from the row.
+ */
 export async function getOfficeLocation(): Promise<OfficeLocation> {
-  try {
-    const admin = createAdminClient();
-    const { data } = await admin
-      .from("platform_settings")
-      .select("office_lat, office_lng, office_address, office_radius_m")
-      .eq("id", "default")
-      .maybeSingle();
-    if (data && typeof data.office_lat === "number" && typeof data.office_lng === "number") {
-      return {
-        lat: data.office_lat,
-        lng: data.office_lng,
-        address: data.office_address || DEFAULT_OFFICE.address,
-        radiusM: data.office_radius_m || DEFAULT_OFFICE.radiusM,
-      };
-    }
-  } catch { /* use defaults */ }
   return DEFAULT_OFFICE;
 }
 

@@ -21,15 +21,18 @@ export async function GET(
 
   const { data: move } = await admin
     .from("moves")
-    .select("id, move_code, client_name, status, walkthrough_remote_confirmed, walkthrough_notes")
+    .select("id, move_code, client_name, status")
     .eq("id", moveId)
     .maybeSingle();
 
   if (!move) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  // walkthrough_remote_confirmed / walkthrough_notes / move_inventory.quantity
+  // were never migrated. Until they are, expose stable defaults so the
+  // walkthrough page renders.
   const { data: items } = await admin
     .from("move_inventory")
-    .select("id, room, item_name, quantity")
+    .select("id, room, item_name")
     .eq("move_id", moveId)
     .order("room")
     .order("item_name");
@@ -41,13 +44,13 @@ export async function GET(
     moveId,
     clientName: move.client_name,
     status: move.status,
-    alreadyConfirmed: move.walkthrough_remote_confirmed ?? false,
-    crewNotes: move.walkthrough_notes ?? null,
+    alreadyConfirmed: false,
+    crewNotes: null,
     items: (items ?? []).map((it: Record<string, unknown>) => ({
       id: it.id,
       room: it.room ?? null,
       itemName: it.item_name,
-      quantity: (it.quantity as number) ?? 1,
+      quantity: 1,
     })),
     trackUrl,
   });

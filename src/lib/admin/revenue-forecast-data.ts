@@ -41,7 +41,6 @@ type PipelineQuoteRow = {
   id: string
   move_date?: string | null
   expires_at?: string | null
-  essential_price?: unknown
   custom_price?: unknown
   override_price?: unknown
   system_price?: unknown
@@ -78,7 +77,7 @@ export const loadRevenueForecastData = async (): Promise<RevenueForecastPayload>
   const { data: pipelineQuotesRaw, error: quotesFetchErr } = await supabase
     .from("quotes")
     .select(
-      "id, essential_price, custom_price, override_price, system_price, tiers, status, move_date, expires_at, created_at",
+      "id, custom_price, override_price, system_price, tiers, status, move_date, expires_at, created_at",
     )
     .in("status", [...QUOTE_PIPELINE_STATUSES])
 

@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
   // Get this month's jobs
   const { data: monthMoves } = await supabase
     .from("moves")
-    .select("id, status, satisfaction_rating")
+    .select("id, status")
     .contains("assigned_members", [crewMember.name])
     .eq("status", "completed")
     .gte("completed_at", monthStart);
@@ -98,9 +98,9 @@ export async function GET(req: NextRequest) {
   const monthTipCount = monthTipRows?.length ?? 0;
   const monthTipsFromProfile = (profile?.monthly_tips as Record<string, number> | null)?.[currentMonth] ?? 0;
 
-  const monthRatings = (monthMoves ?? [])
-    .filter((m) => m.satisfaction_rating)
-    .map((m) => Number(m.satisfaction_rating));
+  // Per-move satisfaction_rating column was never migrated; the primary source
+  // is now crew_profiles.monthly_ratings (set via the post-job rating flow).
+  const monthRatings: number[] = [];
   const ratingFromProfileMonth = (profile?.monthly_ratings as Record<string, number> | null)?.[currentMonth];
   const monthAvgRatingFromMoves =
     monthRatings.length > 0 ? monthRatings.reduce((a, b) => a + b, 0) / monthRatings.length : null;
@@ -144,7 +144,7 @@ export async function GET(req: NextRequest) {
       .in("status", ["completed", "delivered"]),
     supabase
       .from("moves")
-      .select("id, satisfaction_rating")
+      .select("id")
       .eq("crew_id", crewMember.teamId)
       .eq("status", "completed")
       .gte("completed_at", monthStart),
@@ -154,14 +154,10 @@ export async function GET(req: NextRequest) {
       .eq("crew_id", crewMember.teamId)
       .in("status", ["completed", "delivered"])
       .gte("completed_at", monthStart),
-    isSoloTeam
-      ? supabase
-          .from("moves")
-          .select("satisfaction_rating")
-          .eq("crew_id", crewMember.teamId)
-          .eq("status", "completed")
-          .not("satisfaction_rating", "is", null)
-      : Promise.resolve({ data: null as { satisfaction_rating: number | null }[] | null }),
+    // moves.satisfaction_rating column never existed; ratings come from
+    // client_sign_offs.satisfaction_rating (joined per-job below) and from
+    // crew_profiles.monthly_ratings. Return an empty list for this slot.
+    Promise.resolve({ data: null as { satisfaction_rating: number | null }[] | null }),
     isSoloTeam
       ? supabase
           .from("deliveries")
@@ -213,12 +209,8 @@ export async function GET(req: NextRequest) {
       const r = s.satisfaction_rating;
       if (typeof r === "number" && r >= 1 && r <= 5) ratingByJob.set(`${s.job_type}:${s.job_id}`, r);
     }
-    for (const m of teamMovesThisMonth ?? []) {
-      const r = m.satisfaction_rating;
-      if (typeof r === "number" && r >= 1 && r <= 5 && !ratingByJob.has(`move:${m.id}`)) {
-        ratingByJob.set(`move:${m.id}`, r);
-      }
-    }
+    // moves.satisfaction_rating doesn't exist — client_sign_offs above is the
+    // sole source of ratings.
     const vals = [...ratingByJob.values()];
     if (vals.length > 0) {
       monthAvgRatingFromOps = vals.reduce((a, b) => a + b, 0) / vals.length;

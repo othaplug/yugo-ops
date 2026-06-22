@@ -215,7 +215,7 @@ export const loadCommandCenterData = async () => {
     admin
       .from("invoices")
       .select(
-        "id, client_name, organization_id, delivery_id, move_id, amount, status, created_at, updated_at, invoice_number, paid_at, deliveries!delivery_id(delivery_number, final_price, calculated_price, override_price, admin_adjusted_price, total_price, quoted_price)",
+        "id, client_name, organization_id, delivery_id, move_id, amount, status, created_at, updated_at, invoice_number, deliveries!delivery_id(delivery_number, final_price, calculated_price, override_price, admin_adjusted_price, total_price, quoted_price)",
       ),
     admin.from("organizations").select("id, name, type"),
     (async () => {

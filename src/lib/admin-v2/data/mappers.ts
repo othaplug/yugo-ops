@@ -463,10 +463,10 @@ export type OrganizationRow = {
   name?: string | null;
   type?: string | null;
   vertical?: string | null;
-  primary_contact_name?: string | null;
-  primary_contact_email?: string | null;
-  primary_contact_phone?: string | null;
-  contract_status?: string | null;
+  contact_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  onboarding_status?: string | null;
   buildings_count?: number | null;
   created_at?: string | null;
 };
@@ -478,9 +478,9 @@ export const mapB2BPartner = (
   id: str(row.id),
   name: str(row.name) || "Partner",
   vertical: mapVertical(row.vertical) ?? "office_commercial",
-  primaryContact: str(row.primary_contact_name),
-  email: str(row.primary_contact_email),
-  phone: str(row.primary_contact_phone),
+  primaryContact: str(row.contact_name),
+  email: str(row.email),
+  phone: str(row.phone),
   jobsLast30: num(stats.jobsLast30),
   revenueLast30: num(stats.revenueLast30),
   onTimePercent: 96,
@@ -492,7 +492,7 @@ export const mapPMAccount = (
   row: OrganizationRow,
   stats: { buildings?: number; movesLast30?: number } = {},
 ): PMAccount => {
-  const status = str(row.contract_status).toLowerCase();
+  const status = str(row.onboarding_status).toLowerCase();
   const contract: PMAccount["contractStatus"] =
     status === "renewal"
       ? "renewal"
@@ -502,8 +502,8 @@ export const mapPMAccount = (
   return {
     id: str(row.id),
     name: str(row.name) || "Account",
-    primaryContact: str(row.primary_contact_name),
-    email: str(row.primary_contact_email),
+    primaryContact: str(row.contact_name),
+    email: str(row.email),
     buildings: num(stats.buildings ?? row.buildings_count),
     movesLast30: num(stats.movesLast30),
     contractStatus: contract,

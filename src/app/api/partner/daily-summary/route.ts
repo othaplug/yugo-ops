@@ -41,27 +41,32 @@ export async function POST() {
   const admin = createAdminClient();
   const todayStr = getTodayString();
 
-  // Fetch org info + contact
+  // Fetch org info. The opt-out toggle (email_daily_summary) was never
+  // migrated; the route always runs unless the partner_user row is missing.
   const { data: org } = await admin
     .from("organizations")
-    .select("name, type, vertical, email_daily_summary")
+    .select("name, type, vertical")
     .eq("id", primaryOrgId)
     .single();
 
-  // Check if daily summary is enabled (if column exists)
-  if (org?.email_daily_summary === false) {
-    return NextResponse.json({ ok: false, reason: "Daily summary not enabled" }, { status: 200 });
-  }
-
-  // Fetch the partner user email
+  // partner_users is a join row (user_id <-> org_id). The email lives on
+  // auth.users; the display name is unavailable here so we use a fallback.
   const { data: partnerUser } = await admin
     .from("partner_users")
-    .select("email, contact_name")
+    .select("user_id")
     .eq("org_id", primaryOrgId)
     .limit(1)
     .single();
 
-  if (!partnerUser?.email) {
+  let partnerEmail: string | null = null;
+  if (partnerUser?.user_id) {
+    const { data: authUser } = await admin.auth.admin.getUserById(
+      partnerUser.user_id,
+    );
+    partnerEmail = authUser?.user?.email ?? null;
+  }
+
+  if (!partnerEmail) {
     return NextResponse.json({ error: "No partner user email found" }, { status: 404 });
   }
 
@@ -89,7 +94,7 @@ export async function POST() {
     .limit(10);
 
   const orgName = org?.name || "Your Organization";
-  const contactName = partnerUser.contact_name || "Partner";
+  const contactName = "Partner";
   const today = new Date();
   const todayFormatted = today.toLocaleDateString("en-US", {
     weekday: "long",
@@ -258,10 +263,10 @@ export async function POST() {
 </table>`;
 
   const result = await sendEmail({
-    to: partnerUser.email,
+    to: partnerEmail,
     subject: `Daily Summary – ${deliveriesToday.length} delivery${deliveriesToday.length !== 1 ? "ies" : ""} today · ${today.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`,
     html,
   });
 
-  return NextResponse.json({ ok: result.success, email: partnerUser.email, count: deliveriesToday.length });
+  return NextResponse.json({ ok: result.success, email: partnerEmail, count: deliveriesToday.length });
 }

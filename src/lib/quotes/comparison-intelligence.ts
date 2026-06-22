@@ -118,8 +118,7 @@ function tierPricesFromQuoteRow(q: Record<string, unknown>): {
   const essential =
     num(tiers.essential?.price) ||
     num(tiers.curated?.price) ||
-    num(tiers.essentials?.price) ||
-    num(q.essential_price);
+    num(tiers.essentials?.price);
   const signature = num(tiers.signature?.price) || num(tiers.premier?.price);
   const estate = num(tiers.estate?.price);
   return { essential, signature, estate };
@@ -142,7 +141,7 @@ export async function runQuoteComparisonCron(sb: SupabaseClient): Promise<{ scan
     const { data: quotes } = await sb
     .from("quotes")
     .select(
-      "id, quote_id, comparison_alert_sent_at, contact_id, tiers, move_date, from_address, to_address, move_size, essential_price, sent_at",
+      "id, quote_id, comparison_alert_sent_at, contact_id, tiers, move_date, from_address, to_address, move_size, sent_at",
     )
     .in("status", ["sent", "viewed", "reactivated"])
     .is("comparison_alert_sent_at", null)

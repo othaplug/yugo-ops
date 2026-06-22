@@ -24,12 +24,11 @@ export async function generateInstallPhotoReport(projectId: string): Promise<voi
   // Look up partner contact email
   const { data: orgFull } = await db
     .from("organizations")
-    .select("email, contact_email")
+    .select("email")
     .eq("id", project.partner_id)
     .single();
 
-  const toEmail = (orgFull as { email?: string; contact_email?: string } | null)?.email ||
-    (orgFull as { email?: string; contact_email?: string } | null)?.contact_email;
+  const toEmail = (orgFull as { email?: string } | null)?.email;
 
   if (!toEmail) {
     console.warn("[photo-report] No email for partner org:", project.partner_id);

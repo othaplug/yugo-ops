@@ -65,7 +65,7 @@ export async function POST(
 
   const { data: deliveries } = await supabase
     .from("deliveries")
-    .select("id, delivery_number, completed_at, price, item_description")
+    .select("id, delivery_number, completed_at, total_price, final_price")
     .eq("partner_id", partnerId)
     .eq("status", "completed")
     .gte("completed_at", period_start + "T00:00:00Z")
@@ -76,7 +76,10 @@ export async function POST(
     return NextResponse.json({ error: "No unbilled deliveries in this period" }, { status: 400 });
   }
 
-  const subtotal = deliveries.reduce((s, d) => s + (Number(d.price) || 0), 0);
+  const subtotal = deliveries.reduce(
+    (s, d) => s + (Number(d.final_price ?? d.total_price) || 0),
+    0,
+  );
   const hst = Math.round(subtotal * 0.13 * 100) / 100;
   const total = subtotal + hst;
 
@@ -100,8 +103,8 @@ export async function POST(
         id: d.id,
         number: d.delivery_number,
         date: d.completed_at,
-        price: d.price,
-        description: d.item_description,
+        price: d.final_price ?? d.total_price,
+        description: null,
       })),
       delivery_count: deliveries.length,
       subtotal,

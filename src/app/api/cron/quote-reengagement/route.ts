@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
 
   const { data: quotes } = await supabase
     .from("quotes")
-    .select("id, quote_id, custom_price, essential_price, move_date, expires_at, contact_id")
+    .select("id, quote_id, custom_price, tiers, move_date, expires_at, contact_id")
     .eq("status", "expired")
     .gte("expires_at", fourDaysAgo.toISOString())
     .lte("expires_at", threeDaysAgo.toISOString())
@@ -78,7 +78,10 @@ export async function GET(req: NextRequest) {
       const firstName = (contact?.name || "").split(" ")[0] || "there";
       const quoteSlug = quote.quote_id || quote.id;
       const quoteUrl = `${baseUrl}/quote/${encodeURIComponent(quoteSlug)}`;
-      const pricePreTax = Number(quote.custom_price ?? quote.essential_price ?? 0);
+      const tiersArr = Array.isArray(quote.tiers) ? (quote.tiers as { price?: number }[]) : [];
+      const tierPrices = tiersArr.map((t) => Number(t?.price ?? 0)).filter((n) => n > 0);
+      const minTierPrice = tierPrices.length ? Math.min(...tierPrices) : 0;
+      const pricePreTax = Number(quote.custom_price ?? 0) || minTierPrice;
       const html = buildReengagementEmail({
         firstName,
         quoteNumber: quoteSlug,
