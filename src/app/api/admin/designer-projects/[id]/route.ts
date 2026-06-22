@@ -51,7 +51,7 @@ export async function GET(
   if (project.delivery_job_id) {
     const { data: dj } = await db
       .from("deliveries")
-      .select("id, delivery_number, status, delivery_date")
+      .select("id, delivery_number, status, scheduled_date")
       .eq("id", project.delivery_job_id)
       .single();
     deliveryJob = dj;

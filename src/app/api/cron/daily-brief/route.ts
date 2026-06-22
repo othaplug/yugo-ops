@@ -108,12 +108,50 @@ export async function GET(req: NextRequest) {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const { data: expiringQuotes } = await supabase
     .from("quotes")
-    .select("id, quote_number, client_name, essential_price, expires_at")
+    .select("id, quote_id, tiers, custom_price, expires_at, contacts:contact_id(name)")
     .in("status", ["sent", "viewed"])
     .gte("expires_at", today)
     .lt("expires_at", tomorrow.toISOString().slice(0, 10));
 
-  const expiring = expiringQuotes ?? [];
+  type ExpiringQuote = {
+    id: string;
+    quote_id: string | null;
+    tiers: unknown;
+    custom_price: number | null;
+    expires_at: string | null;
+    contacts: { name: string | null } | null;
+    quote_number: string | null;
+    client_name: string;
+    essential_price: number;
+  };
+  // The brief needs a single headline number + name per quote. Price is the
+  // accepted/custom price if present, else the lowest tier price from the
+  // tiers JSON. Name comes from the joined contact row.
+  const expiring: ExpiringQuote[] = (expiringQuotes ?? []).map((q) => {
+    const row = q as {
+      id: string;
+      quote_id: string | null;
+      tiers: unknown;
+      custom_price: number | null;
+      expires_at: string | null;
+      contacts: { name: string | null } | { name: string | null }[] | null;
+    };
+    const contact = Array.isArray(row.contacts) ? row.contacts[0] : row.contacts;
+    const tiersArr = Array.isArray(row.tiers) ? (row.tiers as { price?: number }[]) : [];
+    const tierPrices = tiersArr.map((t) => Number(t?.price ?? 0)).filter((n) => n > 0);
+    const fallback = tierPrices.length ? Math.min(...tierPrices) : 0;
+    return {
+      id: row.id,
+      quote_id: row.quote_id,
+      tiers: row.tiers,
+      custom_price: row.custom_price,
+      expires_at: row.expires_at,
+      contacts: contact ?? null,
+      quote_number: row.quote_id,
+      client_name: contact?.name ?? "",
+      essential_price: Number(row.custom_price ?? 0) || fallback,
+    };
+  });
 
   // ── Weather alerts on today's moves ──
   const weatherAlerts: string[] = [];

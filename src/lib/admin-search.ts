@@ -51,7 +51,7 @@ export async function runAdminEntitySearch(supabase: SupabaseClient, q: string, 
         supabase.from("deliveries").select("id, delivery_number, customer_name, client_name, pickup_address, delivery_address").eq("id", uuid).maybeSingle(),
         supabase.from("projects").select("id, project_number, project_name, end_client_name, site_address").eq("id", uuid).maybeSingle(),
         supabase.from("moves").select("id, move_code, client_name, from_address, to_address, status").eq("id", uuid).maybeSingle(),
-        supabase.from("quotes").select("id, quote_id, client_name, service_type, from_address, to_address").eq("id", uuid).maybeSingle(),
+        supabase.from("quotes").select("id, quote_id, service_type, from_address, to_address, contacts:contact_id(name)").eq("id", uuid).maybeSingle(),
         supabase.from("organizations").select("id, name, contact_name, email").eq("id", uuid).maybeSingle(),
       ])
     : Promise.resolve(null);
@@ -62,7 +62,7 @@ export async function runAdminEntitySearch(supabase: SupabaseClient, q: string, 
   );
   const orProject = orIlike(["project_number", "project_name", "end_client_name", "site_address", "description"], pattern);
   const orMove = orIlike(["move_code", "client_name", "from_address", "to_address"], pattern);
-  const orQuote = orIlike(["quote_id", "client_name", "from_address", "to_address"], pattern);
+  const orQuote = orIlike(["quote_id", "from_address", "to_address"], pattern);
   const orOrg = orIlike(["name", "contact_name", "email", "address", "phone"], pattern);
   const orInvoice = orIlike(["invoice_number", "client_name"], pattern);
 
@@ -72,7 +72,7 @@ export async function runAdminEntitySearch(supabase: SupabaseClient, q: string, 
       supabase.from("deliveries").select("id, delivery_number, customer_name, client_name, pickup_address, delivery_address").or(orDelivery).limit(15),
       supabase.from("projects").select("id, project_number, project_name, end_client_name, site_address, description").or(orProject).limit(15),
       supabase.from("moves").select("id, move_code, client_name, from_address, to_address, status").or(orMove).limit(15),
-      supabase.from("quotes").select("id, quote_id, client_name, service_type, from_address, to_address").or(orQuote).limit(15),
+      supabase.from("quotes").select("id, quote_id, service_type, from_address, to_address, contacts:contact_id(name)").or(orQuote).limit(15),
       supabase.from("organizations").select("id, name, contact_name, email, address, phone").or(orOrg).limit(15),
       supabase.from("invoices").select("id, invoice_number, client_name, amount").or(orInvoice).limit(10),
     ]),
@@ -111,7 +111,7 @@ export async function runAdminEntitySearch(supabase: SupabaseClient, q: string, 
       const qu = qRes.data;
       push({
         type: "Quote",
-        name: `${qu.quote_id ?? "Quote"}, ${qu.client_name}`,
+        name: `${qu.quote_id ?? "Quote"}, ${(Array.isArray(qu.contacts) ? qu.contacts[0] : qu.contacts)?.name ?? ""}`,
         sub: qu.service_type?.replace(/_/g, " "),
         href: `/admin/quotes/${qu.quote_id ?? qu.id}`,
       });
@@ -163,7 +163,7 @@ export async function runAdminEntitySearch(supabase: SupabaseClient, q: string, 
   for (const qu of quotes || []) {
     push({
       type: "Quote",
-      name: `${qu.quote_id ?? "Quote"}, ${qu.client_name}`,
+      name: `${qu.quote_id ?? "Quote"}, ${(Array.isArray(qu.contacts) ? qu.contacts[0] : qu.contacts)?.name ?? ""}`,
       sub: qu.service_type?.replace(/_/g, " "),
       href: `/admin/quotes/${qu.quote_id ?? qu.id}`,
     });

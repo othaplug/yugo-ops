@@ -26,7 +26,7 @@ export async function POST(
 
   const { data: quote } = await admin
     .from("quotes")
-    .select("id, quote_id, contact_name, contact_email, contact_phone, client_name, client_email, client_phone, photo_survey_sent_at")
+    .select("id, quote_id, contacts:contact_id(name, email, phone)")
     .eq("quote_id", quoteId)
     .maybeSingle();
 
@@ -34,12 +34,10 @@ export async function POST(
     return NextResponse.json({ error: "Quote not found" }, { status: 404 });
   }
 
-  const firstName =
-    ((quote.contact_name ?? quote.client_name ?? "") as string).split(" ")[0] || "there";
-  const phone = normalizePhone(
-    (quote.contact_phone ?? quote.client_phone ?? "") as string,
-  );
-  const email = (quote.contact_email ?? quote.client_email ?? "") as string;
+  const contact = (quote as { contacts?: { name?: string | null; email?: string | null; phone?: string | null } | null }).contacts;
+  const firstName = ((contact?.name ?? "") as string).split(" ")[0] || "there";
+  const phone = normalizePhone((contact?.phone ?? "") as string);
+  const email = (contact?.email ?? "") as string;
 
   const surveyToken = signPhotoSurveyToken(quoteId);
   const base = getEmailBaseUrl();

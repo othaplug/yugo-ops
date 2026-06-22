@@ -152,7 +152,7 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
       db
         .from("quotes")
         .select(
-          "id, quote_id, quote_number, contact_id, client_name, client_email, service_type, tier_selected, status, custom_price, tiers, sent_at, viewed_at, accepted_at, created_at, expires_at",
+          "id, quote_id, contact_id, service_type, selected_tier, status, custom_price, tiers, sent_at, viewed_at, accepted_at, created_at, expires_at, contacts:contact_id(name, email)",
         )
         .order("created_at", { ascending: false })
         .limit(LIMIT),

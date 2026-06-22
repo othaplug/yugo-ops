@@ -65,7 +65,7 @@ export default async function DesignerProjectDetailPage({
   if (project.delivery_job_id) {
     const { data: dj } = await db
       .from("deliveries")
-      .select("id, delivery_number, status, delivery_date, delivery_address")
+      .select("id, delivery_number, status, scheduled_date, delivery_address")
       .eq("id", project.delivery_job_id)
       .single();
     deliveryJob = dj;
