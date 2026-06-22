@@ -27,6 +27,9 @@ export interface DispatchJob {
   partnerName?: string;
   fromAddress: string;
   toAddress: string;
+  /** Full ordered pickup/drop-off lists when the job has more than one of either. */
+  pickups?: string[];
+  dropoffs?: string[];
   scheduledTime: string | null;
   status: string;
   stage: string | null;
@@ -245,9 +248,26 @@ export default function JobCard({
       {/* Route */}
       <div className="flex items-start gap-2 min-w-0">
         <MapPin className="w-3.5 h-3.5 text-[var(--tx3)] shrink-0 mt-0.5" />
-        <span className="text-sm text-[var(--tx3)] leading-snug break-words">
-          {routeSummary(job.fromAddress, job.toAddress)}
-        </span>
+        {(job.pickups?.length ?? 0) > 1 || (job.dropoffs?.length ?? 0) > 1 ? (
+          <span className="text-sm text-[var(--tx3)] leading-snug min-w-0">
+            {(job.pickups && job.pickups.length > 1 ? job.pickups : [job.fromAddress]).map((a, i, arr) => (
+              <span key={`p${i}`} className="block break-words">
+                <span className="font-medium text-[var(--tx2)]">{arr.length > 1 ? `P${i + 1} ` : "From "}</span>
+                {firstLine(a)}
+              </span>
+            ))}
+            {(job.dropoffs && job.dropoffs.length > 1 ? job.dropoffs : [job.toAddress]).map((a, i, arr) => (
+              <span key={`d${i}`} className="block break-words">
+                <span className="font-medium text-[var(--tx2)]">{arr.length > 1 ? `D${i + 1} ` : "To "}</span>
+                {firstLine(a)}
+              </span>
+            ))}
+          </span>
+        ) : (
+          <span className="text-sm text-[var(--tx3)] leading-snug break-words">
+            {routeSummary(job.fromAddress, job.toAddress)}
+          </span>
+        )}
       </div>
 
       {/* Crew + truck + ETA */}

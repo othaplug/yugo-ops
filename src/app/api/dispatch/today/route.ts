@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     admin
       .from("moves")
       .select(
-        "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at, completed_at, est_crew_size, crew_size, assigned_members, assigned_crew_name"
+        "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at, completed_at, est_crew_size, crew_size, assigned_members, assigned_crew_name, quote_id"
       )
       .eq("scheduled_date", targetDate)
       .neq("status", "cancelled")
@@ -202,7 +202,7 @@ export async function GET(req: NextRequest) {
     const { data: mFresh, error: mErr } = await admin
       .from("moves")
       .select(
-        "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at, completed_at, est_crew_size, crew_size, assigned_members, assigned_crew_name",
+        "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at, completed_at, est_crew_size, crew_size, assigned_members, assigned_crew_name, quote_id",
       )
       .eq("scheduled_date", targetDate)
       .neq("status", "cancelled")
@@ -224,7 +224,7 @@ export async function GET(req: NextRequest) {
   }
 
   const MOVE_DISPATCH_SELECT =
-    "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at, completed_at, est_crew_size, crew_size, assigned_members, assigned_crew_name";
+    "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at, completed_at, est_crew_size, crew_size, assigned_members, assigned_crew_name, quote_id";
 
   const projectDayByMoveId = new Map<
     string,
@@ -316,6 +316,42 @@ export async function GET(req: NextRequest) {
   const deliveryByNumber = new Map(deliveriesList.map((d) => [d.delivery_number || d.id, d]));
   const crewMap = new Map((crews || []).map((c) => [c.id, c]));
 
+  // Ordered pickup/drop-off stops from each move's linked quote factors (the
+  // move row keeps only the primary pair). Only stored when there's more than one.
+  const moveStopsById = new Map<string, { pickups: string[]; dropoffs: string[] }>();
+  {
+    const qIds = [
+      ...new Set(
+        movesList
+          .map((m) => (m as { quote_id?: string | null }).quote_id)
+          .filter((x): x is string => typeof x === "string" && x.length > 0),
+      ),
+    ];
+    if (qIds.length > 0) {
+      const stopAddrs = (locs: unknown): string[] =>
+        Array.isArray(locs)
+          ? (locs as { address?: unknown }[])
+              .map((l) => String(l?.address ?? "").trim())
+              .filter((a) => a.length > 0)
+          : [];
+      const stopsByQuote = new Map<string, { pickups: string[]; dropoffs: string[] }>();
+      const { data: qRows } = await admin.from("quotes").select("id, factors_applied").in("id", qIds);
+      for (const q of qRows || []) {
+        const fa = (q as { factors_applied?: unknown }).factors_applied;
+        const f = fa && typeof fa === "object" && !Array.isArray(fa) ? (fa as Record<string, unknown>) : {};
+        stopsByQuote.set(String((q as { id: string }).id), {
+          pickups: stopAddrs(f.pickup_locations),
+          dropoffs: stopAddrs(f.dropoff_locations),
+        });
+      }
+      for (const m of movesList) {
+        const qid = (m as { quote_id?: string | null }).quote_id;
+        const s = qid ? stopsByQuote.get(qid) : undefined;
+        if (s && (s.pickups.length > 1 || s.dropoffs.length > 1)) moveStopsById.set(m.id, s);
+      }
+    }
+  }
+
   /** Any completion artifact: proves the crew finished closing the job even if moves.status drifted */
   const moveIdsWithEvidence = new Set<string>();
   const deliveryIdsWithEvidence = new Set<string>();
@@ -362,6 +398,8 @@ export async function GET(req: NextRequest) {
     partnerName?: string;
     fromAddress: string;
     toAddress: string;
+    pickups?: string[];
+    dropoffs?: string[];
     scheduledTime: string | null;
     status: string;
     stage: string | null;
@@ -489,6 +527,8 @@ export async function GET(req: NextRequest) {
       projectDayNote,
       fromAddress: m.from_address || "",
       toAddress: m.to_address || "",
+      pickups: moveStopsById.get(m.id)?.pickups,
+      dropoffs: moveStopsById.get(m.id)?.dropoffs,
       scheduledTime: m.preferred_time || m.arrival_window || null,
       status: effectiveStatusNorm || "scheduled",
       stage: displayStageMove,
