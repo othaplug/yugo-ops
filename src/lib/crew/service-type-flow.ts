@@ -89,14 +89,13 @@ const WHITE_GLOVE_DELIVERY_FLOW: TrackingStatus[] = [
 ];
 
 // White-glove IN-HOME service (assembly, install, rearrangement). Same address
-// — no vendor, no transit. Crew arrives, protects the space, performs the
-// service, removes packaging, walks the client through.
+// — no vendor, no transit. Trimmed to 4 steps so the crew can keep working
+// without putting the phone down for every micro-stage. Protect / inspect /
+// place / packaging-removal are all covered under the single "Service" step;
+// photo categories under that step still capture the evidence per stage.
 const WHITE_GLOVE_INHOME_FLOW: TrackingStatus[] = [
   "arrived",
-  "wrapping",
-  "inventory_check",
-  "unwrapping_placement",
-  "unloading",
+  "working",
   "walkthrough_photos",
   "completed",
 ];
@@ -116,13 +115,10 @@ export const WHITE_GLOVE_STAGE_LABELS: Partial<Record<TrackingStatus, string>> =
   completed: "Client sign-off",
 };
 
-/** Labels for white-glove IN-HOME jobs (no vendor / no transit). */
+/** Labels for white-glove IN-HOME jobs (no vendor / no transit, 4-step). */
 export const WHITE_GLOVE_INHOME_STAGE_LABELS: Partial<Record<TrackingStatus, string>> = {
   arrived: "Arrive",
-  wrapping: "Protect & prep",
-  inventory_check: "Item inspection",
-  unwrapping_placement: "Place / install to spec",
-  unloading: "Packaging removal",
+  working: "Service in progress",
   walkthrough_photos: "Final walkthrough",
   completed: "Client sign-off",
 };

@@ -178,13 +178,10 @@ const WHITE_GLOVE_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
   completed: "Client Sign-off",
 };
 
-/** White-glove IN-HOME service copy (same address — no vendor, no transit). */
+/** White-glove IN-HOME service copy (same address — no vendor, no transit). 4-step. */
 const WHITE_GLOVE_INHOME_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
   arrived: "Arrive",
-  wrapping: "Protect & Prep",
-  inventory_check: "Item Inspection",
-  unwrapping_placement: "Place / Install to Spec",
-  unloading: "Packaging Removal",
+  working: "Service in Progress",
   walkthrough_photos: "Final Walkthrough",
   completed: "Client Sign-off",
 };
