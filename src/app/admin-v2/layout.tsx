@@ -6,7 +6,7 @@ import { AdminV2Shell } from "./admin-v2-shell"
 type PlatformUser = {
   role: string | null
   two_factor_enabled: boolean | null
-  full_name: string | null
+  name: string | null
 }
 
 export const dynamic = "force-dynamic"
@@ -31,7 +31,7 @@ const AdminV2Layout = async ({ children }: { children: React.ReactNode }) => {
 
   const { data: platformUser } = (await supabase
     .from("platform_users")
-    .select("role, two_factor_enabled, full_name")
+    .select("role, two_factor_enabled, name")
     .eq("user_id", user.id)
     .maybeSingle()) as { data: PlatformUser | null }
 
@@ -39,7 +39,7 @@ const AdminV2Layout = async ({ children }: { children: React.ReactNode }) => {
   if (!platformUser && !isSuperAdmin) redirect("/partner")
 
   const displayName =
-    platformUser?.full_name?.trim() ||
+    platformUser?.name?.trim() ||
     user.email?.split("@")[0] ||
     "Admin user"
 

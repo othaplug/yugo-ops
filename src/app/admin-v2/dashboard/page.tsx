@@ -16,11 +16,11 @@ const DashboardPage = async () => {
   if (user) {
     const { data: platformUser } = await supabase
       .from("platform_users")
-      .select("full_name")
+      .select("name")
       .eq("user_id", user.id)
       .maybeSingle()
     const raw =
-      platformUser?.full_name?.trim() || user.email?.split("@")[0] || ""
+      platformUser?.name?.trim() || user.email?.split("@")[0] || ""
     userFirstName = raw ? raw.split(/\s+/)[0] ?? null : null
   }
 
