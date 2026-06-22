@@ -59,14 +59,14 @@ export async function POST(req: NextRequest) {
       ? await admin
           .from("moves")
           .select(
-            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type, move_type, status",
+            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type, move_type, from_address, to_address, quote_id, status",
           )
           .eq("id", rawJobId)
           .maybeSingle()
       : await admin
           .from("moves")
           .select(
-            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type, move_type, status",
+            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type, move_type, from_address, to_address, quote_id, status",
           )
           .ilike("move_code", rawJobId.replace(/^#/, "").toUpperCase())
           .maybeSingle();
@@ -152,12 +152,39 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ sessionId: existing.id, alreadyActive: true });
   }
 
+  let moveWhiteGloveKind: string | null = null;
+  if (jobType === "move") {
+    const mr = jobRow as { quote_id?: string | null };
+    if (mr.quote_id) {
+      const { data: q } = await admin
+        .from("quotes")
+        .select("factors_applied")
+        .eq("id", mr.quote_id)
+        .maybeSingle();
+      const fac = (q as { factors_applied?: Record<string, unknown> } | null)
+        ?.factors_applied;
+      if (fac && typeof fac === "object") {
+        const k = (fac as { white_glove_kind?: unknown }).white_glove_kind;
+        if (typeof k === "string") moveWhiteGloveKind = k;
+      }
+    }
+  }
   const moveFlow =
     jobType === "move"
-      ? getCrewStatusFlowForMove(
-          (jobRow as { service_type?: string | null }).service_type,
-          (jobRow as { move_type?: string | null }).move_type,
-        )
+      ? (() => {
+          const mr = jobRow as {
+            service_type?: string | null;
+            move_type?: string | null;
+            from_address?: string | null;
+            to_address?: string | null;
+          };
+          const fa = (mr.from_address || "").trim().toLowerCase();
+          const ta = (mr.to_address || "").trim().toLowerCase();
+          return getCrewStatusFlowForMove(mr.service_type, mr.move_type, {
+            whiteGloveKind: moveWhiteGloveKind,
+            sameAddress: !!fa && !!ta && fa === ta,
+          });
+        })()
       : undefined;
   let deliveryFlow: ReturnType<typeof getCrewStatusFlowForDelivery> | undefined;
   if (jobType === "delivery") {

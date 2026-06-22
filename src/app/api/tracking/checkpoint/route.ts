@@ -70,14 +70,36 @@ export async function POST(req: NextRequest) {
 
   let moveServiceType: string | null | undefined;
   let moveMoveType: string | null | undefined;
+  let moveWhiteGloveKind: string | null | undefined;
+  let moveSameAddress = false;
   if (session.job_type === "move") {
     const { data: moveRow } = await admin
       .from("moves")
-      .select("service_type, move_type")
+      .select("service_type, move_type, quote_id, from_address, to_address")
       .eq("id", session.job_id)
       .maybeSingle();
     moveServiceType = moveRow?.service_type as string | null | undefined;
     moveMoveType = moveRow?.move_type as string | null | undefined;
+    const fa = (moveRow?.from_address as string | null) || "";
+    const ta = (moveRow?.to_address as string | null) || "";
+    moveSameAddress =
+      !!fa && !!ta && fa.trim().toLowerCase() === ta.trim().toLowerCase();
+    // White-glove kind lives in quotes.factors_applied.white_glove_kind (JSON,
+    // not a moves column).
+    const qid = (moveRow as { quote_id?: string | null } | null)?.quote_id;
+    if (qid) {
+      const { data: q } = await admin
+        .from("quotes")
+        .select("factors_applied")
+        .eq("id", qid)
+        .maybeSingle();
+      const fa2 = (q as { factors_applied?: Record<string, unknown> } | null)
+        ?.factors_applied;
+      if (fa2 && typeof fa2 === "object") {
+        const k = (fa2 as { white_glove_kind?: unknown }).white_glove_kind;
+        if (typeof k === "string") moveWhiteGloveKind = k;
+      }
+    }
   }
   let deliveryServiceType: string | null | undefined;
   let deliveryBookingType: string | null | undefined;
@@ -99,7 +121,10 @@ export async function POST(req: NextRequest) {
   }
   const flowForJob =
     session.job_type === "move"
-      ? getCrewStatusFlowForMove(moveServiceType, moveMoveType)
+      ? getCrewStatusFlowForMove(moveServiceType, moveMoveType, {
+          whiteGloveKind: moveWhiteGloveKind ?? null,
+          sameAddress: moveSameAddress,
+        })
       : getCrewStatusFlowForDelivery(deliveryServiceType, deliveryBookingType);
   const allowed = new Set<string>([...flowForJob, "completed"]);
   if (session.job_type === "delivery") {

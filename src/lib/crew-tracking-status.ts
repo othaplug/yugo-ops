@@ -165,12 +165,7 @@ const LOGISTICS_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
   unloading_return: "Unloading at Origin",
 };
 
-/**
- * White-glove crew copy. Items are pre-packaged by the vendor; the crew
- * inspects, transports, places to spec, and removes packaging — never wraps.
- * Underlying status keys stay residential so DB/tracking pipelines are
- * unaffected; only the surface label changes.
- */
+/** White-glove DELIVERY copy (vendor → client). */
 const WHITE_GLOVE_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
   en_route_to_pickup: "En Route to Vendor",
   arrived_at_pickup: "At Vendor",
@@ -183,15 +178,49 @@ const WHITE_GLOVE_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
   completed: "Client Sign-off",
 };
 
+/** White-glove IN-HOME service copy (same address — no vendor, no transit). */
+const WHITE_GLOVE_INHOME_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
+  arrived: "Arrive",
+  wrapping: "Protect & Prep",
+  inventory_check: "Item Inspection",
+  unwrapping_placement: "Place / Install to Spec",
+  unloading: "Packaging Removal",
+  walkthrough_photos: "Final Walkthrough",
+  completed: "Client Sign-off",
+};
+
+/** Office / commercial move copy. */
+const OFFICE_MOVE_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
+  en_route_to_pickup: "En Route to Origin",
+  arrived_at_pickup: "At Origin",
+  inventory_check: "Label & Plan",
+  loading: "Load",
+  en_route_to_destination: "In Transit",
+  arrived_at_destination: "At Destination",
+  unloading: "Place + IT Setup",
+  walkthrough_photos: "Verify",
+  completed: "Walkthrough",
+};
+
 export function getCrewCheckpointDisplayLabel(
   status: string,
   useLogisticsCopy: boolean,
   serviceType?: string | null,
+  opts?: { whiteGloveKind?: string | null; sameAddress?: boolean },
 ): string {
-  // White-glove overrides take precedence — even when the logistics-copy flag
-  // is on (B2B-style display), white-glove jobs need item-inspection language.
-  if ((serviceType || "").toLowerCase() === "white_glove") {
-    const wg = WHITE_GLOVE_CHECKPOINT_LABELS[status as TrackingStatus];
+  const st = (serviceType || "").toLowerCase();
+  if (st === "office_move") {
+    const o = OFFICE_MOVE_CHECKPOINT_LABELS[status as TrackingStatus];
+    if (o) return o;
+  }
+  if (st === "white_glove") {
+    const kind = (opts?.whiteGloveKind || "").toLowerCase().trim();
+    const isInHome =
+      kind === "service" || kind === "in_home" || (!kind && opts?.sameAddress === true);
+    const map = isInHome
+      ? WHITE_GLOVE_INHOME_CHECKPOINT_LABELS
+      : WHITE_GLOVE_CHECKPOINT_LABELS;
+    const wg = map[status as TrackingStatus];
     if (wg) return wg;
   }
   if (useLogisticsCopy) {

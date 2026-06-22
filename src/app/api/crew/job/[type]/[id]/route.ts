@@ -552,6 +552,7 @@ export async function GET(
   type StopLoc = { address?: unknown; access?: unknown };
   let quotePickups: StopLoc[] = [];
   let quoteDropoffs: StopLoc[] = [];
+  let whiteGloveKindOut: string | null = null;
   if (m.quote_id) {
     const { data: qf } = await admin
       .from("quotes")
@@ -564,6 +565,8 @@ export async function GET(
         : {};
     if (Array.isArray(fa.pickup_locations)) quotePickups = fa.pickup_locations as StopLoc[];
     if (Array.isArray(fa.dropoff_locations)) quoteDropoffs = fa.dropoff_locations as StopLoc[];
+    const k = (fa as { white_glove_kind?: unknown }).white_glove_kind;
+    if (typeof k === "string") whiteGloveKindOut = k;
   }
 
   const { data: jobStopRows } = await admin
@@ -947,6 +950,7 @@ export async function GET(
       (m.service_type as string | null) ||
       (m.move_type as string | null) ||
       null,
+    whiteGloveKind: whiteGloveKindOut,
     complexityBadges: complexityBadgeLabels(m.complexity_indicators),
     preMoveChecklistDone,
     preMoveChecklistTotal,

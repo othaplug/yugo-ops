@@ -253,6 +253,8 @@ interface JobDetail {
   fuelPriceCadPerLitre?: number | null;
   estCrewSize?: number | null;
   serviceType?: string | null;
+  /** White-glove sub-kind: "delivery" (vendor → client) or "service" (in-home assembly/install). */
+  whiteGloveKind?: string | null;
   /** Partner org vertical (deliveries); used for B2B context in crew UI. */
   partnerVertical?: string | null;
   complexityBadges?: string[];
@@ -389,9 +391,19 @@ export default function CrewJobPage({
   const [equipmentCheckPending, setEquipmentCheckPending] = useState(false);
   const { setImmersiveNav } = useCrewImmersiveNav();
 
+  const flowVariantOpts = useMemo(
+    () => ({
+      whiteGloveKind: job?.whiteGloveKind ?? null,
+      sameAddress:
+        !!job?.fromAddress &&
+        !!job?.toAddress &&
+        job.fromAddress.trim().toLowerCase() === job.toAddress.trim().toLowerCase(),
+    }),
+    [job?.whiteGloveKind, job?.fromAddress, job?.toAddress],
+  );
   const moveStatusFlow = useMemo(
-    () => getCrewStatusFlowForMove(job?.serviceType, job?.moveType),
-    [job?.serviceType, job?.moveType],
+    () => getCrewStatusFlowForMove(job?.serviceType, job?.moveType, flowVariantOpts),
+    [job?.serviceType, job?.moveType, flowVariantOpts],
   );
   const deliveryStatusFlow = useMemo(
     () => getCrewStatusFlowForDelivery(job?.serviceType, job?.bookingType),
@@ -1963,6 +1975,7 @@ export default function CrewJobPage({
                       nextStatus!,
                       useLogisticsCopy,
                       job?.serviceType,
+                      flowVariantOpts,
                     )}
               </button>
             ) : null)}
@@ -2029,6 +2042,7 @@ export default function CrewJobPage({
                     s,
                     useLogisticsCopy,
                     job?.serviceType,
+                    flowVariantOpts,
                   );
 
                   return (
