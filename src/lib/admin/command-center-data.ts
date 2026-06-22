@@ -249,7 +249,7 @@ export const loadCommandCenterData = async () => {
         return { data: [] }
       }
     })(),
-    admin.from("crews").select("id, name, is_active").eq("is_active", true),
+    admin.from("crews").select("id, name, active").eq("active", true),
     admin
       .from("quotes")
       .select(

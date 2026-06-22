@@ -1284,8 +1284,8 @@ async function calcInventoryModifier(
 // ═══════════════════════════════════════════════
 
 interface TruckAllocation {
-  primary: { vehicle_type: string; display_name: string; cargo_cubic_ft: number } | null;
-  secondary: { vehicle_type: string; display_name: string; cargo_cubic_ft: number } | null;
+  primary: { vehicle_type: string; display_name: string; capacity_cuft: number } | null;
+  secondary: { vehicle_type: string; display_name: string; capacity_cuft: number } | null;
   isMultiVehicle: boolean;
   notes: string | null;
   range: string;
@@ -1318,7 +1318,7 @@ async function allocateTruck(
 
   const { data: primary } = await sb
     .from("fleet_vehicles")
-    .select("vehicle_type, display_name, cargo_cubic_ft")
+    .select("vehicle_type, display_name, capacity_cuft")
     .eq("vehicle_type", rule.primary_vehicle)
     .single();
 
@@ -1326,7 +1326,7 @@ async function allocateTruck(
   if (rule.secondary_vehicle) {
     const { data: sec } = await sb
       .from("fleet_vehicles")
-      .select("vehicle_type, display_name, cargo_cubic_ft")
+      .select("vehicle_type, display_name, capacity_cuft")
       .eq("vehicle_type", rule.secondary_vehicle)
       .single();
     secondary = sec;

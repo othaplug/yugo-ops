@@ -80,7 +80,7 @@ export async function checkAvailability(
   // Get all crew teams
   const { data: teams } = await admin
     .from("crews")
-    .select("id, name, member_ids")
+    .select("id, name, members")
     .eq("active", true);
 
   const allTeams = teams ?? [];
@@ -100,9 +100,9 @@ export async function checkAvailability(
 
   // Check if at least one team has enough members and is free for this window
   let availableTeams = allTeams.filter(
-    (t: { id: string; member_ids?: string[] }) =>
+    (t: { id: string; members?: string[] }) =>
       teamAvailableForWindow(t.id, window) &&
-      (t.member_ids?.length ?? 0) >= crewSize
+      (t.members?.length ?? 0) >= crewSize
   );
   if (crewPressureSlots > 0 && availableTeams.length > crewPressureSlots) {
     availableTeams = availableTeams.slice(crewPressureSlots);
@@ -129,9 +129,9 @@ export async function checkAvailability(
   for (const altWindow of WINDOWS) {
     if (altWindow === window) continue;
     let altTeams = allTeams.filter(
-      (t: { id: string; member_ids?: string[] }) =>
+      (t: { id: string; members?: string[] }) =>
         teamAvailableForWindow(t.id, altWindow) &&
-        (t.member_ids?.length ?? 0) >= crewSize
+        (t.members?.length ?? 0) >= crewSize
     );
     if (crewPressureSlots > 0 && altTeams.length > crewPressureSlots) {
       altTeams = altTeams.slice(crewPressureSlots);
@@ -142,12 +142,12 @@ export async function checkAvailability(
         windowsOverlap(m.arrival_window ?? "", altWindow)
     ).length;
     if (altTeams.length > 0 && FLEET_SIZE - altTrucksInUse - mpTrucks > 0) {
-      const team = altTeams[0] as { id: string; name: string; member_ids?: string[] };
+      const team = altTeams[0] as { id: string; name: string; members?: string[] };
       alternatives.push({
         date,
         window: altWindow,
         team_name: team.name ?? null,
-        crew_ids: team.member_ids ?? [],
+        crew_ids: team.members ?? [],
       });
       if (alternatives.length >= 2) break; // max 2 same-day alternatives
     }
@@ -167,12 +167,12 @@ export async function checkAvailability(
     Math.floor(Math.max(0, nextDayMpCrew - 6) / 8),
   );
   let nextDayTeams = allTeams.filter(
-    (t: { id: string; member_ids?: string[] }) =>
+    (t: { id: string; members?: string[] }) =>
       !(nextDayMoves ?? []).some(
         (m: { crew_id: string; arrival_window: string | null }) =>
           m.crew_id === t.id && windowsOverlap(m.arrival_window ?? "", window)
       ) &&
-      (t.member_ids?.length ?? 0) >= crewSize
+      (t.members?.length ?? 0) >= crewSize
   );
   if (nextCrewPressureSlots > 0 && nextDayTeams.length > nextCrewPressureSlots) {
     nextDayTeams = nextDayTeams.slice(nextCrewPressureSlots);
@@ -183,12 +183,12 @@ export async function checkAvailability(
   const nextTrucksOk = FLEET_SIZE - nextDayTrucksInUse - nextMpTrucks > 0;
 
   if (nextDayTeams.length > 0 && nextTrucksOk) {
-    const team = nextDayTeams[0] as { id: string; name: string; member_ids?: string[] };
+    const team = nextDayTeams[0] as { id: string; name: string; members?: string[] };
     alternatives.push({
       date: nextDay,
       window,
       team_name: team.name ?? null,
-      crew_ids: team.member_ids ?? [],
+      crew_ids: team.members ?? [],
     });
   }
 
