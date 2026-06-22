@@ -23,6 +23,8 @@ interface Job {
   clientName: string;
   fromAddress: string;
   toAddress: string;
+  pickups?: string[];
+  dropoffs?: string[];
   jobTypeLabel: string;
   itemCount?: number;
   scheduledTime: string;
@@ -502,11 +504,19 @@ export default function CrewDashboardPage() {
                       <div className="flex flex-col justify-between min-w-0 flex-1 gap-3">
                         <div className="min-w-0">
                           <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-faint)] mb-0.5 [font-family:var(--font-body)] leading-none">
-                            Pickup
+                            {(job.pickups?.length ?? 0) > 1 ? `Pickups · ${job.pickups!.length}` : "Pickup"}
                           </p>
-                          <p className="text-[14px] text-[var(--yu3-ink)] font-medium leading-snug">
-                            {job.fromAddress}
-                          </p>
+                          {(job.pickups?.length ?? 0) > 1 ? (
+                            job.pickups!.map((a, i) => (
+                              <p key={i} className="text-[14px] text-[var(--yu3-ink)] font-medium leading-snug mt-0.5">
+                                <span className="text-[var(--yu3-wine)] tabular-nums">{i + 1}.</span> {a}
+                              </p>
+                            ))
+                          ) : (
+                            <p className="text-[14px] text-[var(--yu3-ink)] font-medium leading-snug">
+                              {job.fromAddress}
+                            </p>
+                          )}
                           {job.fromAccessLine && (
                             <p className="text-[13px] font-medium text-[var(--yu3-ink)] mt-1 leading-snug [font-family:var(--font-body)]">
                               {job.fromAccessLine}
@@ -515,11 +525,19 @@ export default function CrewDashboardPage() {
                         </div>
                         <div className="min-w-0">
                           <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-faint)] mb-0.5 [font-family:var(--font-body)] leading-none">
-                            Drop-off
+                            {(job.dropoffs?.length ?? 0) > 1 ? `Drop-offs · ${job.dropoffs!.length}` : "Drop-off"}
                           </p>
-                          <p className="text-[14px] text-[var(--yu3-ink)] font-medium leading-snug">
-                            {job.toAddress}
-                          </p>
+                          {(job.dropoffs?.length ?? 0) > 1 ? (
+                            job.dropoffs!.map((a, i) => (
+                              <p key={i} className="text-[14px] text-[var(--yu3-ink)] font-medium leading-snug mt-0.5">
+                                <span className="text-[var(--yu3-forest)] tabular-nums">{i + 1}.</span> {a}
+                              </p>
+                            ))
+                          ) : (
+                            <p className="text-[14px] text-[var(--yu3-ink)] font-medium leading-snug">
+                              {job.toAddress}
+                            </p>
+                          )}
                           {job.toAccessLine && (
                             <p className="text-[13px] font-medium text-[var(--yu3-ink)] mt-1 leading-snug [font-family:var(--font-body)]">
                               {job.toAccessLine}

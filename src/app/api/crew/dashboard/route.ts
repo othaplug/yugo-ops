@@ -107,16 +107,31 @@ export async function GET(req: NextRequest) {
     string,
     { from: string | null; to: string | null }
   >();
+  // Extra pickups/drop-offs live in the quote's factors_applied (the move row
+  // keeps a single from/to), so resolve the full ordered stop list here.
+  const quoteStopsById = new Map<string, { pickups: string[]; dropoffs: string[] }>();
+  const stopAddrs = (locs: unknown): string[] =>
+    Array.isArray(locs)
+      ? (locs as { address?: unknown }[])
+          .map((l) => String(l?.address ?? "").trim())
+          .filter((a) => a.length > 0)
+      : [];
   if (quoteIds.length > 0) {
     const { data: quoteRows } = await supabase
       .from("quotes")
-      .select("id, from_access, to_access")
+      .select("id, from_access, to_access, factors_applied")
       .in("id", quoteIds);
     for (const q of quoteRows || []) {
       const id = String((q as { id: string }).id);
       quoteAccessById.set(id, {
         from: (q as { from_access?: string | null }).from_access?.trim() || null,
         to: (q as { to_access?: string | null }).to_access?.trim() || null,
+      });
+      const fa = (q as { factors_applied?: unknown }).factors_applied;
+      const f = fa && typeof fa === "object" && !Array.isArray(fa) ? (fa as Record<string, unknown>) : {};
+      quoteStopsById.set(id, {
+        pickups: stopAddrs(f.pickup_locations),
+        dropoffs: stopAddrs(f.dropoff_locations),
       });
     }
   }
@@ -167,6 +182,8 @@ export async function GET(req: NextRequest) {
     itemCount?: number;
     scheduledTime: string;
     sortMinutes?: number;
+    pickups?: string[];
+    dropoffs?: string[];
     status: string;
     completedAt?: string | null;
     isRecurring?: boolean;
@@ -239,6 +256,16 @@ export async function GET(req: NextRequest) {
       toAccessFromQuote: qAcc?.to,
     });
 
+    // Ordered stop lists — quote factors carry the full pickup/drop-off order
+    // (the move row only keeps the primary pair). Fall back to the primary.
+    const qStops = qid ? quoteStopsById.get(qid) : undefined;
+    const pickups = (qStops && qStops.pickups.length > 1)
+      ? qStops.pickups
+      : [String(m.from_address || "").trim()].filter(Boolean);
+    const dropoffs = (qStops && qStops.dropoffs.length > 1)
+      ? qStops.dropoffs
+      : [String(m.to_address || "").trim()].filter(Boolean);
+
     jobs.push({
       id: m.id,
       jobId: m.move_code || m.id,
@@ -246,6 +273,8 @@ export async function GET(req: NextRequest) {
       clientName: m.client_name || "-",
       fromAddress: m.from_address || "-",
       toAddress: m.to_address || "-",
+      pickups,
+      dropoffs,
       jobTypeLabel: eventJobTypeLabel ?? (m.move_type === "office" ? "Office · Commercial" : "Residential"),
       scheduledTime: time,
       sortMinutes: moveSortMinutes,
