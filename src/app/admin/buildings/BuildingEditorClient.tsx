@@ -230,7 +230,7 @@ export default function BuildingEditorClient({ initial }: { initial: BuildingPro
         has_commercial_tenants: form.shared_with_commercial,
         elevator_shared: form.shared_with_commercial,
         commercial_tenants: list(form.commercial_tenants_raw),
-        estimated_extra_minutes_per_trip: model.estimatedExtraMinutesPerTrip,
+        estimated_extra_minutes_per_trip: Math.max(0, Math.round(Number(model.estimatedExtraMinutesPerTrip) || 0)),
         complexity_rating: effectiveComplexity,
         crew_notes: form.crew_notes.trim() || null,
         coordinator_notes: form.coordinator_notes.trim() || null,

@@ -245,14 +245,17 @@ async function saveOneBuildingProfile(
 
   const model = deriveAccessModel(typedRow)
   // Typed payloads compute from the model; legacy single-question payloads keep
-  // the historical fixed mapping so old quotes stay stable.
+  // the historical fixed mapping so old quotes stay stable. The model rounds to
+  // one decimal place internally; the DB column is INTEGER so we round again
+  // here before persist (else 3.5 errors the insert).
   const isTyped = !!entry.archetype
-  const extraMin = isTyped
+  const extraMinRaw = isTyped
     ? model.estimatedExtraMinutesPerTrip
     : elevator_system === "multi_transfer" ? 12
       : elevator_system === "split_transfer" ? 8
         : elevator_system === "no_freight" ? 6
           : elevator_system === "stairs_only" ? 15 : 3
+  const extraMin = Math.max(0, Math.round(Number(extraMinRaw) || 0))
   const complexity = Math.min(5, Math.max(1, Math.round(isTyped ? model.complexityRating : entry.complexity ?? 3)))
 
   const summaryLines = accessSummaryLines(entry)

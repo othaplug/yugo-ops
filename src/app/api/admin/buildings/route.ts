@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       body.total_elevator_transfers != null ? Number(body.total_elevator_transfers) : 0,
     estimated_extra_minutes_per_trip:
       body.estimated_extra_minutes_per_trip != null
-        ? Number(body.estimated_extra_minutes_per_trip)
+        ? Math.max(0, Math.round(Number(body.estimated_extra_minutes_per_trip) || 0))
         : 0,
     complexity_rating: body.complexity_rating != null ? Number(body.complexity_rating) : 1,
     loading_dock: !!body.loading_dock,
