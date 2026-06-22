@@ -18,20 +18,32 @@ const ACTIVE_STATUSES = [
 ];
 const COMPLETED_STATUSES = ["completed", "delivered", "job_complete"];
 
+/** Exactly one bucket per job — the old version filtered into overlapping
+ *  buckets (an unassigned upcoming job matched BOTH `unassigned` and
+ *  `upcoming`), so it rendered twice on the dispatch board. */
+function bucketOf(j: DispatchJob): "unassigned" | "active" | "upcoming" | "completed" {
+  const st = (j.status || "").toLowerCase();
+  if (COMPLETED_STATUSES.includes(st)) return "completed";
+  if (!j.crewId) return "unassigned";
+  if (ACTIVE_STATUSES.includes(st)) return "active";
+  return "upcoming";
+}
+
 function sortJobs(jobs: DispatchJob[]): DispatchJob[] {
-  const unassigned = jobs.filter((j) => !j.crewId);
-  const active = jobs.filter(
-    (j) =>
-      j.crewId &&
-      ACTIVE_STATUSES.includes((j.status || "").toLowerCase()) &&
-      !COMPLETED_STATUSES.includes((j.status || "").toLowerCase())
-  );
-  const upcoming = jobs.filter(
-    (j) =>
-      !ACTIVE_STATUSES.includes((j.status || "").toLowerCase()) &&
-      !COMPLETED_STATUSES.includes((j.status || "").toLowerCase())
-  );
-  const completed = jobs.filter((j) => COMPLETED_STATUSES.includes((j.status || "").toLowerCase()));
+  // Defensive de-dupe by id (guards against an upstream double-add too).
+  const seen = new Set<string>();
+  const unique: DispatchJob[] = [];
+  for (const j of jobs) {
+    const id = String(j.id);
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    unique.push(j);
+  }
+
+  const unassigned = unique.filter((j) => bucketOf(j) === "unassigned");
+  const active = unique.filter((j) => bucketOf(j) === "active");
+  const upcoming = unique.filter((j) => bucketOf(j) === "upcoming");
+  const completed = unique.filter((j) => bucketOf(j) === "completed");
 
   const byEta = (a: DispatchJob, b: DispatchJob) => (a.etaMinutes ?? 999) - (b.etaMinutes ?? 999);
   const byTime = (a: DispatchJob, b: DispatchJob) =>
