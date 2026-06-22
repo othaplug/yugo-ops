@@ -165,16 +165,13 @@ const LOGISTICS_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
   unloading_return: "Unloading at Origin",
 };
 
-/** White-glove DELIVERY copy (vendor → client). */
+/** White-glove DELIVERY copy (vendor → client). 6-step trimmed flow. */
 const WHITE_GLOVE_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
   en_route_to_pickup: "En Route to Vendor",
   arrived_at_pickup: "At Vendor",
-  inventory_check: "Item Inspection",
-  loading: "Loading",
   en_route_to_destination: "In Transit",
   arrived_at_destination: "At Destination",
-  unloading: "Placement to Spec",
-  walkthrough_photos: "Final Inspection",
+  walkthrough_photos: "Final Walkthrough",
   completed: "Client Sign-off",
 };
 

@@ -74,16 +74,15 @@ export const EVENT_MOVE_FLOW: TrackingStatus[] = [
 // overridden per service type via WHITE_GLOVE_STAGE_LABELS below so the crew
 // app shows "Item inspection" / "Placement to spec" / "Packaging removal"
 // instead of the residential defaults.
-// White-glove DELIVERY (vendor → client). Items arrive packaged from the
-// vendor; the crew inspects, transports, places to spec, removes packaging.
+// White-glove DELIVERY (vendor → client). 6-step hands-free flow: two work
+// blocks ("At vendor" covers inspection+loading; "At destination" covers
+// placement+packaging-removal) bookended by transit transitions. Photo
+// categories under each work step still capture per-stage evidence.
 const WHITE_GLOVE_DELIVERY_FLOW: TrackingStatus[] = [
   "en_route_to_pickup",
   "arrived_at_pickup",
-  "inventory_check",
-  "loading",
   "en_route_to_destination",
   "arrived_at_destination",
-  "unloading",
   "walkthrough_photos",
   "completed",
 ];
@@ -106,12 +105,9 @@ const WHITE_GLOVE_FLOW = WHITE_GLOVE_DELIVERY_FLOW;
 export const WHITE_GLOVE_STAGE_LABELS: Partial<Record<TrackingStatus, string>> = {
   en_route_to_pickup: "En route to vendor",
   arrived_at_pickup: "At vendor",
-  inventory_check: "Item inspection",
-  loading: "Loading",
   en_route_to_destination: "In transit",
   arrived_at_destination: "At destination",
-  unloading: "Placement to spec",
-  walkthrough_photos: "Final inspection",
+  walkthrough_photos: "Final walkthrough",
   completed: "Client sign-off",
 };
 
