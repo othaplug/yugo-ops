@@ -183,26 +183,53 @@ const WHITE_GLOVE_INHOME_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, strin
   completed: "Client Sign-off",
 };
 
-/** Office / commercial move copy. */
+/** Office / commercial move copy (6-step trimmed flow). */
 const OFFICE_MOVE_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
   en_route_to_pickup: "En Route to Origin",
   arrived_at_pickup: "At Origin",
-  inventory_check: "Label & Plan",
-  loading: "Load",
   en_route_to_destination: "In Transit",
   arrived_at_destination: "At Destination",
-  unloading: "Place + IT Setup",
   walkthrough_photos: "Verify",
-  completed: "Walkthrough",
+  completed: "Client Sign-off",
+};
+
+/** Residential A→B move copy (6-step trimmed). Final walkthrough + sign-off. */
+const RESIDENTIAL_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
+  walkthrough_photos: "Final Walkthrough",
+  completed: "Client Sign-off",
+};
+
+/** Labour-only / in-home help copy. */
+const LABOUR_ONLY_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
+  walkthrough_photos: "Final Photos",
+  completed: "Client Sign-off",
+};
+
+/** Event copy. Return is the close-out tap; no client present. */
+const EVENT_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
+  completed: "Done",
+};
+
+/** Bin-rental copy. Often unattended drop or partner-only. */
+const BIN_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
+  completed: "Delivered",
 };
 
 export function getCrewCheckpointDisplayLabel(
   status: string,
   useLogisticsCopy: boolean,
   serviceType?: string | null,
-  opts?: { whiteGloveKind?: string | null; sameAddress?: boolean },
+  opts?: {
+    whiteGloveKind?: string | null;
+    sameAddress?: boolean;
+    moveType?: string | null;
+  },
 ): string {
   const st = (serviceType || "").toLowerCase();
+  const mt = (opts?.moveType || "").toLowerCase();
+
+  // Archetype-specific maps. Each one returns its label immediately if it has
+  // the status; otherwise we fall through to the default copy.
   if (st === "office_move") {
     const o = OFFICE_MOVE_CHECKPOINT_LABELS[status as TrackingStatus];
     if (o) return o;
@@ -217,9 +244,28 @@ export function getCrewCheckpointDisplayLabel(
     const wg = map[status as TrackingStatus];
     if (wg) return wg;
   }
+  if (st === "labour_only" || mt === "labour_only") {
+    const l = LABOUR_ONLY_CHECKPOINT_LABELS[status as TrackingStatus];
+    if (l) return l;
+  }
+  if (st === "bin_rental" || mt === "bin_pickup") {
+    const b = BIN_CHECKPOINT_LABELS[status as TrackingStatus];
+    if (b) return b;
+  }
+  if (st === "event") {
+    const e = EVENT_CHECKPOINT_LABELS[status as TrackingStatus];
+    if (e) return e;
+  }
   if (useLogisticsCopy) {
+    // B2B / delivery — close-out is "Delivered", everything else uses the
+    // origin/drop-off-flavoured copy.
+    if (status === "completed") return "Delivered";
     const mapped = LOGISTICS_CHECKPOINT_LABELS[status as TrackingStatus];
     if (mapped) return mapped;
+  } else {
+    // Residential default — final walkthrough + client sign-off.
+    const r = RESIDENTIAL_CHECKPOINT_LABELS[status as TrackingStatus];
+    if (r) return r;
   }
   return getStatusLabel(status);
 }

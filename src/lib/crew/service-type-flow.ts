@@ -7,25 +7,29 @@ import { normalizeCrewServiceCategory } from "./crew-service-category";
 
 export { normalizeCrewServiceCategory } from "./crew-service-category";
 
-/** B2B delivery: loading at origin, unload at drop-off. */
+/**
+ * B2B delivery: 5-step hands-free flow. At-pickup absorbs loading;
+ * at-drop-off absorbs unloading. Photos still tagged per stage under each work
+ * step.
+ */
 export const DELIVERY_B2B_STATUS_FLOW: TrackingStatus[] = [
   "en_route_to_pickup",
   "arrived_at_pickup",
-  "loading",
   "en_route_to_destination",
   "arrived_at_destination",
-  "unloading",
   "completed",
 ];
 
+/**
+ * Residential A→B move: 6-step hands-free flow. At-pickup absorbs walkthrough
+ * + loading; at-drop-off absorbs unloading. Final walkthrough is the natural
+ * photo-gated lift before client sign-off.
+ */
 const RESIDENTIAL_MOVE_FLOW: TrackingStatus[] = [
   "en_route_to_pickup",
   "arrived_at_pickup",
-  "inventory_check",
-  "loading",
   "en_route_to_destination",
   "arrived_at_destination",
-  "unloading",
   "walkthrough_photos",
   "completed",
 ];
@@ -33,10 +37,8 @@ const RESIDENTIAL_MOVE_FLOW: TrackingStatus[] = [
 const B2B_MOVE_LIKE_FLOW: TrackingStatus[] = [
   "en_route_to_pickup",
   "arrived_at_pickup",
-  "loading",
   "en_route_to_destination",
   "arrived_at_destination",
-  "unloading",
   "completed",
 ];
 
@@ -50,18 +52,19 @@ const LABOUR_ONLY_FLOW: TrackingStatus[] = [
   "completed",
 ];
 
+/**
+ * Event: 8-step hands-free flow. Load is absorbed into At-pickup, setup into
+ * At-venue, return-load into Teardown, return-unload into Done. Event-active
+ * and teardown stay distinct (billing milestones).
+ */
 export const EVENT_MOVE_FLOW: TrackingStatus[] = [
   "en_route_to_pickup",
   "arrived_at_pickup",
-  "loading",
   "en_route_venue",
   "arrived_venue",
-  "unloading_setup",
   "event_active",
   "teardown",
-  "loading_return",
   "en_route_return",
-  "unloading_return",
   "completed",
 ];
 
@@ -119,15 +122,13 @@ export const WHITE_GLOVE_INHOME_STAGE_LABELS: Partial<Record<TrackingStatus, str
   completed: "Client sign-off",
 };
 
-// Office / commercial move. Adds prep + verification around an A→B trunk.
+// Office / commercial move: 6-step hands-free flow. At-origin absorbs
+// label-and-plan + load; at-destination absorbs place + IT-setup.
 const OFFICE_MOVE_FLOW: TrackingStatus[] = [
   "en_route_to_pickup",
   "arrived_at_pickup",
-  "inventory_check",
-  "loading",
   "en_route_to_destination",
   "arrived_at_destination",
-  "unloading",
   "walkthrough_photos",
   "completed",
 ];
@@ -135,13 +136,10 @@ const OFFICE_MOVE_FLOW: TrackingStatus[] = [
 export const OFFICE_MOVE_STAGE_LABELS: Partial<Record<TrackingStatus, string>> = {
   en_route_to_pickup: "En route to origin",
   arrived_at_pickup: "At origin",
-  inventory_check: "Label & plan",
-  loading: "Load",
   en_route_to_destination: "In transit",
   arrived_at_destination: "At destination",
-  unloading: "Place + IT setup",
   walkthrough_photos: "Verify",
-  completed: "Walkthrough",
+  completed: "Client sign-off",
 };
 
 const BIN_RENTAL_FLOW: TrackingStatus[] = [

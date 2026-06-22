@@ -398,8 +398,9 @@ export default function CrewJobPage({
         !!job?.fromAddress &&
         !!job?.toAddress &&
         job.fromAddress.trim().toLowerCase() === job.toAddress.trim().toLowerCase(),
+      moveType: job?.moveType ?? null,
     }),
-    [job?.whiteGloveKind, job?.fromAddress, job?.toAddress],
+    [job?.whiteGloveKind, job?.fromAddress, job?.toAddress, job?.moveType],
   );
   const moveStatusFlow = useMemo(
     () => getCrewStatusFlowForMove(job?.serviceType, job?.moveType, flowVariantOpts),
