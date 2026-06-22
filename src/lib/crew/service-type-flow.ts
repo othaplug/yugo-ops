@@ -276,3 +276,120 @@ export const ALL_KNOWN_TRACKING_STATUSES: readonly string[] = STATUS_UNION;
 
 export const isAllowedTrackingCheckpointStatus = (status: string): boolean =>
   ALL_KNOWN_TRACKING_STATUSES.includes(status);
+
+/**
+ * One row on the crew timeline. For single-stop moves there's one per flow
+ * step; for multi-stop the pickup/drop-off pair is repeated per stop with
+ * `stopOrdinal` / `stopTotal` / `stopAddress` set.
+ */
+export type ExpandedStep = {
+  status: TrackingStatus;
+  /** 0-based occurrence within its (status) bucket — disambiguates repeats. */
+  stopIndex: number;
+  stopType?: "pickup" | "dropoff";
+  /** 1-based label (e.g. "Pickup 2 of 3"). */
+  stopOrdinal?: number;
+  stopTotal?: number;
+  stopAddress?: string;
+};
+
+/**
+ * Expand a base flow so multi-stop moves get one timeline row per pickup and
+ * per drop-off. Single-stop falls through unchanged. Pickups/drop-offs that
+ * aren't paired in the source flow (e.g. delivery, labour-only, event) are
+ * left alone.
+ */
+export const expandFlowForStops = (
+  flow: TrackingStatus[],
+  pickupAddresses: string[],
+  dropoffAddresses: string[],
+): ExpandedStep[] => {
+  const numP = pickupAddresses.length;
+  const numD = dropoffAddresses.length;
+  if (numP <= 1 && numD <= 1) {
+    return flow.map((s) => ({ status: s, stopIndex: 0 }));
+  }
+  const out: ExpandedStep[] = [];
+  for (let i = 0; i < flow.length; i++) {
+    const s = flow[i];
+    const next = flow[i + 1];
+    if (s === "en_route_to_pickup" && next === "arrived_at_pickup" && numP > 1) {
+      for (let k = 0; k < numP; k++) {
+        out.push({
+          status: "en_route_to_pickup",
+          stopIndex: k,
+          stopType: "pickup",
+          stopOrdinal: k + 1,
+          stopTotal: numP,
+          stopAddress: pickupAddresses[k],
+        });
+        out.push({
+          status: "arrived_at_pickup",
+          stopIndex: k,
+          stopType: "pickup",
+          stopOrdinal: k + 1,
+          stopTotal: numP,
+          stopAddress: pickupAddresses[k],
+        });
+      }
+      i++;
+      continue;
+    }
+    if (
+      s === "en_route_to_destination" &&
+      next === "arrived_at_destination" &&
+      numD > 1
+    ) {
+      for (let k = 0; k < numD; k++) {
+        out.push({
+          status: "en_route_to_destination",
+          stopIndex: k,
+          stopType: "dropoff",
+          stopOrdinal: k + 1,
+          stopTotal: numD,
+          stopAddress: dropoffAddresses[k],
+        });
+        out.push({
+          status: "arrived_at_destination",
+          stopIndex: k,
+          stopType: "dropoff",
+          stopOrdinal: k + 1,
+          stopTotal: numD,
+          stopAddress: dropoffAddresses[k],
+        });
+      }
+      i++;
+      continue;
+    }
+    out.push({ status: s, stopIndex: 0 });
+  }
+  return out;
+};
+
+/**
+ * Match the in-order checkpoints to the expanded flow. Returns the index of
+ * the most recently satisfied step, or -1 if none. Checkpoints with the same
+ * status as a repeated step advance the position one at a time.
+ */
+export const findCurrentExpandedPosition = (
+  expanded: ExpandedStep[],
+  checkpoints: Array<{ status: string }>,
+): number => {
+  let pos = -1;
+  for (const cp of checkpoints) {
+    const nextIdx = expanded.findIndex(
+      (step, i) => i > pos && step.status === cp.status,
+    );
+    if (nextIdx >= 0) pos = nextIdx;
+  }
+  return pos;
+};
+
+/** Next step in the expanded flow, or null if we're past the end. */
+export const getNextExpandedStep = (
+  expanded: ExpandedStep[],
+  currentPos: number,
+): ExpandedStep | null => {
+  if (currentPos + 1 >= expanded.length) return null;
+  return expanded[currentPos + 1];
+};

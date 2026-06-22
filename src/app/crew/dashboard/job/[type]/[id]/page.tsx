@@ -33,6 +33,10 @@ import {
 import {
   getCrewStatusFlowForMove,
   getCrewStatusFlowForDelivery,
+  expandFlowForStops,
+  findCurrentExpandedPosition,
+  getNextExpandedStep,
+  type ExpandedStep,
 } from "@/lib/crew/service-type-flow";
 import { moveUsesPreMoveChecklist } from "@/lib/tracking-prep-checklist-visibility";
 import { formatPhone, normalizePhone } from "@/lib/phone";
@@ -412,11 +416,43 @@ export default function CrewJobPage({
   );
   const statusFlow =
     jobType === "move" ? moveStatusFlow : deliveryStatusFlow;
+
+  /**
+   * For multi-stop moves, the timeline expands the at-pickup / at-drop-off
+   * pair to one row per stop. Single-stop moves get an identity expansion so
+   * the render path stays the same.
+   */
+  const expandedFlow = useMemo<ExpandedStep[]>(() => {
+    const pickupAddrs = (job?.moveStops ?? [])
+      .filter((s) => s.type === "pickup")
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((s) => s.address);
+    const dropoffAddrs = (job?.moveStops ?? [])
+      .filter((s) => s.type === "dropoff")
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((s) => s.address);
+    return expandFlowForStops(statusFlow, pickupAddrs, dropoffAddrs);
+  }, [statusFlow, job?.moveStops]);
+
   const currentStatus = session?.status || "not_started";
-  const nextStatus = getNextStatus(currentStatus, jobType, {
-    moveFlow: jobType === "move" ? moveStatusFlow : undefined,
-    deliveryFlow: jobType === "delivery" ? deliveryStatusFlow : undefined,
-  });
+  const currentExpandedPos = useMemo(
+    () =>
+      findCurrentExpandedPosition(
+        expandedFlow,
+        (session?.checkpoints ?? []) as Array<{ status: string }>,
+      ),
+    [expandedFlow, session?.checkpoints],
+  );
+  const nextExpandedStep = useMemo(
+    () => getNextExpandedStep(expandedFlow, currentExpandedPos),
+    [expandedFlow, currentExpandedPos],
+  );
+  const nextStatus =
+    nextExpandedStep?.status ??
+    getNextStatus(currentStatus, jobType, {
+      moveFlow: jobType === "move" ? moveStatusFlow : undefined,
+      deliveryFlow: jobType === "delivery" ? deliveryStatusFlow : undefined,
+    });
   const isCompleted = currentStatus === "completed";
 
   /** Pre-move client checklist is only relevant before the crew is on site at origin. */
@@ -2011,20 +2047,49 @@ export default function CrewJobPage({
                 className="m-0 list-none space-y-0 p-0"
                 aria-label="Job timeline"
               >
-                {statusFlow.map((s, i) => {
-                  const cp = session?.checkpoints?.find((c) => c.status === s);
-                  const idx = statusFlow.indexOf(currentStatus as any);
-                  const isPast = idx > i || (idx === i && isCompleted);
-                  const isCurrent = currentStatus === s && !isCompleted;
-                  const isLast = i === statusFlow.length - 1;
+                {expandedFlow.map((step, i) => {
+                  const s = step.status;
+                  // Find the i-th checkpoint matching this expanded position by
+                  // walking checkpoints in order — multi-stop moves write the
+                  // same status repeatedly.
+                  let cp: { status: string; timestamp?: string; note?: string | null } | null = null;
+                  let cursor = -1;
+                  for (const c of session?.checkpoints ?? []) {
+                    const matchAt = expandedFlow.findIndex(
+                      (es, j) => j > cursor && es.status === c.status,
+                    );
+                    if (matchAt < 0) continue;
+                    cursor = matchAt;
+                    if (matchAt === i) {
+                      cp = c;
+                      break;
+                    }
+                    if (matchAt > i) break;
+                  }
+                  const isPast =
+                    currentExpandedPos > i ||
+                    (currentExpandedPos === i && isCompleted);
+                  const isCurrent =
+                    currentExpandedPos === i && !isCompleted;
+                  const isLast = i === expandedFlow.length - 1;
                   const state = isPast ? "done" : isCurrent ? "act" : "wait";
 
-                  const prevCp =
-                    i > 0
-                      ? session?.checkpoints?.find(
-                          (c) => c.status === statusFlow[i - 1],
-                        )
-                      : null;
+                  let prevCp: { status: string; timestamp?: string; note?: string | null } | null = null;
+                  if (i > 0) {
+                    let pc = -1;
+                    for (const c of session?.checkpoints ?? []) {
+                      const matchAt = expandedFlow.findIndex(
+                        (es, j) => j > pc && es.status === c.status,
+                      );
+                      if (matchAt < 0) continue;
+                      pc = matchAt;
+                      if (matchAt === i - 1) {
+                        prevCp = c;
+                        break;
+                      }
+                      if (matchAt > i - 1) break;
+                    }
+                  }
                   const stepTs =
                     cp?.timestamp ??
                     (isLast && isCompleted
@@ -2039,16 +2104,20 @@ export default function CrewJobPage({
                         )
                       : null;
 
-                  const stepLabel = getCrewCheckpointDisplayLabel(
+                  const baseLabel = getCrewCheckpointDisplayLabel(
                     s,
                     useLogisticsCopy,
                     job?.serviceType,
                     flowVariantOpts,
                   );
+                  const stepLabel =
+                    step.stopTotal && step.stopOrdinal && step.stopType
+                      ? `${baseLabel} · ${step.stopType === "pickup" ? "Pickup" : "Drop-off"} ${step.stopOrdinal} of ${step.stopTotal}`
+                      : baseLabel;
 
                   return (
                     <li
-                      key={s}
+                      key={`${s}__${i}`}
                       className={cn(
                         "flex gap-3.5",
                         !isLast && "pb-5",
@@ -2130,6 +2199,11 @@ export default function CrewJobPage({
                         >
                           {stepLabel}
                         </h3>
+                        {step.stopAddress ? (
+                          <p className="mt-0.5 text-[11px] leading-snug text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+                            {step.stopAddress.split(",")[0]}
+                          </p>
+                        ) : null}
                         {state === "act" && (
                           <p className="mt-1 text-[9px] font-bold uppercase leading-none tracking-[0.12em] text-[var(--yu3-wine)] [font-family:var(--font-body)]">
                             Now
