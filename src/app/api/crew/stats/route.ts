@@ -316,6 +316,28 @@ export async function GET(req: NextRequest) {
     .filter((p) => p.monthJobs > 0 || p.avgRating > 0)
     .sort((a, b) => b.avgRating - a.avgRating);
 
+  // Override the current viewer's own leaderboard entry with live-computed
+  // values. The profile snapshot may be stale (e.g. admin-completed moves
+  // skipped the profile update), but monthJobs/monthTips above are already
+  // the max of all live sources. This ensures the viewer always sees correct
+  // numbers for their own row, and the re-sort keeps ranking consistent.
+  const myLeaderboardIndex = leaderboardRaw.findIndex((e) => e.name === crewMember.name);
+  if (myLeaderboardIndex >= 0) {
+    const entry = leaderboardRaw[myLeaderboardIndex];
+    entry.monthJobs = Math.max(entry.monthJobs, monthJobs);
+    entry.monthTips = Math.max(entry.monthTips, monthTips);
+    if (monthAvgRating != null) entry.avgRating = Math.max(entry.avgRating, monthAvgRating);
+  } else if (monthJobs > 0 || (monthAvgRating ?? 0) > 0) {
+    leaderboardRaw.push({
+      name: crewMember.name,
+      monthJobs,
+      avgRating: monthAvgRating ?? 0,
+      monthTips,
+      badges: [],
+    });
+  }
+  leaderboardRaw.sort((a, b) => b.avgRating - a.avgRating || b.monthJobs - a.monthJobs);
+
   const myRankIndex = leaderboardRaw.findIndex((e) => e.name === crewMember.name);
   const yourRankThisMonth = myRankIndex >= 0 ? myRankIndex + 1 : null;
   const leaderboard = leaderboardRaw.slice(0, 15);

@@ -10,6 +10,7 @@ import { generateMovePDFs } from "@/lib/documents/generateMovePDFs";
 import { calcActualMargin } from "@/lib/pricing/engine";
 import { collectCalibrationData } from "@/lib/learning/engine";
 import { applyEstateServiceChecklistAutomation } from "@/lib/estate-service-checklist-sync";
+import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
 
 /**
  * When admin marks a move as completed in the UI, this endpoint sends the
@@ -152,6 +153,13 @@ export async function POST(
 
   applyEstateServiceChecklistAutomation(admin, moveId).catch((e) =>
     console.error("[notify-complete] estate checklist sync failed:", e),
+  );
+
+  // 7. Crew profile snapshot — updates monthly_jobs so the leaderboard
+  //    reflects this completion. Crew-flow completions (checkpoint/signoff)
+  //    call this inline; admin-completions were skipping it.
+  notifyJobCompletedForCrewProfiles(admin, { jobType: "move", jobId: moveId }).catch((e) =>
+    console.error("[notify-complete] crew profile update failed:", e)
   );
 
   return NextResponse.json({
