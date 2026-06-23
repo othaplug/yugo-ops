@@ -13,6 +13,8 @@ import {
   finalizeBalancePaymentSettlement,
   recordAdminDepositForMove,
 } from "@/lib/complete-balance-payment";
+import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
+import { safePatchDeal } from "@/lib/hubspot/safe-deal-write";
 
 export async function PATCH(
   req: NextRequest,
@@ -599,6 +601,13 @@ export async function DELETE(
     const { id } = await params;
     const admin = createAdminClient();
 
+    const { data: moveMeta } = await admin
+      .from("moves")
+      .select("hubspot_deal_id")
+      .eq("id", id)
+      .maybeSingle();
+    const moveHsId = ((moveMeta as { hubspot_deal_id?: string | null } | null)?.hubspot_deal_id ?? "").trim();
+
     await admin.from("move_inventory").delete().eq("move_id", id);
     await admin.from("move_documents").delete().eq("move_id", id);
     await admin.from("move_photos").delete().eq("move_id", id);
@@ -616,6 +625,9 @@ export async function DELETE(
     const { error } = await admin.from("moves").delete().eq("id", id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+    if (moveHsId) syncDealStage(moveHsId, "lost").catch(() => {});
+
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     return NextResponse.json(

@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     const uniqueIds = [...new Set(ids.map(String))];
     const { data: rows, error: fetchErr } = await admin
       .from("quotes")
-      .select("id, status")
+      .select("id, status, hubspot_deal_id")
       .in("id", uniqueIds);
 
     if (fetchErr) {
@@ -93,9 +93,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const hubspotIds = quoteRows
+      .filter((r) => toDelete.includes(r.id as string))
+      .map((r) => ((r as { hubspot_deal_id?: string | null }).hubspot_deal_id ?? "").trim())
+      .filter(Boolean);
+
     const { error: deleteErr } = await admin.from("quotes").delete().in("id", toDelete);
     if (deleteErr) {
       return NextResponse.json({ error: deleteErr.message || "Failed to delete quotes" }, { status: 500 });
+    }
+
+    for (const hid of hubspotIds) {
+      syncDealStage(hid, "lost").catch(() => {});
     }
 
     return NextResponse.json({

@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { movePatchFromModificationChanges } from "@/lib/moves/move-modification-apply";
 import { triggerMoveGCalSync } from "@/lib/google-calendar/sync-utils";
+import { safePatchDeal } from "@/lib/hubspot/safe-deal-write";
 
 /**
  * POST — record a booking modification (coordinator). Price increase defaults to pending client approval.
@@ -34,7 +35,7 @@ export async function POST(
   const sb = createAdminClient();
   const { data: move, error: mErr } = await sb
     .from("moves")
-    .select("id, amount")
+    .select("id, amount, hubspot_deal_id")
     .eq("id", moveId)
     .single();
 
@@ -93,6 +94,20 @@ export async function POST(
     // GCal sync whenever scheduling-relevant fields change
     if (patch.scheduled_date || patch.from_address || patch.to_address || patch.amount !== undefined) {
       triggerMoveGCalSync(moveId);
+    }
+
+    // HubSpot: push updated financials when price changed
+    if (priceDifference !== 0) {
+      const hsToken = process.env.HUBSPOT_ACCESS_TOKEN;
+      const hid = ((move as { hubspot_deal_id?: string | null }).hubspot_deal_id ?? "").trim();
+      if (hsToken && hid) {
+        const hst = Math.round(newPrice * 0.13 * 100) / 100;
+        safePatchDeal(hsToken, hid, {
+          sub_total: String(Math.round(newPrice * 100) / 100),
+          taxes: String(hst),
+          total_price: String(Math.round((newPrice + hst) * 100) / 100),
+        }).catch(() => {});
+      }
     }
   }
 

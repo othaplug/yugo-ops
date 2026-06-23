@@ -143,7 +143,7 @@ export async function DELETE(
   const admin = createAdminClient();
   const { data: quote, error: fetchErr } = await admin
     .from("quotes")
-    .select("id, status, quote_id")
+    .select("id, status, quote_id, hubspot_deal_id")
     .eq("id", quoteId)
     .single();
 
@@ -177,6 +177,9 @@ export async function DELETE(
       { status: 500 }
     );
   }
+
+  const hid = (quote.hubspot_deal_id as string | null)?.trim();
+  if (hid) syncDealStage(hid, "lost").catch(() => {});
 
   return NextResponse.json({ ok: true });
 }

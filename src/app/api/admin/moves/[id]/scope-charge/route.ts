@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, isSuperAdminEmail } from "@/lib/api-auth";
 import { logAudit } from "@/lib/audit";
+import { safePatchDeal } from "@/lib/hubspot/safe-deal-write";
 
 type ScopeChargeItem = {
   /** Catalog slug if matched, otherwise leave undefined for a custom item. */
@@ -89,7 +90,7 @@ export async function POST(
   const { data: move, error: moveErr } = await db
     .from("moves")
     .select(
-      "id, move_code, client_name, client_email, client_phone, quote_id, amount, estimate, balance_amount, total_paid, status, balance_paid_at, payment_marked_paid, inventory_score, scheduled_date, from_address, to_address",
+      "id, move_code, client_name, client_email, client_phone, quote_id, amount, estimate, balance_amount, total_paid, status, balance_paid_at, payment_marked_paid, inventory_score, scheduled_date, from_address, to_address, hubspot_deal_id",
     )
     .eq("id", moveId)
     .single();
@@ -290,6 +291,18 @@ export async function POST(
     settlement_method: "admin",
     paid_at: new Date().toISOString(),
   });
+
+  // 4b) HubSpot: push updated subtotal so the deal card reflects the new amount
+  const hsToken = process.env.HUBSPOT_ACCESS_TOKEN;
+  const hid = ((move as { hubspot_deal_id?: string | null }).hubspot_deal_id ?? "").trim();
+  if (hsToken && hid) {
+    const hst = Math.round(newSubtotal * 0.13 * 100) / 100;
+    safePatchDeal(hsToken, hid, {
+      sub_total: String(Math.round(newSubtotal * 100) / 100),
+      taxes: String(hst),
+      total_price: String(Math.round((newSubtotal + hst) * 100) / 100),
+    }).catch(() => {});
+  }
 
   // 5) Audit log. Captures who added it and the financial delta — useful
   //    when reconciling outstanding balances later.

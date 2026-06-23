@@ -3,6 +3,18 @@ import { requireAdmin } from "@/lib/api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canEditFinalJobPrice } from "@/lib/admin-can-edit-final-price";
 import { isMoveStatusCompleted } from "@/lib/move-status";
+import { safePatchDeal } from "@/lib/hubspot/safe-deal-write";
+
+function patchHsDealPrice(dealId: string, preTaxAmount: number) {
+  const hsToken = process.env.HUBSPOT_ACCESS_TOKEN;
+  if (!hsToken || !dealId.trim()) return;
+  const hst = Math.round(preTaxAmount * 0.13 * 100) / 100;
+  safePatchDeal(hsToken, dealId, {
+    sub_total: String(Math.round(preTaxAmount * 100) / 100),
+    taxes: String(hst),
+    total_price: String(Math.round((preTaxAmount + hst) * 100) / 100),
+  }).catch(() => {});
+}
 
 /** Avoid exposing raw PostgREST or Postgres strings for known deployment gaps */
 function publicDbErrorMessage(message: string | undefined): string {
@@ -66,7 +78,7 @@ export async function POST(req: NextRequest) {
     const { data: delivery, error: dErr } = await db
       .from("deliveries")
       .select(
-        "id, status, total_price, admin_adjusted_price, override_price, quoted_price, delivery_number",
+        "id, status, total_price, admin_adjusted_price, override_price, quoted_price, delivery_number, hubspot_deal_id",
       )
       .eq("id", jobId)
       .single();
@@ -178,12 +190,15 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const dlvHsId = ((delivery as { hubspot_deal_id?: string | null }).hubspot_deal_id ?? "").trim();
+    if (dlvHsId) patchHsDealPrice(dlvHsId, newPrice);
+
     return NextResponse.json({ ok: true });
   }
 
   const { data: move, error: mErr } = await db
     .from("moves")
-    .select("id, status, amount, total_price, final_amount, estimate, move_code")
+    .select("id, status, amount, total_price, final_amount, estimate, move_code, hubspot_deal_id")
     .eq("id", jobId)
     .single();
 
@@ -274,6 +289,9 @@ export async function POST(req: NextRequest) {
       icon: "dollar",
     });
   }
+
+  const moveHsId = ((move as { hubspot_deal_id?: string | null }).hubspot_deal_id ?? "").trim();
+  if (moveHsId) patchHsDealPrice(moveHsId, newPrice);
 
   return NextResponse.json({ ok: true });
 }
