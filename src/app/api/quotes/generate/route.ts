@@ -606,6 +606,25 @@ function cfgNum(config: Map<string, string>, key: string, fallback: number): num
   return v !== undefined ? Number(v) : fallback;
 }
 
+/**
+ * Bake CC processing recovery into a pre-tax price. The gross-up math means
+ * the merchant nets the input price after Square's per-transaction cut
+ * (2.9% + $0.30 by default; configurable via processing_recovery_*). Applied
+ * silently — client never sees the fee on its own line. Residential applies
+ * the same math inside calcResidential before tier rounding; this helper is
+ * for every other quote path so the absorption is universal.
+ */
+function applyProcessingRecoveryToTier(t: TierResult, config: Map<string, string>): TierResult {
+  const procRate = cfgNum(config, "processing_recovery_rate", 0.029);
+  const procFlat = cfgNum(config, "processing_recovery_flat", 0.30);
+  const rounding = cfgNum(config, "rounding_nearest", 50);
+  const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
+  const grossed = Math.ceil((t.price + procFlat) / (1 - procRate));
+  const rounded = Math.round(grossed / rounding) * rounding;
+  const tax = Math.round(rounded * taxRate);
+  return { ...t, price: rounded, tax, total: rounded + tax };
+}
+
 /** Positive finite pre-tax dollar amount from JSON body, or undefined if absent/invalid. */
 function parsePositivePreTaxOverride(v: unknown): number | undefined {
   if (v === undefined || v === null) return undefined;
@@ -4923,6 +4942,27 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     }
     default:
       return NextResponse.json({ error: `Unknown service_type: ${svcType}` }, { status: 400 });
+  }
+
+  // Bake CC processing recovery into every NON-residential quote. Residential
+  // already applies the same math inside calcResidential (Step 9, before tier
+  // rounding) — applying again here would double-bake. Every other path
+  // (office, long-distance, single-item, white-glove, specialty, b2b, event,
+  // labour-only, inventory-driven office tiers) absorbs the merchant card
+  // cost silently here so the displayed price already covers the processor's
+  // cut. Voluntary balance payments never add a surcharge on top (see
+  // /api/payments/balance and /api/cron/charge-balance — same policy).
+  if (svcType !== "local_move") {
+    if (custom_price) {
+      custom_price = applyProcessingRecoveryToTier(custom_price, config);
+    }
+    if (officeTiers) {
+      const next: Record<string, TierResult> = {};
+      for (const [k, t] of Object.entries(officeTiers)) {
+        next[k] = applyProcessingRecoveryToTier(t, config);
+      }
+      officeTiers = next;
+    }
   }
 
   let estimatedDaysForQuoteRow = 1;

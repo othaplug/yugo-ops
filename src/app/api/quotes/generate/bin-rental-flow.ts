@@ -182,7 +182,15 @@ export async function buildBinRentalQuoteResponse(opts: {
   }
 
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE);
-  const subtotal = priceResult.subtotal;
+  // Bake CC processing recovery into the bin-rental pre-tax subtotal so the
+  // displayed price already covers the processor's cut (same policy as every
+  // other service type via /api/quotes/generate). Round to nearest $5 here
+  // since bin rentals are lower-ticket than moves and $50 rounding overshoots.
+  const procRate = cfgNum(config, "processing_recovery_rate", 0.029);
+  const procFlat = cfgNum(config, "processing_recovery_flat", 0.30);
+  const binRounding = cfgNum(config, "bin_rental_rounding_nearest", 5);
+  const grossedSubtotal = Math.ceil((priceResult.subtotal + procFlat) / (1 - procRate));
+  const subtotal = Math.round(grossedSubtotal / binRounding) * binRounding;
   const tax = Math.round(subtotal * taxRate);
   const total = subtotal + tax;
 
