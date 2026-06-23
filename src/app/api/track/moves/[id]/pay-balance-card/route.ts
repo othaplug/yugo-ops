@@ -40,10 +40,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "No card on file for this move" }, { status: 400 });
     }
 
-    const processingFee = balanceAmount * 0.033;
-    const transactionFee = 0.15;
-    const ccTotal = balanceAmount + processingFee + transactionFee;
-    const amountCents = Math.round(ccTotal * 100);
+    // Card processing is already absorbed in the quoted price (same policy as
+    // /api/cron/charge-balance and /api/payments/balance). Charge the raw
+    // balance — never add a fee here.
+    const ccTotal = balanceAmount;
+    const amountCents = Math.round(balanceAmount * 100);
 
     const { locationId } = await getSquarePaymentConfig();
     if (!locationId) {

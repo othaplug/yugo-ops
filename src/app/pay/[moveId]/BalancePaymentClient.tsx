@@ -74,9 +74,10 @@ export default function BalancePaymentClient({
   const cardRef = useRef<SquareCard | null>(null);
   const initRef = useRef(false);
 
-  const processingFee = balanceAmount * 0.033;
-  const transactionFee = 0.15;
-  const ccTotal = balanceAmount + processingFee + transactionFee;
+  // Card processing is already absorbed in the quoted price — the client pays
+  // exactly the balance shown on their dashboard / 48h email. Surcharge code
+  // was removed 2026-06-23 after MV-30228 was over-charged $17.57.
+  const ccTotal = balanceAmount;
 
   const initializeCard = useCallback(async (appId: string, locationId: string) => {
     if (initRef.current || !window.Square) return;
@@ -245,14 +246,6 @@ export default function BalancePaymentClient({
             <div className="flex justify-between">
               <span className="text-[#454545]">Move balance (incl. HST)</span>
               <span className="text-[#E8E5E0]">{fmtPrice(balanceAmount)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#454545]">Credit card processing fee (3.3%)</span>
-              <span className="text-[#E8E5E0]">{fmtPrice(processingFee)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#454545]">Transaction fee</span>
-              <span className="text-[#E8E5E0]">{fmtPrice(transactionFee)}</span>
             </div>
             <div className="border-t border-[#2A2A2A] pt-2 mt-2 flex justify-between">
               <span className="text-[var(--tx)] font-bold">Total to charge</span>

@@ -46,10 +46,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No balance to charge" }, { status: 400 });
     }
 
-    const processingFee = balanceAmount * 0.033;
-    const transactionFee = 0.15;
-    const ccTotal = balanceAmount + processingFee + transactionFee;
-    const amountCents = Math.round(ccTotal * 100);
+    // Card processing is already absorbed in the quoted price (same policy as
+    // /api/cron/charge-balance). Charge the raw balance — never add a fee here.
+    // A previous version surcharged 3.3% + $0.15, which double-charged clients
+    // whose dashboard/email balance said one number and whose card was billed
+    // a higher number (MV-30228 / Chidera Allison, 2026-06-22).
+    const ccTotal = balanceAmount;
+    const amountCents = Math.round(balanceAmount * 100);
 
     // Attempt to store card if we have a customer
     let cardId: string | undefined;
@@ -124,8 +127,8 @@ export async function POST(req: Request) {
           clientName: move.client_name || "",
           moveCode: move.move_code || moveId,
           baseBalance: balanceAmount,
-          processingFee,
-          transactionFee,
+          processingFee: 0,
+          transactionFee: 0,
           totalCharged: ccTotal,
           trackingUrl,
         },
