@@ -10,6 +10,7 @@ import { getResend } from "@/lib/resend";
 import { getEmailFrom } from "@/lib/email/send";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { signTrackToken } from "@/lib/track-token";
+import { isFullRelocationMove } from "@/lib/track-non-move-product";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
 import {
   equinoxPromoLayout,
@@ -714,8 +715,19 @@ export async function runPostPaymentActions(
         const companyDisplayName = await getCompanyDisplayName();
         const first = clientName?.trim().split(/\s+/)[0] || "there";
         const isBinRental = quote.service_type === "bin_rental";
+        // Move-day checklist is only meaningful for jobs where the client
+        // has to pack, label, reserve elevators, prep appliances, etc.
+        // Single-item runs, deliveries, bin rentals, events, etc. don't
+        // need it — including the link in those SMS confuses the client
+        // and creates a dead end.
+        const needsMoveChecklist = isFullRelocationMove({
+          serviceType: quote.service_type ?? null,
+          whiteGloveKind:
+            (factors as { white_glove_kind?: string | null } | null)
+              ?.white_glove_kind ?? null,
+        });
         const checklistLine =
-          !isBinRental && checklistTokenForEmail
+          needsMoveChecklist && checklistTokenForEmail
             ? `Move-day checklist:\n${baseUrl}/checklist/${checklistTokenForEmail}`
             : null;
 

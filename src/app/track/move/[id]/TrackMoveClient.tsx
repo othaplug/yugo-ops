@@ -3663,15 +3663,11 @@ export default function TrackMoveClient({
                 />
               )}
 
-              {suppliesCatalog.length > 0 && !isNonMoveProductTrack && (
-                <SuppliesUpsell
-                  moveId={move.id}
-                  token={token}
-                  catalog={suppliesCatalog}
-                  hasCardOnFile={suppliesHasCardOnFile}
-                  useSandbox={suppliesUseSandbox}
-                />
-              )}
+              {/* Supplies upsell moved to the bottom of the dashboard and
+                  made collapsible. The previous prominent position above the
+                  fold pushed the actual move details below it on single-item
+                  / non-relocation tracks where the client wasn't expecting
+                  to shop for packing supplies. */}
 
               {additionalFeesCents > 0 &&
                 !indicativeSettled &&
@@ -4618,6 +4614,43 @@ export default function TrackMoveClient({
                     </div>
                   </div>
                 </div>
+              )}
+
+              {/* Pack Like a Pro — moved to the bottom of the dashboard so
+                  the actual move details (date, addresses, crew, timeline)
+                  show above the fold. Collapsed by default; the client can
+                  expand if they actually want to shop for supplies. */}
+              {suppliesCatalog.length > 0 && !isNonMoveProductTrack && (
+                <details className="mt-6 rounded-2xl border border-[#2C3E2D]/15 bg-[#2C3E2D]/[0.04] [&_summary::-webkit-details-marker]:hidden">
+                  <summary
+                    className="cursor-pointer list-none px-4 py-3 flex items-center justify-between gap-3 select-none"
+                    style={{ color: FOREST }}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#B8962E]">
+                        Pack like a pro
+                      </span>
+                      <span className="text-[13px] font-semibold truncate">
+                        Add moving supplies
+                      </span>
+                    </div>
+                    <span
+                      className="text-[18px] leading-none transition-transform [details[open]_&]:rotate-45"
+                      aria-hidden
+                    >
+                      +
+                    </span>
+                  </summary>
+                  <div className="px-1 pb-1">
+                    <SuppliesUpsell
+                      moveId={move.id}
+                      token={token}
+                      catalog={suppliesCatalog}
+                      hasCardOnFile={suppliesHasCardOnFile}
+                      useSandbox={suppliesUseSandbox}
+                    />
+                  </div>
+                </details>
               )}
             </>
           )}

@@ -1,4 +1,5 @@
 import { DELIVERY_STATUS_FLOW, MOVE_STATUS_FLOW } from "@/lib/crew-tracking-status"
+import { isFullRelocationMove } from "@/lib/track-non-move-product"
 
 const norm = (s: string | null | undefined) =>
   String(s ?? "")
@@ -10,20 +11,24 @@ const norm = (s: string | null | undefined) =>
  * Whether a job should get the client pre-move checklist at all.
  *
  * The checklist is transport-move prep (parking at BOTH locations, elevator
- * booking, disconnect appliances, etc.). It makes no sense for:
- *   • labour-only jobs (assembly, rearrange, debris removal — no transport), or
- *   • in-home jobs where origin and destination are the same address.
- * Those jobs should never show or be nudged about the move checklist.
+ * booking, disconnect appliances, etc.). It only applies to FULL residential
+ * or commercial relocations — single-item runs, deliveries, bin rentals,
+ * events, specialty, labour-only, and white-glove jobs don't have any
+ * client-side prep to track.
+ *
+ * Also returns false when from and to are the same address (in-home job).
  */
 export const moveUsesPreMoveChecklist = (opts: {
   serviceType?: string | null
   moveType?: string | null
   fromAddress?: string | null
   toAddress?: string | null
+  whiteGloveKind?: string | null
 }): boolean => {
-  const st = norm(opts.serviceType)
-  const mt = norm(opts.moveType)
-  if (st === "labour_only" || mt === "labour_only") return false
+  if (!isFullRelocationMove({
+    serviceType: opts.serviceType,
+    whiteGloveKind: opts.whiteGloveKind,
+  })) return false
   const from = String(opts.fromAddress ?? "").trim().toLowerCase()
   const to = String(opts.toAddress ?? "").trim().toLowerCase()
   if (from && to && from === to) return false

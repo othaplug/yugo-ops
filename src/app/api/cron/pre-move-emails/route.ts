@@ -8,6 +8,7 @@ import { getMoveCrewSize } from "@/lib/moves/crew-size";
 import { moveMatchesBalanceReminder48hWindow } from "@/lib/quotes/estate-schedule";
 import { statusUpdateEmailHtml } from "@/lib/email-templates";
 import { moveUsesPreMoveChecklist } from "@/lib/tracking-prep-checklist-visibility";
+import { isFullRelocationMove } from "@/lib/track-non-move-product";
 import {
   accessMentionsElevator,
   parkingReminderLikelyNeeded,
@@ -370,10 +371,13 @@ export async function GET(req: NextRequest) {
   }
 
   /* ── T-3 Day: move-day checklist link (separate from 72hr bundle) ── */
+  // Only full residential / commercial relocations get this email — the
+  // checklist is meaningless for single-item runs, deliveries, bin rentals,
+  // events, etc., and sending it to those clients creates a dead link.
   const { data: movesCheck3 } = await supabase
     .from("moves")
     .select(
-      "id, move_code, client_name, client_email, checklist_token, move_prep_checklist_email_sent_at",
+      "id, move_code, client_name, client_email, checklist_token, move_prep_checklist_email_sent_at, service_type",
     )
     .in("status", ["confirmed", "scheduled"])
     .eq("scheduled_date", threeDaysOut)
@@ -381,6 +385,7 @@ export async function GET(req: NextRequest) {
 
   for (const m of movesCheck3 || []) {
     if (!m.client_email) continue;
+    if (!isFullRelocationMove({ serviceType: m.service_type ?? null })) continue;
     const tok = String((m as { checklist_token?: string }).checklist_token || "").trim();
     if (!tok) continue;
     const checklistUrl = `${baseUrl}/checklist/${tok}`;
