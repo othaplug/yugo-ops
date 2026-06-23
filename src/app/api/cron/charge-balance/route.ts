@@ -6,6 +6,7 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment";
+import { assertChargeMatchesStored } from "@/lib/payments/charge-amount-guard";
 import { humanizePaymentProcessorMessage } from "@/lib/email/payment-error-message";
 import { moveMatchesBalanceReminder48hWindow } from "@/lib/quotes/estate-schedule";
 
@@ -74,6 +75,15 @@ export async function GET(req: NextRequest) {
 
     // Processing costs are already absorbed into the quoted price — charge the raw balance.
     const amountCents = Math.round(balanceAmount * 100);
+    assertChargeMatchesStored({
+      attemptedCents: amountCents,
+      storedCents: Math.round(Number(move.balance_amount || 0) * 100),
+      context: {
+        site: "GET /api/cron/charge-balance",
+        move_id: move.id,
+        move_code: move.move_code,
+      },
+    });
 
     try {
       const { locationId } = await getSquarePaymentConfig();

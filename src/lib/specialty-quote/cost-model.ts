@@ -44,8 +44,16 @@ const FUEL_PER_KM = 0.35;
 const STAIR_PER_FLIGHT = 30;
 const WRAP_LARGE = 25;
 const WRAP_SMALL = 10;
-const PROCESSING_RATE = 0.029;
-const PROCESSING_FIXED = 0.3;
+// Processing-fee rate/flat live in @/lib/pricing/processing-recovery as the
+// single source of truth. Specialty quotes used to hardcode 2.9% + $0.30
+// independently; that drifted from the global config and risked an
+// MV-30228-style mismatch when an admin tuned the platform_config values.
+import {
+  PROCESSING_RECOVERY_DEFAULT_RATE,
+  PROCESSING_RECOVERY_DEFAULT_FLAT,
+} from "@/lib/pricing/processing-recovery";
+const PROCESSING_RATE = PROCESSING_RECOVERY_DEFAULT_RATE;
+const PROCESSING_FIXED = PROCESSING_RECOVERY_DEFAULT_FLAT;
 
 export function weightSurchargeDollars(weightLbs: number): number {
   if (!Number.isFinite(weightLbs) || weightLbs < 200) return 0;

@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { applyProcessingRecoveryAndRound } from "@/lib/pricing/processing-recovery";
 
 /* ─── Types ─── */
 
@@ -182,7 +183,11 @@ export async function calculateDayRate(opts: {
     });
   }
 
-  const totalPrice = basePrice + overagePrice + servicesPrice + afterHoursSurcharge + oversizedSurcharge;
+  // Bake CC processing recovery so the invoiced total covers Yugo's card
+  // cost when partners pay via the statement-card flow. Defaults to 2.9% +
+  // $0.30 (Square's standard rate) unless overridden.
+  const totalPriceRaw = basePrice + overagePrice + servicesPrice + afterHoursSurcharge + oversizedSurcharge;
+  const totalPrice = applyProcessingRecoveryAndRound(totalPriceRaw, {}, 5);
   const effectivePerStop = numStops > 0 ? Math.round(totalPrice / numStops) : totalPrice;
 
   return {
@@ -358,7 +363,10 @@ export async function calculatePerDelivery(opts: {
     }
   }
 
-  const totalPrice = basePrice + zoneSurcharge + servicesPrice + afterHoursSurcharge + accessSurcharge + weightSurcharge;
+  // Bake CC processing recovery so the invoiced total covers Yugo's card
+  // cost when partners pay via the statement-card flow.
+  const totalPriceRaw = basePrice + zoneSurcharge + servicesPrice + afterHoursSurcharge + accessSurcharge + weightSurcharge;
+  const totalPrice = applyProcessingRecoveryAndRound(totalPriceRaw, {}, 5);
 
   return {
     basePrice,

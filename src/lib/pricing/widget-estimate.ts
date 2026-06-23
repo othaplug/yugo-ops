@@ -3,6 +3,8 @@
  * Kept in sync with residential base bands; inventory scoring mirrors quote tooling.
  */
 
+import { applyProcessingRecoveryAndRound } from "./processing-recovery";
+
 export const WIDGET_RESIDENTIAL_BASE_RATES: Record<string, number> = {
   studio: 449,
   "1br": 649,
@@ -230,6 +232,13 @@ export function calculateWidgetEstimate(input: WidgetEstimateInput): number {
   const distanceKm =
     input.distanceKm ?? estimateDistanceKmFromPostals(input.fromPostal, input.toPostal);
 
+  // Bake CC processing recovery so the widget estimate matches what a real
+  // quote would generate (the quote engine grosses up by the same formula
+  // before tier rounding). Uses default rate/flat — the widget doesn't have
+  // a Supabase config handle. Override at the API-route layer if needed.
+  const grossUp = (raw: number) =>
+    applyProcessingRecoveryAndRound(raw, {}, 50);
+
   if (input.moveType === "office") {
     const size = input.officeSize || "medium";
     let price = WIDGET_OFFICE_BASE_RATES[size] ?? 1800;
@@ -241,7 +250,7 @@ export function calculateWidgetEstimate(input: WidgetEstimateInput): number {
     price += ACCESS_SURCHARGES[input.accessTo] ?? 0;
     price *= widgetDateMultiplier(input.dateStr);
     if (input.timeSlot === "pm") price *= 1.03;
-    return Math.round(price / 50) * 50;
+    return grossUp(price);
   }
 
   const size = input.moveSize || "2br";
@@ -254,5 +263,5 @@ export function calculateWidgetEstimate(input: WidgetEstimateInput): number {
   price += ACCESS_SURCHARGES[input.accessTo] ?? 0;
   price *= widgetDateMultiplier(input.dateStr);
   if (input.timeSlot === "pm") price *= 1.03;
-  return Math.round(price / 50) * 50;
+  return grossUp(price);
 }

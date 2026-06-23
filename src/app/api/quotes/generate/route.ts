@@ -606,23 +606,16 @@ function cfgNum(config: Map<string, string>, key: string, fallback: number): num
   return v !== undefined ? Number(v) : fallback;
 }
 
-/**
- * Bake CC processing recovery into a pre-tax price. The gross-up math means
- * the merchant nets the input price after Square's per-transaction cut
- * (2.9% + $0.30 by default; configurable via processing_recovery_*). Applied
- * silently — client never sees the fee on its own line. Residential applies
- * the same math inside calcResidential before tier rounding; this helper is
- * for every other quote path so the absorption is universal.
- */
+// CC processing recovery lives in @/lib/pricing/processing-recovery — the
+// single source of truth shared by every quote/price-emitting path.
+import {
+  applyProcessingRecoveryToTier as applyProcessingRecoveryToTierShared,
+  grossUpForProcessing,
+} from "@/lib/pricing/processing-recovery";
+
 function applyProcessingRecoveryToTier(t: TierResult, config: Map<string, string>): TierResult {
-  const procRate = cfgNum(config, "processing_recovery_rate", 0.029);
-  const procFlat = cfgNum(config, "processing_recovery_flat", 0.30);
   const rounding = cfgNum(config, "rounding_nearest", 50);
-  const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
-  const grossed = Math.ceil((t.price + procFlat) / (1 - procRate));
-  const rounded = Math.round(grossed / rounding) * rounding;
-  const tax = Math.round(rounded * taxRate);
-  return { ...t, price: rounded, tax, total: rounded + tax };
+  return applyProcessingRecoveryToTierShared(t, config, rounding);
 }
 
 /** Positive finite pre-tax dollar amount from JSON body, or undefined if absent/invalid. */
@@ -2000,18 +1993,15 @@ async function calcResidential(
 
   const preProcessing = { essential: curPrice, signature: sigPrice, estate: estPrice };
 
-  // Processing cost recovery — absorbs credit card fees into the displayed price.
-  // Applied after gap caps so tier spread is preserved, before tax and rounding
-  // so the recovery is invisible to clients (absorbed into the $50 round).
-  const procRate = cfgNum(config, "processing_recovery_rate", 0.029);
-  const procFlat = cfgNum(config, "processing_recovery_flat", 0.30);
-  curPrice  = Math.ceil((curPrice  + procFlat) / (1 - procRate));
-  sigPrice  = Math.ceil((sigPrice  + procFlat) / (1 - procRate));
-  estPrice  = Math.ceil((estPrice  + procFlat) / (1 - procRate));
+  // Processing cost recovery — absorbs credit card fees into the displayed
+  // price (single source of truth: @/lib/pricing/processing-recovery). Applied
+  // after gap caps so tier spread is preserved, before tax and rounding so
+  // the recovery is invisible to clients (absorbed into the $50 round).
+  curPrice  = grossUpForProcessing(curPrice,  config);
+  sigPrice  = grossUpForProcessing(sigPrice,  config);
+  estPrice  = grossUpForProcessing(estPrice,  config);
 
-  pd("Step 9 — processing recovery: ceil((price + procFlat) / (1 - procRate)):", {
-    procRate,
-    procFlat,
+  pd("Step 9 — processing recovery (shared helper):", {
     pre_processing: preProcessing,
     after_processing_before_nearest_rounding: { essential: curPrice, signature: sigPrice, estate: estPrice },
   });

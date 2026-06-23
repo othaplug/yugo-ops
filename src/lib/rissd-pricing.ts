@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cfgNum, cfgJson } from "@/lib/pricing/engine";
 import { getDrivingDistance } from "@/lib/mapbox/driving-distance";
+import { applyProcessingRecoveryAndRound } from "@/lib/pricing/processing-recovery";
 
 const B2B_WEIGHT_FALLBACK: Record<string, number> = {
   standard: 0,
@@ -147,7 +148,15 @@ export async function suggestRissdPricing(
   deliveryFee = roundTo(deliveryFee, rounding);
   if (deliveryFee < 200) deliveryFee = 200;
 
-  const subtotal = receivingFee + storageFee + deliveryFee + assemblyFee;
+  // Bake CC processing recovery into the RISSD subtotal so the
+  // inbound-shipment client invoice already covers the merchant card cost
+  // (same policy as every other Yugo quote path).
+  const subtotalPreRecovery = receivingFee + storageFee + deliveryFee + assemblyFee;
+  const subtotal = applyProcessingRecoveryAndRound(
+    subtotalPreRecovery,
+    config,
+    rounding,
+  );
 
   const lines: { label: string; amount: number }[] = [
     { label: "Receiving & inspection", amount: receivingFee },

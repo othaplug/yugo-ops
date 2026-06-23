@@ -1098,8 +1098,6 @@ export function balanceAutoChargeReceiptEmail(
         </td>
       </tr>
       ${creamContractKvRow("Base balance", formatCurrencyEmail(d.baseBalance), LKV_VALUE, LKV_LABEL)}
-      ${Number(d.processingFee) > 0 ? creamContractKvRow("Processing fee (3.3%)", formatCurrencyEmail(d.processingFee), LKV_VALUE, LKV_LABEL) : ""}
-      ${Number(d.transactionFee) > 0 ? creamContractKvRow("Transaction fee", formatCurrencyEmail(d.transactionFee), LKV_VALUE, LKV_LABEL) : ""}
       ${emailNestedKvRow({
         borderTop: `1px solid ${CONTRACT_DIVIDER_STRONG}`,
         labelStyle: `${CONTRACT_TOTAL_LABEL};border-top:0;padding:10px 0 10px 14px`,

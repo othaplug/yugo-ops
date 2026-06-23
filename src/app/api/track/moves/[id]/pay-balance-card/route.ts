@@ -5,6 +5,7 @@ import { squareClient } from "@/lib/square";
 import { squareIdem } from "@/lib/square-idempotency";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment";
+import { assertChargeMatchesStored } from "@/lib/payments/charge-amount-guard";
 import { rateLimit } from "@/lib/rate-limit";
 import { squareThrownErrorStructured } from "@/lib/square-payment-errors";
 
@@ -45,6 +46,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // balance — never add a fee here.
     const ccTotal = balanceAmount;
     const amountCents = Math.round(balanceAmount * 100);
+    assertChargeMatchesStored({
+      attemptedCents: amountCents,
+      storedCents: Math.round(Number(move.balance_amount || 0) * 100),
+      context: {
+        site: "POST /api/track/moves/[id]/pay-balance-card",
+        move_id: moveId,
+        move_code: move.move_code,
+      },
+    });
 
     const { locationId } = await getSquarePaymentConfig();
     if (!locationId) {

@@ -6,6 +6,7 @@ import {
   widgetEmbedMonthMultiplier,
   WIDGET_RESIDENTIAL_BASE_RATES,
 } from "@/lib/pricing/widget-estimate";
+import { grossUpForProcessing } from "@/lib/pricing/processing-recovery";
 
 /**
  * Public widget estimate API.
@@ -48,13 +49,20 @@ export async function POST(req: NextRequest) {
   const distMod =
     distEstKm <= 5 ? 0.95 : distEstKm <= 20 ? 1.0 : distEstKm <= 40 ? 1.08 : distEstKm <= 60 ? 1.15 : 1.25;
 
-  // Calculate range
-  const midpoint = base * seasonMod * neighMod * distMod;
+  // Calculate range. Bake CC processing recovery into the midpoint so the
+  // public-facing range matches what an actual quote would generate (the real
+  // quote engine grosses up by 2.9% + $0.30 before tier rounding). Without
+  // this, prospects see a number that's $20-30 below what the booked quote
+  // becomes — bad UX and revenue leak.
+  const supabase = createAdminClient();
+  const { data: cfgRows } = await supabase.from("platform_config").select("key, value");
+  const config = Object.fromEntries((cfgRows ?? []).map((r) => [r.key, String(r.value ?? "")]));
+  const rawMidpoint = base * seasonMod * neighMod * distMod;
+  const midpoint = grossUpForProcessing(rawMidpoint, config);
   const low = Math.round(midpoint * 0.80 / 50) * 50;
   const high = Math.round(midpoint * 1.35 / 50) * 50;
 
   // Log widget lead
-  const supabase = createAdminClient();
   await supabase.from("widget_leads").insert({
     move_size: moveSize,
     from_postal: fromPostal || null,

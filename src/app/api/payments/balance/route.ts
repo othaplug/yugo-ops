@@ -9,6 +9,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment";
 import { squareThrownErrorStructured } from "@/lib/square-payment-errors";
+import { assertChargeMatchesStored } from "@/lib/payments/charge-amount-guard";
 
 /**
  * Process a voluntary balance payment from the client payment page.
@@ -53,6 +54,15 @@ export async function POST(req: Request) {
     // a higher number (MV-30228 / Chidera Allison, 2026-06-22).
     const ccTotal = balanceAmount;
     const amountCents = Math.round(balanceAmount * 100);
+    assertChargeMatchesStored({
+      attemptedCents: amountCents,
+      storedCents: Math.round(Number(move.balance_amount || 0) * 100),
+      context: {
+        site: "POST /api/payments/balance",
+        move_id: moveId,
+        move_code: move.move_code,
+      },
+    });
 
     // Attempt to store card if we have a customer
     let cardId: string | undefined;
