@@ -1105,10 +1105,16 @@ function eventTemplate(d: QuoteTemplateData): string {
   const total = d.customPrice ?? 0;
   const tax = Math.round(total * 0.13);
   const grand = total + tax;
-  const deposit =
+  // When the stored deposit is within $2 of the grand total (off-by-one from
+  // upstream rounding), snap to exactly the grand total so the email reads
+  // "Pay in full" instead of misleadingly showing a $1 lower "Deposit to
+  // confirm". Anything more than $2 below grand is treated as a real partial
+  // deposit (e.g. early-bird booking outside the 4-day window).
+  const rawDeposit =
     d.eventDeposit != null && d.eventDeposit > 0
       ? d.eventDeposit
       : Math.max(300, Math.ceil(total * 0.25));
+  const deposit = rawDeposit >= grand - 2 ? grand : rawDeposit;
 
   const legs = d.eventLegBlocks;
   const evLegRule = `1px solid ${SHELL_BORDER}`;
@@ -1158,29 +1164,6 @@ function eventTemplate(d: QuoteTemplateData): string {
           valueStyle: evLegVal,
           label: "CREW",
           valueHtml: escapeHtmlEmail(leg.crewLine),
-        })}
-      </table>
-      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;border:1px solid ${SHELL_BORDER};">
-        ${emailNestedKvRow({
-          borderTop: "none",
-          labelStyle: evMoneyLbl,
-          valueStyle: evMoneyVal,
-          label: leg.sameDay ? "DELIVERY & RETURN" : "DELIVERY",
-          valueHtml: formatCurrencyEmail(leg.delivery),
-        })}
-        ${!leg.sameDay && leg.ret > 0 ? emailNestedKvRow({
-          borderTop: evLegRule,
-          labelStyle: evMoneyLbl,
-          valueStyle: evMoneyVal,
-          label: "RETURN",
-          valueHtml: formatCurrencyEmail(leg.ret),
-        }) : ""}
-        ${emailNestedKvRow({
-          borderTop: `2px solid ${SHELL_BORDER}`,
-          labelStyle: `${evMoneyLbl};padding-top:14px`,
-          valueStyle: `${evMoneyVal};padding-top:14px;font-size:15px;font-weight:700`,
-          label: "SUBTOTAL",
-          valueHtml: formatCurrencyEmail(leg.legSubtotal),
         })}
       </table>
     </div>`,
