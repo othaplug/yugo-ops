@@ -4097,19 +4097,17 @@ function MoveProfitCard({ move }: { move: any }) {
   useEffect(() => {
     (async () => {
       try {
-        const now = new Date();
-        const from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-        const to = now.toISOString().slice(0, 10);
+        // Per-move endpoint: always recomputes from the latest tracking session
+        // so this card can never disagree with the moves list (which also
+        // computes from the latest session, server-side).
         const res = await fetch(
-          `/api/admin/profitability?from=${from}&to=${to}`,
+          `/api/admin/profitability?move_id=${encodeURIComponent(move.id)}`,
         );
         if (!res.ok) return;
         const data = await res.json();
         setTarget(data.summary?.targetMargin ?? 40);
-        const match = (data.rows ?? []).find(
-          (r: { id: string }) => r.id === move.id,
-        );
-        if (match) {
+        const match = (data.rows ?? [])[0];
+        if (match && match.id === move.id) {
           setCosts({
             labour: match.labour,
             fuel: match.fuel,

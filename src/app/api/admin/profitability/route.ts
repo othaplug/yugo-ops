@@ -22,6 +22,95 @@ export async function GET(req: NextRequest) {
 
   const from = req.nextUrl.searchParams.get("from");
   const to = req.nextUrl.searchParams.get("to");
+  const singleMoveId = req.nextUrl.searchParams.get("move_id");
+
+  // Single-move short-circuit: bypass the date-range queries and recompute on
+  // demand using the latest tracking session for this move. Drives the move
+  // detail Money tab so its margin always matches the moves list even when
+  // the session was completed after the user first loaded the page.
+  if (singleMoveId) {
+    const sb = createAdminClient();
+    const [{ data: move }, { data: sessions }, { data: configRows }, { data: ovRow }] = await Promise.all([
+      sb.from("moves").select("*").eq("id", singleMoveId).maybeSingle(),
+      sb.from("tracking_sessions").select("started_at, completed_at, updated_at, status")
+        .eq("job_id", singleMoveId).eq("job_type", "move").eq("status", "completed")
+        .order("updated_at", { ascending: false }).limit(1),
+      sb.from("platform_config").select("key, value"),
+      sb.from("move_cost_overrides").select("*").eq("move_id", singleMoveId).maybeSingle(),
+    ]);
+    if (!move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
+    const cfg: Record<string, string> = {};
+    for (const r of configRows ?? []) cfg[r.key] = r.value;
+    let trackedHours: number | null = null;
+    if (sessions && sessions[0]) {
+      const s = sessions[0] as { started_at?: string | null; completed_at?: string | null; updated_at?: string | null };
+      const startRaw = s.started_at;
+      const endRaw = s.completed_at || s.updated_at;
+      if (startRaw && endRaw) {
+        const h = Math.round(((new Date(endRaw).getTime() - new Date(startRaw).getTime()) / 3_600_000) * 100) / 100;
+        if (h > 0) trackedHours = h;
+      }
+    }
+    const m = move as Record<string, unknown> & { id: string };
+    const moveCostInput = {
+      estimate: Number((m as { final_amount?: number; total_price?: number; estimate?: number; amount?: number }).final_amount ?? (m as { total_price?: number }).total_price ?? (m as { estimate?: number }).estimate ?? (m as { amount?: number }).amount ?? 0) || 0,
+      actual_hours: trackedHours ?? (m as { actual_hours?: number | null }).actual_hours ?? null,
+      est_hours: (m as { est_hours?: number | null }).est_hours ?? null,
+      est_crew_size: (m as { est_crew_size?: number | null }).est_crew_size ?? null,
+      estimated_duration_minutes: (m as { estimated_duration_minutes?: number | null }).estimated_duration_minutes ?? null,
+      distance_km: (m as { distance_km?: number | null }).distance_km ?? null,
+      truck_primary: (m as { truck_primary?: string | null }).truck_primary ?? null,
+      truck_secondary: (m as { truck_secondary?: string | null }).truck_secondary ?? null,
+      move_size: (m as { move_size?: string | null }).move_size ?? null,
+      service_type: (m as { service_type?: string | null }).service_type ?? null,
+      balance_method: (m as { balance_method?: string | null }).balance_method ?? null,
+      deposit_method: (m as { deposit_method?: string | null }).deposit_method ?? null,
+      actual_labour_cost: (m as { actual_labour_cost?: number | null }).actual_labour_cost ?? null,
+      actual_fuel_cost: (m as { actual_fuel_cost?: number | null }).actual_fuel_cost ?? null,
+      actual_truck_cost: (m as { actual_truck_cost?: number | null }).actual_truck_cost ?? null,
+      actual_supplies_cost: (m as { actual_supplies_cost?: number | null }).actual_supplies_cost ?? null,
+    };
+    let costs = calculateMoveProfitability(moveCostInput, cfg, 1);
+    const ov = ovRow as { labour?: number | null; fuel?: number | null; truck?: number | null; supplies?: number | null; processing?: number | null } | null;
+    if (ov) {
+      const labour = ov.labour != null ? ov.labour : costs.labour;
+      const fuel = ov.fuel != null ? ov.fuel : costs.fuel;
+      const truck = ov.truck != null ? ov.truck : costs.truck;
+      const supplies = ov.supplies != null ? ov.supplies : costs.supplies;
+      const processing = ov.processing != null ? ov.processing : costs.processing;
+      const totalDirect = labour + fuel + truck + supplies;
+      const grossProfit = moveCostInput.estimate - totalDirect;
+      costs = {
+        ...costs,
+        labour: Math.round(labour),
+        fuel: Math.round(fuel * 100) / 100,
+        truck,
+        supplies,
+        processing: Math.round(processing * 100) / 100,
+        totalDirect: Math.round(totalDirect),
+        grossProfit: Math.round(grossProfit),
+        grossMargin: moveCostInput.estimate > 0 ? Math.round(((grossProfit / moveCostInput.estimate) * 100) * 10) / 10 : 0,
+      };
+    }
+    const paid_with_card = movePaysCardProcessingFee({
+      balance_method: moveCostInput.balance_method,
+      deposit_method: moveCostInput.deposit_method,
+    });
+    return NextResponse.json({
+      rows: [{
+        id: m.id,
+        jobKind: "move" as const,
+        move_code: (m as { move_code?: string | null }).move_code ?? null,
+        revenue: moveCostInput.estimate,
+        actual_hours: trackedHours ?? (m as { actual_hours?: number | null }).actual_hours ?? null,
+        est_hours: moveCostInput.est_hours,
+        hasOverride: !!ov,
+        paid_with_card,
+        ...costs,
+      }],
+      summary: { targetMargin: 40 },
+    });
+  }
 
   if (!from || !to) {
     return NextResponse.json({ error: "from and to params required" }, { status: 400 });
