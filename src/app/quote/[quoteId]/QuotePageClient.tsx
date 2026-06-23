@@ -727,18 +727,23 @@ export default function QuotePageClient({
   const verifyReferral = useCallback(async () => {
     if (!referralCode.trim()) return;
     try {
+      // Pass moveSize so the verify endpoint can resolve the tier
+      // (2BR+ = $100, Studio/1BR = $50) instead of returning a stale
+      // default that mismatches what the engine ends up applying.
       const res = await fetch("/api/referrals/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: referralCode }),
+        body: JSON.stringify({ code: referralCode, moveSize: quote.move_size }),
       });
       const data = await res.json();
       if (data.valid) {
         setReferralVerified(true);
         setReferralId(data.referral_id);
-        setReferralDiscount(data.discount || 75);
+        const amt = Number(data.discount) || 0;
+        setReferralDiscount(amt);
+        const tier = data.tier_label ? ` (${data.tier_label})` : "";
         setReferralMsg(
-          `✓ Applied! $${data.discount || 75} off, referred by ${data.referrer_name}.`,
+          `✓ Applied! $${amt} off${tier}, referred by ${data.referrer_name}.`,
         );
         // Persist referral_id on the quote
         await fetch(`/api/quotes/${quote.quote_id}/referral`, {
@@ -753,7 +758,7 @@ export default function QuotePageClient({
     } catch {
       setReferralMsg("Verification failed");
     }
-  }, [referralCode, quote.quote_id]);
+  }, [referralCode, quote.move_size, quote.quote_id]);
 
   const handleQuoteDecline = useCallback(async () => {
     setDeclineFormError(null);

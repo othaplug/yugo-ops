@@ -3030,26 +3030,58 @@ export default function TrackMoveClient({
                         </p>
                       ) : (
                         <>
-                          {/* Value prop inline */}
+                          {/* Tier breakdown — set Oche 2026-06-24. Both
+                              tiers shown so neither party is surprised when
+                              the engine applies the smaller amount on a
+                              studio/1BR booking. */}
+                          <div
+                            className="rounded-xl px-3.5 py-3 mb-3"
+                            style={{
+                              backgroundColor: `${FOREST}08`,
+                              border: `1px solid ${FOREST}1F`,
+                            }}
+                          >
+                            <p
+                              className="text-[11px] font-semibold uppercase tracking-[0.08em] mb-2"
+                              style={{ color: `${FOREST}99` }}
+                            >
+                              How it scales
+                            </p>
+                            <div className="flex items-baseline gap-1.5 mb-1">
+                              <span
+                                className="text-[13px] font-bold tabular-nums"
+                                style={{ color: FOREST }}
+                              >
+                                $100
+                              </span>
+                              <span
+                                className="text-[12px]"
+                                style={{ color: `${FOREST}99` }}
+                              >
+                                on 2-bedroom moves and larger
+                              </span>
+                            </div>
+                            <div className="flex items-baseline gap-1.5">
+                              <span
+                                className="text-[13px] font-bold tabular-nums"
+                                style={{ color: FOREST }}
+                              >
+                                $50
+                              </span>
+                              <span
+                                className="text-[12px]"
+                                style={{ color: `${FOREST}99` }}
+                              >
+                                on studio &amp; 1-bedroom moves
+                              </span>
+                            </div>
+                          </div>
                           <p
-                            className="text-[13px] leading-relaxed mb-4"
+                            className="text-[12px] leading-relaxed mb-4"
                             style={{ color: `${FOREST}85` }}
                           >
-                            Your friend gets{" "}
-                            <span
-                              className="font-semibold"
-                              style={{ color: FOREST }}
-                            >
-                              ${referral.referred_discount} off
-                            </span>{" "}
-                            their first Yugo move. You earn a{" "}
-                            <span
-                              className="font-semibold"
-                              style={{ color: WINE }}
-                            >
-                              ${referral.referrer_credit} credit
-                            </span>{" "}
-                            when they book.
+                            Your friend saves on their move. You earn the
+                            matching amount as a credit when they book.
                           </p>
 
                           {/* Code + actions row */}
@@ -3118,41 +3150,6 @@ export default function TrackMoveClient({
                               )}
                             </button>
 
-                            {/* Divider */}
-                            <div
-                              className="w-px self-stretch"
-                              style={{ backgroundColor: `${FOREST}50` }}
-                            />
-
-                            {/* Share */}
-                            <button
-                              type="button"
-                              aria-label="Share referral code"
-                              onClick={() => {
-                                const msg = `I just moved with Yugo, they were amazing! Use my code ${referral.referral_code} to get $${referral.referred_discount} off your move. Book at yugomoves.com`;
-                                if (navigator.share) {
-                                  navigator
-                                    .share({ text: msg })
-                                    .catch(() => {});
-                                } else {
-                                  navigator.clipboard.writeText(msg);
-                                  setReferralCopied(true);
-                                  setTimeout(
-                                    () => setReferralCopied(false),
-                                    2000,
-                                  );
-                                }
-                              }}
-                              className="shrink-0 inline-flex items-center gap-1 px-3 py-2 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
-                              style={{ backgroundColor: "white", color: WINE }}
-                            >
-                              <ShareNetwork
-                                size={13}
-                                weight="bold"
-                                aria-hidden
-                              />
-                              Share
-                            </button>
                           </div>
 
                           <p
