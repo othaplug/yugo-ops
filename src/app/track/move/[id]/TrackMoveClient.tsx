@@ -32,6 +32,7 @@ import TipConfirmation from "@/components/tracking/TipConfirmation";
 import ExperienceRatingSection from "@/components/tracking/ExperienceRatingSection";
 import TrackingAgreementModal from "./TrackingAgreementModal";
 import SuppliesUpsell, { type SupplyCatalogItem } from "./SuppliesUpsell";
+import ActivityFeed from "./ActivityFeed";
 import InventoryChangeRequestModal from "@/components/tracking/InventoryChangeRequestModal";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import {
@@ -734,7 +735,16 @@ export default function TrackMoveClient({
   const [showNotifyBanner, setShowNotifyBanner] = useState(!!fromNotify);
   const [dashboardInventory, setDashboardInventory] = useState<{
     items: { id: string; room?: string; item_name?: string }[];
-    extraItems: { id: string; description?: string }[];
+    extraItems: {
+      id: string;
+      description?: string;
+      quantity?: number;
+      // P0 #1: status + fee surface pending items to the client. Without
+      // these the dashboard could only show items already approved + paid.
+      status?: string;
+      fee_cents?: number;
+      payment_charged?: boolean;
+    }[];
   } | null>(null);
 
   type Perk = {
@@ -3652,6 +3662,11 @@ export default function TrackMoveClient({
           {/* Tab content */}
           {activeTab === "dash" && !isCompleted && (
             <>
+              {/* Activity feed — chronological audit of everything that has
+                  happened since the quote was accepted. Default-open so the
+                  client doesn't have to dig for it; collapses to a chip. */}
+              <ActivityFeed moveId={move.id} token={token} />
+
               {binOrder && (
                 <BinRentalTrackingSection
                   binOrder={binOrder}
