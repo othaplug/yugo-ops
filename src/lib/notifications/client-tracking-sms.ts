@@ -1,41 +1,10 @@
 import type { TrackingStatus } from "@/lib/tracking-status-types";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { notifyAdmins } from "@/lib/notifications/dispatch";
 
-/**
- * SMS provider errors that mean every subsequent send will also fail until an
- * operator tops up the account — i.e. NOT a per-message recipient issue. When
- * we see one of these, we page an admin (once per 24h) so this can't go
- * silently like it did on MV-30270 on 2026-06-22.
- */
-function isSystemicSmsProviderError(err: string | null | undefined): boolean {
-  const e = (err || "").toLowerCase();
-  return (
-    e.includes("prepaid credit") ||
-    e.includes("insufficient balance") ||
-    e.includes("not enough credit") ||
-    e.includes("account is suspended") ||
-    e.includes("account suspended") ||
-    e.includes("billing")
-  );
-}
-
-let lastProviderAlertAt = 0;
-/** 24h throttle so a long outage doesn't spam admins per-checkpoint. */
-async function maybeAlertOnProviderFailure(error: string | null | undefined): Promise<void> {
-  if (!isSystemicSmsProviderError(error)) return;
-  const now = Date.now();
-  if (now - lastProviderAlertAt < 24 * 60 * 60 * 1000) return;
-  lastProviderAlertAt = now;
-  try {
-    await notifyAdmins("sms_provider_failure", {
-      subject: "SMS provider rejecting messages — top up required",
-      body: `Client tracking SMS just failed with: "${error}". No further client tracking texts will reach customers until the SMS provider account is topped up. This alert fires at most once every 24 hours.`,
-      description: "Tracking SMS path is silently failing; provider returned an account-level error.",
-    });
-  } catch { /* alerting is best-effort */ }
-}
+// Note: SMS-provider failure alerting moved into sendSMS itself so EVERY
+// caller is covered (partner/crew/bin/lead/quote-photo/supplies/etc.), not
+// just client tracking. See @/lib/sms/sendSMS.
 
 function digitsOnly(phone: string): string {
   return (phone || "").replace(/\D/g, "");
@@ -161,5 +130,6 @@ export async function sendClientTrackingCheckpointSms(opts: {
   } catch {
     /* logging is best-effort */
   }
-  if (!result.success) await maybeAlertOnProviderFailure(result.error);
+  // Systemic-failure alerting now lives in sendSMS so this caller (and every
+  // other one) automatically benefits without duplicate calls.
 }
