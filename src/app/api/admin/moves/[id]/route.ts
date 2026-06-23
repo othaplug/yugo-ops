@@ -15,6 +15,11 @@ import {
 } from "@/lib/complete-balance-payment";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { safePatchDeal } from "@/lib/hubspot/safe-deal-write";
+import { buildPublicMoveTrackUrl } from "@/lib/notifications/public-track-url";
+import { getResend } from "@/lib/resend";
+import { getEmailFrom } from "@/lib/email/send";
+import { sendSMS } from "@/lib/sms/sendSMS";
+import { normalizePhone } from "@/lib/phone";
 
 export async function PATCH(
   req: NextRequest,
@@ -445,6 +450,16 @@ export async function PATCH(
 
     if (action === "update_details") {
       const admin = createAdminClient();
+      // Snapshot pre-update scheduled_date + arrival_window so we can
+      // notify the client when those specific fields move. P0 #3 of the
+      // Chidera Allison (MV-30228) call review — she explicitly said
+      // "if you know that your platform is showing different dates ...
+      // you should communicate that with me before I have to reach out."
+      const { data: preUpdate } = await admin
+        .from("moves")
+        .select("scheduled_date, arrival_window, client_name, client_email, client_phone, move_code")
+        .eq("id", id)
+        .maybeSingle();
       const {
         from_address, to_address, delivery_address,
         from_lat, from_lng, to_lat, to_lng,
@@ -533,13 +548,84 @@ export async function PATCH(
         }
       }
 
+      // P0 #3 (2026-06-24): when scheduled_date or arrival_window changed,
+      // proactively tell the client so they don't have to call to discover
+      // it (Chidera Allison / MV-30228). Best-effort: any failure here is
+      // logged but doesn't block the admin's edit.
+      const scheduleChanged =
+        (scheduled_date !== undefined && String(scheduled_date) !== String(preUpdate?.scheduled_date ?? "")) ||
+        (arrival_window !== undefined && String(arrival_window) !== String(preUpdate?.arrival_window ?? ""));
+      if (scheduleChanged && preUpdate) {
+        const newDate = (updated as { scheduled_date?: string | null }).scheduled_date ?? null;
+        const newWindow = (updated as { arrival_window?: string | null }).arrival_window ?? null;
+        const moveCode = preUpdate.move_code ?? id;
+        const trackUrl = buildPublicMoveTrackUrl({
+          id,
+          move_code: preUpdate.move_code ?? null,
+        });
+        const dateLine = newDate
+          ? new Date(`${String(newDate).slice(0, 10)}T12:00:00`).toLocaleDateString("en-CA", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })
+          : null;
+        const subjectBits: string[] = [];
+        if (scheduled_date !== undefined && dateLine) subjectBits.push(`new date ${dateLine}`);
+        if (arrival_window !== undefined && newWindow) subjectBits.push(`arrival ${newWindow}`);
+        const subject = `Your move schedule has been updated (${moveCode})`;
+        const firstName = (preUpdate.client_name ?? "").split(/\s+/)[0] || "there";
+        const lines = [
+          `Hi ${firstName},`,
+          "",
+          "Your coordinator just updated the schedule for your move. Here is the new plan:",
+          "",
+          dateLine ? `Move date: ${dateLine}` : "",
+          newWindow ? `Arrival window: ${newWindow}` : "",
+          "",
+          `Track your move: ${trackUrl}`,
+          "",
+          "If something looks off, reply to this email and we will sort it out together.",
+        ].filter(Boolean);
+        const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.6;color:#2C3E2D">${lines
+          .map((l) => `<p style="margin:0 0 10px">${l}</p>`)
+          .join("")}</div>`;
+        if (preUpdate.client_email && process.env.RESEND_API_KEY) {
+          try {
+            const resend = getResend();
+            const emailFrom = await getEmailFrom();
+            await resend.emails.send({
+              from: emailFrom,
+              to: preUpdate.client_email,
+              subject,
+              html,
+            });
+          } catch (e) {
+            console.error("[move PATCH] schedule-change email failed:", e);
+          }
+        }
+        if (preUpdate.client_phone) {
+          try {
+            const smsBody = [
+              `Hi ${firstName},`,
+              `Your Yugo move (${moveCode}) has a schedule update: ${subjectBits.join(", ") || "details changed"}.`,
+              `Track: ${trackUrl}`,
+            ].join("\n\n");
+            await sendSMS(normalizePhone(preUpdate.client_phone), smsBody);
+          } catch (e) {
+            console.error("[move PATCH] schedule-change SMS failed:", e);
+          }
+        }
+      }
+
       await logAudit({
         userId: authUser?.id,
         userEmail: authUser?.email,
         action: "edit_move",
         resourceType: "move",
         resourceId: id,
-        details: { fields: Object.keys(updatePayload) },
+        details: { fields: Object.keys(updatePayload), schedule_change_notified: scheduleChanged },
       });
       return NextResponse.json(updated);
     }
