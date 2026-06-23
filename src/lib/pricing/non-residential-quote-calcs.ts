@@ -100,13 +100,20 @@ export function singleItemWalkUpSurcharge(accessType: string | undefined, config
 }
 
 export function estimateSingleItemHours(category: string, itemCount: number, assembly: boolean): number {
-  let h = 2;
+  // Fix 7: dialled back from a 2-hour base. A typical single-item run
+  // (one or two pieces, short city drive, loading dock both ends) is a
+  // 1.5-hour job for a 2-person crew. The previous 2-hour base was
+  // tuned for residential and inflated the labour math, which then
+  // pushed every quote over the $80/hr Essential ceiling.
+  let h = 1.5;
   if (category === "large" || category === "heavy") h += 0.5;
-  if (category === "extra_heavy") h += 1.5;
-  if (category === "fragile") h += 0.5;
-  if (itemCount > 1) h += (itemCount - 1) * 0.25;
-  if (assembly) h += 0.75;
-  return Math.max(Math.round(h * 2) / 2, 2);
+  if (category === "extra_heavy") h += 1;
+  if (category === "fragile") h += 0.25;
+  // Each additional distinct item adds a small handling buffer (not the
+  // full per-unit time — see flatten-and-discount in calcSingleItem).
+  if (itemCount > 1) h += Math.min(0.75, (itemCount - 1) * 0.25);
+  if (assembly) h += 0.5;
+  return Math.max(Math.round(h * 2) / 2, 1.5);
 }
 
 export function whiteGloveWrapAndAssemblyCounts(input: {

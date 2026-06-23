@@ -613,9 +613,13 @@ import {
   grossUpForProcessing,
 } from "@/lib/pricing/processing-recovery";
 
-function applyProcessingRecoveryToTier(t: TierResult, config: Map<string, string>): TierResult {
-  const rounding = cfgNum(config, "rounding_nearest", 50);
-  return applyProcessingRecoveryToTierShared(t, config, rounding);
+function applyProcessingRecoveryToTier(
+  t: TierResult,
+  config: Map<string, string>,
+  rounding?: number,
+): TierResult {
+  const r = rounding ?? cfgNum(config, "rounding_nearest", 50);
+  return applyProcessingRecoveryToTierShared(t, config, r);
 }
 
 /** Positive finite pre-tax dollar amount from JSON body, or undefined if absent/invalid. */
@@ -2623,6 +2627,19 @@ async function calcSingleItem(
     stair: number;
   };
 
+  // Fix 5: stair carry is a per-trip surcharge for the crew, not per-item.
+  // Two sofas come down the same flight of stairs in the same trip. Charge
+  // once per line, regardless of quantity. Also: when access is "basement"
+  // the stair flights are already implied by the access type — don't double-
+  // charge a separate stair surcharge on top.
+  const accessImpliesStairs = (a: string | null | undefined): boolean => {
+    const s = (a || "").toLowerCase();
+    return s === "basement" || s === "basement_stairs";
+  };
+  const basementAtFromOrTo =
+    accessImpliesStairs(input.from_access) ||
+    accessImpliesStairs(input.to_access);
+
   const lineCosts: LineCost[] = effectiveLines.map((l) => {
     const mappedCategory = singleItemPricingCategory(l.item_category, l.weight_class);
     const unitBase = baseRates[mappedCategory] ?? baseRates.medium;
@@ -2634,29 +2651,36 @@ async function calcSingleItem(
       asmRaw.includes("assembly") ||
       asmRaw.includes("disassembly");
     const assembly = needsAssembly ? assemblyFee : 0;
-    const stair = l.stair_carry
-      ? stairPerFlight * Math.max(1, l.stair_flights ?? 1) * qty
-      : 0;
+    const stair =
+      l.stair_carry && !basementAtFromOrTo
+        ? stairPerFlight * Math.max(1, l.stair_flights ?? 1)
+        : 0;
     return { line: l, mappedCategory, unitBase, base, assembly, stair };
   });
 
-  // Volume discount: most-expensive line (by per-unit base) pays full; every
-  // additional line discounts to addRate (60% by default) of its own base.
-  // Quantity multiplier within a single line is NOT discounted — two identical
-  // chairs are still two chairs to load. The discount applies between distinct
-  // line items only, preserving the spirit of the old single-rate × addRate
-  // formula while supporting per-line categories.
+  // Fix 6: volume discount applies to every unit AFTER the first, including
+  // additional units within the same line. Two sofas are still two pieces of
+  // the same kind of furniture — the second piece doesn't take twice the
+  // crew effort to load.
+  //
+  // Algorithm: flatten every line into N "units" carrying that line's
+  // unitBase, sort all units by unitBase descending, charge the first unit
+  // full rate and every subsequent unit at addRate.
+  const allUnits: { unitBase: number }[] = [];
+  for (const lc of lineCosts) {
+    const qty = Math.max(1, Math.floor(lc.line.quantity ?? 1));
+    for (let i = 0; i < qty; i++) allUnits.push({ unitBase: lc.unitBase });
+  }
+  allUnits.sort((a, b) => b.unitBase - a.unitBase);
+  const discountedBaseTotal = allUnits.reduce(
+    (sum, u, i) => sum + (i === 0 ? u.unitBase : u.unitBase * addRate),
+    0,
+  );
+
+  // Preserved for downstream factor logging / labour-validation math.
   const sortedByUnitBaseDesc = [...lineCosts].sort(
     (a, b) => b.unitBase - a.unitBase,
   );
-  const idxByLineId = new Map<string, number>();
-  sortedByUnitBaseDesc.forEach((lc, i) => idxByLineId.set(lc.line.id, i));
-
-  const discountedBaseTotal = lineCosts.reduce((sum, lc) => {
-    const rank = idxByLineId.get(lc.line.id) ?? 0;
-    const factor = rank === 0 ? 1 : addRate;
-    return sum + lc.base * factor;
-  }, 0);
 
   let price = discountedBaseTotal;
 
@@ -2684,7 +2708,11 @@ async function calcSingleItem(
   const stairSurchargeTotal = lineCosts.reduce((s, lc) => s + lc.stair, 0);
   price += assemblySurchargeTotal + stairSurchargeTotal;
 
-  // Move-level parking + truck — driven by the heaviest line
+  // Move-level parking + truck — driven by the heaviest line.
+  // Fix 3: NO truck surcharge added to the price for single-item moves.
+  // Truck cost is already absorbed into Yugo's monthly overhead (owned
+  // Sprinter) or, for a rented 16ft on a heavy job, captured in the cost
+  // model used for margin — never double-charged on the price side.
   const heaviestCategory =
     sortedByUnitBaseDesc[0]?.mappedCategory ?? "medium";
   const plcSi = parkingLongCarryLineTotal(config, input, "both");
@@ -2693,7 +2721,7 @@ async function calcSingleItem(
       ? "16ft"
       : "sprinter";
   const truckSi = normalizeTruckType(input.truck_type ?? defaultTruck);
-  price += plcSi.total + getTruckFeeSync(truckSi, config);
+  price += plcSi.total;
 
   // ── Junk-removal: single-item flat formula ─────────────────────────────
   // Single-item junk pricing differs from residential:
@@ -4943,13 +4971,18 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   // cut. Voluntary balance payments never add a surcharge on top (see
   // /api/payments/balance and /api/cron/charge-balance — same policy).
   if (svcType !== "local_move") {
+    // Fix 12 (2026-06-24): single-item quotes are typically sub-$1000 — the
+    // default $50 round noticeably over-rounds (e.g. $855 → $900 instead of
+    // a sharper $875). Round those to nearest $25 instead. Every other
+    // service stays on $50.
+    const tierRounding = svcType === "single_item" ? 25 : 50;
     if (custom_price) {
-      custom_price = applyProcessingRecoveryToTier(custom_price, config);
+      custom_price = applyProcessingRecoveryToTier(custom_price, config, tierRounding);
     }
     if (officeTiers) {
       const next: Record<string, TierResult> = {};
       for (const [k, t] of Object.entries(officeTiers)) {
-        next[k] = applyProcessingRecoveryToTier(t, config);
+        next[k] = applyProcessingRecoveryToTier(t, config, tierRounding);
       }
       officeTiers = next;
     }

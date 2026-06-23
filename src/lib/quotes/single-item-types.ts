@@ -90,7 +90,12 @@ export type SingleItemLine = {
   quantity: number;
 };
 
-export const SINGLE_ITEM_MAX_LINES = 8;
+/**
+ * Cap "Single Item" quotes at 5 distinct items. At 6+ the operator should
+ * switch the service to Local Move — single-item pricing wasn't designed
+ * for that scope and the per-item ladder reads as over-priced.
+ */
+export const SINGLE_ITEM_MAX_LINES = 5;
 
 /** Empty line — used for initial state and the "+ Add another item" button. */
 export function emptySingleItemLine(): SingleItemLine {

@@ -77,5 +77,17 @@ export function applyProcessingRecoveryToTier<
   const taxRate = configNumber(config, "tax_rate", 0.13);
   const rounded = applyProcessingRecoveryAndRound(t.price, config, roundingNearest);
   const tax = Math.round(rounded * taxRate);
-  return { ...t, price: rounded, tax, total: rounded + tax };
+  // Fix 1+2 (2026-06-24): when deposit was "full" (== pre-recovery price) the
+  // deposit must scale with the gross-up — otherwise the displayed deposit
+  // stays at the pre-recovery number while the total moves up and the client
+  // sees inconsistent figures (YG-30311: $850 deposit on a $1,017 total).
+  // When deposit is "full", we now lift it to the tax-INCLUSIVE total so the
+  // quote presentation can label it as "Pay in full" without the client
+  // doing math themselves.
+  const oldPrice = t.price;
+  const oldDeposit = t.deposit ?? 0;
+  const wasFullDeposit =
+    oldPrice > 0 && Math.abs(oldDeposit - oldPrice) < 1; // within $1
+  const newDeposit = wasFullDeposit ? rounded + tax : oldDeposit;
+  return { ...t, price: rounded, tax, total: rounded + tax, deposit: newDeposit };
 }

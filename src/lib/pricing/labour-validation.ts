@@ -219,18 +219,20 @@ export function validateLabourRate(
   // the validation rate was being deflated by an inflated crew count.
   // The message now spells that out so the operator knows where to
   // look (crew/hours, not the rate config).
+  // Fix 13 (2026-06-24): rewrote both messages to read like an operator hint
+  // instead of a developer comment. Removed the
+  // "labour_component ÷ crew ÷ hours" parenthetical — operator doesn't need
+  // the formula, just the next action.
   if (effectiveRate > ceiling.max) {
     status = "above_ceiling"
     message =
-      `Per-mover labour margin $${effectiveRate.toFixed(0)}/hr exceeds ${String(ceilingKey)} ceiling of $${ceiling.max}/hr. ` +
-      `(This is labour_component ÷ crew ÷ hours — the margin rate, not the engine billing rate.) ` +
-      `Review: crew size may be too small for this move, or the price is above market for this tier.`
+      `This quote is pricing labour at $${effectiveRate.toFixed(0)}/hr per mover, but the ${String(ceilingKey)} tier targets $${ceiling.min}–$${ceiling.max}/hr. ` +
+      `Either lower the price, or bump up the crew so the implied per-hour rate falls back into market range.`
   } else if (effectiveRate < ceiling.min) {
     status = "below_floor"
     message =
-      `Per-mover labour margin $${effectiveRate.toFixed(0)}/hr is below ${String(ceilingKey)} floor of $${ceiling.min}/hr. ` +
-      `(This is labour_component ÷ crew ÷ hours — the margin rate, not the engine billing rate.) ` +
-      `Often caused by an inflated crew count — try the Crew override on the form, or reduce hours, before lowering the price.`
+      `This quote is pricing labour at $${effectiveRate.toFixed(0)}/hr per mover, which is under the ${String(ceilingKey)} tier floor of $${ceiling.min}/hr. ` +
+      `Usually the crew count is too high — try the Crew override on the form, or trim hours, before lowering the price further.`
   }
 
   return {
