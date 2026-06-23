@@ -418,7 +418,7 @@ export default function CrewAnalyticsClient({
       </div>
       <p className="text-[12px] text-[var(--tx3)] mt-2 mb-5 font-medium">
         {totalJobs} jobs · {sorted.length} crew{sorted.length !== 1 ? "s" : ""}
-        {avgSatAll ? ` · ${avgSatAll}/5 avg satisfaction` : ""}
+        {avgSatAll ? ` · ${avgSatAll}/5 sign-off rating` : ""}
         {" · "}
         {avgSignOff}% sign-off rate
       </p>
@@ -781,7 +781,10 @@ function CrewDetailView({
       },
       {
         id: "satisfaction",
-        label: "Avg satisfaction",
+        // Sign-off rating: client tap-rates on the crew's tablet at job end.
+        // Distinct from the post-move email review shown on the command
+        // center "Client review" card; both numbers are correct sources.
+        label: "Sign-off rating",
         value: satValue,
         valueClassName: satValueClass,
       },

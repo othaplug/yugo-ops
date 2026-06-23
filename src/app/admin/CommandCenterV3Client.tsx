@@ -361,11 +361,15 @@ export default function CommandCenterV3Client({
       },
       {
         id: "satisfaction",
-        label: "Client rating",
+        // Source: review_requests.client_rating (post-move email review from
+        // the client). Distinct from crew sign-off satisfaction shown on
+        // /admin/crew/analytics — that one is captured by the crew at job
+        // end and tends to read higher.
+        label: "Client review",
         value: satisfaction.avgRating
           ? satisfaction.avgRating.toFixed(1)
           : "0.0",
-        hint: `${satisfaction.count} reviews · ${satisfaction.pendingReviews} pending`,
+        hint: `${satisfaction.count} reviewed · ${satisfaction.pendingReviews} pending`,
       },
       {
         id: "lead-pulse",

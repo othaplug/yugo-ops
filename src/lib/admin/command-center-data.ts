@@ -260,14 +260,19 @@ export const loadCommandCenterData = async () => {
       .limit(500),
     (async () => {
       try {
+        // Pull BOTH rated and unrated review_requests in one query so the
+        // pending tally is correct. The previous .not("client_rating","is",null)
+        // filter excluded rows where the request was sent but the client
+        // hasn't reviewed yet — so "pending" only counted rated rows that
+        // also still had status sent/reminded (a near-zero subset by coincidence
+        // close to the rated count). Real pending = unrated sent/reminded.
         return await admin
           .from("review_requests")
           .select(
             "id, move_id, client_rating, client_feedback, status, created_at",
           )
-          .not("client_rating", "is", null)
           .order("created_at", { ascending: false })
-          .limit(30)
+          .limit(200)
       } catch {
         return { data: [] }
       }
