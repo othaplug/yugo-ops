@@ -364,12 +364,14 @@ export default function CommandCenterV3Client({
         // Source: review_requests.client_rating (post-move email review from
         // the client). Distinct from crew sign-off satisfaction shown on
         // /admin/crew/analytics — that one is captured by the crew at job
-        // end and tends to read higher.
+        // end and tends to read higher. Tile is clickable -> /admin/reviews
+        // for the full breakdown.
         label: "Client review",
         value: satisfaction.avgRating
           ? satisfaction.avgRating.toFixed(1)
           : "0.0",
         hint: `${satisfaction.count} reviewed · ${satisfaction.pendingReviews} pending`,
+        onClick: () => router.push("/admin/reviews"),
       },
       {
         id: "lead-pulse",
@@ -385,6 +387,7 @@ export default function CommandCenterV3Client({
     leadPulse,
     quotePipeline.expiringToday,
     quotePipeline.viewedCount,
+    router,
     satisfaction.avgRating,
     satisfaction.count,
     satisfaction.pendingReviews,

@@ -25,6 +25,7 @@ import {
   Gift,
   HardHat,
   Shield,
+  Star,
   CurrencyDollar,
   Gear,
 } from "../icons"
@@ -160,6 +161,12 @@ export const SIDEBAR_SECTIONS: NavSection[] = [
         href: "/admin/claims",
         label: "Claims",
         Icon: Shield,
+        minRole: "admin",
+      },
+      {
+        href: "/admin/reviews",
+        label: "Reviews",
+        Icon: Star,
         minRole: "admin",
       },
     ],
