@@ -662,6 +662,7 @@ export default function MoveInventorySection({
               <ul className="space-y-2">
                 {extraItems.map((e) => {
                   const pending = e.status === "pending";
+                  const awaitingClient = e.status === "awaiting_client";
                   const desc = `${e.description ?? "-"}${(e.quantity ?? 1) > 1 ? ` x${e.quantity}` : ""}`;
                   const by = e.requested_by === "client" ? "Client" : "Crew";
                   return (
@@ -670,6 +671,8 @@ export default function MoveInventorySection({
                       className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-[11px] ${
                         pending
                           ? "bg-amber-500/10 border-amber-500/30"
+                          : awaitingClient
+                          ? "bg-sky-500/10 border-sky-500/30"
                           : "bg-[var(--bg)]/50 border-[var(--brd)]/30"
                       }`}
                     >
@@ -683,7 +686,12 @@ export default function MoveInventorySection({
                             {by}
                           </span>
                         )}
-                        {!pending && (
+                        {awaitingClient && (
+                          <span className="ml-2 text-[10px] font-medium text-sky-700">
+                            Awaiting client
+                          </span>
+                        )}
+                        {!pending && !awaitingClient && (
                           <span
                             className={`ml-2 text-[10px] font-medium ${e.status === "approved" ? "text-[var(--grn)]" : "text-[var(--red)]"}`}
                           >
@@ -936,12 +944,16 @@ export default function MoveInventorySection({
         >
           <h2
             id="approve-extra-modal-title"
-            className="text-[13px] font-bold text-[var(--tx)] mb-3"
+            className="text-[13px] font-bold text-[var(--tx)] mb-1"
           >
-            Approve extra item
+            Stage extra item for client approval
           </h2>
+          <p className="text-[10.5px] text-[var(--tx3)] leading-snug mb-3">
+            The client will get an email + SMS with Accept and Decline buttons.
+            Their card on file is only charged if they tap Accept.
+          </p>
           <label className="block text-[11px] font-medium text-[var(--tx2)] mb-1">
-            Optional fee ($)
+            Fee to charge ($)
           </label>
           <input
             type="number"
@@ -969,7 +981,7 @@ export default function MoveInventorySection({
               disabled={extraActioning === approveExtraModal.itemId}
               className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--grn)] text-white hover:bg-[var(--grn)]/90 disabled:opacity-50"
             >
-              {extraActioning === approveExtraModal.itemId ? "…" : "Approve"}
+              {extraActioning === approveExtraModal.itemId ? "…" : "Send to client"}
             </button>
           </div>
         </ModalDialogFrame>

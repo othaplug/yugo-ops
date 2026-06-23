@@ -19,6 +19,7 @@ type ClientActivityEvent = {
     | "refund_issued"
     | "scope_charge"
     | "items_requested"
+    | "items_awaiting_client"
     | "items_approved"
     | "items_removed"
     | "schedule_changed"
@@ -42,6 +43,7 @@ function dotColor(kind: ClientActivityEvent["kind"]): string {
       return SLATE;
     case "scope_charge":
     case "items_requested":
+    case "items_awaiting_client":
     case "schedule_changed":
       return WINE;
     case "move_completed":

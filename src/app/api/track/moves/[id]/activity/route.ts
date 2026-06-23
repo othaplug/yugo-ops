@@ -45,6 +45,7 @@ export type ClientActivityEvent = {
     | "refund_issued"
     | "scope_charge"
     | "items_requested"
+    | "items_awaiting_client"
     | "items_approved"
     | "items_removed"
     | "schedule_changed"
@@ -258,14 +259,25 @@ export async function GET(
         kind: "items_approved",
         amountCents: x.fee_cents ?? null,
       });
+    } else if (status === "awaiting_client") {
+      // Admin staged a fee — client has the email with Accept/Decline. The
+      // activity feed mirrors that so the client sees it on the dashboard
+      // too, not just buried in an email.
+      events.push({
+        id: `item-${x.id}`,
+        at: x.added_at,
+        title: "Awaiting your decision",
+        detail: fee ? `${desc} · ${fee} — tap Accept in your email to approve` : desc,
+        kind: "items_awaiting_client",
+        amountCents: x.fee_cents ?? null,
+      });
     } else {
-      // Pending / requested — P0 #1: surface to the client even though the
-      // admin hasn't approved yet. Show projected fee if set.
+      // Pending — client or crew requested but admin hasn't priced yet.
       events.push({
         id: `item-${x.id}`,
         at: x.added_at,
         title: "Items requested",
-        detail: fee ? `${desc} · projected ${fee}` : desc,
+        detail: fee ? `${desc} · projected ${fee}` : `${desc} · fee TBD`,
         kind: "items_requested",
         amountCents: x.fee_cents ?? null,
       });

@@ -1263,6 +1263,57 @@ export function extraItemApprovalEmail(params: {
   return emailLayout(inner);
 }
 
+/**
+ * Sent when an admin stages a fee on an extra item and the client needs to
+ * decide. Two CTAs:
+ *   • Accept charges the card on file via /api/track/.../respond?action=accept
+ *   • Decline removes the item without charging
+ *
+ * Built 2026-06-24 to replace the after-the-fact "we already charged you"
+ * email per the Chidera Allison (MV-30228) post-mortem.
+ */
+export function extraItemAwaitingClientEmail(params: {
+  clientName: string;
+  description: string;
+  feeCents: number;
+  acceptUrl: string;
+  declineUrl: string;
+  portalUrl: string;
+}) {
+  const { clientName, description, feeCents, acceptUrl, declineUrl, portalUrl } = params;
+  const feeDollars = (feeCents / 100).toFixed(2);
+  const firstName = clientName?.split(/\s+/)[0] || "there";
+  const acceptBtn = `
+    <a href="${acceptUrl}" style="display:inline-block;background:${EMAIL_FOREST};color:#FFFDF8;text-decoration:none;font-weight:700;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;padding:13px 26px;border-radius:6px;font-family:${PREMIUM_SERIF_HEADING};">
+      Accept &amp; charge $${feeDollars}
+    </a>`;
+  const declineBtn = `
+    <a href="${declineUrl}" style="display:inline-block;background:transparent;color:${PREMIUM_BODY};text-decoration:none;font-weight:600;font-size:12px;letter-spacing:0.04em;text-transform:uppercase;padding:13px 22px;border:1px solid ${PREMIUM_BODY}40;border-radius:6px;font-family:${PREMIUM_SERIF_HEADING};margin-left:10px;">
+      Decline
+    </a>`;
+  const inner = `
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">Action needed</div>
+    <div style="font-size:24px;font-weight:700;letter-spacing:0;margin:0 0 18px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};line-height:1.25;">Approve an added charge for your move</div>
+    <p style="font-size:13px;color:${PREMIUM_BODY};line-height:1.55;margin:0 0 18px;">Hi ${firstName}, your coordinator priced an extra item that was added to your move. Nothing has been charged yet — you choose whether to accept.</p>
+    ${premiumSectionRule()}
+    <div style="padding:16px 0 4px;">
+      <div style="font-size:11px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">Item</div>
+      <p style="font-size:14px;color:${PREMIUM_BODY};line-height:1.45;margin:0;font-weight:600;">${description}</p>
+      <div style="font-size:11px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.08em;text-transform:uppercase;margin:18px 0 6px;">Amount</div>
+      <p style="font-size:18px;color:${PREMIUM_BODY};line-height:1.3;margin:0;font-weight:700;">$${feeDollars}</p>
+      <p style="font-size:12px;color:${PREMIUM_BODY};line-height:1.5;margin:8px 0 0;opacity:0.7;">Charged to the card you used at booking only if you tap Accept.</p>
+    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px;"><tr><td align="center" style="padding-bottom:20px;">
+      ${acceptBtn}${declineBtn}
+    </td></tr></table>
+    <p style="font-size:11px;color:${PREMIUM_BODY};line-height:1.5;margin:0 0 4px;opacity:0.7;text-align:center;">Prefer to see the full move first?</p>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:16px;">
+      ${premiumCompactWineCtaAnchor(portalUrl, "VIEW MY MOVE")}
+    </td></tr></table>
+  `;
+  return emailLayout(inner);
+}
+
 export function inviteUserEmail(params: {
   name: string;
   email: string;
