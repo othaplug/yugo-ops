@@ -9,6 +9,7 @@ import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment
 import { assertChargeMatchesStored } from "@/lib/payments/charge-amount-guard";
 import { humanizePaymentProcessorMessage } from "@/lib/email/payment-error-message";
 import { moveMatchesBalanceReminder48hWindow } from "@/lib/quotes/estate-schedule";
+import { isCollectibleBalance } from "@/lib/money/balance-residual";
 
 const HS_BASE = "https://api.hubapi.com/crm/v3/objects";
 const HS_TASKS = `${HS_BASE}/tasks`;
@@ -68,7 +69,10 @@ export async function GET(req: NextRequest) {
     }
 
     const balanceAmount = Number(move.balance_amount || 0);
-    if (balanceAmount <= 0) {
+    // Skip sub-$1 residuals (HST rounding noise on already-paid moves).
+    // Charging these would fail at Square anyway — most regions reject
+    // amounts under $1. See balance-residual.ts.
+    if (!isCollectibleBalance(balanceAmount)) {
       results.skipped++;
       continue;
     }

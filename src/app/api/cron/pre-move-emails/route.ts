@@ -9,6 +9,7 @@ import { moveMatchesBalanceReminder48hWindow } from "@/lib/quotes/estate-schedul
 import { statusUpdateEmailHtml } from "@/lib/email-templates";
 import { moveUsesPreMoveChecklist } from "@/lib/tracking-prep-checklist-visibility";
 import { isFullRelocationMove } from "@/lib/track-non-move-product";
+import { isCollectibleBalance } from "@/lib/money/balance-residual";
 import {
   accessMentionsElevator,
   parkingReminderLikelyNeeded,
@@ -139,7 +140,7 @@ export async function GET(req: NextRequest) {
 
       // T-72hr Balance Reminder (piggy-backs on same date window)
       const bal = Number(move.balance_amount || 0);
-      if (bal > 0 && !move.balance_paid_at && move.deposit_paid_at) {
+      if (isCollectibleBalance(bal) && !move.balance_paid_at && move.deposit_paid_at) {
         try {
           const hasCardOnFile = !!move.square_card_id;
           const paymentPageUrl = `${baseUrl}/pay/${move.id}`;
@@ -217,7 +218,9 @@ export async function GET(req: NextRequest) {
           move.scheduled_date <= twoDaysOut;
       if (!dueForReminder) continue;
       const bal = Number(move.balance_amount || 0);
-      if (bal <= 0) continue;
+      // Skip residuals below the rounding-noise floor (e.g. a $0.20 ghost
+      // from HST rounding on a fully-paid quote). See balance-residual.ts.
+      if (!isCollectibleBalance(bal)) continue;
 
       const ccTotal = bal * 1.033 + 0.15;
       const autoChargeDate = toDateStr(1);
