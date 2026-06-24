@@ -255,10 +255,65 @@ export async function POST(req: Request) {
 
     // ── Idempotency guard: if a previous attempt captured a Square payment but
     //    move creation crashed, skip Square entirely and go straight to job creation.
-    const priorPaymentId = (quote as { square_payment_id?: string | null }).square_payment_id;
-    let squarePaymentId: string | undefined = priorPaymentId ?? undefined;
+    //
+    // Hardened 2026-06-24 after Diana Osborne (YG-30314): a quote row was
+    // born with a STALE square_payment_id belonging to her earlier YG-30266
+    // booking (same customer, same card-on-file). The original guard
+    // trusted whatever was on the row and short-circuited Square — the
+    // $150 deposit was never collected, no admin notification fired, and
+    // the activity log made it look like a normal booking.
+    //
+    // The fix: never trust a row-stored priorPaymentId blindly. Verify
+    // with Square that the payment exists AND its reference_id matches
+    // THIS quoteId. If the verification fails for any reason (Square 404,
+    // mismatched reference, network error), fall through and charge as if
+    // priorPaymentId was empty. We'd rather risk a second charge attempt
+    // (which Square's own idempotency_key will dedupe inside its own
+    // payments service) than skip the charge.
+    const priorPaymentIdRaw = (quote as { square_payment_id?: string | null }).square_payment_id;
+    let squarePaymentId: string | undefined;
     let squareReceiptUrl: string | null = null;
     let squareCardId: string | undefined = (quote as { square_card_id?: string | null }).square_card_id ?? undefined;
+    if (priorPaymentIdRaw) {
+      try {
+        const verifyRes = await squareClient.payments.get({
+          paymentId: priorPaymentIdRaw,
+        });
+        const refId = (verifyRes.payment as { reference_id?: string | null } | undefined)?.reference_id;
+        const status = (verifyRes.payment as { status?: string } | undefined)?.status;
+        const validForThisQuote =
+          typeof refId === "string" &&
+          refId.trim() === quoteId.trim() &&
+          (status === "COMPLETED" || status === "APPROVED");
+        if (validForThisQuote) {
+          squarePaymentId = priorPaymentIdRaw;
+          squareReceiptUrl =
+            (verifyRes.payment as { receipt_url?: string | null } | undefined)?.receipt_url ?? null;
+        } else {
+          // Stale payment id pointing at a DIFFERENT quote (or a payment
+          // that isn't completed) — scrub it so downstream code doesn't
+          // re-write it onto the move and force a fresh charge below.
+          console.warn(
+            `[payments/process] discarded stale square_payment_id on ${quoteId}: ` +
+              `points to reference_id=${refId ?? "—"} status=${status ?? "—"} (must match ${quoteId} + COMPLETED/APPROVED)`,
+          );
+          await supabase
+            .from("quotes")
+            .update({ square_payment_id: null })
+            .eq("id", quote.id);
+        }
+      } catch (e) {
+        // Square lookup failed (404 = unknown payment, network = transient).
+        // Treat as stale and fall through to a fresh charge. The user is
+        // about to be charged again, but Square's per-customer idempotency
+        // key (built below from quoteId + card) guarantees we won't
+        // double-bill if a real prior payment exists with the same key.
+        console.warn(
+          `[payments/process] square.payments.get failed for prior id ${priorPaymentIdRaw}; treating as stale:`,
+          e instanceof Error ? e.message : e,
+        );
+      }
+    }
 
     if (!squarePaymentId) {
       // ── 3. Store Card on File ──
