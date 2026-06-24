@@ -85,13 +85,26 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
         ? description.split(/[,.]/, 1)[0]
         : "Professional Labour";
 
+  // Coverage line items (operator decision 2026-06-11). For a luxury
+  // brand the client wants to see the insurance posture explicitly,
+  // not just "we're professional". Three coverage types matter:
+  //   - General Liability: covers premises slip-and-fall + on-site
+  //     property damage (e.g. crew cracks a wall scraping a couch).
+  //   - Cargo / Movers' Liability: covers the CLIENT'S belongings
+  //     while in our possession. This is the one most relevant to a
+  //     moving / labour job; "Released Value Protection" is the
+  //     legal-minimum floor we provide before tier upgrades.
+  //   - WSIB: workers' comp coverage on every crew member, so the
+  //     client isn't on the hook if a mover injures themselves on
+  //     their property.
   const includes = [
     `${crewSize} professional movers`,
     "All tools and equipment",
     "Floor protection",
     "Guaranteed flat price",
-    "General liability, $5M coverage",
-    "WSIB covered, every crew member",
+    "General Liability — $5M premises coverage",
+    "Cargo & property insurance — your belongings covered in our care",
+    "WSIB workers' compensation — every crew member covered",
   ];
 
   return (
@@ -293,9 +306,15 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
       <div
         className="bg-white rounded-2xl overflow-hidden"
       >
+        {/* Removed `border-b` on the header banner (2026-06-11) — with
+            the Investment Summary now showing just the headline price
+            on most labour quotes, that thin grey separator below the
+            heading was orphaned visual noise between the banner and
+            the price text. Background tint alone is enough to mark the
+            header region. */}
         <div
-          className="px-5 py-4 border-b"
-          style={{ backgroundColor: `${FOREST}08`, borderColor: "#E2DDD5" }}
+          className="px-5 py-4"
+          style={{ backgroundColor: `${FOREST}08` }}
         >
           <h2 className="admin-section-h2" style={{ color: WINE }}>
             Investment Summary
