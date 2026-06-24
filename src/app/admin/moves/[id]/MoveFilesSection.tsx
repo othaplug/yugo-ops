@@ -121,14 +121,20 @@ function PhotoLightbox({
 
   if (!current) return null;
 
+  // Backdrop: deep near-opaque black, NOT the global `modal-overlay` class
+  // (which is a 10% warm scrim tuned for text dialogs and lets the page bleed
+  // through behind a photo). Layout: flex column with header on top, image
+  // taking the flexible middle, thumbnail strip on bottom. This way portrait
+  // photos can't overlap the chrome and `object-contain` honours the actual
+  // available height instead of the full viewport.
   return (
     <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center modal-overlay"
+      className="fixed inset-0 z-[99999] flex flex-col bg-black/90 backdrop-blur-sm"
       onClick={onClose}
     >
       {/* Header strip — caption + counter + close */}
       <div
-        className="absolute top-0 inset-x-0 flex items-center justify-between gap-4 px-4 py-3 bg-black/50 text-white"
+        className="flex items-center justify-between gap-4 px-4 py-3 bg-black/60 text-white shrink-0"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="min-w-0">
@@ -152,49 +158,52 @@ function PhotoLightbox({
         </div>
       </div>
 
-      {/* Image — object-contain so portrait photos in landscape windows
-          don't overflow. The container is click-through to the backdrop;
-          the image itself stops propagation. */}
-      <img
-        src={current.url}
-        alt={current.caption || current.name || "Photo"}
-        className="max-w-[92vw] max-h-[80vh] object-contain rounded-xl shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      />
+      {/* Image stage — flex-1 so it grows to fill the space between header
+          and thumbnail strip. `min-h-0` lets the child img shrink correctly
+          inside a flex column (without it Tailwind's default min-height
+          keeps tall portraits from contracting). */}
+      <div className="relative flex-1 min-h-0 flex items-center justify-center px-4 py-4">
+        <img
+          src={current.url}
+          alt={current.caption || current.name || "Photo"}
+          className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        />
 
-      {/* Prev arrow */}
-      {index > 0 && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onIndex(index - 1);
-          }}
-          aria-label="Previous photo"
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 text-white text-2xl leading-none"
-        >
-          ‹
-        </button>
-      )}
-      {/* Next arrow */}
-      {index < files.length - 1 && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onIndex(index + 1);
-          }}
-          aria-label="Next photo"
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 text-white text-2xl leading-none"
-        >
-          ›
-        </button>
-      )}
+        {/* Prev arrow */}
+        {index > 0 && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onIndex(index - 1);
+            }}
+            aria-label="Previous photo"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 text-white text-2xl leading-none"
+          >
+            ‹
+          </button>
+        )}
+        {/* Next arrow */}
+        {index < files.length - 1 && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onIndex(index + 1);
+            }}
+            aria-label="Next photo"
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 text-white text-2xl leading-none"
+          >
+            ›
+          </button>
+        )}
+      </div>
 
-      {/* Thumbnail strip */}
+      {/* Thumbnail strip — sits in the flex column, doesn't overlap the image */}
       {files.length > 1 && (
         <div
-          className="absolute bottom-0 inset-x-0 px-4 py-3 bg-black/50 overflow-x-auto"
+          className="px-4 py-3 bg-black/60 overflow-x-auto shrink-0"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex gap-2 justify-center min-w-min">
