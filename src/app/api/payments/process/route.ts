@@ -388,6 +388,16 @@ export async function POST(req: Request) {
         ? squareIdem("pay", quoteId, "card", squareCardId)
         : squareIdem("pay", quoteId, "nonce", nonceHash);
 
+      // Determine if this is a deposit or full payment for the Square note.
+      // quote.custom_price is pre-tax; multiply by (1 + tax_rate) to get
+      // the inclusive grand total, then compare against what the client paid.
+      const _noteCustomPrice = Number(quote.custom_price ?? 0);
+      const _noteTaxRate = Number((factors as Record<string, unknown> | null)?.tax_rate ?? 0.13);
+      const _noteGrandTotal = _noteCustomPrice > 0
+        ? Math.round(_noteCustomPrice * (1 + _noteTaxRate) * 100) / 100
+        : 0;
+      const _noteIsFullPayment = _noteGrandTotal > 0 && amount >= Math.round(_noteGrandTotal * 0.95);
+
       try {
         const paymentRes = await squareClient.payments.create({
           sourceId: paymentSourceId,
@@ -395,9 +405,11 @@ export async function POST(req: Request) {
           customerId: squareCustomerId,
           referenceId: quoteId,
           note:
-            String(quote.service_type) === "b2b_oneoff" || String(quote.service_type) === "b2b_delivery"
+            svc === "b2b_oneoff" || svc === "b2b_delivery"
               ? `YUGO B2B delivery payment ${quoteId}`
-              : `YUGO deposit ${quoteId}`,
+              : _noteIsFullPayment
+                ? `YUGO full payment ${quoteId}`
+                : `YUGO deposit ${quoteId}`,
           idempotencyKey: payIdempotencyKey,
           locationId,
         });
