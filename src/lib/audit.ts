@@ -26,7 +26,12 @@ type AuditAction =
   // R1: inbound shipment lifecycle from quote-side actions
   | "inbound_shipment_created"
   | "inbound_shipment_linked"
-  | "inbound_shipment_updated";
+  | "inbound_shipment_updated"
+  // R2: outbound staging lifecycle (B2B reverse logistics)
+  | "outbound_shipment_created"
+  | "outbound_shipment_updated"
+  | "outbound_shipment_transitioned"
+  | "outbound_shipment_deleted";
 
 type ResourceType =
   | "move"
@@ -39,7 +44,8 @@ type ResourceType =
   | "partner_vertical_rates"
   | "user"
   | "system"
-  | "inbound_shipment";
+  | "inbound_shipment"
+  | "outbound_shipment";
 
 interface AuditEntry {
   userId?: string | null;

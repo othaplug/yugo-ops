@@ -38,6 +38,7 @@ export const SERVICE_TYPE_LABELS: Record<string, string> = {
   b2b_one_off: "B2B Delivery",
   b2b_oneoff: "B2B Delivery",
   b2b_delivery: "Commercial Delivery",
+  b2b_outbound_stage: "Outbound Staging",
   labour_only: "Labour Service",
   bin_rental: "Bin Rental",
   local_move: "Local Move",

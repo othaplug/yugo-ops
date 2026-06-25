@@ -6880,6 +6880,272 @@ export type Database = {
           },
         ]
       }
+      outbound_shipments: {
+        Row: {
+          assigned_crew_members: Json | null
+          billing_method: string | null
+          business_name: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          carrier_bol_number: string | null
+          carrier_name: string | null
+          carrier_pickup_appointment_at: string | null
+          carrier_pro_number: string | null
+          completed_at: string | null
+          consignor_access: string | null
+          consignor_address: string | null
+          consignor_email: string | null
+          consignor_name: string | null
+          consignor_notes: string | null
+          consignor_phone: string | null
+          consignor_postal: string | null
+          crating_method: string | null
+          created_at: string
+          declared_value: number | null
+          declared_value_fee: number | null
+          free_hold_days: number | null
+          handed_off_at: string | null
+          handed_off_by: string | null
+          handoff_photos: Json | null
+          handoff_signature_name: string | null
+          handoff_signature_url: string | null
+          hold_days: number | null
+          hold_price_per_day: number | null
+          hold_price_total: number | null
+          id: string
+          intake_photos: Json | null
+          internal_notes: string | null
+          invoice_id: string | null
+          invoice_sent: boolean | null
+          invoice_sent_at: string | null
+          items: Json | null
+          organization_id: string
+          pallet_count: number | null
+          pallet_dimensions: string | null
+          pallet_weight_lb: number | null
+          palletization_price: number | null
+          palletized_at: string | null
+          palletized_by: string | null
+          palletized_photos: Json | null
+          palletizing_started_at: string | null
+          partner_contact_email: string | null
+          partner_contact_name: string | null
+          partner_contact_phone: string | null
+          partner_id: string | null
+          partner_name: string | null
+          partner_paid_at: string | null
+          partner_tracking_token: string | null
+          picked_up_at: string | null
+          picked_up_by: string | null
+          pickup_arrived_at: string | null
+          pickup_condition: string | null
+          pickup_condition_notes: string | null
+          pickup_notes: string | null
+          pickup_photos: Json | null
+          pickup_price: number | null
+          quote_id: string | null
+          ready_for_carrier_at: string | null
+          received_at_warehouse_at: string | null
+          received_by: string | null
+          requires_assembly: boolean | null
+          requires_crating: boolean | null
+          requires_palletization: boolean | null
+          scheduled_pickup_date: string | null
+          scheduled_pickup_window: string | null
+          service_level: string | null
+          shipment_number: string | null
+          special_instructions: string | null
+          square_invoice_id: string | null
+          status: string
+          storage_location: string | null
+          subtotal: number | null
+          tax_amount: number | null
+          total_pieces: number | null
+          total_price: number | null
+          updated_at: string
+          vertical_code: string | null
+          warehouse_intake_fee: number | null
+        }
+        Insert: {
+          assigned_crew_members?: Json | null
+          billing_method?: string | null
+          business_name?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          carrier_bol_number?: string | null
+          carrier_name?: string | null
+          carrier_pickup_appointment_at?: string | null
+          carrier_pro_number?: string | null
+          completed_at?: string | null
+          consignor_access?: string | null
+          consignor_address?: string | null
+          consignor_email?: string | null
+          consignor_name?: string | null
+          consignor_notes?: string | null
+          consignor_phone?: string | null
+          consignor_postal?: string | null
+          crating_method?: string | null
+          created_at?: string
+          declared_value?: number | null
+          declared_value_fee?: number | null
+          free_hold_days?: number | null
+          handed_off_at?: string | null
+          handed_off_by?: string | null
+          handoff_photos?: Json | null
+          handoff_signature_name?: string | null
+          handoff_signature_url?: string | null
+          hold_days?: number | null
+          hold_price_per_day?: number | null
+          hold_price_total?: number | null
+          id?: string
+          intake_photos?: Json | null
+          internal_notes?: string | null
+          invoice_id?: string | null
+          invoice_sent?: boolean | null
+          invoice_sent_at?: string | null
+          items?: Json | null
+          organization_id: string
+          pallet_count?: number | null
+          pallet_dimensions?: string | null
+          pallet_weight_lb?: number | null
+          palletization_price?: number | null
+          palletized_at?: string | null
+          palletized_by?: string | null
+          palletized_photos?: Json | null
+          palletizing_started_at?: string | null
+          partner_contact_email?: string | null
+          partner_contact_name?: string | null
+          partner_contact_phone?: string | null
+          partner_id?: string | null
+          partner_name?: string | null
+          partner_paid_at?: string | null
+          partner_tracking_token?: string | null
+          picked_up_at?: string | null
+          picked_up_by?: string | null
+          pickup_arrived_at?: string | null
+          pickup_condition?: string | null
+          pickup_condition_notes?: string | null
+          pickup_notes?: string | null
+          pickup_photos?: Json | null
+          pickup_price?: number | null
+          quote_id?: string | null
+          ready_for_carrier_at?: string | null
+          received_at_warehouse_at?: string | null
+          received_by?: string | null
+          requires_assembly?: boolean | null
+          requires_crating?: boolean | null
+          requires_palletization?: boolean | null
+          scheduled_pickup_date?: string | null
+          scheduled_pickup_window?: string | null
+          service_level?: string | null
+          shipment_number?: string | null
+          special_instructions?: string | null
+          square_invoice_id?: string | null
+          status?: string
+          storage_location?: string | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          total_pieces?: number | null
+          total_price?: number | null
+          updated_at?: string
+          vertical_code?: string | null
+          warehouse_intake_fee?: number | null
+        }
+        Update: {
+          assigned_crew_members?: Json | null
+          billing_method?: string | null
+          business_name?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          carrier_bol_number?: string | null
+          carrier_name?: string | null
+          carrier_pickup_appointment_at?: string | null
+          carrier_pro_number?: string | null
+          completed_at?: string | null
+          consignor_access?: string | null
+          consignor_address?: string | null
+          consignor_email?: string | null
+          consignor_name?: string | null
+          consignor_notes?: string | null
+          consignor_phone?: string | null
+          consignor_postal?: string | null
+          crating_method?: string | null
+          created_at?: string
+          declared_value?: number | null
+          declared_value_fee?: number | null
+          free_hold_days?: number | null
+          handed_off_at?: string | null
+          handed_off_by?: string | null
+          handoff_photos?: Json | null
+          handoff_signature_name?: string | null
+          handoff_signature_url?: string | null
+          hold_days?: number | null
+          hold_price_per_day?: number | null
+          hold_price_total?: number | null
+          id?: string
+          intake_photos?: Json | null
+          internal_notes?: string | null
+          invoice_id?: string | null
+          invoice_sent?: boolean | null
+          invoice_sent_at?: string | null
+          items?: Json | null
+          organization_id?: string
+          pallet_count?: number | null
+          pallet_dimensions?: string | null
+          pallet_weight_lb?: number | null
+          palletization_price?: number | null
+          palletized_at?: string | null
+          palletized_by?: string | null
+          palletized_photos?: Json | null
+          palletizing_started_at?: string | null
+          partner_contact_email?: string | null
+          partner_contact_name?: string | null
+          partner_contact_phone?: string | null
+          partner_id?: string | null
+          partner_name?: string | null
+          partner_paid_at?: string | null
+          partner_tracking_token?: string | null
+          picked_up_at?: string | null
+          picked_up_by?: string | null
+          pickup_arrived_at?: string | null
+          pickup_condition?: string | null
+          pickup_condition_notes?: string | null
+          pickup_notes?: string | null
+          pickup_photos?: Json | null
+          pickup_price?: number | null
+          quote_id?: string | null
+          ready_for_carrier_at?: string | null
+          received_at_warehouse_at?: string | null
+          received_by?: string | null
+          requires_assembly?: boolean | null
+          requires_crating?: boolean | null
+          requires_palletization?: boolean | null
+          scheduled_pickup_date?: string | null
+          scheduled_pickup_window?: string | null
+          service_level?: string | null
+          shipment_number?: string | null
+          special_instructions?: string | null
+          square_invoice_id?: string | null
+          status?: string
+          storage_location?: string | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          total_pieces?: number | null
+          total_price?: number | null
+          updated_at?: string
+          vertical_code?: string | null
+          warehouse_intake_fee?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outbound_shipments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_contracts: {
         Row: {
           auto_renew: boolean

@@ -10,6 +10,19 @@ export function isB2BDeliveryQuoteServiceType(serviceType: string): boolean {
   return serviceType === "b2b_oneoff" || serviceType === "b2b_delivery";
 }
 
+/** Outbound staging: residential pickup → warehouse palletize → 3rd-party carrier handoff. */
+export function isB2BOutboundStageServiceType(serviceType: string): boolean {
+  return serviceType === "b2b_outbound_stage";
+}
+
+/** All B2B partner-billed service types (delivery + outbound staging). */
+export function isB2BPartnerBilledServiceType(serviceType: string): boolean {
+  return (
+    isB2BDeliveryQuoteServiceType(serviceType) ||
+    isB2BOutboundStageServiceType(serviceType)
+  );
+}
+
 /** Quote types that should use delivery / logistics wording (not “move”) on client flows. */
 export function isClientLogisticsDeliveryServiceType(serviceType: string): boolean {
   return (

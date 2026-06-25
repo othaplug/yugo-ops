@@ -72,6 +72,14 @@ export const QUOTE_SERVICE_TYPE_DEFINITIONS: readonly QuoteServiceTypeDefinition
     hasInventory: false,
   },
   {
+    value: "b2b_outbound_stage",
+    label: "B2B Outbound Staging",
+    description:
+      "Pickup at consignor, palletize at warehouse, hand off to a 3rd-party carrier",
+    hasTiers: false,
+    hasInventory: true,
+  },
+  {
     value: "labour_only",
     label: "Labour Only",
     description: "Crew work at one location, no transit",
