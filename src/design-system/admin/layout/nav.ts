@@ -120,6 +120,12 @@ export const SIDEBAR_SECTIONS: NavSection[] = [
         Icon: Recycle,
         minRole: "coordinator",
       },
+      {
+        href: "/admin/outbound-shipments",
+        label: "Outbound staging",
+        Icon: Briefcase,
+        minRole: "coordinator",
+      },
     ],
   },
   {

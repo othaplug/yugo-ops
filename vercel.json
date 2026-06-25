@@ -111,6 +111,10 @@
     {
       "path": "/api/cron/quote-comparison",
       "schedule": "45 16 * * *"
+    },
+    {
+      "path": "/api/cron/outbound-hold-day-tick",
+      "schedule": "0 4 * * *"
     }
   ]
 }

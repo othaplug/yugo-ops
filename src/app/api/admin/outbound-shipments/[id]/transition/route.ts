@@ -31,6 +31,7 @@ import {
   STATUS_EMAIL_KEY,
   type PartnerEmailContext,
 } from "@/lib/outbound-staging/notifications";
+import { sendOutboundShipmentInvoice } from "@/lib/outbound-staging/invoice";
 import { getResend } from "@/lib/resend";
 import { getEmailFrom } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
@@ -218,5 +219,23 @@ export async function POST(
     }
   }
 
-  return NextResponse.json({ ok: true, id: current.id, status: to });
+  // Auto-invoice when the shipment lands on 'completed'. Best-effort: any
+  // Square failure is logged into internal_notes by the invoice helper
+  // itself so a coordinator can retry without losing context, and we
+  // never fail the transition just because the invoice didn't go.
+  let invoiceResult: Awaited<ReturnType<typeof sendOutboundShipmentInvoice>> | null = null;
+  if (to === "completed" && !merged.invoice_sent) {
+    try {
+      invoiceResult = await sendOutboundShipmentInvoice(current.id);
+    } catch (e) {
+      console.error("[outbound-shipments transition] auto-invoice threw:", e);
+    }
+  }
+
+  return NextResponse.json({
+    ok: true,
+    id: current.id,
+    status: to,
+    ...(invoiceResult ? { invoice: invoiceResult } : {}),
+  });
 }
