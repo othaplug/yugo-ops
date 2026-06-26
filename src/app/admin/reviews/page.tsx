@@ -14,7 +14,7 @@ export default async function ReviewsPage() {
   const { data: reviewsRaw } = await db
     .from("review_requests")
     .select(
-      "id, move_id, client_name, client_email, client_rating, client_feedback, status, source, platform, email_sent_at, sms_sent_at, reminder_sent_at, review_clicked, review_clicked_at, created_at, moves:move_id(move_code, scheduled_date)",
+      "id, move_id, client_name, client_email, client_rating, client_feedback, status, email_sent_at, sms_sent_at, reminder_sent_at, review_clicked, review_clicked_at, created_at, moves:move_id(move_code, scheduled_date)",
     )
     .order("created_at", { ascending: false })
     .limit(500);
