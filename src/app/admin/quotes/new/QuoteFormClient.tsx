@@ -13553,25 +13553,29 @@ export default function QuoteFormClient({
                   <div className="flex justify-between text-[10px] gap-2">
                     <span className="text-[var(--tx3)]">Effective rate</span>
                     <span className="font-medium text-[var(--tx)] tabular-nums">
-                      ${quoteResult.labour_validation.effectiveRate.toFixed(0)}/hr per mover
+                      {/* Null-safed 2026-06-25 (Ramesh / YG-30321 estate crash investigation).
+                          `.toFixed()` on undefined throws and unmounts the entire form,
+                          and the engine occasionally returns a tier-specific validation
+                          where effectiveRate didn't compute (config edge case). */}
+                      ${Number(quoteResult.labour_validation.effectiveRate ?? 0).toFixed(0)}/hr per mover
                     </span>
                   </div>
                   <div className="flex justify-between text-[10px] gap-2">
                     <span className="text-[var(--tx3)]">Band (floor to ceiling)</span>
                     <span className="text-[var(--tx)] tabular-nums">
-                      ${quoteResult.labour_validation.floor}–${quoteResult.labour_validation.ceiling}/hr
+                      ${quoteResult.labour_validation.floor ?? "—"}–${quoteResult.labour_validation.ceiling ?? "—"}/hr
                     </span>
                   </div>
                   <div className="flex justify-between text-[10px] gap-2">
                     <span className="text-[var(--tx3)]">Labour portion</span>
                     <span className="text-[var(--tx)] tabular-nums">
-                      ${quoteResult.labour_validation.labourComponent}
+                      ${quoteResult.labour_validation.labourComponent ?? 0}
                     </span>
                   </div>
                   <div className="flex justify-between text-[10px] gap-2">
                     <span className="text-[var(--tx3)]">Non-labour (est.)</span>
                     <span className="text-[var(--tx)] tabular-nums">
-                      ${quoteResult.labour_validation.nonLabourComponent}
+                      ${quoteResult.labour_validation.nonLabourComponent ?? 0}
                     </span>
                   </div>
                 </div>
@@ -13592,6 +13596,16 @@ export default function QuoteFormClient({
                               : row.status === "below_floor"
                                 ? "Underpriced"
                                 : "Not enforced";
+                        // Null-safe rate: an engine config edge case can leave
+                        // effectiveRate undefined for one tier (typically Estate
+                        // when the multi-day plan can't be computed). The bare
+                        // `.toFixed()` here was unmounting the whole form mid-
+                        // creation when admin landed on a recommended_tier=
+                        // estate quote (Ramesh / YG-30321, 2026-06-25).
+                        const rateNum = Number(row.effectiveRate ?? NaN);
+                        const rateLabel = Number.isFinite(rateNum)
+                          ? `$${rateNum.toFixed(0)}/hr`
+                          : "$—/hr";
                         return (
                           <div
                             key={tk}
@@ -13599,7 +13613,7 @@ export default function QuoteFormClient({
                           >
                             <span className="text-[var(--tx3)] capitalize">{tk}</span>
                             <span className="text-[var(--tx)] tabular-nums">
-                              ${row.effectiveRate.toFixed(0)}/hr · {tierStatusLabel}
+                              {rateLabel} · {tierStatusLabel}
                             </span>
                           </div>
                         );
