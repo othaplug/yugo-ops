@@ -5568,16 +5568,22 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     }
 
     if (custom_price && !tiers) {
-      const depO = await depositAfterOverride(quoteOvr);
+      // Gross up so the displayed price already covers CC processing cost,
+      // matching how engine-computed tier prices work.
+      const grossedOvr = grossUpForProcessing(quoteOvr, config);
+      const depO = await depositAfterOverride(grossedOvr);
       custom_price = {
         ...custom_price,
-        price: quoteOvr,
-        tax: Math.round(quoteOvr * taxOvr),
-        total: Math.round(quoteOvr * (1 + taxOvr)),
+        price: grossedOvr,
+        tax: Math.round(grossedOvr * taxOvr),
+        total: Math.round(grossedOvr * (1 + taxOvr)),
         deposit: depO,
       };
     } else if (tiers?.essential && tiers.essential.price > 0) {
-      const ratio = quoteOvr / tiers.essential.price;
+      // Tier prices are already grossed up by the engine; gross up the
+      // override target before computing the ratio so CC recovery is preserved.
+      const grossedOvr = grossUpForProcessing(quoteOvr, config);
+      const ratio = grossedOvr / tiers.essential.price;
       const nextTiers: Record<string, TierResult> = { ...tiers };
       for (const tk of ["essential", "signature", "estate"] as const) {
         const t = tiers[tk];
