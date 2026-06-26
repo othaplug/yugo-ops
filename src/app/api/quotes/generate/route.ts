@@ -5149,12 +5149,13 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         event_pre_tax_override: evOvr,
         event_pre_tax_override_reason: evReason || null,
       };
+      const grossedEvOvr = grossUpForProcessing(evOvr, config);
       custom_price = {
         ...custom_price,
-        price: evOvr,
-        tax: Math.round(evOvr * taxR),
-        total: evOvr + Math.round(evOvr * taxR),
-        deposit: evOvr, // full payment at booking for event
+        price: grossedEvOvr,
+        tax: Math.round(grossedEvOvr * taxR),
+        total: grossedEvOvr + Math.round(grossedEvOvr * taxR),
+        deposit: grossedEvOvr, // full payment at booking for event
       };
     }
   }

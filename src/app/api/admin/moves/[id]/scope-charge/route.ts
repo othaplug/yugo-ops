@@ -20,6 +20,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, isSuperAdminEmail } from "@/lib/api-auth";
 import { logAudit } from "@/lib/audit";
 import { safePatchDeal } from "@/lib/hubspot/safe-deal-write";
+import { grossUpForProcessing } from "@/lib/pricing/processing-recovery";
 
 type ScopeChargeItem = {
   /** Catalog slug if matched, otherwise leave undefined for a custom item. */
@@ -77,12 +78,13 @@ export async function POST(
     );
   }
 
-  // Tax handling: convert the admin's input to a pre-tax delta. The
-  // downstream pipeline (inventory_change_requests + moves.amount) operates
-  // on pre-tax dollars; HST is computed from move.amount × 0.13 on render.
-  const preTaxDelta = body.charge_includes_hst
-    ? Math.round((chargeAmountRaw / (1 + HST_RATE)) * 100) / 100
-    : Math.round(chargeAmountRaw * 100) / 100;
+  // Tax + CC recovery: extract the admin's pre-CC, pre-tax intent, then
+  // gross up so the displayed delta already covers the card processor's cut
+  // (same formula used by the quote engine for every tier price).
+  const rawPreTax = body.charge_includes_hst
+    ? chargeAmountRaw / (1 + HST_RATE)
+    : chargeAmountRaw;
+  const preTaxDelta = Math.round(grossUpForProcessing(rawPreTax, {}) * 100) / 100;
   const hstDelta = Math.round(preTaxDelta * HST_RATE * 100) / 100;
 
   const db = createAdminClient();
