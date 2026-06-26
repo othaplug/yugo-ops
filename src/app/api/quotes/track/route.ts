@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { rateLimit } from "@/lib/rate-limit";
 import { getFeatureConfig } from "@/lib/platform-settings";
 import { logActivity } from "@/lib/activity";
+import { isStaffSession } from "@/lib/api-auth";
 
 const LEGACY_EVENTS = new Set([
   "quote_viewed",
@@ -72,6 +73,17 @@ export async function POST(req: Request) {
     // Draft opens are coordinator previews; do not log client engagement or legacy events.
     if (String(quoteRow.status || "").toLowerCase() === "draft") {
       return NextResponse.json({ ok: true });
+    }
+
+    // Same idea for sent quotes: if the request carries a logged-in Yugo
+    // staff session, this is an admin "preview as client" open, not a real
+    // customer view. Dropping it keeps quote_engagement, quote_events,
+    // AND the activity feed clean of internal noise. Added 2026-06-25
+    // after Oche flagged that admin opens of /quote/[id] were inflating
+    // view counts and producing "Quote viewed by client" entries on the
+    // admin activity feed for quotes the customer had not actually opened.
+    if (await isStaffSession()) {
+      return NextResponse.json({ ok: true, skipped: "staff_session" });
     }
 
     const cfg = await getFeatureConfig(["quote_engagement_tracking"]);
