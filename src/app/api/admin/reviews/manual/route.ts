@@ -59,11 +59,14 @@ export async function POST(req: NextRequest) {
   let scheduledDate: string | null = null;
 
   if (moveCode) {
-    const { data: move } = await db
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(moveCode);
+    const moveQuery = db
       .from("moves")
-      .select("id, move_code, scheduled_date, client_name, client_email")
-      .or(`move_code.eq.${moveCode},id.eq.${moveCode}`)
-      .maybeSingle();
+      .select("id, move_code, scheduled_date, client_name, client_email");
+    const { data: move } = await (isUuid
+      ? moveQuery.or(`move_code.eq.${moveCode},id.eq.${moveCode}`)
+      : moveQuery.eq("move_code", moveCode)
+    ).maybeSingle();
 
     if (!move) {
       return NextResponse.json(
