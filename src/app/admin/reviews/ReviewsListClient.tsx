@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatAdminCreatedAt } from "@/lib/date-format";
@@ -52,6 +52,133 @@ const PLATFORM_LABELS: Record<string, string> = {
   other: "Other",
 };
 
+interface CompletedMove {
+  id: string;
+  move_code: string;
+  client_name: string;
+  client_email: string;
+  scheduled_date: string;
+}
+
+// ── Move combobox ─────────────────────────────────────────────────────────────
+
+function MoveCombobox({
+  moves,
+  selected,
+  onSelect,
+}: {
+  moves: CompletedMove[];
+  selected: CompletedMove | null;
+  onSelect: (m: CompletedMove | null) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  const results = useMemo(() => {
+    if (!query.trim()) return moves.slice(0, 25);
+    const q = query.toLowerCase();
+    return moves
+      .filter(
+        (m) =>
+          m.move_code.toLowerCase().includes(q) ||
+          m.client_name.toLowerCase().includes(q),
+      )
+      .slice(0, 25);
+  }, [moves, query]);
+
+  function pick(m: CompletedMove) {
+    onSelect(m);
+    setOpen(false);
+    setQuery("");
+  }
+
+  function clear() {
+    onSelect(null);
+    setQuery("");
+  }
+
+  return (
+    <div ref={wrapRef} className="relative">
+      {selected ? (
+        <div className="flex items-center gap-2 rounded-lg border border-[var(--yu3-forest)] bg-[var(--yu3-forest)]/5 px-3 py-2">
+          <div className="flex-1 min-w-0">
+            <span className="font-mono text-[13px] font-semibold text-[var(--yu3-forest)]">
+              {selected.move_code}
+            </span>
+            {selected.client_name && (
+              <span className="ml-2 text-[12px] text-[var(--yu3-ink-muted)]">
+                {selected.client_name}
+              </span>
+            )}
+            {selected.scheduled_date && (
+              <span className="ml-1 text-[11px] text-[var(--yu3-ink-muted)]">
+                · {selected.scheduled_date}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={clear}
+            className="text-[var(--yu3-ink-muted)] hover:text-[var(--yu3-ink)] text-[16px] leading-none flex-shrink-0"
+            aria-label="Clear move"
+          >
+            ×
+          </button>
+        </div>
+      ) : (
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          placeholder="Search by move code or client name…"
+          className="w-full rounded-lg border border-[var(--yu3-line)] px-3 py-2 text-[13px] outline-none focus:border-[var(--yu3-forest)]"
+          autoComplete="off"
+        />
+      )}
+
+      {open && !selected && (
+        <div className="absolute z-10 mt-1 w-full rounded-xl border border-[var(--yu3-line)] bg-white shadow-lg max-h-52 overflow-y-auto">
+          {results.length === 0 ? (
+            <p className="px-3 py-2 text-[12px] text-[var(--yu3-ink-muted)]">No moves found</p>
+          ) : (
+            results.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); pick(m); }}
+                className="w-full text-left px-3 py-2 hover:bg-[var(--yu3-bg-surface)] border-b border-[var(--yu3-line-subtle)] last:border-0"
+              >
+                <span className="font-mono text-[12px] font-semibold text-[var(--yu3-forest)]">
+                  {m.move_code}
+                </span>
+                {m.client_name && (
+                  <span className="ml-2 text-[12px] text-[var(--yu3-ink)]">{m.client_name}</span>
+                )}
+                {m.scheduled_date && (
+                  <span className="ml-1 text-[11px] text-[var(--yu3-ink-muted)]">· {m.scheduled_date}</span>
+                )}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Add Review Modal ──────────────────────────────────────────────────────────
 
 const EMPTY_FORM = {
@@ -95,14 +222,38 @@ function StarPicker({
   );
 }
 
-function AddReviewModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function AddReviewModal({
+  onClose,
+  onSaved,
+  completedMoves,
+}: {
+  onClose: () => void;
+  onSaved: () => void;
+  completedMoves: CompletedMove[];
+}) {
   const [form, setForm] = useState(EMPTY_FORM);
+  const [selectedMove, setSelectedMove] = useState<CompletedMove | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const backdropRef = useRef<HTMLDivElement>(null);
 
   const set = <K extends keyof typeof EMPTY_FORM>(k: K, v: (typeof EMPTY_FORM)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  function handleMoveSelect(m: CompletedMove | null) {
+    setSelectedMove(m);
+    if (m) {
+      // Auto-fill client details only if the admin hasn't typed anything yet
+      setForm((f) => ({
+        ...f,
+        move_code: m.move_code,
+        client_name: f.client_name.trim() ? f.client_name : m.client_name,
+        client_email: f.client_email.trim() ? f.client_email : m.client_email,
+      }));
+    } else {
+      setForm((f) => ({ ...f, move_code: "" }));
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -226,31 +377,29 @@ function AddReviewModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
             </div>
           </div>
 
-          {/* Move code + date row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest text-[var(--yu3-ink-muted)] mb-1">
-                Move code
-              </label>
-              <input
-                type="text"
-                value={form.move_code}
-                onChange={(e) => set("move_code", e.target.value.toUpperCase())}
-                placeholder="e.g. MV-30318 (optional)"
-                className="w-full rounded-lg border border-[var(--yu3-line)] px-3 py-2 text-[13px] font-mono outline-none focus:border-[var(--yu3-forest)]"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest text-[var(--yu3-ink-muted)] mb-1">
-                Date left
-              </label>
-              <input
-                type="date"
-                value={form.review_date}
-                onChange={(e) => set("review_date", e.target.value)}
-                className="w-full rounded-lg border border-[var(--yu3-line)] px-3 py-2 text-[13px] outline-none focus:border-[var(--yu3-forest)]"
-              />
-            </div>
+          {/* Move selector */}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-widest text-[var(--yu3-ink-muted)] mb-1">
+              Move
+            </label>
+            <MoveCombobox
+              moves={completedMoves}
+              selected={selectedMove}
+              onSelect={handleMoveSelect}
+            />
+          </div>
+
+          {/* Date */}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-widest text-[var(--yu3-ink-muted)] mb-1">
+              Date left
+            </label>
+            <input
+              type="date"
+              value={form.review_date}
+              onChange={(e) => set("review_date", e.target.value)}
+              className="w-full rounded-lg border border-[var(--yu3-line)] px-3 py-2 text-[13px] outline-none focus:border-[var(--yu3-forest)]"
+            />
           </div>
 
           {/* Feedback */}
@@ -296,7 +445,13 @@ function AddReviewModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function ReviewsListClient({ reviews }: { reviews: Review[] }) {
+export default function ReviewsListClient({
+  reviews,
+  completedMoves,
+}: {
+  reviews: Review[];
+  completedMoves: CompletedMove[];
+}) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
@@ -336,6 +491,7 @@ export default function ReviewsListClient({ reviews }: { reviews: Review[] }) {
     <div className="px-6 py-6 max-w-[1400px] mx-auto">
       {showAdd && (
         <AddReviewModal
+          completedMoves={completedMoves}
           onClose={() => setShowAdd(false)}
           onSaved={() => {
             setShowAdd(false);
