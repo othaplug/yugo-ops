@@ -408,13 +408,11 @@ const TRUCK_FLEET = [
     // decision 2026-06-11). Lease in Monthly OH.
     dailyDefault: 0,
   },
-  // Day rate defaults bumped 2026-06-11 to current Toronto rental
-  // market (16ft $100, 20ft $150). 24ft added 2026-06-28 ($200) after
-  // MV-30320 surfaced a stale $115 default. Monthly default $0 across
-  // rented sizes because we don't lease these.
-  { key: "16ft", label: "16 ft (rental)", monthlyDefault: 0, dailyDefault: 100 },
-  { key: "20ft", label: "20 ft (rental)", monthlyDefault: 0, dailyDefault: 150 },
-  { key: "24ft", label: "24 ft (rental)", monthlyDefault: 0, dailyDefault: 200 },
+  // Operator-set rental rates (revised 2026-06-28). Monthly default $0
+  // across rented sizes because we don't lease these.
+  { key: "16ft", label: "16 ft (rental)", monthlyDefault: 0, dailyDefault: 80 },
+  { key: "20ft", label: "20 ft (rental)", monthlyDefault: 0, dailyDefault: 120 },
+  { key: "24ft", label: "24 ft (rental)", monthlyDefault: 0, dailyDefault: 150 },
   {
     key: "26ft",
     label: "26 ft (rental, per use)",

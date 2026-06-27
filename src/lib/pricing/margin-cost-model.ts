@@ -151,14 +151,13 @@ const TRUCK_DAILY_CFG_KEYS: Record<string, string> = {
   none: "truck_daily_cost_sprinter",
 };
 
-// Toronto rental market 2026. Sprinter 0 (owned, lease in OH). 16ft /
-// 20ft set 2026-06-11; 24ft set 2026-06-28 after MV-30320 stale-default
-// audit (was $115, now $200). 26ft holds at $295 — market-aligned.
+// Operator-set rental rates (revised 2026-06-28). Sprinter 0 (owned,
+// lease in OH). 26ft holds at $295.
 const TRUCK_DAILY_DEFAULTS: Record<string, number> = {
   sprinter: 0,
-  "16ft": 100,
-  "20ft": 150,
-  "24ft": 200,
+  "16ft": 80,
+  "20ft": 120,
+  "24ft": 150,
   "26ft": 295,
   none: 0,
 };

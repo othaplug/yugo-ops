@@ -214,14 +214,13 @@ export function calculateMoveProfitability(
     // Rented trucks: bill the per-use day rate.
     const explicit = parseFloat(config[`truck_daily_cost_${type}`] ?? "");
     if (explicit > 0) return explicit;
-    // Industry defaults — Toronto rental market 2026. Sprinter $0 (owned;
-    // lease in OH). 16ft / 20ft bumped 2026-06-11; 24ft added 2026-06-28
-    // after MV-30320 surfaced a stale $115 default falling through.
+    // Operator-set rental rates (revised 2026-06-28). Sprinter $0
+    // (owned; lease in OH). 26ft holds at $295.
     const defaults: Record<string, number> = {
       sprinter: 0,
-      "16ft": 100,
-      "20ft": 150,
-      "24ft": 200,
+      "16ft": 80,
+      "20ft": 120,
+      "24ft": 150,
       "26ft": 295,
     };
     return defaults[type] ?? 100;
