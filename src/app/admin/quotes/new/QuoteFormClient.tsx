@@ -65,6 +65,7 @@ import {
 } from "./b2b-one-off-ui";
 import SpecialtyTransportQuoteBuilder from "./SpecialtyTransportQuoteBuilder";
 import MoveScopeSection from "./MoveScopeSection";
+import QuoteFormErrorBoundary from "./QuoteFormErrorBoundary";
 import JobScopeSection, {
   type JobScope,
   type InboundShipmentDraft,
@@ -8092,8 +8093,8 @@ export default function QuoteFormClient({
                                 ([k, label]) => (
                                   <option key={k} value={k}>
                                     {label}, $
-                                    {(
-                                      priceMap[k] ?? CRATING_SIZE_FALLBACK[k]
+                                    {Number(
+                                      priceMap[k] ?? CRATING_SIZE_FALLBACK[k] ?? 0,
                                     ).toLocaleString()}
                                   </option>
                                 ),
@@ -11649,6 +11650,7 @@ export default function QuoteFormClient({
         <div
           className={`transition-all duration-300 shrink-0 ${previewOpen ? "w-full min-[480px]:w-[40%] min-[480px]:min-w-[240px]" : "hidden min-[480px]:block min-[480px]:w-0 min-[480px]:overflow-hidden min-[480px]:opacity-0 pointer-events-none"}`}
         >
+          <QuoteFormErrorBoundary label="Right rail">
           <div className="sticky top-6 space-y-4">
             <div
               className={
@@ -12909,9 +12911,12 @@ export default function QuoteFormClient({
                       <span
                         className={`font-mono font-bold ${quoteResult.inventory.modifier < 1 ? "text-emerald-400" : "text-orange-400"}`}
                       >
-                        Score {quoteResult.inventory.score.toFixed(1)}
+                        {/* Null-safed 2026-06-27 (YG-30322 crash): inventory
+                            shape may not always include score/modifier as
+                            numbers depending on service type. */}
+                        Score {Number(quoteResult.inventory.score ?? 0).toFixed(1)}
                         {quoteResult.inventory.modifier !== 1.0 &&
-                          ` · ×${quoteResult.inventory.modifier.toFixed(2)}`}
+                          ` · ×${Number(quoteResult.inventory.modifier ?? 1).toFixed(2)}`}
                       </span>
                     </div>
                   )}
@@ -12930,10 +12935,16 @@ export default function QuoteFormClient({
                     <span className="text-[var(--tx)] font-medium">
                       {quoteResult.truck.primary.display_name}
                     </span>
-                    <span className="text-[var(--tx3)] ml-1.5">
-                      {quoteResult.truck.primary.cargo_cubic_ft.toLocaleString()}{" "}
-                      cu ft
-                    </span>
+                    {/* Null-safed 2026-06-27 (YG-30322 event quote crash):
+                        event-shape truck.primary doesn't carry cargo_cubic_ft,
+                        so the bare .toLocaleString() threw and unmounted the
+                        whole form into the Quotes error boundary. */}
+                    {typeof quoteResult.truck.primary.cargo_cubic_ft === "number" && (
+                      <span className="text-[var(--tx3)] ml-1.5">
+                        {quoteResult.truck.primary.cargo_cubic_ft.toLocaleString()}{" "}
+                        cu ft
+                      </span>
+                    )}
                   </div>
                 </div>
                 {quoteResult.truck.secondary && (
@@ -13666,6 +13677,7 @@ export default function QuoteFormClient({
                 </div>
               )}
           </div>
+        </QuoteFormErrorBoundary>
         </div>
       </div>
 
