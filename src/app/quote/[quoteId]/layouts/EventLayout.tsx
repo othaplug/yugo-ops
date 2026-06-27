@@ -234,7 +234,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                     <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: WINE }}>
                       {leg.label || `Event ${idx + 1}`}
                     </p>
-                    <div className="flex items-start justify-between gap-4 pl-2 border-l-2" style={{ borderColor: `${WINE}40` }}>
+                    <div className="flex items-start gap-4 pl-2 border-l-2" style={{ borderColor: `${WINE}40` }}>
                       <div className="flex-1 min-w-0">
                         <span className="text-[10px] font-semibold uppercase" style={{ color: WINE }}>Delivery</span>
                         <span className="text-[10px] ml-2" style={{ color: `${FOREST}70` }}>{fmtShort(leg.delivery_date)}</span>
@@ -242,25 +242,19 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                           {(leg.event_crew ?? 0) > 0 && `${leg.event_crew}-person crew`}
                         </div>
                       </div>
-                      <span className="text-[var(--text-base)] font-bold tabular-nums shrink-0" style={{ color: FOREST }}>
-                        {fmtPrice(isSameDay || returnAmt === 0 ? displayAmt : Math.round(displayAmt * (leg.delivery_charge ?? 0) / ((leg.delivery_charge ?? 0) + returnAmt)))}
-                      </span>
                     </div>
-                    <div className="flex items-start justify-between gap-4 pl-2 border-l-2" style={{ borderColor: `${FOREST}40` }}>
+                    <div className="flex items-start gap-4 pl-2 border-l-2" style={{ borderColor: `${FOREST}40` }}>
                       <div className="flex-1 min-w-0">
                         <span className="text-[10px] font-semibold uppercase" style={{ color: FOREST }}>Return</span>
                         <span className="text-[10px] ml-2" style={{ color: `${FOREST}70` }}>{fmtShort(leg.return_date)}</span>
                       </div>
-                      <span className="text-[10px] tabular-nums shrink-0 italic" style={{ color: `${FOREST}60` }}>
-                        {isSameDay || returnAmt === 0 ? "Included in day rate" : fmtPrice(Math.round(displayAmt * returnAmt / ((leg.delivery_charge ?? 0) + returnAmt)))}
-                      </span>
                     </div>
                   </div>
                 );
               })}
               {hasSetup && (
                 <div className="px-5 py-4">
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: FOREST }}>S</div>
@@ -270,9 +264,6 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                         {(f.setup_label as string) ?? "On-site setup service"}
                       </div>
                     </div>
-                    <span className="text-[15px] font-bold tabular-nums shrink-0" style={{ color: FOREST }}>
-                      {fmtPrice(setupFee)}
-                    </span>
                   </div>
                 </div>
               )}
@@ -280,7 +271,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
           ) : (
             <>
               <div className="px-5 py-4">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: WINE }}>1</div>
@@ -292,15 +283,12 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                       {truckSize && <span className="flex items-center gap-1"><Truck className="w-3 h-3" />{truckSize} truck</span>}
                     </div>
                   </div>
-                  <span className="text-[15px] font-bold tabular-nums shrink-0" style={{ color: FOREST }}>
-                    {fmtPrice(deliveryCharge)}
-                  </span>
                 </div>
               </div>
 
               {hasSetup && (
                 <div className="px-5 py-4">
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: FOREST }}>S</div>
@@ -310,16 +298,13 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                         {(f.setup_label as string) ?? "On-site setup service"}
                       </div>
                     </div>
-                    <span className="text-[15px] font-bold tabular-nums shrink-0" style={{ color: FOREST }}>
-                      {fmtPrice(setupFee)}
-                    </span>
                   </div>
                 </div>
               )}
 
               {hasReturn && (
                 <div className="px-5 py-4">
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: FOREST }}>2</div>
@@ -330,9 +315,6 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                         <span>Same crew, no re-briefing needed</span>
                       </div>
                     </div>
-                    <span className="text-[15px] font-bold tabular-nums shrink-0" style={{ color: FOREST }}>
-                      {fmtPrice(returnCharge)}
-                    </span>
                   </div>
                 </div>
               )}
