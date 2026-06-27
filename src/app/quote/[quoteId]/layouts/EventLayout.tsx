@@ -353,46 +353,40 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
           </h2>
         </div>
         <div className="p-5 md:p-6">
-          {/* Line items — only shown when there are multiple components to break down */}
-          {(isMulti && multiLegDisplayAmounts.length > 1) || (!isMulti && (hasSetup || hasReturn)) ? (
+          {/* Line items — multi-event programs only.
+              Single-event Delivery / Setup / Return lines were
+              removed 2026-06-11 per operator: a one-off event quote
+              read as "Delivery $550 / Return $350" with the rest of
+              the price unexplained, which confused clients more
+              than it helped. Multi-event programs keep the per-leg
+              breakdown because each leg IS a distinct sub-event the
+              client booked. Setup/return for single events are
+              rolled into the headline price below. */}
+          {isMulti && multiLegDisplayAmounts.length > 1 ? (
             <table className="w-full text-[12px] mb-4">
               <tbody>
-                {isMulti
-                  ? eventLegs.map((leg, idx) => {
-                      const displayAmt = multiLegDisplayAmounts[idx] ?? 0;
-                      return displayAmt > 0 ? (
-                        <tr key={idx} className={idx > 0 ? "border-t" : undefined} style={idx > 0 ? { borderColor: "#E2DDD5" } : undefined}>
-                          <td className="py-2" style={{ color: `${FOREST}80` }}>
-                            {leg.label || `Event ${idx + 1}`}, Delivery ({fmtShort(leg.delivery_date)})
-                            {leg.same_day ? <span className="ml-1 text-[10px] italic">+ same-day return</span> : null}
-                          </td>
-                          <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(displayAmt)}</td>
-                        </tr>
-                      ) : null;
-                    })
-                  : null}
-                {!isMulti && deliveryCharge > 0 && (
-                  <tr>
-                    <td className="py-2" style={{ color: `${FOREST}80` }}>Delivery ({fmtShort(deliveryDate)})</td>
-                    <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(deliveryCharge)}</td>
-                  </tr>
-                )}
+                {eventLegs.map((leg, idx) => {
+                  const displayAmt = multiLegDisplayAmounts[idx] ?? 0;
+                  return displayAmt > 0 ? (
+                    <tr key={idx} className={idx > 0 ? "border-t" : undefined} style={idx > 0 ? { borderColor: "#E2DDD5" } : undefined}>
+                      <td className="py-2" style={{ color: `${FOREST}80` }}>
+                        {leg.label || `Event ${idx + 1}`}, Delivery ({fmtShort(leg.delivery_date)})
+                        {leg.same_day ? <span className="ml-1 text-[10px] italic">+ same-day return</span> : null}
+                      </td>
+                      <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(displayAmt)}</td>
+                    </tr>
+                  ) : null;
+                })}
                 {hasSetup && (
                   <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
-                    <td className="py-2" style={{ color: `${FOREST}80` }}>{isMulti ? "Setup (program)" : "Setup at venue"}</td>
+                    <td className="py-2" style={{ color: `${FOREST}80` }}>Setup (program)</td>
                     <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(setupFee)}</td>
-                  </tr>
-                )}
-                {!isMulti && hasReturn && (
-                  <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
-                    <td className="py-2" style={{ color: `${FOREST}80` }}>Return ({fmtShort(returnDate ?? null)})</td>
-                    <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(returnCharge)}</td>
                   </tr>
                 )}
               </tbody>
             </table>
           ) : null}
-          <div className="border-t-2 pt-4 text-center" style={{ borderColor: `${FOREST}30` }}>
+          <div className="pt-4 text-center">
             <p className="text-[36px] md:text-[44px] [font-family:var(--font-body)]" style={{ color: WINE }}>
               {fmtPrice(price)}
             </p>
