@@ -95,10 +95,44 @@ const PM_VERTICAL_SLUGS = new Set<string>([
  * The three signals are checked together so older moves created before
  * is_pm_move was reliably backfilled still display correctly.
  */
+/**
+ * Reason-code → short label. Used by the All-Moves list to surface
+ * move-in vs move-out at a glance, so a coordinator never confuses two
+ * PM rows the way Oche caught with MV-30331 vs MV-30332 on 2026-06-28
+ * (two rows at the same building / same unit displaying as bare
+ * "PM Move" — turned out one was wrongly stored as the same reason
+ * code as the other, and there was nothing in the list label to make
+ * the data error visible).
+ *
+ * Aliases cover the legacy `renovation_*` slug from older PM seed data.
+ */
+const PM_REASON_SHORT_LABEL: Record<string, string> = {
+  reno_move_in: "Reno Move-In",
+  reno_move_out: "Reno Move-Out",
+  renovation_move_in: "Reno Move-In",
+  renovation_move_out: "Reno Move-Out",
+  reno_bundle: "Reno Bundle",
+  tenant_move_in: "Tenant Move-In",
+  tenant_move_out: "Tenant Move-Out",
+  suite_transfer: "Suite Transfer",
+  unit_turnover: "Unit Turnover",
+  emergency_relocation: "Emergency Relocation",
+  staging: "Staging",
+  destaging: "Destaging",
+  storage_move: "Storage Move",
+};
+
+export function pmReasonShortLabel(reason: string | null | undefined): string | null {
+  const key = String(reason ?? "").trim().toLowerCase();
+  if (!key) return null;
+  return PM_REASON_SHORT_LABEL[key] ?? null;
+}
+
 export function portfolioPmMoveServiceLabel(move: {
   service_type?: string | null;
   is_pm_move?: boolean | null;
   contract_id?: string | null;
+  pm_reason_code?: string | null;
   // Supabase join: `organizations:organization_id(vertical, type)` — may
   // be an object, an array, or null depending on how the row was fetched.
   organizations?:
@@ -114,6 +148,13 @@ export function portfolioPmMoveServiceLabel(move: {
     !!move.is_pm_move ||
     !!(move.contract_id && String(move.contract_id).trim()) ||
     orgIsPm;
+  // Prefer the reason code (Reno Move-In / Reno Move-Out / Suite
+  // Transfer …) over a bare "PM Move" so the list label distinguishes
+  // direction at a glance.
+  const reasonShort = pmReasonShortLabel(move.pm_reason_code);
+  if (isPm && reasonShort) {
+    return `PM ${reasonShort}`;
+  }
   if (isPm && isB2bOrDeliverySlug(move.service_type)) {
     return "PM Move";
   }

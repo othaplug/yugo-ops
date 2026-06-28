@@ -48,6 +48,9 @@ interface Move {
   display_status?: string | null;
   contract_id?: string | null;
   is_pm_move?: boolean | null;
+  /** PM batch reason code — drives the list label so 'PM Reno Move-In'
+   *  / 'PM Reno Move-Out' / 'PM Suite Transfer' show in the type column. */
+  pm_reason_code?: string | null;
   organization_id?: string | null;
   /** Supabase join: organizations:organization_id(vertical, type). */
   organizations?:

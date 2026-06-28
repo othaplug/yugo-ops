@@ -22,7 +22,12 @@ export default async function AllMovesPage() {
     // actual_hours, est_hours, etc. are used to recalculate margin for completed moves (matches profitability panel)
     // organizations join is used as a display-side fallback so PM-partner moves render as "PM Move" even
     // if their is_pm_move flag wasn't set at creation time (older create-route code paths).
-    "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, neighbourhood_tier, crew_id, created_at, margin_percent, margin_flag, est_margin_percent, contract_id, is_pm_move, organization_id, organizations:organization_id(vertical, type), est_hours, est_crew_size, estimated_duration_minutes, distance_km, truck_primary, truck_secondary, move_size, balance_method, deposit_method, actual_labour_cost, actual_fuel_cost, actual_truck_cost, actual_supplies_cost";
+    // pm_reason_code added 2026-06-28 so the list label renders "PM Reno
+    // Move-In" / "PM Reno Move-Out" / "PM Suite Transfer" instead of a
+    // generic "PM Move" — Oche caught two same-building rows (MV-30331 /
+    // MV-30332) where the wrong reason had been saved and the bare label
+    // gave no way to spot the data error.
+    "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, neighbourhood_tier, crew_id, created_at, margin_percent, margin_flag, est_margin_percent, contract_id, is_pm_move, pm_reason_code, organization_id, organizations:organization_id(vertical, type), est_hours, est_crew_size, estimated_duration_minutes, distance_km, truck_primary, truck_secondary, move_size, balance_method, deposit_method, actual_labour_cost, actual_fuel_cost, actual_truck_cost, actual_supplies_cost";
 
   const minimalMovesSelect =
     // Fallback if extended columns are missing in an older DB schema
