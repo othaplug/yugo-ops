@@ -1558,8 +1558,25 @@ export default function MoveDetailClient({
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
                   To{additionalDestinations.length > 0 && ` (${additionalDestinations.length + 1} drop-offs)`}
                 </p>
+                {/* PM holding-unit format from the batch flow comes
+                    through as "1350 (holding)" — opaque without context.
+                    Rewrite to "Unit 1350 — holding bay" so dispatch
+                    reads it as a place inside the same building.
+                    2026-06-28 fix. */}
                 <p className="text-[var(--yu3-ink)] leading-snug">
-                  {move.to_address || move.delivery_address || "—"}
+                  {(() => {
+                    const raw = String(
+                      move.to_address || move.delivery_address || "",
+                    ).trim();
+                    if (!raw) return "—";
+                    const holdMatch = raw.match(
+                      /^([A-Za-z0-9\-]+)\s*\(holding\)$/i,
+                    );
+                    if (holdMatch && move.is_pm_move) {
+                      return `Unit ${holdMatch[1]} — holding bay`;
+                    }
+                    return raw;
+                  })()}
                 </p>
                 {additionalDestinations.map((s, i) => {
                   const a = (s?.address ?? "").trim();
@@ -1592,7 +1609,39 @@ export default function MoveDetailClient({
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
                   Client
                 </p>
-                <p className="text-[var(--yu3-ink)]">{move.client_name || "—"}</p>
+                {/* PM moves often have `client_name` set to the unit
+                    number when no real tenant was captured at booking
+                    (synthetic placeholder so the column has a value).
+                    Detect that pattern and show a clear "not provided"
+                    message instead of pretending the unit number is a
+                    person — was misleading dispatch. 2026-06-28 fix. */}
+                {(() => {
+                  const clientName = String(move.client_name ?? "").trim();
+                  const unitNumber = String(
+                    (move as { unit_number?: string | null }).unit_number ?? "",
+                  ).trim();
+                  const lowerC = clientName.toLowerCase();
+                  const lowerU = unitNumber.toLowerCase();
+                  const isSynthetic =
+                    !!move.is_pm_move &&
+                    !!unitNumber &&
+                    !!clientName &&
+                    (lowerC === lowerU ||
+                      lowerC.includes(lowerU) ||
+                      lowerU.includes(lowerC));
+                  if (isSynthetic) {
+                    return (
+                      <p className="text-[var(--yu3-ink-muted)] italic">
+                        Tenant not provided · partner-billed
+                      </p>
+                    );
+                  }
+                  return (
+                    <p className="text-[var(--yu3-ink)]">
+                      {clientName || "—"}
+                    </p>
+                  );
+                })()}
               </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
@@ -1631,10 +1680,21 @@ export default function MoveDetailClient({
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
                   Deposit
                 </p>
+                {/* PM moves are partner-billed at month-end via the
+                    partner invoice cron; deposits don't apply. Show
+                    "Bills to partner" instead of a bare dash so the
+                    record reads as "intentionally N/A" rather than
+                    "data missing." 2026-06-28 fix. */}
                 <p className="text-[var(--yu3-ink)]">
                   {move.deposit_amount
                     ? formatCurrency(Number(move.deposit_amount))
-                    : "—"}
+                    : move.is_pm_move
+                      ? (
+                          <span className="text-[var(--yu3-ink-muted)] italic">
+                            Bills to partner
+                          </span>
+                        )
+                      : "—"}
                 </p>
               </div>
               {/* Tier — only shown for service types that use tier packages

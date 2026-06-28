@@ -26,7 +26,42 @@ type Move = {
   from_address: string | null;
   to_address: string | null;
   linked_move_id: string | null;
+  linked_move_code: string | null;
+  is_likely_pair?: boolean;
+  same_unit?: boolean;
 };
+
+/**
+ * Detect the "synthetic tenant" pattern from the PM batch flow: when a
+ * coordinator doesn't supply a real tenant name, the batch row writes
+ * the unit number into tenant_name as a placeholder (so reports still
+ * have a column to display). On the move detail that placeholder reads
+ * as if a real person is named — misleading for dispatch.
+ *
+ * 2026-06-28 Oche flagged: TENANT showing "1364" when the unit is also
+ * "1364" should resolve to "Tenant not provided · partner-billed".
+ */
+function tenantIsSynthetic(
+  tenantName: string | null | undefined,
+  unitNumber: string | null | undefined,
+): boolean {
+  const t = (tenantName ?? "").trim().toLowerCase();
+  const u = (unitNumber ?? "").trim().toLowerCase();
+  if (!t) return true;
+  if (!u) return false;
+  // Exact match, or one contains the other (handles "1364" vs "Unit 1364"
+  // and "1316 WL" vs "1316").
+  return t === u || t.includes(u) || u.includes(t);
+}
+
+function displayTenant(
+  tenantName: string | null | undefined,
+  unitNumber: string | null | undefined,
+): string {
+  return tenantIsSynthetic(tenantName, unitNumber)
+    ? "Tenant not provided · partner-billed"
+    : String(tenantName ?? "").trim();
+}
 
 type LinkedSummary = {
   id: string;
@@ -65,6 +100,10 @@ export default function PmLinkSection({
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Building name resolved by the API (joins partner_properties) — the
+  // parent move row only carries the UUID, which is meaningless to
+  // dispatch. 2026-06-28 fix.
+  const [resolvedBuilding, setResolvedBuilding] = useState<string | null>(null);
 
   const refreshLinked = useCallback(async () => {
     if (!linkedMoveId) {
@@ -101,8 +140,14 @@ export default function PmLinkSection({
           `/api/admin/moves/${moveId}/link?q=${encodeURIComponent(q)}`,
         );
         if (!res.ok) return;
-        const data = (await res.json()) as { candidates: Move[] };
+        const data = (await res.json()) as {
+          candidates: Move[];
+          self?: { building_name?: string | null };
+        };
         setCandidates(data.candidates ?? []);
+        if (data.self?.building_name) {
+          setResolvedBuilding(data.self.building_name);
+        }
       } catch {
         setCandidates([]);
       } finally {
@@ -112,9 +157,11 @@ export default function PmLinkSection({
     [moveId],
   );
 
-  // Auto-load same-building candidates when the panel opens (no link yet).
+  // Auto-load same-building candidates when the panel opens (no link
+  // yet). Also resolves the building name even when already linked, so
+  // the top-row summary still shows a human-readable building.
   useEffect(() => {
-    if (!linkedMoveId && isPmMove) {
+    if (isPmMove) {
       searchCandidates("");
     }
   }, [linkedMoveId, isPmMove, searchCandidates]);
@@ -171,14 +218,19 @@ export default function PmLinkSection({
         )}
       </div>
 
-      {/* Building / unit / tenant summary */}
+      {/* Building / unit / tenant summary.
+          - Building: prefer the API-resolved name; the parent's prop
+            falls back to "—" rather than the raw UUID.
+          - Tenant: synthetic-tenant detection (tenant_name === unit
+            number) renders "Tenant not provided · partner-billed" so
+            dispatch knows there's no real contact to call. */}
       <div className="grid grid-cols-3 gap-3 text-[12px] pb-3 border-b border-[var(--brd)]/40">
         <div>
           <p className="text-[10px] uppercase tracking-wider text-[var(--tx3)] mb-0.5">
             Building
           </p>
           <p className="text-[var(--tx)] font-medium truncate">
-            {buildingName ?? partnerPropertyId ?? "—"}
+            {resolvedBuilding ?? buildingName ?? "—"}
           </p>
         </div>
         <div>
@@ -191,7 +243,11 @@ export default function PmLinkSection({
           <p className="text-[10px] uppercase tracking-wider text-[var(--tx3)] mb-0.5">
             Tenant
           </p>
-          <p className="text-[var(--tx)] truncate">{tenantName ?? "—"}</p>
+          <p
+            className={`truncate ${tenantIsSynthetic(tenantName, unitNumber) ? "text-[var(--tx3)] italic" : "text-[var(--tx)]"}`}
+          >
+            {displayTenant(tenantName, unitNumber) || "—"}
+          </p>
         </div>
       </div>
 
@@ -261,32 +317,60 @@ export default function PmLinkSection({
               No candidates found in this building.
             </p>
           ) : (
-            <div className="max-h-60 overflow-y-auto rounded-md border border-[var(--brd)]/60 divide-y divide-[var(--brd)]/30">
-              {candidates.map((c) => (
-                <div
-                  key={c.id}
-                  className="px-3 py-2 flex items-center justify-between gap-2 hover:bg-[var(--bg)]/40"
-                >
-                  <div className="min-w-0">
-                    <p className="text-[12px] font-mono font-semibold text-[var(--tx)]">
-                      {c.move_code}
-                    </p>
-                    <p className="text-[10px] text-[var(--tx3)] truncate">
-                      {humanReason(c.pm_reason_code)} · Unit {c.unit_number ?? "—"} ·{" "}
-                      {c.tenant_name ?? "—"} · {c.scheduled_date ?? "no date"}
-                      {c.linked_move_id ? " · already linked" : ""}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => link(c.id)}
-                    disabled={busy || !!c.linked_move_id}
-                    className="px-3 py-1 rounded-md bg-[var(--wine)] text-white text-[10px] font-semibold hover:opacity-90 disabled:opacity-40"
+            <div className="max-h-72 overflow-y-auto rounded-md border border-[var(--brd)]/60 divide-y divide-[var(--brd)]/30">
+              {candidates.map((c) => {
+                const tenantStr = tenantIsSynthetic(c.tenant_name, c.unit_number)
+                  ? "no tenant"
+                  : (c.tenant_name || "").trim();
+                return (
+                  <div
+                    key={c.id}
+                    className={`px-3 py-2 flex items-center justify-between gap-2 hover:bg-[var(--bg)]/40 ${c.is_likely_pair ? "bg-[var(--wine)]/[0.05]" : ""}`}
                   >
-                    Link
-                  </button>
-                </div>
-              ))}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-[12px] font-mono font-semibold text-[var(--tx)]">
+                          {c.move_code}
+                        </p>
+                        {c.is_likely_pair && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-[var(--wine)] text-white">
+                            Likely pair
+                          </span>
+                        )}
+                        {!c.is_likely_pair && c.same_unit && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider bg-[var(--brd)]/40 text-[var(--tx2)]">
+                            Same unit
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-[var(--tx3)] truncate mt-0.5">
+                        {humanReason(c.pm_reason_code)} · Unit{" "}
+                        {c.unit_number ?? "—"}
+                        {tenantStr ? ` · ${tenantStr}` : ""} ·{" "}
+                        {c.scheduled_date ?? "no date"}
+                      </p>
+                      {/* When a candidate is already linked, surface WHAT
+                          it's linked to so admin can decide whether to
+                          break that pairing first. Was just a flat
+                          "already linked" before, with no context. */}
+                      {c.linked_move_id && (
+                        <p className="text-[10px] text-amber-700 dark:text-amber-300 mt-0.5">
+                          Linked to {c.linked_move_code ?? "another move"} —
+                          unlink that pair first to use this one
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => link(c.id)}
+                      disabled={busy || !!c.linked_move_id}
+                      className="px-3 py-1 rounded-md bg-[var(--wine)] text-white text-[10px] font-semibold hover:opacity-90 disabled:opacity-40"
+                    >
+                      Link
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
