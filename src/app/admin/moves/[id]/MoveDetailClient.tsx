@@ -24,6 +24,7 @@ import EditMoveDetailsModal from "./EditMoveDetailsModal";
 import ScopeChargeModal from "./ScopeChargeModal";
 import MoveInventorySection from "./MoveInventorySection";
 import InventoryChangeRequestPanel from "./InventoryChangeRequestPanel";
+import PmLinkSection from "./PmLinkSection";
 import MoveFilesSection from "./MoveFilesSection";
 import MoveModificationQuickForm from "./MoveModificationQuickForm";
 import MoveSignOffSection from "./MoveSignOffSection";
@@ -1916,6 +1917,25 @@ export default function MoveDetailClient({
             hideHeader
           />
         </CollapsibleSection>
+      )}
+
+      {/* ─── PM linking ─────────────────────────────────────────────
+           For PM moves only: surfaces building + unit + tenant and either
+           shows the linked paired move (e.g. matching move-out for a
+           move-in) or lets coordinator pick one to link. Built 2026-06-27
+           from Oche's "link similar PM moves" ask. */}
+      {!!move.is_pm_move && (
+        <PmLinkSection
+          moveId={move.id}
+          moveCode={move.move_code ?? ""}
+          isPmMove={!!move.is_pm_move}
+          partnerPropertyId={(move as { partner_property_id?: string | null }).partner_property_id ?? null}
+          unitNumber={(move as { unit_number?: string | null }).unit_number ?? null}
+          tenantName={(move as { tenant_name?: string | null }).tenant_name ?? null}
+          buildingName={(move as { partner_property?: { building_name?: string } | null }).partner_property?.building_name ?? null}
+          linkedMoveId={(move as { linked_move_id?: string | null }).linked_move_id ?? null}
+          linkedMoveCode={(move as { linked_move_code?: string | null }).linked_move_code ?? null}
+        />
       )}
 
       {/* ─── Documents ─────────────────────────────────────────────
