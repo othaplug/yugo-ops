@@ -437,11 +437,16 @@ export default function ResidentialLayout({
                   )}
 
                   <div
-                    className={`flex flex-col flex-1 min-h-0 min-w-0 ${isCollapsed ? "mt-0" : "mt-4"}`}
+                    /* mt-6 instead of mt-4 below the price block on
+                       expanded cards: the HST/Total line was hugging the
+                       price too tight in single-tier estate_only render,
+                       leaving zero breathing room above the "+$X HST ·
+                       Total $Y" strip. 2026-06-27 Oche flag. */
+                    className={`flex flex-col flex-1 min-h-0 min-w-0 ${isCollapsed ? "mt-0" : "mt-6"}`}
                   >
                     {!isCollapsed && (
                       <p
-                        className="mb-3 shrink-0 pl-6 text-[12px] md:text-[13px] font-medium tabular-nums"
+                        className="mb-4 shrink-0 pl-6 text-[12px] md:text-[13px] font-medium tabular-nums"
                         style={{ color: taxLineColor }}
                       >
                         +{fmtPrice(t.tax)} HST &middot; Total{" "}
@@ -464,7 +469,16 @@ export default function ResidentialLayout({
                             : tierKey === "estate"
                               ? tierCardAdditions.estate
                               : [];
-                        const intro = (meta.inclusionsIntro ?? "").trim();
+                        // In estate_only mode there's no Signature/Essential
+                        // card visible, so the default "Everything in
+                        // Signature, plus:" intro reads as a dangling reference
+                        // to a card the client can't see. Override to the
+                        // single-tier "Estate includes" framing.
+                        // (2026-06-27, Oche flagged: "Everything in Signature
+                        // plus" is misleading when no Signature card exists.)
+                        const intro = isEstateOnly && tierKey === "estate"
+                          ? "Estate includes:"
+                          : (meta.inclusionsIntro ?? "").trim();
 
                         if (!configFeatures) {
                           const bullets = t.includes
@@ -657,7 +671,39 @@ export default function ResidentialLayout({
                         className="text-center text-[11px] mt-2.5 flex-shrink-0 font-medium"
                         style={{ color: depositColor }}
                       >
-                        {fmtPrice(t.deposit)} deposit to book
+                        {/* Sanity-check the displayed deposit against the
+                            tier's grand total. If the stored value is
+                            implausibly small (< 5% of total), assume it's a
+                            stale write and show the tier-policy floor
+                            instead: 10% Essential / 15% Signature / 25%
+                            Estate, with hard minimums $150 / $250 / $500.
+                            Estate hit this on 2026-06-27 where the card
+                            showed $100 deposit on a $2,091 quote whose
+                            booking flow actually charged $500 — the policy
+                            floor — leaving the client to discover the gap
+                            at the payment step. */}
+                        {fmtPrice(
+                          (() => {
+                            const stored = Number(t.deposit ?? 0);
+                            const total = Number(t.total ?? 0);
+                            if (stored >= total * 0.05) return stored;
+                            const price = Number(t.price ?? 0);
+                            const pct =
+                              tierKey === "essential"
+                                ? 0.1
+                                : tierKey === "signature"
+                                  ? 0.15
+                                  : 0.25;
+                            const min =
+                              tierKey === "essential"
+                                ? 150
+                                : tierKey === "signature"
+                                  ? 250
+                                  : 500;
+                            return Math.max(min, Math.round(price * pct));
+                          })(),
+                        )}{" "}
+                        deposit to book
                       </p>
                     )}
                   </div>

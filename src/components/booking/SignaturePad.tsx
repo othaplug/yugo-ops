@@ -169,23 +169,36 @@ export default function SignaturePad({
           display: "block",
         }}
       />
+      {/* Placeholder contrast bumped 2026-06-27. opacity-50 on white
+          rendered the inkColor (a deep forest) as a faint blur that
+          was unreadable when the surrounding shell was wine/dark
+          (Estate signing). The canvas itself stays white, so we use a
+          neutral slate that reads on white in every shell colour. */}
       {!hasSignature && (
         <span
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[11px] tracking-[0.12em] uppercase opacity-50"
-          style={{ color: inkColor }}
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[11px] tracking-[0.12em] uppercase font-semibold"
+          style={{ color: "#5C5852" }}
         >
           Sign here
         </span>
       )}
-      <div className="mt-1.5 flex items-center justify-between">
-        <p className="text-[10px] text-[var(--tx2)] opacity-70">
+      <div className="mt-2 flex items-center justify-between">
+        {/* Hint + Clear contrast bumped 2026-06-27. Was 70% on var(--tx2)
+            which inherited the surrounding shell colour and went
+            near-invisible on the wine Estate shell. inkColor here is the
+            same colour used for the canvas border + stroke, so the hint
+            stays legible regardless of the shell behind the form. */}
+        <p
+          className="text-[11px] leading-snug"
+          style={{ color: inkColor }}
+        >
           Use your mouse, finger, or pen to sign above.
         </p>
         <button
           type="button"
           onClick={clear}
           disabled={disabled || !hasSignature}
-          className="text-[10px] uppercase tracking-wider font-semibold underline-offset-2 hover:underline disabled:opacity-30 disabled:cursor-not-allowed"
+          className="text-[11px] uppercase tracking-wider font-bold underline-offset-2 hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ color: inkColor }}
         >
           Clear

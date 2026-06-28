@@ -229,7 +229,12 @@ export default function ContractSign({
   estateAgreementChrome = false,
   agreementPremiumShell,
 }: Props) {
-  const [expanded, setExpanded] = useState(false);
+  // Default-open the full agreement (2026-06-27): the consent copy
+  // below the signature claims the client agrees to "everything else
+  // covered in the agreement above," so the agreement must be visible
+  // by default rather than hidden behind a "Read full agreement" toggle
+  // the client may not have clicked.
+  const [expanded, setExpanded] = useState(true);
   const [typedName, setTypedName] = useState("");
   // Drawn signature — PNG data URL or null when canvas is empty.
   // Required alongside typedName: typed name = legal claim of identity +
@@ -610,7 +615,12 @@ export default function ContractSign({
 
   /* ── Main contract + signature layout ── */
   return (
-    <div className={onPremiumShell ? "space-y-5" : "space-y-6"}>
+    // pb-[env(safe-area-inset-bottom)] respects iOS Safari's bottom URL
+    // bar overlap (Fix 2026-06-27: the "Signed on" date was hiding
+    // behind the yugoplus.co address pill on mobile Chrome / Safari).
+    <div
+      className={`${onPremiumShell ? "space-y-5" : "space-y-6"} pb-[env(safe-area-inset-bottom)]`}
+    >
       {!hideAgreementTitleBlock ? (
         <>
           <div className="text-center max-w-2xl mx-auto">
@@ -866,35 +876,99 @@ export default function ContractSign({
           className="text-[11px] leading-relaxed"
           style={{ color: agreementTheme.signBody }}
         >
+          {/* 2026-06-27 (Oche): drop the "you confirm that you have read"
+              wording. The agreement section above this is collapsible and
+              the client may not have expanded it, so asserting they've
+              read it is unsafe. Wording now states they're ACCEPTING the
+              terms — pairing with the explicit "I have read" checkbox
+              moved above the signature inputs immediately below. */}
           {isBinRental ? (
             <>
-              By signing below, you confirm that you have read the{" "}
-              {agreementSignLabel}, accept its terms, and authorize{" "}
-              {companyDisplayName} to deliver and collect your bins as
-              scheduled.
+              By signing below, you accept the {agreementSignLabel} and
+              authorize {companyDisplayName} to deliver and collect your
+              bins as scheduled.
             </>
           ) : q.serviceType === "white_glove" ? (
             <>
-              By signing below, you confirm that you have read the{" "}
-              {agreementSignLabel}, accept its terms, and authorize{" "}
-              {companyDisplayName} to carry out your white glove service as
-              quoted.
+              By signing below, you accept the {agreementSignLabel} and
+              authorize {companyDisplayName} to carry out your white glove
+              service as quoted.
             </>
           ) : isClientLogisticsDeliveryServiceType(q.serviceType) ? (
             <>
-              By signing below, you confirm that you have read the{" "}
-              {agreementSignLabel}, accept its terms, and authorize{" "}
-              {companyDisplayName} to complete this delivery as quoted.
+              By signing below, you accept the {agreementSignLabel} and
+              authorize {companyDisplayName} to complete this delivery as
+              quoted.
             </>
           ) : (
             <>
-              By signing below, you confirm that you have read the{" "}
-              {agreementSignLabel}, accept its terms, and authorize{" "}
-              {companyDisplayName} to carry out the service we described
-              together.
+              By signing below, you accept the {agreementSignLabel} and
+              authorize {companyDisplayName} to carry out the service we
+              described together.
             </>
           )}
         </p>
+
+        {/* ── Consent checkbox FIRST, before signature inputs.
+            Industry-standard ordering: explicit acceptance of the
+            agreement precedes the act of signing. The submit button
+            (canSign) already gates on `agreed`; placing the checkbox
+            here makes the flow read as consent → sign → submit instead
+            of sign → consent (which is legally awkward). */}
+        <label
+          className="flex cursor-pointer select-none items-start gap-3 rounded-md text-[12px] leading-relaxed"
+          style={{ color: agreementTheme.signBody }}
+        >
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="peer sr-only focus:outline-none"
+          />
+          <span className="flex h-[1lh] shrink-0 items-center justify-center">
+            <span
+              className={`inline-flex size-5 items-center justify-center rounded-full border-2 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#2C3E2D] peer-focus-visible:ring-offset-2 ${agreementTheme.focusRingOffsetClass}`}
+              style={{
+                borderColor: agreed
+                  ? onPremiumShell
+                    ? premiumAccent
+                    : FOREST
+                  : "#D5D0C8",
+                backgroundColor: agreed
+                  ? onPremiumShell
+                    ? premiumAccent
+                    : FOREST
+                  : "transparent",
+              }}
+              aria-hidden
+            >
+              {agreed && (
+                <Check
+                  className="w-3.5 h-3.5 text-white"
+                  weight="bold"
+                  aria-hidden
+                />
+              )}
+            </span>
+          </span>
+          <span className="min-w-0 flex-1">
+            {isBinRental ? (
+              <>
+                I have read the <b>{agreementSignLabel}</b> and agree to its
+                terms, including payment, rental timing, card on file,
+                cancellation, what may not go in the bins, and care of the
+                equipment.
+              </>
+            ) : (
+              <>
+                I have read the <b>{agreementSignLabel}</b> and agree to its
+                terms, including your quoted price, payment and cancellation
+                policy, what we cannot transport, liability, and everything
+                else covered in the agreement above.
+              </>
+            )}
+          </span>
+        </label>
 
         <div>
           <label
@@ -948,66 +1022,13 @@ export default function ContractSign({
           />
         </div>
 
-        <label
-          className="flex cursor-pointer select-none items-start gap-3 rounded-md text-[12px] leading-relaxed"
-          style={{ color: agreementTheme.signBody }}
-        >
-          <input
-            type="checkbox"
-            checked={agreed}
-            onChange={(e) => setAgreed(e.target.checked)}
-            className="peer sr-only focus:outline-none"
-          />
-          <span className="flex h-[1lh] shrink-0 items-center justify-center">
-            <span
-              className={`inline-flex size-5 items-center justify-center rounded-full border-2 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#2C3E2D] peer-focus-visible:ring-offset-2 ${agreementTheme.focusRingOffsetClass}`}
-              style={{
-                borderColor: agreed
-                  ? onPremiumShell
-                    ? premiumAccent
-                    : FOREST
-                  : "#D5D0C8",
-                backgroundColor: agreed
-                  ? onPremiumShell
-                    ? premiumAccent
-                    : FOREST
-                  : "transparent",
-              }}
-              aria-hidden
-            >
-              {agreed && (
-                <Check
-                  className="w-3.5 h-3.5 text-white"
-                  weight="bold"
-                  aria-hidden
-                />
-              )}
-            </span>
-          </span>
-          <span className="min-w-0 flex-1">
-            {isBinRental ? (
-              <>
-                I have read the <b>{agreementSignLabel}</b> and agree to its
-                terms, including payment, rental timing, card on file,
-                cancellation, what may not go in the bins, and care of the
-                equipment.
-              </>
-            ) : (
-              <>
-                I have read the <b>{agreementSignLabel}</b> and agree to its
-                terms, including your quoted investment, payment and
-                cancellation, what we cannot transport, liability, and the rest
-                of the agreement above.
-              </>
-            )}
-          </span>
-        </label>
-
+        {/* Date label clarified 2026-06-27: was "Date:" which read
+            ambiguously (signing date vs move date vs effective date). */}
         <p
           className="text-[11px] pl-8"
           style={{ color: agreementTheme.signDate }}
         >
-          Date:{" "}
+          Signed on:{" "}
           {new Date().toLocaleDateString("en-CA", {
             weekday: "long",
             year: "numeric",
