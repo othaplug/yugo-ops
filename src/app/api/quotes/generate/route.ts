@@ -133,12 +133,24 @@ interface InventoryItem {
   origin_index?: number;
 }
 
-/** DB `quotes_recommended_tier_check` allows essential | signature | estate only */
+/** DB `quotes_recommended_tier_check` allows essential | signature | estate | priority.
+ *  Priority was added 2026-06-29 (migration 20260629140000) for office moves.
+ *  Pre-fix this normalizer still coerced 'priority' to 'signature', so every
+ *  office quote landed in the DB with recommended_tier=signature regardless
+ *  of what the operator picked -- and the client page rendered Signature with
+ *  the RECOMMENDED badge instead of Priority. Caught on YG-30347. */
 function normalizeRecommendedTierForDb(
   raw: string | undefined | null
-): "essential" | "signature" | "estate" {
+): "essential" | "signature" | "estate" | "priority" {
   const t = (raw ?? "signature").toString().toLowerCase().trim();
-  if (t === "essential" || t === "signature" || t === "estate") return t;
+  if (
+    t === "essential" ||
+    t === "signature" ||
+    t === "estate" ||
+    t === "priority"
+  ) {
+    return t;
+  }
   if (t === "curated" || t === "essentials") return "essential";
   if (t === "premier") return "signature";
   return "signature";
@@ -254,7 +266,12 @@ interface QuoteInput {
    *   estate_only      — single-tier Estate render
    * Unknown values silently fall back to 'comparison' at persistence.
    */
-  presentation_mode?: "comparison" | "estate_featured" | "estate_only";
+  presentation_mode?:
+    | "comparison"
+    | "estate_featured"
+    | "estate_only"
+    | "priority_featured"
+    | "priority_only";
   /**
    * R2: Consignee separation. When the quote's billing contact is
    * different from the end recipient (B2B drop-ship), these fields carry
@@ -6024,34 +6041,53 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         quoteOvr !== undefined
           ? input.quote_price_override_reason_code?.trim() || null
           : null,
-      // Presentation mode — only respected when recommended_tier is
-      // 'estate' and service is residential/long-distance; otherwise
-      // forced to 'comparison' so the column never carries a
-      // non-meaningful state for non-Estate quotes.
+      // Presentation mode — gated on (recommended_tier, service_type)
+      // pairing so the column never carries a non-meaningful state.
       //
-      // Default for Estate quotes: when the admin form doesn't send an
-      // explicit presentation_mode, fall back to 'estate_featured' (not
-      // 'comparison'). Reason: an Estate recommendation already says
-      // "this is the right tier for the client" — comparison mode then
-      // anchors the email on Essential's lower price, which is the
-      // opposite of what the operator's recommendation intended. Older
-      // quotes that explicitly chose 'comparison' still get it.
+      // Residential / long-distance: only respected when rec tier =
+      // 'estate'; valid modes are comparison / estate_featured /
+      // estate_only. Default = estate_featured (rec already says
+      // "this is the right tier"; comparison would anchor the client
+      // on Essential's lower price, opposite of what the operator
+      // intended).
+      //
+      // Office: only respected when rec tier = 'priority'; valid
+      // modes are comparison / priority_featured / priority_only.
+      // Default = priority_featured. Before this gate accepted the
+      // office shape, every office quote landed with
+      // presentation_mode='comparison' regardless of the operator's
+      // pick -- caught on YG-30347 where the operator chose
+      // 'Priority only' but the client page showed all three tiers
+      // side-by-side. (Operator: 'selecting priority still doesnt
+      // show just priority as the only one.')
       presentation_mode: (() => {
         const requested = input.presentation_mode;
-        const tierOk =
-          normalizeRecommendedTierForDb(input.recommended_tier) === "estate";
-        const serviceOk =
-          svcType === "local_move" || svcType === "long_distance";
-        if (!tierOk || !serviceOk) return "comparison";
-        if (
-          requested === "comparison" ||
-          requested === "estate_featured" ||
-          requested === "estate_only"
-        ) {
-          return requested;
+        const normTier = normalizeRecommendedTierForDb(input.recommended_tier);
+        const isResidential =
+          (svcType === "local_move" || svcType === "long_distance") &&
+          normTier === "estate";
+        const isOffice = svcType === "office_move" && normTier === "priority";
+        if (isResidential) {
+          if (
+            requested === "comparison" ||
+            requested === "estate_featured" ||
+            requested === "estate_only"
+          ) {
+            return requested;
+          }
+          return "estate_featured";
         }
-        // No explicit mode + Estate recommendation = estate_featured.
-        return "estate_featured";
+        if (isOffice) {
+          if (
+            requested === "comparison" ||
+            requested === "priority_featured" ||
+            requested === "priority_only"
+          ) {
+            return requested;
+          }
+          return "priority_featured";
+        }
+        return "comparison";
       })(),
       // R2: declared cargo value at quote time (mirrors moves.declared_value).
       declared_value:
