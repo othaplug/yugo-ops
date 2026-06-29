@@ -2223,7 +2223,26 @@ export default function QuotePageClient({
                 tiers={isOfficeTiered ? tiers : null}
                 selectedTier={selectedTier}
                 onSelectTier={handleSelectTier}
-                recommendedTier={isOfficeTiered ? "priority" : null}
+                recommendedTier={
+                  isOfficeTiered
+                    ? ((quote as { recommended_tier?: string | null }).recommended_tier as
+                        | "essential"
+                        | "signature"
+                        | "priority"
+                        | null) ?? "priority"
+                    : null
+                }
+                presentationMode={(() => {
+                  const m = String(
+                    (quote as { presentation_mode?: string | null })
+                      .presentation_mode ?? "",
+                  )
+                    .trim()
+                    .toLowerCase();
+                  if (m === "priority_only") return "priority_only";
+                  if (m === "priority_featured") return "priority_featured";
+                  return "comparison";
+                })()}
                 premiumShellKind={shellKind}
                 onConfirm={handleConfirm}
                 confirmed={confirmed}

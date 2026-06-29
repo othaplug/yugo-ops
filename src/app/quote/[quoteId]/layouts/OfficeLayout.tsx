@@ -42,6 +42,13 @@ interface Props {
   recommendedTier?: string | null;
   onConfirm: () => void;
   confirmed: boolean;
+  /** How the client sees the tier ladder.
+   *   comparison         -- all three side-by-side (default)
+   *   priority_featured  -- all three, but Priority is rendered first
+   *                         as a hero card with the wine prominence
+   *   priority_only      -- only the Priority card renders
+   *  Mirror of residential's estate_featured / estate_only modes. */
+  presentationMode?: "comparison" | "priority_featured" | "priority_only";
   /** Premium page shell (wine when Priority selected, green for Signature). The
    *  scope/crew sections below the cards adapt their ink so dark-on-dark text
    *  doesn't disappear on the deep shell. */
@@ -129,11 +136,32 @@ export default function OfficeLayout({
   recommendedTier,
   onConfirm,
   confirmed,
+  presentationMode = "comparison",
   premiumShellKind = "none",
 }: Props) {
   const f = quote.factors_applied as Record<string, unknown> | null;
   const officeTiered =
     !!tiers && OFFICE_TIER_ORDER.every((k) => tiers[k] && tiers[k].price > 0);
+  // Split tiers by presentation mode.
+  //   comparison        -> all three side-by-side, no hero
+  //   priority_featured -> Priority as HERO (one big card),
+  //                        Essential + Signature in a collapsible
+  //                        "Compare with other packages" below
+  //   priority_only     -> Priority hero, nothing else (no compare)
+  // Mirrors how residential estate_featured / estate_only work.
+  const isPriorityFeatured =
+    officeTiered && presentationMode === "priority_featured";
+  const isPriorityOnly =
+    officeTiered && presentationMode === "priority_only";
+  const heroTiers: readonly string[] =
+    !officeTiered
+      ? OFFICE_TIER_ORDER
+      : isPriorityOnly || isPriorityFeatured
+        ? ["priority"]
+        : OFFICE_TIER_ORDER;
+  const compareTiers: readonly string[] = isPriorityFeatured
+    ? ["essential", "signature"]
+    : [];
 
   // When a premium shell is on (Priority = wine, Signature = green), the page
   // background is deep, so the scope/crew sections below the cards must use
@@ -212,8 +240,14 @@ export default function OfficeLayout({
             Three flat-rate packages. The difference is how much your team does
             versus how much Yugo handles.
           </p>
-          <div className="grid md:grid-cols-3 gap-4">
-            {OFFICE_TIER_ORDER.map((key) => {
+          <div
+            className={`grid gap-4 ${
+              heroTiers.length === 1
+                ? "md:grid-cols-1 max-w-md mx-auto"
+                : "md:grid-cols-3"
+            }`}
+          >
+            {heroTiers.map((key) => {
               const t = tiers[key];
               if (!t) return null;
               const isSelected = selectedTier === key;
@@ -342,6 +376,63 @@ export default function OfficeLayout({
               );
             })}
           </div>
+
+          {/* ── Compare with other packages — priority_featured only ──
+             Renders Essential + Signature as smaller secondary cards
+             below the Priority hero. Mirrors residential
+             estate_featured's compare-row. */}
+          {compareTiers.length > 0 && (
+            <div className="mt-8">
+              <p
+                className="text-[10px] font-bold uppercase tracking-[0.14em] mb-3 text-center"
+                style={{ color: mutedColor }}
+              >
+                Compare with other packages
+              </p>
+              <div className="grid md:grid-cols-2 gap-3">
+                {compareTiers.map((key) => {
+                  const t = tiers[key];
+                  if (!t) return null;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => onSelectTier?.(key)}
+                      className="text-left p-4 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 transition-colors"
+                    >
+                      <div className="flex items-baseline justify-between gap-2 mb-1">
+                        <span
+                          className="text-[12px] font-bold uppercase tracking-[0.12em]"
+                          style={{ color: bodyColor }}
+                        >
+                          {TIER_LABEL[key]}
+                        </span>
+                        <span
+                          className="text-[18px] font-bold tabular-nums"
+                          style={{ color: bodyColor }}
+                        >
+                          {fmtPrice(t.price)}
+                        </span>
+                      </div>
+                      <p
+                        className="text-[11px] leading-snug"
+                        style={{ color: mutedColor }}
+                      >
+                        {TIER_TAGLINE[key]}
+                      </p>
+                      <p
+                        className="text-[10px] mt-2"
+                        style={{ color: subtleColor }}
+                      >
+                        {fmtPrice(t.deposit)} deposit · {t.includes.length}{" "}
+                        inclusions · Tap to switch
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       ) : null}
 

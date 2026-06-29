@@ -74,6 +74,7 @@ import JobScopeSection, {
   validateInboundDraft,
 } from "./JobScopeSection";
 import TierPriceOverrideEditor from "./TierPriceOverrideEditor";
+import OfficeQuoteStudio from "./OfficeQuoteStudio";
 import {
   WhiteGloveItemsEditor,
   createDefaultWhiteGloveItem,
@@ -1998,9 +1999,14 @@ export default function QuoteFormClient({
     { description: string; size: "small" | "medium" | "large" | "oversized" }[]
   >([]);
 
-  // Recommended tier (coordinator judgment)
+  // Recommended tier (coordinator judgment).
+  // 'priority' added 2026-06-29 for the office quote studio — the
+  // office third tier (parallel to residential estate). Pre-existing
+  // residential / event / labour flows still only set
+  // essential | signature | estate; only the office studio sets
+  // 'priority'.
   const [recommendedTier, setRecommendedTier] = useState<
-    "essential" | "signature" | "estate"
+    "essential" | "signature" | "estate" | "priority"
   >("signature");
 
   /** Pre-tax override sent to /api/quotes/generate (not used for B2B / bin rental). */
@@ -2009,7 +2015,11 @@ export default function QuoteFormClient({
   // surfaced in the admin UI when recommended_tier is Estate; otherwise
   // forced to 'comparison' server-side at persistence.
   const [presentationMode, setPresentationMode] = useState<
-    "comparison" | "estate_featured" | "estate_only"
+    | "comparison"
+    | "estate_featured"
+    | "estate_only"
+    | "priority_featured"
+    | "priority_only"
   >("comparison");
   // Per-tier price overrides. Distinct from the global quote_price_override
   // above — that one scales all three tiers proportionally; this map
@@ -5210,15 +5220,22 @@ export default function QuoteFormClient({
             base.tier_price_overrides = cleanedOverrides;
           }
         }
-        // Presentation mode — only meaningful when Estate is recommended
-        // on residential/long-distance. Server forces 'comparison' for
-        // everything else; we still send the local state so the audit
-        // trail is consistent.
+        // Presentation mode — sent when meaningful:
+        //   - residential/long-distance with Estate recommended → estate_* modes
+        //   - office_move (any tier recommended) → comparison / priority_* modes
+        // Server validates against quotes_presentation_mode_check.
         if (
           (serviceType === "local_move" || serviceType === "long_distance") &&
           recommendedTier === "estate"
         ) {
           base.presentation_mode = presentationMode;
+        } else if (serviceType === "office_move") {
+          // Office always sends a mode; defaults to 'comparison'.
+          const m = presentationMode;
+          base.presentation_mode =
+            m === "comparison" || m === "priority_featured" || m === "priority_only"
+              ? m
+              : "comparison";
         }
       }
 
@@ -11232,6 +11249,86 @@ export default function QuoteFormClient({
                 </div>
               )}
 
+          {/* ── Office Quote Studio ──
+             New 2026-06-29: replaces the residential TierPriceOverrideEditor
+             for office_move only. Shows recommended-tier picker + presentation-
+             mode picker + three tier cards (engine price, override, reason,
+             star) as a single canvas. Residential / long_distance keep the
+             original TierPriceOverrideEditor below this block. */}
+          {serviceType === "office_move" &&
+            (() => {
+              const tierPrices: Partial<Record<string, number>> = {};
+              const resultTiers = quoteResult?.tiers as
+                | Record<string, { price?: number }>
+                | undefined;
+              for (const tk of ["essential", "signature", "priority"] as const) {
+                const p = resultTiers?.[tk]?.price;
+                if (typeof p === "number") tierPrices[tk] = p;
+              }
+              // Map our tierPriceOverrides state (which the editor wrote
+              // into) to the studio's shape — same data, simpler keys.
+              const studioOverrides: Record<
+                string,
+                { price?: string; reason?: string }
+              > = {};
+              for (const tk of ["essential", "signature", "priority"] as const) {
+                const entry = tierPriceOverrides[tk];
+                if (entry) {
+                  studioOverrides[tk] = {
+                    price: entry.price ?? "",
+                    reason: entry.reason ?? "",
+                  };
+                }
+              }
+              const recOffice =
+                recommendedTier === "essential" ||
+                recommendedTier === "signature" ||
+                recommendedTier === "priority"
+                  ? recommendedTier
+                  : "priority";
+              const presOffice =
+                presentationMode === "comparison" ||
+                presentationMode === "priority_featured" ||
+                presentationMode === "priority_only"
+                  ? presentationMode
+                  : "comparison";
+              return (
+                <div className="px-0 sm:px-0 pb-1 pt-4 mt-2">
+                  <OfficeQuoteStudio
+                    enginePrices={tierPrices as Record<string, number>}
+                    overrides={studioOverrides}
+                    onOverridesChange={(next) => {
+                      // Reshape back into the tierPriceOverrides shape. The
+                      // outer state type only recognizes the four valid tier
+                      // keys -- guard against any future studio additions.
+                      const allowed = new Set([
+                        "essential",
+                        "signature",
+                        "priority",
+                        "estate",
+                      ]);
+                      const reshaped: typeof tierPriceOverrides = {};
+                      for (const [tk, v] of Object.entries(next)) {
+                        if (!allowed.has(tk)) continue;
+                        (reshaped as Record<string, { price: string; reason: string }>)[
+                          tk
+                        ] = {
+                          price: v.price ?? "",
+                          reason: v.reason ?? "",
+                        };
+                      }
+                      setTierPriceOverrides(reshaped);
+                    }}
+                    recommendedTier={recOffice}
+                    onRecommendedTierChange={(t) => setRecommendedTier(t)}
+                    presentationMode={presOffice}
+                    onPresentationModeChange={(m) => setPresentationMode(m)}
+                    hasGenerated={!!quoteResult?.tiers}
+                  />
+                </div>
+              );
+            })()}
+
           {/* Per-tier price override — residential only.
              Distinct from the global override below: per-tier sets an
              absolute price on a single tier (e.g. Estate to $6,000)
@@ -11240,14 +11337,8 @@ export default function QuoteFormClient({
              set (per-tier applies first, then global ratio relative to
              whatever Essential ends up at). */}
           {(serviceType === "local_move" ||
-            serviceType === "long_distance" ||
-            (serviceType === "office_move" && !!quoteResult?.tiers)) &&
+            serviceType === "long_distance") &&
             (() => {
-              // Engine + saved prices keyed off the active tier set, so office
-              // surfaces Essential/Signature/Priority and residential
-              // Essential/Signature/Estate. Both mirror quoteResult.tiers (the
-              // last generated quote); they diverge the moment an override is
-              // typed, which drives the editor's "Pending · regenerate" badge.
               const tierPrices: Partial<Record<string, number>> = {};
               const resultTiers = quoteResult?.tiers as
                 | Record<string, { price?: number }>
