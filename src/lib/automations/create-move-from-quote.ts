@@ -45,8 +45,16 @@ export interface CreateMoveResult {
   relatedMoveCount?: number;
 }
 
-/** DB-level allowed tier slugs — must match moves_tier_selected_check constraint. */
-const VALID_MOVE_TIERS = new Set(["essential", "signature", "estate"]);
+/** DB-level allowed tier slugs — must match moves_tier_selected_check constraint.
+ *  'priority' is the office-move third tier (parallel to residential 'estate'),
+ *  added 2026-06-29 alongside migration
+ *  20260629150000_moves_tier_selected_allow_priority.sql. */
+const VALID_MOVE_TIERS = new Set([
+  "essential",
+  "signature",
+  "estate",
+  "priority",
+]);
 
 const SERVICE_TO_MOVE_TYPE: Record<string, string> = {
   local_move: "residential",

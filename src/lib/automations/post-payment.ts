@@ -66,6 +66,7 @@ const TIER_LABELS: Record<string, string> = {
   curated: "Essential",
   signature: "Signature",
   estate: "Estate",
+  priority: "Priority",
   custom: "Standard",
   // legacy keys for moves created before the rename
   essentials: "Essential",
@@ -563,6 +564,12 @@ export async function runPostPaymentActions(
           curated: essentialConfirmationEmail,
           signature: signatureConfirmationEmail,
           estate: estateConfirmationEmail,
+          // Office moves bookable on the Priority tier. No dedicated
+          // Priority email template yet (Priority = office, Estate =
+          // residential — same "premium / we handle everything" tone
+          // so the existing Estate template works as a fallback until
+          // a tailored Priority copy block ships).
+          priority: estateConfirmationEmail,
           // legacy keys for moves created before the rename
           essentials: essentialConfirmationEmail,
           premier: signatureConfirmationEmail,
