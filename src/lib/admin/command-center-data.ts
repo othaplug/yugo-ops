@@ -11,6 +11,7 @@ import {
   utcInstantForCalendarDateInTz,
 } from "@/lib/business-timezone"
 import { formatCompactCurrency } from "@/lib/format-currency"
+import { jobStartMinutes } from "@/lib/schedule-time"
 import { toTitleCase } from "@/lib/format-text"
 import {
   pickLatestTrackingSession,
@@ -74,6 +75,7 @@ function commandCenterDeliveryTime(d: Record<string, unknown>): string {
   if (b) return b
   return "TBD"
 }
+
 
 function mergeRowsById(
   primary: Record<string, unknown>[],
@@ -549,11 +551,15 @@ export const loadCommandCenterData = async () => {
         : null
     const wb = m.weather_brief
     const weatherBrief = isMoveWeatherBrief(wb) ? wb : null
+    // arrival_window is the authoritative customer-facing window shown on the
+    // move detail page. scheduled_time is a denormalized field that can go
+    // stale (e.g. MV-30315: scheduled_time "8 AM to 10 AM" while arrival_window
+    // is "Early Morning (6:00 AM – 8:00 AM)"), so prefer arrival_window for
+    // both display and ordering. (time_slot is not a real moves column.)
     const moveTimeRaw =
+      m.arrival_window ||
       m.scheduled_time ||
-      m.time_slot ||
-      m.preferred_time ||
-      m.arrival_window
+      m.preferred_time
     const moveTime =
       moveTimeRaw != null && String(moveTimeRaw).trim() !== ""
         ? String(moveTimeRaw).trim()
@@ -607,11 +613,7 @@ export const loadCommandCenterData = async () => {
     ...activeMoves
       .filter((m) => scheduleDateYmd(m) === today)
       .map(mapMove),
-  ].sort((a, b) => {
-    const ta = a.time.replace(/[^0-9:]/g, "")
-    const tb = b.time.replace(/[^0-9:]/g, "")
-    return ta.localeCompare(tb)
-  })
+  ].sort((a, b) => jobStartMinutes(a.time) - jobStartMinutes(b.time))
 
   const upcomingJobs: CommandCenterJob[] = [
     ...activeDeliveries
@@ -630,7 +632,10 @@ export const loadCommandCenterData = async () => {
     .sort((a, b) => {
       if (!a.date) return 1
       if (!b.date) return -1
-      return a.date.localeCompare(b.date)
+      // Order by service date, then by start time within the same day.
+      const byDate = a.date.localeCompare(b.date)
+      if (byDate !== 0) return byDate
+      return jobStartMinutes(a.time) - jobStartMinutes(b.time)
     })
     .slice(0, 15)
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { CaretDown as ChevronDown, CaretRight as ChevronRight } from "@phosphor-icons/react";
 import JobCard, { type DispatchJob } from "./JobCard";
+import { jobStartMinutes } from "@/lib/schedule-time";
 
 const ACTIVE_STATUSES = [
   "en_route",
@@ -46,8 +47,10 @@ function sortJobs(jobs: DispatchJob[]): DispatchJob[] {
   const completed = unique.filter((j) => bucketOf(j) === "completed");
 
   const byEta = (a: DispatchJob, b: DispatchJob) => (a.etaMinutes ?? 999) - (b.etaMinutes ?? 999);
+  // Order by actual start time (parsed to minutes), not string compare — a
+  // 6–8 AM window must sort before an 8–10 AM one.
   const byTime = (a: DispatchJob, b: DispatchJob) =>
-    (a.scheduledTime || "99:99").localeCompare(b.scheduledTime || "99:99");
+    jobStartMinutes(a.scheduledTime) - jobStartMinutes(b.scheduledTime);
 
   return [
     ...unassigned.sort(byTime),

@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
 
   /** Avoid columns missing on some prod DBs (`from_postal_code`, `recurring_schedule_id`, `notes`). */
   const moveSelect =
-    "id, move_code, client_name, from_address, to_address, scheduled_date, scheduled_time, status, move_type, crew_id, event_group_id, event_phase, event_name, weather_brief, weather_alert, completed_at, from_access, to_access, access_notes, quote_id";
+    "id, move_code, client_name, from_address, to_address, scheduled_date, scheduled_time, arrival_window, preferred_time, status, move_type, crew_id, event_group_id, event_phase, event_name, weather_brief, weather_alert, completed_at, from_access, to_access, access_notes, quote_id";
   const deliverySelect =
     "id, delivery_number, customer_name, client_name, pickup_address, delivery_address, scheduled_date, time_slot, delivery_window, scheduled_start, preferred_time, status, items, crew_id, booking_type, created_by_source, pickup_access, delivery_access";
 
@@ -209,8 +209,15 @@ export async function GET(req: NextRequest) {
   const jobs: Job[] = [];
 
   for (const m of moves) {
-    const time = m.scheduled_time || "Time TBD";
-    const moveSortMinutes = parseTimeLoose(m.scheduled_time) ?? NO_TIME_SORT;
+    // arrival_window is the authoritative customer-facing window (shown on the
+    // move detail page); scheduled_time can be stale (e.g. MV-30315: arrival
+    // window "Early Morning (6:00 AM – 8:00 AM)" but scheduled_time "8 AM to
+    // 10 AM"). Prefer it for both the displayed time and the sort key so the
+    // crew sees the correct window and jobs order by real start time.
+    const moveTimeSource =
+      m.arrival_window || m.scheduled_time || m.preferred_time;
+    const time = moveTimeSource || "Time TBD";
+    const moveSortMinutes = parseTimeLoose(moveTimeSource) ?? NO_TIME_SORT;
     const eventPhase = (m.event_phase as string | null) || null;
     const eventName = (m.event_name as string | null) || null;
     const eventJobTypeLabel = eventName
