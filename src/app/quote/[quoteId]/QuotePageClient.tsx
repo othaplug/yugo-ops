@@ -2902,9 +2902,19 @@ export default function QuotePageClient({
                   companyLegalName={branding.companyLegal}
                   companyDisplayName={branding.brand}
                   agreementPremiumShell={
-                    isEstateFlow
+                    // Office Priority shares the wine shell with Estate.
+                    // Until 2026-06-29 this prop was gated on isEstateFlow
+                    // (residential only), so office Priority Reserve-
+                    // Your-Date rendered with FOREST/WINE colors on a
+                    // WINE page background -- everything wine-on-wine,
+                    // invisible. Oche flagged: "the wine and green text
+                    // can not be seen. make them the cream/offwhite
+                    // colour".
+                    isEstateFlow ||
+                    (isOfficeTiered && selectedTier === "priority")
                       ? "wine"
-                      : isSignatureFlow || isWhiteGlove
+                      : isSignatureFlow || isWhiteGlove ||
+                          (isOfficeTiered && selectedTier === "signature")
                         ? "signature"
                         : undefined
                   }
