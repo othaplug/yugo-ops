@@ -681,10 +681,20 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
         const serviceLabel = SERVICE_LABELS[q.service_type] ?? q.service_type;
         const firstName = contact.name ? contact.name.split(" ")[0] : "";
         const extras = followupEmailExtras(baseUrl, q.quote_id, token, fuRow.id);
+        // Service-aware subject — Jenny Belanger / YG-30337 received
+        // "Your move is tomorrow" on a B2B delivery. Use "delivery"
+        // copy when service_type is B2B.
+        const stLower = String(q.service_type ?? "").toLowerCase();
+        const isDeliveryService =
+          stLower === "b2b_delivery" ||
+          stLower === "b2b_oneoff" ||
+          stLower === "b2b_one_off" ||
+          stLower === "b2b_outbound_stage";
+        const subjectNoun = isDeliveryService ? "delivery" : "move";
         const subject =
           daysUntilMove <= 1
-            ? `Your move is ${daysUntilMove === 0 ? "today" : "tomorrow"} — confirm now`
-            : `Your move is ${daysUntilMove} days away`;
+            ? `Your ${subjectNoun} is ${daysUntilMove === 0 ? "today" : "tomorrow"} — confirm now`
+            : `Your ${subjectNoun} is ${daysUntilMove} days away`;
 
         const res = await sendEmail({
           to: contact.email,
@@ -717,6 +727,7 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
               quoteId: q.quote_id,
               firstName,
               daysUntilMove,
+              serviceType: q.service_type ?? null,
             }).catch(() => {});
           }
         } else {

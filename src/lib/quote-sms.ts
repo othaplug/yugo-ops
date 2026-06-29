@@ -130,6 +130,9 @@ export async function sendQuoteUrgencySms(params: {
   quoteId: string;
   firstName?: string;
   daysUntilMove: number;
+  /** Service type so B2B deliveries get "your delivery" copy, not
+   *  "your move". Optional — defaults to move-language. */
+  serviceType?: string | null;
 }): Promise<{ ok: boolean; skipped?: string }> {
   const smsEnabled = (await getConfig("sms_enabled", "true")).toLowerCase() === "true";
   if (!smsEnabled) return { ok: true, skipped: "sms_disabled" };
@@ -143,6 +146,7 @@ export async function sendQuoteUrgencySms(params: {
     firstName: params.firstName,
     quoteUrl: params.quoteUrl,
     daysUntilMove: params.daysUntilMove,
+    serviceType: params.serviceType ?? null,
   });
 
   const result = await sendSMS(to, body);

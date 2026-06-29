@@ -1452,20 +1452,42 @@ export function quoteFollowupUrgencyEmail(d: QuoteFollowupUrgencyData): string {
       : d.daysUntilMove === 1
         ? "tomorrow"
         : `${d.daysUntilMove} days away`;
+  // Service-aware noun: deliveries should never read as "moves". Oche
+  // flagged 2026-06-29 on Jenny Belanger (YG-30337, B2B one-off): the
+  // urgency follow-up read "Jenny, your move is tomorrow" / "CONFIRM
+  // MY MOVE" on what is plainly a delivery, with a "anything changed
+  // about your move?" line below. Picks "delivery" when the service
+  // label includes "Delivery" / "B2B" / "Commercial" (matches our
+  // canonical labels from displayLabels.ts SERVICE_TYPE_LABELS), else
+  // keeps the existing "move" copy.
+  const slLower = d.serviceLabel.toLowerCase();
+  const isDelivery =
+    slLower.includes("delivery") ||
+    slLower.includes("b2b") ||
+    slLower.includes("commercial");
+  const noun = isDelivery ? "delivery" : "move";
+  const Noun = isDelivery ? "Delivery" : "Move";
   const heading = name
-    ? `${name}, your move is ${dLabel}.`
-    : `Your move is ${dLabel}.`;
+    ? `${name}, your ${noun} is ${dLabel}.`
+    : `Your ${noun} is ${dLabel}.`;
+  // Crew/truck phrasing also off for deliveries (driver, not crew)
+  const confirmLine = isDelivery
+    ? "To secure your delivery slot, we need your confirmation now."
+    : "To secure your crew and truck, we need your confirmation now.";
+  const lockLine = isDelivery
+    ? "Availability for that date is limited. Once you confirm, your driver and truck are locked in."
+    : "Availability for that date is limited. Once you confirm, your crew and truck are locked in.";
   const body =
     d.daysUntilMove <= 1
-      ? `Your ${d.serviceLabel.toLowerCase()} is scheduled for <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. To secure your crew and truck, we need your confirmation now.`
-      : `Your ${d.serviceLabel.toLowerCase()} is scheduled for <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. Availability for that date is limited. Once you confirm, your crew and truck are locked in.`;
+      ? `Your ${slLower} is scheduled for <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. ${confirmLine}`
+      : `Your ${slLower} is scheduled for <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. ${lockLine}`;
 
   return equinoxPromoLayout(
     `
     <div role="heading" aria-level="1" style="${PROMO_CREAM_H1}">${heading}</div>
     <p style="${PROMO_CREAM_P}">${body}<br/><br/><span style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};font-weight:700;letter-spacing:0.04em;text-transform:uppercase;font-size:13px;">${d.daysUntilMove <= 1 ? "Confirm today" : `${d.daysUntilMove} days to confirm`}</span></p>
-    ${equinoxPromoCta(d.quoteUrl, "Confirm My Move")}
-    ${equinoxPromoFinePrint(`Anything changed about your move? Email <a href="mailto:${getClientSupportEmail()}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;">${getClientSupportEmail()}</a> and we will update your quote.`)}
+    ${equinoxPromoCta(d.quoteUrl, `Confirm My ${Noun}`)}
+    ${equinoxPromoFinePrint(`Anything changed about your ${noun}? Email <a href="mailto:${getClientSupportEmail()}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;">${getClientSupportEmail()}</a> and we will update your quote.`)}
     ${quoteFollowupDeclineAndPixelFooter(d.declineUrl, d.openPixelSrc)}
   `,
     "quote",

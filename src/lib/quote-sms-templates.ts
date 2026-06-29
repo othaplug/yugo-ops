@@ -56,14 +56,28 @@ export function buildQuoteUrgencySmsBody(params: {
   firstName?: string | null;
   quoteUrl: string;
   daysUntilMove: number;
+  /** Optional service type so B2B deliveries don't get sent "your move"
+   *  copy. Defaults to "move" wording for backwards compat. Oche flagged
+   *  2026-06-29 on Jenny Belanger / YG-30337. */
+  serviceType?: string | null;
 }): string {
   const name = params.firstName?.trim() || "there";
   const d = Math.max(0, params.daysUntilMove);
   const window =
     d <= 0 ? "today" : d === 1 ? "tomorrow" : `in ${d} days`;
+  const st = (params.serviceType || "").toLowerCase();
+  const isDelivery =
+    st === "b2b_delivery" ||
+    st === "b2b_oneoff" ||
+    st === "b2b_one_off" ||
+    st === "b2b_outbound_stage";
+  const noun = isDelivery ? "delivery" : "move";
+  const confirmLine = isDelivery
+    ? `we need to confirm your driver and truck.`
+    : `we need to confirm your crew and truck.`;
   return [
     `Hi ${name},`,
-    `Your Yugo move is ${window} — we need to confirm your crew and truck.`,
+    `Your Yugo ${noun} is ${window} — ${confirmLine}`,
     `Lock it in:\n${params.quoteUrl}`,
     `Or call (647) 370-4525.`,
   ].join("\n\n");

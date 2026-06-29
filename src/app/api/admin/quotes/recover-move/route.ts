@@ -4,6 +4,10 @@ import { createMoveFromQuote } from "@/lib/automations/create-move-from-quote";
 import { createDeliveryFromB2BQuote } from "@/lib/automations/create-delivery-from-b2b-quote";
 import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
 import { requireStaff } from "@/lib/api-auth";
+import {
+  issueDeliveryTrackingTokens,
+  sendB2BTrackingNotifications,
+} from "@/lib/delivery-tracking-tokens";
 
 /**
  * POST /api/admin/quotes/recover-move
@@ -44,15 +48,37 @@ export async function POST(req: Request) {
   if (isB2BDeliveryQuoteServiceType(svc)) {
     const { data: existingDel } = await db
       .from("deliveries")
-      .select("id, delivery_number")
+      .select("id, delivery_number, tracking_token, contact_email, customer_email")
       .eq("source_quote_id", quote.id)
       .maybeSingle();
     if (existingDel) {
+      // Delivery exists -- but if the original payment hand-off failed
+      // (the bug that left Jenny Belanger YG-30337 stranded for an hour
+      // before recovery), the tracking tokens + confirmation emails may
+      // never have fired. Issue tokens if missing and re-send the
+      // B2B tracking notifications so the customer actually gets their
+      // confirmation + tracking link.
+      let tokenIssued = false;
+      if (!existingDel.tracking_token) {
+        await issueDeliveryTrackingTokens(existingDel.id);
+        tokenIssued = true;
+      }
+      let notificationsFired = false;
+      try {
+        await sendB2BTrackingNotifications(existingDel.id);
+        notificationsFired = true;
+      } catch (err) {
+        console.error("[recover-move] sendB2BTrackingNotifications:", err);
+      }
       return NextResponse.json({
         success: true,
         delivery_id: existingDel.id,
         delivery_number: existingDel.delivery_number,
-        message: "Delivery already exists",
+        tracking_token_issued: tokenIssued,
+        notifications_fired: notificationsFired,
+        message: tokenIssued || notificationsFired
+          ? "Delivery already exists -- issued tracking tokens + re-fired confirmation notifications."
+          : "Delivery already exists",
       });
     }
   } else {
