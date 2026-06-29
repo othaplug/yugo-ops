@@ -256,12 +256,22 @@ export default function OfficeLayout({
               const th = cardTheme(key);
 
               // Additive includes: show the delta over the previous tier.
+              // EXCEPT in priority_only mode -- when Priority is the only
+              // visible card the client has no Signature card to read
+              // "everything in" from, so the additive framing dangles. Show
+              // Priority's full inclusion list as a standalone "Priority
+              // includes:" block instead. Same fix residential made for
+              // estate_only on 2026-06-27 (operator: "the client needs to
+              // see everything, not 'plus' a card that isn't there").
+              const showFullList = isPriorityOnly && key === "priority";
               const prevKey =
-                key === "signature"
-                  ? "essential"
-                  : key === "priority"
-                    ? "signature"
-                    : null;
+                showFullList
+                  ? null
+                  : key === "signature"
+                    ? "essential"
+                    : key === "priority"
+                      ? "signature"
+                      : null;
               const prevSet = new Set(prevKey ? tiers[prevKey]?.includes ?? [] : []);
               const shown = prevKey
                 ? t.includes.filter(
@@ -330,14 +340,21 @@ export default function OfficeLayout({
                     )}
 
                     <div className="mt-4 space-y-2 flex-1">
-                      {prevKey && (
+                      {prevKey ? (
                         <p
                           className="text-[10px] font-bold uppercase tracking-[0.1em]"
                           style={{ color: th.muted }}
                         >
                           Everything in {TIER_LABEL[prevKey]}, plus
                         </p>
-                      )}
+                      ) : showFullList ? (
+                        <p
+                          className="text-[10px] font-bold uppercase tracking-[0.1em]"
+                          style={{ color: th.muted }}
+                        >
+                          {TIER_LABEL[key]} includes
+                        </p>
+                      ) : null}
                       {shown.map((item, i) => (
                         <div key={i} className="flex items-start gap-2">
                           <Check
@@ -436,6 +453,170 @@ export default function OfficeLayout({
         </div>
       ) : null}
 
+      {/* ── Your Move Includes (Priority hero modes only) ──
+         When the client sees only Priority (priority_only) or
+         Priority dominant (priority_featured), reinforce the value
+         with a fully-spelled-out inclusion list and a phased
+         timeline. Mirrors the residential "Your Move Includes"
+         pattern for Estate. Suppressed for the comparison layout
+         since the side-by-side cards already do this work. */}
+      {officeTiered &&
+        (isPriorityOnly || isPriorityFeatured) &&
+        tiers.priority && (
+          <div className={`pt-8 border-t ${sectionBorderClass}`}>
+            <div className="text-center mb-6">
+              <p
+                className="text-[10px] font-bold uppercase tracking-[0.2em] mb-2"
+                style={{ color: mutedColor }}
+              >
+                Move inclusions
+              </p>
+              <h2
+                className="admin-section-h2"
+                style={{ color: headingColor }}
+              >
+                Your Office Move Includes
+              </h2>
+              <p
+                className="text-[12px] mt-1.5"
+                style={{ color: mutedColor }}
+              >
+                Every detail, handled.
+              </p>
+            </div>
+            <ul className="mx-auto max-w-3xl grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
+              {tiers.priority.includes.map((inc, i) => (
+                <li
+                  key={`pri-inc-${i}`}
+                  className="flex items-start gap-2.5"
+                >
+                  <Check
+                    className="w-4 h-4 shrink-0 mt-0.5"
+                    style={{ color: iconPrimary }}
+                  />
+                  <span
+                    className="text-[13px] leading-relaxed"
+                    style={{ color: bodyColor }}
+                  >
+                    {inc}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+      {/* ── Day-by-day timeline (Priority hero modes only) ──
+         Phased breakdown of what happens on each day of the move.
+         Drives off perTierDays.priority -- 1 / 2 / 3+ day moves
+         each get a tailored timeline. Pattern mirrors residential
+         Estate's multi-day plan. Suppressed for comparison mode
+         since the side-by-side card already shows the day count. */}
+      {officeTiered &&
+        (isPriorityOnly || isPriorityFeatured) &&
+        (() => {
+          const days = Math.max(1, Math.floor(perTierDays?.priority ?? 1));
+          // Phase templates by total day count.
+          const phases: Array<{ day: string; title: string; body: string }> =
+            days >= 3
+              ? [
+                  {
+                    day: "Day 1",
+                    title: "Pack & prep",
+                    body: "Our team packs every box, every item. IT hardware photographed, labeled, and pre-staged. Floor and entryway protection installed at both addresses.",
+                  },
+                  {
+                    day: "Day 2",
+                    title: "Move day",
+                    body: "Full crew transports everything to the new space. IT and furniture placed per your floor plan. On-site project manager runs the entire day.",
+                  },
+                  {
+                    day: "Day 3",
+                    title: "Unpack & set up",
+                    body: "Boxes unpacked, contents placed in your new space. IT plugged in and tested. Packing materials and debris removed from both sites.",
+                  },
+                ]
+              : days === 2
+                ? [
+                    {
+                      day: "Day 1",
+                      title: "Pack & IT prep",
+                      body: "Our team packs every box and item. IT hardware photographed, labeled, and prepped for transport. Floor and entryway protection installed at the origin.",
+                    },
+                    {
+                      day: "Day 2",
+                      title: "Move & set up",
+                      body: "Full transport to the new space. IT and furniture placed per your floor plan. Unpacking and on-site cleanup. On-site project manager runs the whole day.",
+                    },
+                  ]
+                : [
+                    {
+                      day: "Move day",
+                      title: "Single-day office relocation",
+                      body: "Our team arrives, packs, transports, and sets up the new space within a single working day. IT and furniture placed per your floor plan, packing debris removed before we leave.",
+                    },
+                  ];
+          return (
+            <div className={`pt-8 border-t ${sectionBorderClass}`}>
+              <div className="text-center mb-6">
+                <p
+                  className="text-[10px] font-bold uppercase tracking-[0.2em] mb-2"
+                  style={{ color: mutedColor }}
+                >
+                  Move plan
+                </p>
+                <h2
+                  className="admin-section-h2"
+                  style={{ color: headingColor }}
+                >
+                  What each day looks like
+                </h2>
+                <p
+                  className="text-[12px] mt-1.5"
+                  style={{ color: mutedColor }}
+                >
+                  Phased so your business keeps running.
+                </p>
+              </div>
+              <div
+                className={`mx-auto max-w-3xl grid gap-3 ${
+                  phases.length === 1
+                    ? "md:grid-cols-1"
+                    : phases.length === 2
+                      ? "md:grid-cols-2"
+                      : "md:grid-cols-3"
+                }`}
+              >
+                {phases.map((p, i) => (
+                  <div
+                    key={`day-${i}`}
+                    className={`rounded-lg p-4 border ${sectionBorderClass}`}
+                  >
+                    <p
+                      className="text-[10px] font-bold uppercase tracking-[0.14em] mb-1"
+                      style={{ color: iconPrimary }}
+                    >
+                      {p.day}
+                    </p>
+                    <p
+                      className="text-[14px] font-bold mb-2"
+                      style={{ color: headingColor }}
+                    >
+                      {p.title}
+                    </p>
+                    <p
+                      className="text-[12px] leading-relaxed"
+                      style={{ color: bodyColor }}
+                    >
+                      {p.body}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
       {/* ── Scope of Work ── */}
       <div className={`pt-6 border-t ${sectionBorderClass}`}>
         <h2 className="admin-section-h2 mb-4" style={{ color: headingColor }}>
@@ -523,10 +704,39 @@ export default function OfficeLayout({
             <div>
               <Calendar className="w-5 h-5 mx-auto mb-1.5" style={{ color: iconSecondary }} />
               <p className="text-[13px] font-bold" style={{ color: bodyColor }}>
-                {quote.move_date ? formatMoveDate(quote.move_date) : "TBD"}
+                {(() => {
+                  if (!quote.move_date) return "TBD";
+                  // Multi-day moves: show a range (Jul 11 - Jul 12)
+                  // instead of just the start date. Driven by
+                  // perTierDays for the active tier so a 2-day
+                  // priority quote reads "Jul 11 - Jul 12" instead
+                  // of the misleading single "Jul 11". Operator
+                  // caught on YG-30348.
+                  const activeTier = (selectedTier ?? recommendedTier ?? "priority").toLowerCase();
+                  const days = Math.max(
+                    1,
+                    Math.floor(perTierDays?.[activeTier] ?? 1),
+                  );
+                  const start = formatMoveDate(quote.move_date);
+                  if (days <= 1) return start;
+                  // Parse the move_date as a UTC date and add (days-1).
+                  // move_date is stored as YYYY-MM-DD; treat as local
+                  // calendar date and step forward.
+                  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(
+                    String(quote.move_date),
+                  );
+                  if (!m) return start;
+                  const y = Number(m[1]);
+                  const mo = Number(m[2]) - 1;
+                  const d = Number(m[3]) + (days - 1);
+                  const endDate = new Date(y, mo, d);
+                  const endIso = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
+                  const end = formatMoveDate(endIso);
+                  return `${start} - ${end}`;
+                })()}
               </p>
               <p className="text-[10px]" style={{ color: subtleColor }}>
-                Move date
+                Move dates
               </p>
             </div>
           </div>

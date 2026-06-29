@@ -5260,7 +5260,19 @@ export default function QuoteFormClient({
         // Per-tier overrides: residential local_move + long_distance only.
         // Each entry must have a positive price AND a reason ≥ 3 chars
         // (server validates again; client filters here for clean payload).
-        if (serviceType === "local_move" || serviceType === "long_distance") {
+        if (
+          serviceType === "local_move" ||
+          serviceType === "long_distance" ||
+          serviceType === "office_move"
+        ) {
+          // Office added to the gate 2026-06-29. Before this, the
+          // per-tier override editor accepted the operator's input
+          // and the live preview applied it, but the payload-build
+          // skipped office entirely so cleanedOverrides was never
+          // assembled and tier_price_overrides was never sent. The
+          // server then ran the engine fresh and the DB stored the
+          // engine prices with tier_price_overrides=null. Operator
+          // saw "$9,400 typed but it still shows $9,600" on YG-30348.
           const cleanedOverrides: Record<
             string,
             { price: number; reason: string }
@@ -5764,7 +5776,18 @@ export default function QuoteFormClient({
   const lastAutoAppliedKeyRef = useRef<string>("");
   useEffect(() => {
     if (!quoteId) return;
-    if (serviceType !== "local_move" && serviceType !== "long_distance") return;
+    // Office added 2026-06-29 so per-tier overrides on Priority /
+    // Signature / Essential auto-bake after a debounce, same as
+    // residential. Before this, an office override was committed
+    // only when the operator explicitly hit Regenerate -- and the
+    // payload gate ALSO excluded office, so even that didn't work.
+    if (
+      serviceType !== "local_move" &&
+      serviceType !== "long_distance" &&
+      serviceType !== "office_move"
+    ) {
+      return;
+    }
     const base = quoteResult?.tiers as
       | Record<string, { price?: number } | undefined>
       | undefined;
