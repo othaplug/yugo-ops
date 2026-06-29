@@ -5426,7 +5426,51 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       const t = tiers[tk];
       if (!t) continue;
       const newPrice = Math.round(ovPrice);
-      const newDeposit = await calculateDeposit(sb, depKeyLocal, newPrice, input.move_date);
+      // Per-tier deposit must respect the tier-aware policy floor
+      // (10/15/25% with $150/$250/$500 minimums), not the generic
+      // service-level deposit_rules row. The deposit_rules table
+      // has a stale 'residential | 1000_2999 | flat 100' row that
+      // dragged Estate / Signature / Essential overrides down to a
+      // flat $100 once their price landed in that bracket --
+      // surfaced as YG-30321 Estate $100 on $2091 total, YG-30292
+      // Essential+Signature both $100, etc. Operator flagged 2026-
+      // 06-29: "Deposit quote page is misleading. It says $100 and
+      // then changes" -- the tier card flashed the corrupted $100
+      // before the QuotePageClient deposit useMemo recomputed via
+      // calculateTieredDeposit() to the right policy floor.
+      const newDeposit = await (async () => {
+        if (svcType !== "local_move") {
+          // Other service types stay on deposit_rules — they don't
+          // have a tier-aware floor.
+          return calculateDeposit(sb, depKeyLocal, newPrice, input.move_date);
+        }
+        // Short-notice / sub-$600 still pay full at booking; mirror
+        // the canonical calculateDeposit short-notice gate so the
+        // tier override doesn't accidentally undercut payment.
+        if (input.move_date) {
+          const target = new Date(`${String(input.move_date).trim().slice(0, 10)}T00:00:00`);
+          if (!Number.isNaN(target.getTime())) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const daysOut = Math.floor(
+              (target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
+            );
+            if (daysOut < 4) return Math.round(newPrice);
+          }
+        }
+        if (newPrice < 600) return Math.round(newPrice);
+        const pct = cfgNum(
+          config,
+          `deposit_${tk}_pct`,
+          tk === "essential" ? 10 : tk === "signature" ? 15 : 25,
+        );
+        const min = cfgNum(
+          config,
+          `deposit_${tk}_min`,
+          tk === "essential" ? 150 : tk === "signature" ? 250 : 500,
+        );
+        return Math.max(min, Math.round(newPrice * pct / 100));
+      })();
       nextTiers[tk] = {
         ...t,
         price: newPrice,

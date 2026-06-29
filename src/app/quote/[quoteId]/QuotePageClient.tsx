@@ -1268,6 +1268,31 @@ export default function QuotePageClient({
     if (isResidential && selectedTier) {
       return calculateTieredDeposit(selectedTier, totalBeforeTax);
     }
+    // Residential WITHOUT a tier selected yet (first render before user
+    // clicks Continue) used to fall through to quote.deposit_amount,
+    // which the engine sometimes stored as the corrupted $100 from the
+    // residential | 1000_2999 | flat 100 deposit_rules bracket. That
+    // produced the "shows $100, then changes" flash Oche flagged
+    // 2026-06-29. Always compute tier-aware floor for residential —
+    // prefer recommended_tier as the default-shown tier; otherwise pick
+    // the cheapest available tier so the page-level deposit at least
+    // matches what the operator would expect by default.
+    if (isResidential) {
+      const tiers = quote.tiers as
+        | Record<string, { price?: number | null } | null>
+        | null
+        | undefined;
+      const preferred =
+        (quote.recommended_tier && tiers?.[quote.recommended_tier]
+          ? quote.recommended_tier
+          : null) ||
+        (tiers?.essential ? "essential" : null) ||
+        (tiers?.signature ? "signature" : null) ||
+        (tiers?.estate ? "estate" : null);
+      if (preferred) {
+        return calculateTieredDeposit(preferred, totalBeforeTax);
+      }
+    }
     const stored =
       quote.deposit_amount != null ? Number(quote.deposit_amount) : null;
     if (stored != null && stored > 0) {
