@@ -1593,17 +1593,53 @@ export default function MoveDetailClient({
                 })}
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
-                  Date
-                </p>
-                <p className="text-[var(--yu3-ink)]">
-                  {move.scheduled_date ? formatMoveDate(move.scheduled_date) : "—"}
-                  {move.arrival_window ? (
-                    <span className="text-[var(--yu3-ink-muted)] ml-1.5">
-                      · {move.arrival_window}
-                    </span>
-                  ) : null}
-                </p>
+                {/* Date + arrival window — also the click target to
+                    open the edit modal. Oche flagged on 2026-06-29:
+                    the only way to change the time used to be a tiny
+                    opacity-50 pencil on the Schedule & details tab.
+                    From the Overview the user saw a static time string
+                    with no affordance. Now: the whole row is a button,
+                    and an inline "Edit" link sits next to "Date" so
+                    the action is discoverable at a glance. */}
+                <div className="flex items-center justify-between gap-2 mb-0.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)]">
+                    Date
+                  </p>
+                  {!isCompleted && (
+                    <button
+                      type="button"
+                      onClick={() => setDetailsModalOpen(true)}
+                      className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-wine)] hover:underline"
+                      aria-label="Edit date and arrival window"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+                {isCompleted ? (
+                  <p className="text-[var(--yu3-ink)]">
+                    {move.scheduled_date ? formatMoveDate(move.scheduled_date) : "—"}
+                    {move.arrival_window ? (
+                      <span className="text-[var(--yu3-ink-muted)] ml-1.5">
+                        · {move.arrival_window}
+                      </span>
+                    ) : null}
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setDetailsModalOpen(true)}
+                    className="text-left text-[var(--yu3-ink)] hover:text-[var(--yu3-wine)] transition-colors"
+                    aria-label="Edit date and arrival window"
+                  >
+                    {move.scheduled_date ? formatMoveDate(move.scheduled_date) : "—"}
+                    {move.arrival_window ? (
+                      <span className="text-[var(--yu3-ink-muted)] ml-1.5">
+                        · {move.arrival_window}
+                      </span>
+                    ) : null}
+                  </button>
+                )}
               </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
@@ -2012,14 +2048,21 @@ export default function MoveDetailClient({
       <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] overflow-hidden px-5 mt-1">
         {/* Time Intelligence */}
         <div className="group/s relative py-4">
+          {/* Edit affordance moved out of the corner (was a faint 13px
+              pencil at opacity-50 — Oche flagged 2026-06-29: "no way to
+              change the time"). Now a labelled wine button at the
+              top-right of the card so admin can change date / arrival
+              window / job duration without having to discover an
+              opacity-50 icon. Same modal opens. */}
           {!isCompleted ? (
             <button
               type="button"
-              className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--yu3-bg-surface-subtle)] text-[var(--yu3-ink-muted)] transition-opacity opacity-50 hover:opacity-100"
+              className="absolute top-4 right-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[var(--yu3-wine)]/10 hover:bg-[var(--yu3-wine)]/20 text-[var(--yu3-wine)] text-[10px] font-bold uppercase tracking-wider transition-colors"
               onClick={() => setDetailsModalOpen(true)}
               aria-label="Edit date, time window, and allocated job time"
             >
-              <Pencil weight="regular" className="w-[13px] h-[13px]" />
+              <Pencil weight="bold" className="w-[11px] h-[11px]" />
+              Edit
             </button>
           ) : (
             <span
