@@ -4853,34 +4853,76 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       break;
     }
     case "office_move": {
-      const officeInv = (input.office_inventory ?? []).filter(
+      // Office moves always emit Essential / Signature / Priority tiers.
+      // Until 2026-06-29 the engine only produced tiers when the admin
+      // supplied a fully populated office_inventory; the simple-count
+      // fast path (office_desks_count + office_chairs_count +
+      // office_filing_cabinets_count) fell through to the legacy
+      // single-price calcOffice() and the resulting row was written
+      // with tiers=null. OfficeLayout then had nothing to render and
+      // collapsed to a flat-price view (YG-30340 was the example: a
+      // $850 single price with no tier ladder, no per-tier deposit,
+      // no comparison). Oche flagged: "no tier or tier flow similar
+      // to residential. overall terrible".
+      //
+      // New behavior: if the admin didn't paste an explicit inventory,
+      // synthesize a minimal one from the simple-count form fields
+      // (desks, chairs, filing). The catalog handles every category
+      // already, so this maps 1:1 onto labour buckets and the office
+      // engine produces real per-tier prices instead of a flat number.
+      const explicitInv = (input.office_inventory ?? []).filter(
         (l) => l && l.slug && Number(l.quantity) > 0,
       );
-      if (officeInv.length > 0) {
-        // Inventory-driven scope tiers (Essential / Signature / Priority).
-        const oq = buildOfficeTierQuote(
-          officeInv,
-          {
-            afterHours: !!input.office_after_hours,
-            weekend: !!input.office_weekend,
-            partialMove: !!input.office_partial_move,
-            movingSqft: input.office_moving_sqft ?? null,
-            totalOriginSqft: input.square_footage ?? null,
-            distanceKm: distInfo?.distance_km ?? undefined,
-          },
-          {},
+      const synth: { slug: string; quantity: number }[] = [];
+      if (explicitInv.length === 0) {
+        const deskQty = Math.max(0, Math.floor(input.office_desks_count ?? 0));
+        const chairQty = Math.max(0, Math.floor(input.office_chairs_count ?? 0));
+        const filingQty = Math.max(
+          0,
+          Math.floor(input.office_filing_cabinets_count ?? 0),
         );
-        officeTiers = oq.tiers;
-        // Recommended (Priority) tier is the single-price headline / deposit
-        // source until the office layout renders all three (Phase 5).
-        custom_price = oq.recommended;
-        factors = oq.factors;
-      } else {
-        // Legacy workstation single-price (no inventory provided).
-        const res = await calcOffice(sb, input, config, distInfo, neighbourhood, dateMult, addonResult);
-        custom_price = res.custom_price;
-        factors = res.factors;
+        if (deskQty > 0) synth.push({ slug: "desk_standard", quantity: deskQty });
+        if (chairQty > 0) synth.push({ slug: "office_chair", quantity: chairQty });
+        if (filingQty > 0)
+          synth.push({ slug: "filing_cabinet", quantity: filingQty });
+        // Floor: even a "blank" office quote needs SOMETHING for the
+        // labour model to anchor on. Assume the smallest plausible
+        // shape -- one desk, one chair -- so the engine produces
+        // tiers instead of falling back to a flat price.
+        if (synth.length === 0) {
+          synth.push({ slug: "desk_standard", quantity: 1 });
+          synth.push({ slug: "office_chair", quantity: 1 });
+        }
       }
+      const officeInv = explicitInv.length > 0 ? explicitInv : synth;
+      const oq = buildOfficeTierQuote(
+        officeInv,
+        {
+          afterHours: !!input.office_after_hours,
+          weekend: !!input.office_weekend,
+          partialMove: !!input.office_partial_move,
+          movingSqft: input.office_moving_sqft ?? null,
+          totalOriginSqft: input.square_footage ?? null,
+          distanceKm: distInfo?.distance_km ?? undefined,
+        },
+        {},
+      );
+      officeTiers = oq.tiers;
+      // custom_price defaults to the recommended (Priority) tier for
+      // back-compat with code paths that read a single headline price.
+      // The client OfficeLayout now renders all three tiers from
+      // officeTiers; selected_tier on accept determines what actually
+      // gets booked.
+      custom_price = oq.recommended;
+      factors = {
+        ...oq.factors,
+        office_inventory_source: explicitInv.length > 0 ? "explicit" : "synthesized_from_counts",
+        office_inventory_synth_counts: explicitInv.length > 0 ? null : {
+          desks: input.office_desks_count ?? 0,
+          chairs: input.office_chairs_count ?? 0,
+          filing: input.office_filing_cabinets_count ?? 0,
+        },
+      };
       break;
     }
     case "long_distance": {
