@@ -651,7 +651,77 @@ export async function POST(req: Request) {
         })
         .eq("id", quote.id);
     } catch (jobErr) {
+      // Square took the money but the move/delivery row couldn't be
+      // inserted. Until 2026-06-29 this catch silently returned 500 with
+      // a "contact support" message -- which led the customer to retry
+      // the Pay button, charging Square AGAIN since priorPaymentIdRaw
+      // verification can only catch a payment that's already settled and
+      // persisted (Jenny Belanger YG-30337 hit this and was double-
+      // charged $283 because the deliveries.created_by_source CHECK
+      // constraint rejected 'quote' for every B2B one-off booking).
+      //
+      // New behavior:
+      //  1. Persist square_payment_id on the quote so a retry by the
+      //     same client finds it and SKIPS the second Square charge.
+      //  2. Write a payments_process:post_payment_job_failed row to
+      //     webhook_logs with the full error so an admin sees the
+      //     failure in the diagnostics surface (instead of an opaque
+      //     500 we have to root-cause from Square webhooks alone).
+      //  3. Notify admin so manual recovery can run (the
+      //     /api/admin/quotes/recover-move endpoint already exists for
+      //     this).
+      const errMsg = jobErr instanceof Error ? jobErr.message : String(jobErr);
       console.error("[payments/process] job creation failed:", jobErr);
+
+      if (squarePaymentId) {
+        await supabase
+          .from("quotes")
+          .update({ square_payment_id: squarePaymentId })
+          .eq("id", quote.id)
+          .then(
+            () => {},
+            () => {},
+          );
+      }
+
+      await supabase
+        .from("webhook_logs")
+        .insert({
+          source: "payments_process",
+          event_type: "post_payment_job_failed",
+          status: "error",
+          payload: {
+            quoteId,
+            clientEmail,
+            squarePaymentId: squarePaymentId ?? null,
+            squareCustomerId: squareCustomerId ?? null,
+            squareCardId: squareCardId ?? null,
+            amountCents,
+            isB2bPay,
+            jobErrorMessage: errMsg.slice(0, 500),
+          },
+          error: errMsg.slice(0, 500),
+        })
+        .then(
+          () => {},
+          () => {},
+        );
+
+      notifyAdmins("payment_failed", {
+        quoteId,
+        sourceId: quote.id,
+        subject: isB2bPay
+          ? "B2B delivery creation failed AFTER successful payment"
+          : "Move creation failed AFTER successful payment",
+        description:
+          `${quoteId} — ${clientEmail}: Square accepted payment ` +
+          `${squarePaymentId ?? "(unknown id)"} for $${amount.toLocaleString()} ` +
+          `but ${isB2bPay ? "delivery" : "move"} row insert threw:\n\n${errMsg}\n\n` +
+          `Run /api/admin/quotes/recover-move or fix the underlying DB error.`,
+        clientName,
+        excludeRecipientEmails: clientEmail.trim() ? [clientEmail.trim().toLowerCase()] : [],
+      }).catch(() => {});
+
       return NextResponse.json(
         {
           error: isB2bPay
