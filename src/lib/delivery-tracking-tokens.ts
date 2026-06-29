@@ -63,11 +63,24 @@ export async function issueDeliveryTrackingTokens(deliveryId: string): Promise<{
   let recipientToken = row.recipient_tracking_token as string | null;
 
   if (!trackingToken) trackingToken = opaqueToken();
-  const endEmail = (row.customer_email || "").trim().toLowerCase();
+  // Issue a recipient token whenever there is a distinct end-customer
+  // who can be reached (phone OR email). Previous gate required email
+  // AND that it differed from the biz email, which silently skipped
+  // admin-direct deliveries (no biz contact at all -- just an end
+  // customer with a phone) and SMS-only retail customers. Oche flagged
+  // 2026-06-29 on DLV-30334 / Jennifer Barnes: she had a phone on the
+  // delivery, no email, no biz contact -- and never got tracking.
+  const custName = (row.customer_name || "").trim();
+  const custEmail = (row.customer_email || "").trim().toLowerCase();
+  const custPhone = (row.customer_phone || "").trim();
   const bizEmail = (row.contact_email || "").trim().toLowerCase();
-  const hasDistinctRecipient =
-    !!endEmail && endEmail !== bizEmail && !!(row.customer_name || "").trim();
-  if (hasDistinctRecipient && !recipientToken) {
+  const bizPhone = (row.contact_phone || "").trim();
+  const customerIsReachable = !!(custPhone || custEmail);
+  const customerIsDistinct =
+    !!custName &&
+    (custEmail ? custEmail !== bizEmail : true) &&
+    (custPhone ? custPhone !== bizPhone : true);
+  if (customerIsReachable && customerIsDistinct && !recipientToken) {
     recipientToken = opaqueToken();
   }
 
@@ -118,7 +131,7 @@ export async function sendB2BTrackingNotifications(
   if (
     audiences.includes("recipient") &&
     d.recipient_tracking_token &&
-    d.customer_phone
+    (d.customer_phone || d.customer_email)
   ) {
     const recUrl = `${base}/delivery/track/${encodeURIComponent(d.recipient_tracking_token)}`;
     const subj = `Your ${brand} delivery with Yugo`;
@@ -130,9 +143,51 @@ export async function sendB2BTrackingNotifications(
         html,
       }).catch(() => {});
     }
-    await sendSMS(
-      d.customer_phone,
-      [`Hi,`, `Your order from ${brand} is on the way with Yugo.`, `Track your delivery:\n${recUrl}`].join("\n\n"),
-    ).catch(() => {});
+    // Operator ask 2026-06-29: SMS to the end-customer must include
+    // the actual day + window the crew is coming, not just "your
+    // order is on the way" with a bare track link. Pull from the
+    // delivery row's scheduled_date + delivery_window (preferring
+    // delivery_window over time_slot since the former carries the
+    // explicit human label like "Morning (8:00 AM – 10:00 AM)").
+    if (d.customer_phone) {
+      const dayLabel = (() => {
+        const s = (d.scheduled_date || "").trim();
+        if (!s) return null;
+        try {
+          // Render in America/Toronto so the customer sees the right
+          // weekday/date for their local timezone, not UTC.
+          return new Date(`${s}T12:00:00-04:00`).toLocaleDateString("en-CA", {
+            weekday: "long",
+            month: "short",
+            day: "numeric",
+            timeZone: "America/Toronto",
+          });
+        } catch {
+          return s;
+        }
+      })();
+      const windowLabel =
+        (d.delivery_window || "").trim() ||
+        (d.time_slot || "").trim() ||
+        null;
+      const firstName = (d.customer_name || "")
+        .split(" ")[0]
+        .trim();
+      const greet = firstName ? `Hi ${firstName},` : "Hi,";
+      const lines: string[] = [greet];
+      if (dayLabel && windowLabel) {
+        lines.push(
+          `Your ${brand} delivery is scheduled for ${dayLabel} during the ${windowLabel} window.`,
+        );
+      } else if (dayLabel) {
+        lines.push(`Your ${brand} delivery is scheduled for ${dayLabel}.`);
+      } else {
+        lines.push(`Your ${brand} delivery is on the way with Yugo.`);
+      }
+      lines.push(
+        `Track when the crew is en route + see live ETA:\n${recUrl}`,
+      );
+      await sendSMS(d.customer_phone, lines.join("\n\n")).catch(() => {});
+    }
   }
 }

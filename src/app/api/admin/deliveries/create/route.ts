@@ -8,6 +8,10 @@ import { logActivity } from "@/lib/activity";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 import { notifyPartnerDeliveryBooked } from "@/lib/partner-job-comms";
 import { ensureB2bDeliverySchedule, isDeliveryB2bCategory } from "@/lib/calendar/ensure-b2b-delivery-schedule";
+import {
+  issueDeliveryTrackingTokens,
+  sendB2BTrackingNotifications,
+} from "@/lib/delivery-tracking-tokens";
 import { normalizeDeliveryCategory } from "@/lib/partners/delivery-category";
 import { autoCreateHubSpotDealForNewDelivery } from "@/lib/hubspot/auto-create-deal-for-delivery";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
@@ -54,6 +58,34 @@ export async function POST(req: NextRequest) {
     if (!customerName) return NextResponse.json({ error: "Customer name is required" }, { status: 400 });
     if (!deliveryAddress) return NextResponse.json({ error: "Delivery address is required" }, { status: 400 });
     if (!scheduledDate) return NextResponse.json({ error: "Date is required" }, { status: 400 });
+
+    // Partner / client name guard (operator decision 2026-06-30): block
+    // delivery creation when we can't identify the partner (= the
+    // entity that booked the work and gets billed for it). DLV-30334
+    // surfaced the gap — created with no organization_id AND no
+    // body.client_name, so client_name persisted as "" and the all-
+    // deliveries list rendered the Partner column as "—" forever.
+    // For B2B-one-off the businessName is the partner identity, so
+    // that branch is satisfied by the business-name check above.
+    // For everything else we need EITHER an explicit client_name in
+    // the body OR a resolved organization with a name. If we have
+    // organization_id but the org row is missing or unnamed, that's
+    // a data error worth surfacing rather than silently persisting
+    // an empty string.
+    if (!isB2BOneOff) {
+      const explicitClientName = (body.client_name || "").trim();
+      const orgName = (org?.name || "").trim();
+      if (!explicitClientName && !orgName) {
+        return NextResponse.json(
+          {
+            error: organizationId
+              ? "Organization linked but its name is empty. Update the organization or provide an explicit partner name."
+              : "Partner / client name is required. Link an organization or pass client_name explicitly.",
+          },
+          { status: 400 },
+        );
+      }
+    }
 
     const deliveryNumber = await generateDeliveryNumber(admin);
     const trackingCode = `${(org?.name || "YG").replace(/[^A-Z]/gi, "").slice(0, 2).toUpperCase()}-${deliveryNumber.split("-")[1]}`;
@@ -503,6 +535,47 @@ export async function POST(req: NextRequest) {
         };
       } else if (createdHs == null) {
         hubspotAutoCreateFailed = true;
+      }
+    }
+
+    // Issue tracking tokens + send customer tracking notification.
+    // The admin-direct create flow used to skip this entirely, so any
+    // delivery to an end-customer (e.g. retail furniture drop-off) was
+    // booked with no SMS / email to the recipient -- Oche flagged
+    // 2026-06-29 on DLV-30334 / Jennifer Barnes. We issue the
+    // recipient token + fire the audience=recipient branch when the
+    // delivery is in a customer-facing state (scheduled or confirmed,
+    // not draft) and we have a way to reach the customer.
+    const finalStatus = String(insertPayload.status || "").toLowerCase();
+    const trkCustomerPhone =
+      (insertPayload.customer_phone as string | null) || "";
+    const trkCustomerEmail =
+      (insertPayload.customer_email as string | null) || "";
+    const trkCustomerName =
+      (insertPayload.customer_name as string | null) || "";
+    const customerReachable =
+      !!trkCustomerName &&
+      (!!trkCustomerPhone.trim() || !!trkCustomerEmail.trim());
+    const audiences: ("business" | "recipient")[] = [];
+    if (
+      (finalStatus === "scheduled" || finalStatus === "confirmed") &&
+      customerReachable
+    ) {
+      try {
+        await issueDeliveryTrackingTokens(String(created.id));
+        audiences.push("recipient");
+        // Also re-include business when biz contact is present and
+        // distinct from the customer, so the retailer gets their
+        // own track link too.
+        const bizPhone = (insertPayload.contact_phone as string | null) || "";
+        const bizEmail = (insertPayload.contact_email as string | null) || "";
+        if (bizPhone.trim() || bizEmail.trim()) audiences.push("business");
+        await sendB2BTrackingNotifications(String(created.id), { audiences });
+      } catch (notifyErr) {
+        console.error(
+          "[admin-delivery-create] tracking notification failed:",
+          notifyErr instanceof Error ? notifyErr.message : notifyErr,
+        );
       }
     }
 

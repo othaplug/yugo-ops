@@ -36,6 +36,7 @@ import {
 import EditDeliveryModal from "./EditDeliveryModal";
 import DownloadPDFButton from "./DownloadPDFButton";
 import GenerateInvoiceButton from "./GenerateInvoiceButton";
+import SendCustomerTrackingButton from "./SendCustomerTrackingButton";
 import SendB2BOneOffInvoiceButton from "./SendB2BOneOffInvoiceButton";
 import { formatPhone } from "@/lib/phone";
 import ContactDetailsModal from "../../components/ContactDetailsModal";
@@ -1295,6 +1296,7 @@ export default function DeliveryDetailClient({
                 delivery={delivery}
                 className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
               />
+              <SendCustomerTrackingButton delivery={delivery} />
               {hasMultiRoute ? (
                 <a
                   href={`/admin/deliveries/${encodeURIComponent(delivery.delivery_number || delivery.id)}/manifest`}
