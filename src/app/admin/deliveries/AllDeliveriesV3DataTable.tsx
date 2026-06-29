@@ -16,6 +16,7 @@ import {
 } from "@/design-system/admin/table"
 import { StatusPill } from "@/design-system/admin/primitives"
 import { useToast } from "../components/Toast"
+import { deliveryEligibleForAdminPrepaidMark } from "@/lib/delivery-prepaid-eligibility"
 
 export type DeliveryV3 = {
   id: string
@@ -29,6 +30,7 @@ export type DeliveryV3 = {
   category: string
   booking_type?: string | null
   organization_id?: string | null
+  vertical_code?: string | null
   payment_received_at?: string | null
   vehicle_type?: string | null
   num_stops?: number | null
@@ -296,10 +298,15 @@ export function AllDeliveriesV3DataTable({
           const label = toTitleCase(
             s.replace(/_/g, " ").replace(/-/g, " "),
           )
+          // Use the shared eligibility helper (2026-06-30) so the list
+          // and detail page agree on which deliveries surface a Paid
+          // badge. Previously the list only matched B2B-one-off-no-org
+          // bookings while the detail page also matched category=b2b
+          // and any non-empty vertical_code — so retail / vertical
+          // deliveries marked paid (e.g. DLV-30334) showed "Paid
+          // (prepaid)" on the detail page but no badge in the list.
           const prepaid =
-            d.booking_type === "one_off" &&
-            !d.organization_id &&
-            !!d.payment_received_at
+            !!d.payment_received_at && deliveryEligibleForAdminPrepaidMark(d)
           return (
             <div className="inline-flex flex-wrap items-center gap-1.5 min-w-0">
               <StatusPill tone={deliveryStatusTone(s)}>{label}</StatusPill>
