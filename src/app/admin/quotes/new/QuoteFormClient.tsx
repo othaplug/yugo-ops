@@ -2047,7 +2047,6 @@ export default function QuoteFormClient({
       setRecommendedTier("estate");
     }
   }, [serviceType, recommendedTier]);
-
   /** Pre-tax override sent to /api/quotes/generate (not used for B2B / bin rental). */
   const [quotePreTaxOverride, setQuotePreTaxOverride] = useState("");
   // Presentation mode — controls how the client sees the quote. Only
@@ -2060,6 +2059,25 @@ export default function QuoteFormClient({
     | "priority_featured"
     | "priority_only"
   >("comparison");
+  // Auto-snap presentation_mode when an office quote with Priority
+  // recommended still has a residential default. Operator picks
+  // service=office + leaves default rec = priority, presentation_mode
+  // stays 'comparison' (its global default), and the client quote
+  // page renders side-by-side instead of the Priority hero. This
+  // snaps the office default to 'priority_featured' on first arrival
+  // -- still respects an explicit operator selection because we only
+  // snap from the residential-shaped values.
+  useEffect(() => {
+    if (
+      serviceType === "office_move" &&
+      recommendedTier === "priority" &&
+      (presentationMode === "comparison" ||
+        presentationMode === "estate_featured" ||
+        presentationMode === "estate_only")
+    ) {
+      setPresentationMode("priority_featured");
+    }
+  }, [serviceType, recommendedTier, presentationMode]);
   // Per-tier price overrides. Distinct from the global quote_price_override
   // above — that one scales all three tiers proportionally; this map
   // replaces a specific tier's price with an absolute number (e.g. Estate
@@ -11336,12 +11354,32 @@ export default function QuoteFormClient({
                         <button
                           key={tier}
                           type="button"
-                          onClick={() => pickRecommendedTier(tier)}
+                          onClick={() => {
+                            pickRecommendedTier(tier);
+                            // When the operator picks Priority, auto-snap
+                            // presentation_mode to 'priority_featured' so
+                            // the client quote renders the Priority hero
+                            // card by default. Without this the picker
+                            // says "Priority recommended" but the client
+                            // page keeps the side-by-side comparison
+                            // layout. Operator can still override to
+                            // 'comparison' or 'priority_only' via the
+                            // Client Presentation block below.
+                            if (tier === "priority") {
+                              setPresentationMode((m) =>
+                                m === "comparison" ||
+                                m === "estate_featured" ||
+                                m === "estate_only"
+                                  ? "priority_featured"
+                                  : m,
+                              );
+                            }
+                          }}
                           aria-pressed={isRec}
-                          className={`h-9 px-3 rounded-md text-[11px] font-bold uppercase tracking-wide transition-colors ${
+                          className={`h-9 px-3 rounded-md text-[11px] font-bold uppercase tracking-wide transition-colors border ${
                             isRec
-                              ? "bg-[var(--wine)] text-white"
-                              : "bg-white text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--wine)]"
+                              ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                              : "bg-[var(--bg)] text-[var(--tx)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]"
                           }`}
                         >
                           {tier[0].toUpperCase() + tier.slice(1)}
