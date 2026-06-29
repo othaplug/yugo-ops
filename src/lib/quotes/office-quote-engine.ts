@@ -146,6 +146,24 @@ export function calcOfficeTiers(
 
   const tiers = {} as Record<OfficeTierKey, OfficeTierPrice>;
 
+  // First pass: compute the unfloored pre-tax price + per-tier
+  // metadata for every tier. We need ALL three pricePre values before
+  // we can decide whether to apply the minimum-price floor uplift,
+  // otherwise per-tier Math.max(minPrice, ...) collapses the ladder
+  // (all three tiers landing below minPrice clamp to identical prices
+  // -- operator caught this on YG-30346 where a near-empty inventory
+  // produced \$1,550 / \$1,550 / \$1,550 with the right rail looking
+  // like the override editor had wiped tier differentiation).
+  type Interim = {
+    tier: OfficeTierKey;
+    pricePre: number;
+    crew: number;
+    trucks: number;
+    days: number;
+    breakdown: OfficeTierBreakdown;
+  };
+  const interim: Interim[] = [];
+
   for (const tier of OFFICE_TIER_ORDER) {
     const def = OFFICE_TIER_DEFINITIONS[tier];
     const lt = labour.perTier[tier];
@@ -191,17 +209,9 @@ export function calcOfficeTiers(
       distanceSurcharge +
       accessSurcharge;
 
-    const price = Math.max(c.minPrice, round(pricePre, c.rounding));
-    const tax = Math.round(price * c.taxRate);
-    const total = price + tax;
-    const deposit = Math.round(price * (c.depositPct / 100));
-
-    tiers[tier] = {
-      key: tier,
-      price,
-      deposit,
-      tax,
-      total,
+    interim.push({
+      tier,
+      pricePre,
       crew,
       trucks,
       days,
@@ -216,6 +226,41 @@ export function calcOfficeTiers(
         distanceSurcharge: r2(distanceSurcharge),
         accessSurcharge,
       },
+    });
+  }
+
+  // Minimum-price floor uplift. If Essential (the cheapest tier) lands
+  // below the floor, scale all three proportionally so Essential lifts
+  // to minPrice and Signature/Priority preserve their relative
+  // premium. Without this, a small office job ($500 / $700 / $1,200
+  // computed) becomes $1,500 / $1,500 / $1,500 after the per-tier
+  // Math.max -- which looks broken to operators and removes the
+  // upsell.
+  const essentialPre = interim[0]?.pricePre ?? 0;
+  const floor = c.minPrice;
+  const upliftScale =
+    essentialPre > 0 && essentialPre < floor ? floor / essentialPre : 1;
+
+  for (const r of interim) {
+    const scaled = r.pricePre * upliftScale;
+    // Belt-and-suspenders: still respect minPrice as the absolute
+    // floor for every tier (in case Essential was already at $0 and
+    // the scale didn't lift the higher tiers above floor).
+    const price = Math.max(floor, round(scaled, c.rounding));
+    const tax = Math.round(price * c.taxRate);
+    const total = price + tax;
+    const deposit = Math.round(price * (c.depositPct / 100));
+
+    tiers[r.tier] = {
+      key: r.tier,
+      price,
+      deposit,
+      tax,
+      total,
+      crew: r.crew,
+      trucks: r.trucks,
+      days: r.days,
+      breakdown: r.breakdown,
     };
   }
 
