@@ -1172,9 +1172,14 @@ export default function QuotePageClient({
     essential: "released",
     signature: "enhanced",
     estate: "full_replacement",
+    // Office Priority gets the same top-tier ($10k/item, $0 deductible,
+    // full replacement) coverage as residential Estate. Oche flagged
+    // 2026-06-29: "the priority gets the highest level of insurance.
+    // the same as the estate tier".
+    priority: "full_replacement",
   };
   const currentPackage =
-    isResidential && selectedTier ? selectedTier : "essential";
+    (isResidential || isOfficeTiered) && selectedTier ? selectedTier : "essential";
   const includedValuation = INCLUDED_VALUATION[currentPackage] ?? "released";
 
   const activeUpgrade = useMemo(() => {
@@ -5192,6 +5197,9 @@ const UPGRADE_TARGET: Record<string, string | null> = {
   essential: "enhanced",
   signature: "full_replacement",
   estate: null,
+  // Office Priority already includes full_replacement (matches Estate),
+  // so there is no upgrade target -- they're already at the ceiling.
+  priority: null,
 };
 
 function ValuationProtectionCard({
@@ -5296,6 +5304,7 @@ function ValuationProtectionCard({
   const isHighest = wgMode
     ? (wgActive?.totalCoverage ?? 0) === 100000
     : currentPackage === "estate" ||
+      currentPackage === "priority" ||
       (upgradeSelected && activeTierSlug === "full_replacement");
 
   const declThreshold = tierData?.max_per_item ?? 2500;

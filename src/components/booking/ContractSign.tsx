@@ -479,8 +479,12 @@ export default function ContractSign({
         toggle: premiumInk.kicker,
         signEyebrow: premiumInk.kicker,
         signBody: premiumInk.body,
-        signLabel: premiumInk.muted,
-        signDate: premiumInk.muted,
+        // Bumped from muted (80%) to body (92%) so labels like "FULL
+        // LEGAL NAME (AS IT SHOULD APPEAR)", "YOUR SIGNATURE", and
+        // "SIGNED ON" stay clearly legible against the wine shell.
+        // Oche flagged 2026-06-29 on the YG-OFFICE-DEMO Priority page.
+        signLabel: premiumInk.body,
+        signDate: premiumInk.body,
         signCta: premiumAccent,
         signCtaDisabled:
           premiumShellKindResolved === "signature"
