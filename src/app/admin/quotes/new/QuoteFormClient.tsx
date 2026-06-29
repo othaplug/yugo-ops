@@ -74,7 +74,6 @@ import JobScopeSection, {
   validateInboundDraft,
 } from "./JobScopeSection";
 import TierPriceOverrideEditor from "./TierPriceOverrideEditor";
-import OfficeQuoteStudio from "./OfficeQuoteStudio";
 import {
   WhiteGloveItemsEditor,
   createDefaultWhiteGloveItem,
@@ -11249,95 +11248,62 @@ export default function QuoteFormClient({
                 </div>
               )}
 
-          {/* ── Office Quote Studio ──
-             New 2026-06-29: replaces the residential TierPriceOverrideEditor
-             for office_move only. Shows recommended-tier picker + presentation-
-             mode picker + three tier cards (engine price, override, reason,
-             star) as a single canvas. Residential / long_distance keep the
-             original TierPriceOverrideEditor below this block. */}
-          {serviceType === "office_move" &&
-            (() => {
-              const tierPrices: Partial<Record<string, number>> = {};
-              const resultTiers = quoteResult?.tiers as
-                | Record<string, { price?: number }>
-                | undefined;
-              for (const tk of ["essential", "signature", "priority"] as const) {
-                const p = resultTiers?.[tk]?.price;
-                if (typeof p === "number") tierPrices[tk] = p;
-              }
-              // Map our tierPriceOverrides state (which the editor wrote
-              // into) to the studio's shape — same data, simpler keys.
-              const studioOverrides: Record<
-                string,
-                { price?: string; reason?: string }
-              > = {};
-              for (const tk of ["essential", "signature", "priority"] as const) {
-                const entry = tierPriceOverrides[tk];
-                if (entry) {
-                  studioOverrides[tk] = {
-                    price: entry.price ?? "",
-                    reason: entry.reason ?? "",
-                  };
-                }
-              }
-              const recOffice =
-                recommendedTier === "essential" ||
-                recommendedTier === "signature" ||
-                recommendedTier === "priority"
-                  ? recommendedTier
-                  : "priority";
-              const presOffice =
-                presentationMode === "comparison" ||
-                presentationMode === "priority_featured" ||
-                presentationMode === "priority_only"
-                  ? presentationMode
-                  : "comparison";
-              return (
-                <div className="px-0 sm:px-0 pb-1 pt-4 mt-2">
-                  <OfficeQuoteStudio
-                    enginePrices={tierPrices as Record<string, number>}
-                    overrides={studioOverrides}
-                    onOverridesChange={(next) => {
-                      // Reshape back into the tierPriceOverrides shape. The
-                      // outer state type only recognizes the four valid tier
-                      // keys -- guard against any future studio additions.
-                      const allowed = new Set([
-                        "essential",
-                        "signature",
-                        "priority",
-                        "estate",
-                      ]);
-                      const reshaped: typeof tierPriceOverrides = {};
-                      for (const [tk, v] of Object.entries(next)) {
-                        if (!allowed.has(tk)) continue;
-                        (reshaped as Record<string, { price: string; reason: string }>)[
-                          tk
-                        ] = {
-                          price: v.price ?? "",
-                          reason: v.reason ?? "",
-                        };
-                      }
-                      setTierPriceOverrides(reshaped);
-                    }}
-                    recommendedTier={recOffice}
-                    onRecommendedTierChange={(t) => setRecommendedTier(t)}
-                    presentationMode={presOffice}
-                    onPresentationModeChange={(m) => setPresentationMode(m)}
-                    hasGenerated={!!quoteResult?.tiers}
-                  />
+          {/* Recommended tier picker -- office only.
+             Residential's recommendedTier is set automatically from
+             engine output. Office quotes are mostly Priority, but the
+             operator wants explicit control (the engine doesn't see
+             the same signals a coordinator does -- e.g. budget cap).
+             Three buttons, exactly like the existing residential
+             pattern minus an auto-default, so the operator chooses
+             without having to scroll. */}
+          {serviceType === "office_move" && (
+            <div className="px-0 sm:px-0 pb-1 pt-4 mt-2">
+              <div className="rounded-xl border border-[var(--brd)] bg-white p-4">
+                <div className="mb-3">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--tx2)]">
+                    Recommended tier
+                  </div>
+                  <div className="text-[11px] text-[var(--tx2)] mt-0.5">
+                    Pick the tier you want the client to focus on. Drives
+                    presentation mode + the badge on the client quote.
+                  </div>
                 </div>
-              );
-            })()}
+                <div className="grid grid-cols-3 gap-2">
+                  {(["essential", "signature", "priority"] as const).map(
+                    (tier) => {
+                      const isRec = recommendedTier === tier;
+                      return (
+                        <button
+                          key={tier}
+                          type="button"
+                          onClick={() => setRecommendedTier(tier)}
+                          aria-pressed={isRec}
+                          className={`h-9 px-3 rounded-md text-[11px] font-bold uppercase tracking-wide transition-colors ${
+                            isRec
+                              ? "bg-[var(--wine)] text-white"
+                              : "bg-white text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--wine)]"
+                          }`}
+                        >
+                          {tier[0].toUpperCase() + tier.slice(1)}
+                        </button>
+                      );
+                    },
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
-          {/* Per-tier price override — residential only.
+          {/* Per-tier price override — residential + office.
              Distinct from the global override below: per-tier sets an
-             absolute price on a single tier (e.g. Estate to $6,000)
-             without affecting the others. Global override below scales
-             all three tiers proportionally. They compose if both are
-             set (per-tier applies first, then global ratio relative to
-             whatever Essential ends up at). */}
+             absolute price on a single tier (e.g. Estate / Priority to
+             $6,000) without affecting the others. Global override
+             below scales all three tiers proportionally. They compose
+             if both are set (per-tier applies first, then global ratio
+             relative to whatever Essential ends up at). */}
           {(serviceType === "local_move" ||
-            serviceType === "long_distance") &&
+            serviceType === "long_distance" ||
+            (serviceType === "office_move" && !!quoteResult?.tiers)) &&
             (() => {
               const tierPrices: Partial<Record<string, number>> = {};
               const resultTiers = quoteResult?.tiers as
@@ -11447,6 +11413,83 @@ export default function QuoteFormClient({
                 </div>
               </div>
             )}
+
+          {/* Client presentation -- office Priority recommended.
+             Mirror of the residential block above, swapped for the
+             office tier ladder (Priority instead of Estate). Same
+             radio-card visual treatment so admins switching between
+             flows don't have to relearn. */}
+          {serviceType === "office_move" && recommendedTier === "priority" && (
+            <div className="px-0 sm:px-0 pb-1 pt-4 mt-2">
+              <div className="rounded-xl border border-[var(--brd)] bg-white p-4">
+                <div className="mb-3">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--tx2)]">
+                    Client presentation
+                  </div>
+                  <div className="text-[11px] text-[var(--tx2)] mt-0.5">
+                    Priority is the recommended tier. Choose how the client
+                    sees the quote.
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {(
+                    [
+                      {
+                        value: "comparison" as const,
+                        label: "Full comparison",
+                        desc: "Essential, Signature, and Priority side-by-side. Best for clients still deciding or price-sensitive.",
+                      },
+                      {
+                        value: "priority_featured" as const,
+                        label: "Priority featured (recommended)",
+                        desc: "All three tiers shown, but Priority is visually dominant as a hero card with Essential + Signature in a small Compare section below. Keeps the price anchor working in your favor.",
+                        recommended: true,
+                      },
+                      {
+                        value: "priority_only" as const,
+                        label: "Priority only",
+                        desc: "Client sees only the Priority tier. Best for referred clients or those already sold on full-service.",
+                      },
+                    ] as const
+                  ).map((opt) => {
+                    const checked = presentationMode === opt.value;
+                    return (
+                      <label
+                        key={opt.value}
+                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition ${
+                          checked
+                            ? "border-[var(--wine)] bg-[var(--wine)]/[0.04]"
+                            : "border-[var(--brd)] hover:bg-[var(--bg)]/40"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="office-presentation-mode"
+                          value={opt.value}
+                          checked={checked}
+                          onChange={() => setPresentationMode(opt.value)}
+                          className="mt-0.5 accent-[var(--wine)]"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[12px] font-semibold text-[var(--tx)] flex items-center gap-2">
+                            {opt.label}
+                            {"recommended" in opt && opt.recommended && (
+                              <span className="text-[9px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5 bg-[var(--wine)]/10 text-[var(--wine)]">
+                                Recommended
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-[var(--tx2)] leading-snug mt-0.5">
+                            {opt.desc}
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
           {serviceType !== "bin_rental" &&
             serviceType !== "b2b_delivery" &&
