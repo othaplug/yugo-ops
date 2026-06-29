@@ -13845,6 +13845,23 @@ function getResidentialTierCardStyles(v2: boolean): Record<string, TierCardStyle
         deposit: "font-bold text-[#C9A84C]",
         check: "text-[#C9A84C]",
       },
+      // Office third tier — visually mirrors Estate (both are the
+      // "premium top tier" wine-shell card). Office quotes pass
+      // tierOrder=['essential','signature','priority'] to TiersDisplay,
+      // and the map lookup tierColors['priority'] used to return
+      // undefined → c.border crash in the right rail. Oche flagged
+      // 2026-06-29 with the QuoteFormErrorBoundary stack:
+      // "Cannot read properties of undefined (reading 'border')".
+      priority: {
+        bg: "bg-[#1a1a2e] dark:bg-[#1a1a2e]",
+        border: "border-[#C9A84C]/60",
+        accent: "text-[#C9A84C]",
+        muted: "text-[#B8B3A8]",
+        body: "text-[#F4F1E8]",
+        list: "text-[#D4CFC4]",
+        deposit: "font-bold text-[#C9A84C]",
+        check: "text-[#C9A84C]",
+      },
     };
   }
   return {
@@ -13869,6 +13886,17 @@ function getResidentialTierCardStyles(v2: boolean): Record<string, TierCardStyle
       check: "text-accent",
     },
     estate: {
+      bg: "bg-surface-sunken",
+      border: "border-2 border-line border-l-4 border-l-accent/35",
+      accent: "text-fg",
+      muted: "text-fg-muted",
+      body: "text-fg",
+      list: "text-fg-muted",
+      deposit: "font-bold text-accent",
+      check: "text-accent",
+    },
+    // Office top tier — same shape as Estate for v2 admin theme.
+    priority: {
       bg: "bg-surface-sunken",
       border: "border-2 border-line border-l-4 border-l-accent/35",
       accent: "text-fg",
@@ -13911,7 +13939,16 @@ function TiersDisplay({
       {tierOrder.map((name) => {
         const t = tiers[name];
         if (!t) return null;
-        const c = tierColors[name];
+        // Belt + suspenders: fall back to Essential styles if a future
+        // tier name lands without a tierColors entry, so the right rail
+        // never crashes on `c.border` again (this was the 2026-06-29
+        // 'Cannot read properties of undefined (reading border)' that
+        // QuoteFormErrorBoundary caught on office Priority).
+        const c =
+          tierColors[name] ??
+          tierColors.essential ??
+          tierColors[Object.keys(tierColors)[0] ?? ""];
+        if (!c) return null;
         const isRecommended = name === recommendedTier;
         return (
           <div
