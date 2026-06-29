@@ -127,9 +127,11 @@ function statusTone(
       return "info";
     case "declined":
     case "expired":
+    case "lost":
       return "danger";
     case "cold":
     case "draft":
+    case "superseded":
       return "neutral";
     default:
       return "neutral";
@@ -527,6 +529,19 @@ export default function QuotesListV3Client({
     [isSuperAdmin, router, toast],
   );
 
+  // Pipeline columns must cover EVERY status the engine writes -- any
+  // status with no matching column gets silently dropped from the
+  // pipeline view (strict `stageForRow(r) === stage.id` filter in
+  // DataTable). Oche flagged 2026-06-29: 8 `lost`, 6 `cold`, and 1
+  // `superseded` quote were invisible on the board, which made the
+  // EXPIRED column look like it was holding lost+declined+expired
+  // together. It wasn't -- it only held the 8 genuine `expired` rows.
+  // Lost / Cold / Superseded had no column at all.
+  //
+  // Order matches the funnel: open -> won, then the three distinct
+  // failure modes (expired = timed out, declined = customer said no,
+  // lost = chose a competitor / different vendor), then cold (silent
+  // drop-off) and superseded (replaced by a regen).
   const pipelineStages = React.useMemo(
     () => [
       { id: "draft", label: "Draft", tone: "neutral" as const },
@@ -535,6 +550,9 @@ export default function QuotesListV3Client({
       { id: "accepted", label: "Accepted", tone: "success" as const },
       { id: "expired", label: "Expired", tone: "danger" as const },
       { id: "declined", label: "Declined", tone: "danger" as const },
+      { id: "lost", label: "Lost", tone: "danger" as const },
+      { id: "cold", label: "Cold", tone: "neutral" as const },
+      { id: "superseded", label: "Superseded", tone: "neutral" as const },
     ],
     [],
   );
