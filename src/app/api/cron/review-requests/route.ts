@@ -106,12 +106,20 @@ export async function GET(req: NextRequest) {
     sent++;
   }
 
-  // 2. Send reminders (status=sent, reminder_send_at <= now, not clicked)
+  // 2. Send reminders (status=sent, reminder_send_at <= now, not clicked).
+  // Never remind a client who already rated 1–3★ via the review link: that
+  // cohort is service-recovery, not a review nudge. They never click through to
+  // Google (no Google CTA is shown for low ratings), so review_clicked stays
+  // false and they were getting reminded forever despite already leaving (often
+  // scathing) feedback. Only remind clients who haven't rated yet (null) or who
+  // rated 4–5★ but haven't completed the review — matching the manual "Remind"
+  // guard and the post-move SMS 4–5★ rule.
   const { data: toRemind } = await supabase
     .from("review_requests")
     .select("*")
     .eq("status", "sent")
     .eq("review_clicked", false)
+    .or("client_rating.is.null,client_rating.gte.4")
     .lte("reminder_send_at", now);
 
   for (const rr of toRemind || []) {
