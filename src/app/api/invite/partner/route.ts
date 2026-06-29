@@ -95,6 +95,13 @@ export async function POST(req: NextRequest) {
       delivery_types, delivery_frequency, typical_items,
       special_requirements, preferred_windows, pickup_locations,
       billing_method, payment_terms, tax_id, insurance_cert_required,
+      // billing_email + billing_anchor_day were dropped pre-2026-06-29 —
+      // the wizard sent them in the payload but the route never
+      // destructured them, so the values silently vanished into the
+      // void. Schema (organizations.billing_email,
+      // organizations.billing_anchor_day) was already in migration
+      // 20260509130000_partner_invoicing.sql waiting for the wire-up.
+      billing_email, billing_anchor_day,
       create_portal_login, activation_mode,       send_setup_sms,
       // External IDs from dedup search
       hubspot_contact_id, square_customer_id, square_card_id,
@@ -184,6 +191,19 @@ export async function POST(req: NextRequest) {
       ...(Array.isArray(pickup_locations) && pickup_locations.length ? { pickup_locations } : {}),
       billing_method: billing_method || "per_delivery",
       payment_terms: payment_terms || "net_30",
+      ...(billing_email && typeof billing_email === "string" && billing_email.trim()
+        ? { billing_email: billing_email.trim().toLowerCase() }
+        : {}),
+      // billing_anchor_day clamped to the DB CHECK constraint (1–31).
+      // The wizard sends 1–28 (UI cap to avoid Feb edge cases) but we
+      // guard defensively in case a future surface passes a higher
+      // value. Falsy / 0 / NaN skips the field so we don't override an
+      // existing value on partial updates.
+      ...(typeof billing_anchor_day === "number" &&
+      Number.isFinite(billing_anchor_day) &&
+      billing_anchor_day >= 1
+        ? { billing_anchor_day: Math.min(31, Math.floor(billing_anchor_day)) }
+        : {}),
       ...(tax_id ? { tax_id: String(tax_id).trim() } : {}),
       ...(insurance_cert_required ? { insurance_cert_required: true } : {}),
       onboarding_status: isActivating ? "active" : "draft",

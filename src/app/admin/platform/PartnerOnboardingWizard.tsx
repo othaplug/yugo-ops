@@ -2471,6 +2471,17 @@ function Step5Summary({ state, flow }: { state: WizardState; flow: OnboardingFlo
       <SummarySection title={billingTitle}>
         <SummaryRow label="Billing Method" value={billingLabels[state.billingMethod]} />
         <SummaryRow label="Payment Terms" value={termsLabels[state.paymentTerms]} />
+        {/* Billing Contact Email + Anchor Day surfaced on Step 5
+            (2026-06-29) — previously the wizard collected them on
+            Step 3 but the review screen skipped showing them, so the
+            operator couldn't verify before submit. Even after the
+            recent fix wiring both fields through to the database,
+            silently saving without surfacing the values violates the
+            "no hidden state" rule for create flows. */}
+        <SummaryRow label="Billing Contact Email" value={state.billingEmail?.trim() || undefined} />
+        {state.paymentTerms === "net_30" && (
+          <SummaryRow label="Billing Anchor Day" value={`Day ${state.billingAnchorDay} of each month`} />
+        )}
         <SummaryRow label="Tax ID" value={state.taxId} />
         <SummaryRow label="Insurance Cert" value={state.insuranceCertRequired ? "Required" : undefined} />
       </SummarySection>
