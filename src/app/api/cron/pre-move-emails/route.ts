@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
     .select(
       "id, move_code, client_name, client_email, client_phone, scheduled_date, scheduled_time, from_address, to_address, from_access, to_access, balance_amount, balance_paid_at, deposit_paid_at, tier_selected, square_card_id, service_type, move_type",
     )
-    .in("status", ["confirmed", "scheduled"])
+    .in("status", ["confirmed", "scheduled", "paid"])
     .eq("scheduled_date", threeDaysOut)
     .is("pre_move_72hr_sent", null);
 
@@ -183,7 +183,7 @@ export async function GET(req: NextRequest) {
     .select(
       "id, move_code, client_name, client_email, scheduled_date, balance_amount, balance_paid_at, deposit_paid_at, tier_selected, move_size, inventory_score, square_card_id",
     )
-    .in("status", ["confirmed", "scheduled"])
+    .in("status", ["confirmed", "scheduled", "paid"])
     // Catch-up window: today through 3 days out (was an exact two-day match).
     // A move that slipped past its ideal reminder day still gets picked up here,
     // gated once-only by balance_reminder_48hr_sent.
@@ -284,7 +284,7 @@ export async function GET(req: NextRequest) {
     .select(
       "id, move_code, client_name, client_email, scheduled_date, arrival_window, from_access, to_access, from_address, to_address, from_parking, to_parking, elevator_reminder_sent_at, parking_reminder_sent_at",
     )
-    .in("status", ["confirmed", "scheduled"])
+    .in("status", ["confirmed", "scheduled", "paid"])
     .eq("scheduled_date", fiveDaysOut);
 
   for (const m of moves5 || []) {
@@ -382,7 +382,7 @@ export async function GET(req: NextRequest) {
     .select(
       "id, move_code, client_name, client_email, checklist_token, move_prep_checklist_email_sent_at, service_type",
     )
-    .in("status", ["confirmed", "scheduled"])
+    .in("status", ["confirmed", "scheduled", "paid"])
     .eq("scheduled_date", threeDaysOut)
     .is("move_prep_checklist_email_sent_at", null);
 
@@ -440,7 +440,7 @@ export async function GET(req: NextRequest) {
       truck_info, arrival_window, tier_selected
     `,
     )
-    .in("status", ["confirmed", "scheduled"])
+    .in("status", ["confirmed", "scheduled", "paid"])
     .eq("scheduled_date", oneDayOut)
     .is("pre_move_24hr_sent", null);
 
