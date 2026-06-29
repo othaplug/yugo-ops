@@ -89,6 +89,52 @@ async function jobAnchorPointsLatLng(
   return out;
 }
 
+/**
+ * Coordinates of the leg the crew is currently driving toward (pickup or
+ * delivery), used to estimate an ETA when the crew app isn't actively
+ * navigating. One indexed single-row read; only called for en-route pings.
+ */
+async function legTargetLatLng(
+  admin: SupabaseClient,
+  jobType: string,
+  jobId: string,
+  nearField: "pickup" | "delivery",
+): Promise<{ lat: number; lng: number } | null> {
+  if (jobType === "move") {
+    const { data: m } = await admin
+      .from("moves")
+      .select("from_lat, from_lng, to_lat, to_lng")
+      .eq("id", jobId)
+      .single();
+    const lat = nearField === "pickup" ? m?.from_lat : m?.to_lat;
+    const lng = nearField === "pickup" ? m?.from_lng : m?.to_lng;
+    return lat != null && lng != null ? { lat: Number(lat), lng: Number(lng) } : null;
+  }
+  if (jobType === "delivery") {
+    const { data: d } = await admin
+      .from("deliveries")
+      .select("pickup_lat, pickup_lng, delivery_lat, delivery_lng")
+      .eq("id", jobId)
+      .single();
+    const lat = nearField === "pickup" ? d?.pickup_lat : d?.delivery_lat;
+    const lng = nearField === "pickup" ? d?.pickup_lng : d?.delivery_lng;
+    return lat != null && lng != null ? { lat: Number(lat), lng: Number(lng) } : null;
+  }
+  return null;
+}
+
+/**
+ * Approximate ETA (seconds) when the crew app provides none: straight-line
+ * distance to the leg target ÷ a sane speed. Uses the live GPS speed when the
+ * crew is genuinely moving, else assumes ~28 km/h urban driving. Floored at
+ * 1 min. Approximate by design — it just keeps the dispatch popup from showing
+ * a blank ETA; precise turn-by-turn ETA still wins when the app sends it.
+ */
+function estimateEtaSeconds(distM: number, speedMs: number | null): number {
+  const effectiveMs = speedMs != null && speedMs > 2 ? speedMs : 28000 / 3600;
+  return Math.max(60, Math.round(distM / effectiveMs));
+}
+
 function mapSessionStatus(status: string | null, isActive: boolean): string {
   if (!isActive || !status) return "idle";
   const map: Record<string, string> = {
@@ -143,6 +189,12 @@ export async function POST(req: NextRequest) {
   const latNum = Number(lat);
   const lngNum = Number(lng);
   const ts = timestamp || new Date().toISOString();
+  // Freshness ("Last GPS · Xs ago") must be measured against the SERVER clock,
+  // not the crew device's. `ts` above is the device-supplied timestamp, which
+  // can run ahead of the viewing admin's clock — a future updated_at made
+  // TrackingFreshness render "—". Use server time for every updated_at write;
+  // the device timestamp is still preserved on location_updates.timestamp.
+  const serverTs = new Date().toISOString();
   const lastLocation = { lat: latNum, lng: lngNum, accuracy: Number(accuracy) || 0, timestamp: ts };
   const sourceStr = typeof source === "string" ? source : "";
   const isNavigationSource = sourceStr === "navigation";
@@ -166,7 +218,7 @@ export async function POST(req: NextRequest) {
   if (now - last < limitMs) {
     await admin
       .from("crews")
-      .update({ current_lat: latNum, current_lng: lngNum, updated_at: ts })
+      .update({ current_lat: latNum, current_lng: lngNum, updated_at: serverTs })
       .eq("id", payload.teamId);
     return NextResponse.json({ ok: true, throttled: true });
   }
@@ -185,7 +237,7 @@ export async function POST(req: NextRequest) {
     await Promise.all([
       admin
         .from("crews")
-        .update({ current_lat: latNum, current_lng: lngNum, updated_at: ts })
+        .update({ current_lat: latNum, current_lng: lngNum, updated_at: serverTs })
         .eq("id", payload.teamId),
       admin.from("crew_locations").upsert(
         {
@@ -201,7 +253,7 @@ export async function POST(req: NextRequest) {
           current_client_name: null,
           current_from_address: null,
           current_to_address: null,
-          updated_at: ts,
+          updated_at: serverTs,
           nav_eta_seconds: null,
           nav_distance_remaining_m: null,
           is_navigating: false,
@@ -368,7 +420,7 @@ export async function POST(req: NextRequest) {
                 status: transition.newSessionStatus,
                 checkpoints,
                 last_location: lastLocation,
-                updated_at: ts,
+                updated_at: serverTs,
               })
               .eq("id", sessionId);
           }
@@ -424,7 +476,7 @@ export async function POST(req: NextRequest) {
               status: "en_route_to_destination",
               checkpoints,
               last_location: lastLocation,
-              updated_at: ts,
+              updated_at: serverTs,
             })
             .eq("id", sessionId);
         }
@@ -475,7 +527,7 @@ export async function POST(req: NextRequest) {
                 status: transition.newSessionStatus,
                 checkpoints,
                 last_location: lastLocation,
-                updated_at: ts,
+                updated_at: serverTs,
               })
               .eq("id", sessionId);
           }
@@ -532,6 +584,28 @@ export async function POST(req: NextRequest) {
   // ── Single crew_locations upsert (no race condition) ──
   const crewLocStatus = mapSessionStatus(sessionStatus, session.is_active);
 
+  // ETA / remaining distance. When the crew app is actively navigating, trust
+  // its turn-by-turn values. Otherwise (the common case — background pings) the
+  // popup was blank, so estimate from GPS distance to the current leg target.
+  let navEtaOut = navActive ? etaSeconds : null;
+  let navDistOut = navActive ? distRemainM : null;
+  if (!navActive && session.is_active && session.job_id && sessionStatus) {
+    const transition = GEOFENCE_TRANSITIONS[sessionStatus];
+    if (transition) {
+      const target = await legTargetLatLng(
+        admin,
+        session.job_type,
+        session.job_id,
+        transition.nearField,
+      );
+      if (target) {
+        const distM = haversineM(latNum, lngNum, target.lat, target.lng);
+        navDistOut = Math.round(distM);
+        navEtaOut = estimateEtaSeconds(distM, speed != null ? Number(speed) : null);
+      }
+    }
+  }
+
   await admin.from("crew_locations").upsert(
     {
       crew_id: session.team_id,
@@ -546,9 +620,9 @@ export async function POST(req: NextRequest) {
       current_client_name: moveClientName,
       current_from_address: moveFrom,
       current_to_address: moveTo,
-      updated_at: ts,
-      nav_eta_seconds: navActive ? etaSeconds : null,
-      nav_distance_remaining_m: navActive ? distRemainM : null,
+      updated_at: serverTs,
+      nav_eta_seconds: navEtaOut,
+      nav_distance_remaining_m: navDistOut,
       is_navigating: navActive,
     },
     { onConflict: "crew_id" },
@@ -570,7 +644,7 @@ export async function POST(req: NextRequest) {
     .update({
       current_lat: latNum,
       current_lng: lngNum,
-      updated_at: ts,
+      updated_at: serverTs,
       status:
         session.is_active && sessionStatus && !["completed", "not_started"].includes(sessionStatus)
           ? "en-route"
@@ -600,7 +674,7 @@ export async function POST(req: NextRequest) {
   if (!autoAdvanced) {
     await admin
       .from("tracking_sessions")
-      .update({ last_location: lastLocation, updated_at: ts })
+      .update({ last_location: lastLocation, updated_at: serverTs })
       .eq("id", sessionId);
   }
 

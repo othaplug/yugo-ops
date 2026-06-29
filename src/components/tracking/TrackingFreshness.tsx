@@ -23,10 +23,13 @@ export function TrackingFreshness({
   if (!lastUpdate) {
     return <span className={`${muted} ${className}`.trim()}>No GPS yet</span>;
   }
-  const secondsAgo = (Date.now() - new Date(lastUpdate).getTime()) / 1000;
-  if (secondsAgo < 0) {
-    return <span className={`${muted} ${className}`.trim()}>—</span>;
-  }
+  // Clamp to 0: a small negative value just means the timestamp is a few seconds
+  // ahead of the viewer's clock (device/server skew). That's a fresh fix, not a
+  // missing one — render it as "just now", never "—".
+  const secondsAgo = Math.max(
+    0,
+    (Date.now() - new Date(lastUpdate).getTime()) / 1000,
+  );
 
   if (!crewOnJob) {
     if (secondsAgo < 60) {
