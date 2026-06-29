@@ -2007,6 +2007,46 @@ export default function QuoteFormClient({
   const [recommendedTier, setRecommendedTier] = useState<
     "essential" | "signature" | "estate" | "priority"
   >("signature");
+  // Tracks whether the operator clicked the picker. Set true when
+  // setRecommendedTier is called from a button handler -- the
+  // serviceType-aligning effect below treats that as "user has
+  // expressed an opinion; don't overwrite it." After Generate we
+  // unset this so the engine's recommendation can still hydrate.
+  const recommendedTierTouchedRef = useRef(false);
+  // Wrap the setter so picker buttons mark the ref as touched without
+  // the engine-sync code path doing the same. The picker buttons use
+  // `pickRecommendedTier`; engine/serviceType-driven updates call
+  // `setRecommendedTier` directly.
+  const pickRecommendedTier = useCallback(
+    (t: "essential" | "signature" | "estate" | "priority") => {
+      recommendedTierTouchedRef.current = true;
+      setRecommendedTier(t);
+    },
+    [],
+  );
+  // Snap recommendedTier to the right default for the active service
+  // type at first mount and whenever the operator switches service.
+  // Residential's third tier is Estate, office's is Priority. Without
+  // this an office quote loads with 'signature' (state default) and
+  // the Client Presentation block stays suppressed. The touched-ref is
+  // RESET on serviceType change -- a service swap means whatever the
+  // operator picked for the old service no longer applies.
+  const recTierPrevServiceTypeRef = useRef(serviceType);
+  useEffect(() => {
+    if (recTierPrevServiceTypeRef.current !== serviceType) {
+      recTierPrevServiceTypeRef.current = serviceType;
+      recommendedTierTouchedRef.current = false;
+    }
+    if (recommendedTierTouchedRef.current) return;
+    if (serviceType === "office_move" && recommendedTier !== "priority") {
+      setRecommendedTier("priority");
+    } else if (
+      (serviceType === "local_move" || serviceType === "long_distance") &&
+      recommendedTier === "priority"
+    ) {
+      setRecommendedTier("estate");
+    }
+  }, [serviceType, recommendedTier]);
 
   /** Pre-tax override sent to /api/quotes/generate (not used for B2B / bin rental). */
   const [quotePreTaxOverride, setQuotePreTaxOverride] = useState("");
@@ -5600,6 +5640,26 @@ export default function QuoteFormClient({
       setQuoteResult(data);
       setQuoteId(id);
       generateSucceeded = true;
+      // Sync recommendedTier from the engine's recommendation. Office
+      // defaults to 'signature' at form load, but the engine always
+      // recommends 'priority' for office_move -- without this sync the
+      // Client Presentation block (gated on recommendedTier ===
+      // 'priority') stays suppressed even though the right rail shows
+      // Priority RECOMMENDED. Residential already sets recommendedTier
+      // before Generate runs, so this is essentially a no-op there.
+      {
+        const rt = String(
+          (data as Record<string, unknown>)?.recommended_tier ?? "",
+        ).toLowerCase();
+        if (
+          rt === "essential" ||
+          rt === "signature" ||
+          rt === "estate" ||
+          rt === "priority"
+        ) {
+          setRecommendedTier(rt);
+        }
+      }
       setSavedMoveProjectId(
         typeof data.move_project_id === "string" ? data.move_project_id : null,
       );
@@ -11276,7 +11336,7 @@ export default function QuoteFormClient({
                         <button
                           key={tier}
                           type="button"
-                          onClick={() => setRecommendedTier(tier)}
+                          onClick={() => pickRecommendedTier(tier)}
                           aria-pressed={isRec}
                           className={`h-9 px-3 rounded-md text-[11px] font-bold uppercase tracking-wide transition-colors ${
                             isRec
@@ -11514,15 +11574,68 @@ export default function QuoteFormClient({
                     />
                   </Field>
                   <Field label="Reason (required if overriding)">
-                    <input
-                      type="text"
-                      value={quotePreTaxOverrideReason}
-                      onChange={(e) =>
-                        setQuotePreTaxOverrideReason(e.target.value)
-                      }
-                      placeholder="e.g. Competitive match, stairs not in model…"
-                      className={`${fieldInput} border-b-[rgba(250,247,242,0.42)] focus:border-b-[rgba(250,247,242,0.88)]`}
-                    />
+                    {(() => {
+                      // Standard reasons -- match the ones operators
+                      // actually use in audits. "Other" reveals the
+                      // free-text input so unusual cases still work.
+                      const PRESETS = [
+                        "Competitive match",
+                        "Volume / loyalty discount",
+                        "Partner referral discount",
+                        "Stairs / access not in model",
+                        "Budget cap",
+                        "Scope reduction",
+                      ];
+                      const isPreset = PRESETS.includes(
+                        quotePreTaxOverrideReason,
+                      );
+                      const dropdownValue = isPreset
+                        ? quotePreTaxOverrideReason
+                        : quotePreTaxOverrideReason
+                          ? "Other"
+                          : "";
+                      return (
+                        <div className="flex flex-col gap-2">
+                          <select
+                            value={dropdownValue}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              if (v === "Other") {
+                                // keep current free-text so the input
+                                // below renders with whatever they had
+                                setQuotePreTaxOverrideReason(
+                                  isPreset ? "" : quotePreTaxOverrideReason,
+                                );
+                              } else {
+                                setQuotePreTaxOverrideReason(v);
+                              }
+                            }}
+                            className={`${fieldInput} border-b-[rgba(250,247,242,0.42)] focus:border-b-[rgba(250,247,242,0.88)] bg-transparent`}
+                          >
+                            <option value="">Select a reason…</option>
+                            {PRESETS.map((r) => (
+                              <option key={r} value={r}>
+                                {r}
+                              </option>
+                            ))}
+                            <option value="Other">Other…</option>
+                          </select>
+                          {dropdownValue === "Other" && (
+                            <input
+                              type="text"
+                              value={
+                                isPreset ? "" : quotePreTaxOverrideReason
+                              }
+                              onChange={(e) =>
+                                setQuotePreTaxOverrideReason(e.target.value)
+                              }
+                              placeholder="Describe the reason…"
+                              className={`${fieldInput} border-b-[rgba(250,247,242,0.42)] focus:border-b-[rgba(250,247,242,0.88)]`}
+                            />
+                          )}
+                        </div>
+                      );
+                    })()}
                   </Field>
                 </div>
               </div>
@@ -13058,7 +13171,23 @@ export default function QuoteFormClient({
             )}
 
             {/* ── Fleet allocation (after generate) ── */}
-            {quoteResult?.truck?.primary && (
+            {quoteResult?.truck?.primary && (() => {
+              // Office moves can use multiple trucks of the SAME type
+              // (e.g. 2 x 16ft for a 327-item move). The truck allocator
+              // only surfaces a single "primary" + optional differently-
+              // sized "secondary" -- the same-type count lives in
+              // factors.office_trucks. Without surfacing the count the
+              // right rail reads "16ft Box Truck" for a job that
+              // actually needs two, which mis-cues the operator.
+              const factorsObj = (quoteResult.factors ?? {}) as Record<
+                string,
+                unknown
+              >;
+              const officeTruckCount =
+                serviceType === "office_move"
+                  ? Math.max(1, Number(factorsObj.office_trucks ?? 1) || 1)
+                  : 1;
+              return (
               <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-[11px]">
                 <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
                   Fleet Allocation
@@ -13067,6 +13196,7 @@ export default function QuoteFormClient({
                   <Truck className="w-3.5 h-3.5 text-[var(--gold)]" />
                   <div>
                     <span className="text-[var(--tx)] font-medium">
+                      {officeTruckCount > 1 ? `${officeTruckCount} × ` : ""}
                       {quoteResult.truck.primary.display_name}
                     </span>
                     {/* Null-safed 2026-06-27 (YG-30322 event quote crash):
@@ -13075,8 +13205,12 @@ export default function QuoteFormClient({
                         whole form into the Quotes error boundary. */}
                     {typeof quoteResult.truck.primary.cargo_cubic_ft === "number" && (
                       <span className="text-[var(--tx3)] ml-1.5">
-                        {quoteResult.truck.primary.cargo_cubic_ft.toLocaleString()}{" "}
+                        {(
+                          quoteResult.truck.primary.cargo_cubic_ft *
+                          officeTruckCount
+                        ).toLocaleString()}{" "}
                         cu ft
+                        {officeTruckCount > 1 && " total"}
                       </span>
                     )}
                   </div>
@@ -13098,7 +13232,8 @@ export default function QuoteFormClient({
                   </p>
                 )}
               </div>
-            )}
+              );
+            })()}
 
             {/* ── Valuation protection (after generate); not applicable to bin rental ── */}
             {quoteResult?.valuation && serviceType !== "bin_rental" && (
@@ -14084,10 +14219,20 @@ function TiersDisplay({
           tierColors[Object.keys(tierColors)[0] ?? ""];
         if (!c) return null;
         const isRecommended = name === recommendedTier;
+        // Visual hierarchy: the recommended card gets a gold ring +
+        // full opacity; non-recommended cards drop to ~70% opacity so
+        // the right rail clearly communicates which tier the operator
+        // has picked. Before this, Signature + Estate/Priority both
+        // had wine tints and only the "Recommended" word badge
+        // distinguished the active tier -- operator flagged it as
+        // ambiguous on 2026-06-29.
+        const recRing = isRecommended
+          ? "ring-2 ring-[var(--gold)] ring-offset-2 ring-offset-[var(--bg)]"
+          : "opacity-70";
         return (
           <div
             key={name}
-            className={`rounded-xl border-2 ${c.border} ${c.bg} p-5 space-y-2`}
+            className={`rounded-xl border-2 ${c.border} ${c.bg} p-5 space-y-2 transition-opacity ${recRing}`}
           >
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">

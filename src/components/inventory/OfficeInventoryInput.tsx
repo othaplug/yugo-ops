@@ -15,6 +15,7 @@ import {
   type OfficeQuoteContext,
 } from "@/lib/quotes/office-quote-engine";
 import { OFFICE_TIER_DEFINITIONS, OFFICE_TIER_ORDER } from "@/lib/tiers/office-tier-definitions";
+import { applyProcessingRecoveryToTier } from "@/lib/pricing/processing-recovery";
 
 /* ── Preset templates ──
  * One-click prefills for typical office sizes. Operator picks the closest
@@ -211,7 +212,20 @@ export default function OfficeInventoryInput({
 
   const { labour, quote } = useMemo(() => {
     const lab = estimateOfficeLabour(inventory);
-    return { labour: lab, quote: calcOfficeTiers(lab, context) };
+    const raw = calcOfficeTiers(lab, context);
+    // Match the server: bake CC processing recovery into every tier
+    // price so the live estimate matches the post-Generate right rail.
+    // Before this, the engine returned pre-recovery numbers
+    // ($6,450/$8,400/$9,300) while the server applied recovery in
+    // route.ts (yielding $6,650/$8,650/$9,600). Operator flagged the
+    // ~$200-300 gap on 2026-06-29. Uses platform defaults; if the
+    // platform_config rates ever drift, the gap will be a few dollars,
+    // not hundreds.
+    const grossedTiers = {} as typeof raw.tiers;
+    for (const k of Object.keys(raw.tiers) as (keyof typeof raw.tiers)[]) {
+      grossedTiers[k] = applyProcessingRecoveryToTier(raw.tiers[k], {}, 50);
+    }
+    return { labour: lab, quote: { ...raw, tiers: grossedTiers } };
   }, [inventory, context]);
 
   const patchCtx = (patch: Partial<OfficeQuoteContext>) =>
