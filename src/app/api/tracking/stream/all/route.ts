@@ -8,6 +8,10 @@ import {
   isMoveRowLiveForMap,
   sessionStatusAllowsJobCode,
 } from "@/lib/tracking-live-job-display";
+import {
+  displayMembersForCrew,
+  type JobRowWithAssigned,
+} from "@/lib/crew-display-members";
 
 const POLL_MS = 3000;
 
@@ -64,9 +68,27 @@ export async function GET(req: NextRequest) {
 
           const moveIds = (sessions || []).filter((s) => s.job_type === "move").map((s) => s.job_id);
           const deliveryIds = (sessions || []).filter((s) => s.job_type === "delivery").map((s) => s.job_id);
-          const { data: moves } = moveIds.length ? await admin.from("moves").select("id, client_name, move_code, status").in("id", moveIds) : { data: [] };
+          // assigned_members pulled so the SSE payload can ship the
+          // active-job member subset on every tick. Before, only
+          // /api/tracking/crews-map computed this — and that endpoint
+          // only fires on initial load + manual refresh. So if a
+          // session went active AFTER the page loaded (e.g. crew
+          // started MV-30228 at 9:48 while operator had the map open
+          // since 9:30), the on-screen member list stayed the full
+          // roster from the initial idle snapshot.
+          const { data: moves } = moveIds.length
+            ? await admin
+                .from("moves")
+                .select("id, client_name, move_code, status, assigned_members")
+                .in("id", moveIds)
+            : { data: [] };
           const { data: deliveries } = deliveryIds.length
-            ? await admin.from("deliveries").select("id, customer_name, client_name, delivery_number, status").in("id", deliveryIds)
+            ? await admin
+                .from("deliveries")
+                .select(
+                  "id, customer_name, client_name, delivery_number, status, assigned_members",
+                )
+                .in("id", deliveryIds)
             : { data: [] };
           const moveMap = new Map((moves || []).map((m) => [m.id, m]));
           const deliveryMap = new Map((deliveries || []).map((d) => [d.id, d]));
@@ -90,6 +112,13 @@ export async function GET(req: NextRequest) {
               const jobId = s.job_type === "move" ? (job as any).move_code : (job as any).delivery_number;
               const detailHref = s.job_type === "move" ? `/admin/moves/${jobId}` : `/admin/deliveries/${jobId}`;
               const teamName = teamNameMap.get(s.team_id) || membersByTeam.get(s.team_id)?.[0] || `Team ${(s.team_id || "").slice(0, 8)}`;
+              const fullMembers = membersByTeam.get(s.team_id) || [];
+              const members = displayMembersForCrew(
+                fullMembers,
+                { job_id: s.job_id, job_type: s.job_type },
+                (moves || []) as JobRowWithAssigned[],
+                (deliveries || []) as JobRowWithAssigned[],
+              );
               return {
                 id: s.id,
                 job_id: s.job_id,
@@ -102,6 +131,7 @@ export async function GET(req: NextRequest) {
                 updatedAt: s.updated_at,
                 team_id: s.team_id,
                 teamName,
+                members,
                 detailHref,
               };
             })
@@ -116,6 +146,7 @@ export async function GET(req: NextRequest) {
               updatedAt: string | null;
               team_id: string;
               teamName: string;
+              members: string[];
               detailHref: string;
             }[];
 

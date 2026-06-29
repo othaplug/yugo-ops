@@ -6,6 +6,10 @@ import {
   isMoveRowLiveForMap,
   sessionStatusAllowsJobCode,
 } from "@/lib/tracking-live-job-display";
+import {
+  displayMembersForCrew,
+  type JobRowWithAssigned,
+} from "@/lib/crew-display-members";
 /** Fallback position when a live session has no GPS yet — so "LIVE" panel and "teams on map" stay in sync. */
 const FALLBACK_LAT = 43.66027;
 const FALLBACK_LNG = -79.35365;
@@ -48,37 +52,10 @@ function jobCodeFromStartedSession(
   return d.delivery_number ?? null;
 }
 
-type JobRowWithAssigned = {
-  id: string;
-  assigned_members?: unknown;
-};
-
-/**
- * For operator map, show only movers assigned to the active session job (snapshot on
- * moves / deliveries), not the full team roster. When the job has no assignment snapshot
- * (null/undefined), keep full team for legacy rows. Empty array means explicitly no one
- * listed, show team name only in the client.
- */
-function displayMembersForCrew(
-  fullMembers: string[],
-  session: { job_id: string; job_type: string } | undefined,
-  moves: JobRowWithAssigned[],
-  deliveries: JobRowWithAssigned[],
-): string[] {
-  if (!session?.job_id) return fullMembers;
-  const job =
-    session.job_type === "move"
-      ? moves.find((m) => m.id === session.job_id)
-      : deliveries.find((d) => d.id === session.job_id);
-  if (!job) return fullMembers;
-  const raw = job.assigned_members;
-  if (raw == null) return fullMembers;
-  if (!Array.isArray(raw)) return fullMembers;
-  const snap = raw.filter(
-    (n): n is string => typeof n === "string" && n.trim().length > 0,
-  );
-  return snap;
-}
+// displayMembersForCrew + JobRowWithAssigned now live in
+// src/lib/crew-display-members so the SSE stream can compute the same
+// subset on every tick (else the live member list goes stale once a
+// session transitions to active after initial page load).
 
 /** GET all crews with live positions for unified tracking map. Staff only. */
 export async function GET(req: NextRequest) {

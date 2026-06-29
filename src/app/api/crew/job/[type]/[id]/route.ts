@@ -934,6 +934,11 @@ export async function GET(
     crewMembers: crewWithRoles,
     jobTypeLabel:
       m.move_type === "office" ? "Office · Commercial" : "Residential",
+    // Tier pill on the crew job page — Oche flagged 2026-06-29 that
+    // Essential / Signature / Estate isn't surfaced anywhere in the
+    // crew app, so movers can't see at a glance whether they're on a
+    // premium service that demands more care.
+    tier: (m as { tier_selected?: string | null }).tier_selected ?? null,
     inventory,
     extraItems: extra || [],
     internalNotes: m.internal_notes || m.next_action || null,

@@ -149,6 +149,12 @@ interface StreamSessionPayload {
   lastLocation?: { lat: number; lng: number } | null;
   status?: string;
   updatedAt?: string;
+  /** Active-job assigned member subset. Lets the live map update the
+   *  visible roster the moment a session starts — previously the
+   *  initial /crews-map members list was frozen for the page lifetime
+   *  even though the snapshot helper had been computing the right
+   *  subset all along (Oche flagged 2026-06-29). */
+  members?: string[];
 }
 
 /* ── Helpers ── */
@@ -1168,6 +1174,11 @@ export default function UnifiedTrackingView({
                   s.status && !["completed", "not_started"].includes(s.status)
                     ? "en-route"
                     : "standby",
+                // Overwrite members from the SSE tick so the map / panel
+                // collapses to the active-job assigned subset the moment
+                // the session goes live, instead of staying stuck on the
+                // full-roster snapshot from initial /crews-map fetch.
+                members: Array.isArray(s.members) ? s.members : c.members,
                 updated_at: s.updatedAt || c.updated_at,
               };
             });

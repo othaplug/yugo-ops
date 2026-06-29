@@ -233,6 +233,10 @@ interface JobDetail {
   access: string | null;
   crewMembers?: CrewMember[];
   jobTypeLabel: string;
+  /** Move tier (essential / signature / estate / priority) — rendered
+   *  as a pill next to the job-type eyebrow so movers see at a glance
+   *  whether they're on a premium service. */
+  tier?: string | null;
   inventory: {
     room: string;
     items: string[];
@@ -1468,9 +1472,41 @@ export default function CrewJobPage({
         ) : null}
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="min-w-0">
-            <p className="yu3-t-eyebrow text-[10px] text-[var(--yu3-wine)]/80 mb-1 [font-family:var(--font-body)] leading-none">
-              {job.jobTypeLabel}
-            </p>
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <p className="yu3-t-eyebrow text-[10px] text-[var(--yu3-wine)]/80 [font-family:var(--font-body)] leading-none">
+                {job.jobTypeLabel}
+              </p>
+              {(() => {
+                const tier = (job.tier || "").toLowerCase().trim();
+                if (!tier) return null;
+                const tierLabel =
+                  tier === "essential" || tier === "essentials" || tier === "curated"
+                    ? "Essential"
+                    : tier === "signature" || tier === "premier"
+                      ? "Signature"
+                      : tier === "estate"
+                        ? "Estate"
+                        : tier === "priority"
+                          ? "Priority"
+                          : null;
+                if (!tierLabel) return null;
+                const isEstate = tierLabel === "Estate";
+                const isSignature = tierLabel === "Signature";
+                return (
+                  <span
+                    className={
+                      isEstate
+                        ? "inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-[var(--yu3-forest)]/12 text-[var(--yu3-forest)] [font-family:var(--font-body)] leading-none"
+                        : isSignature
+                          ? "inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-[var(--yu3-wine)]/12 text-[var(--yu3-wine)] [font-family:var(--font-body)] leading-none"
+                          : "inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-[var(--yu3-ink-strong)]/8 text-[var(--yu3-ink-strong)] [font-family:var(--font-body)] leading-none"
+                    }
+                  >
+                    {tierLabel}
+                  </span>
+                );
+              })()}
+            </div>
             <h1 className="font-hero text-[28px] font-semibold text-[var(--yu3-ink-strong)] leading-[1.12] truncate tracking-[-0.02em]">
               {job.clientName}
             </h1>
