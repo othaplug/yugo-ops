@@ -18,6 +18,7 @@ import {
 import MoveNotifyButton from "../MoveNotifyButton";
 import ResendTrackingLinkButton from "../ResendTrackingLinkButton";
 import ResendBookingEmailsButton from "../ResendBookingEmailsButton";
+import SendMoveReminderButton from "../SendMoveReminderButton";
 import SuppressPostMoveCommsButton from "../SuppressPostMoveCommsButton";
 import MoveContactModal from "./MoveContactModal";
 import EditMoveDetailsModal from "./EditMoveDetailsModal";
@@ -1047,6 +1048,7 @@ export default function MoveDetailClient({
               <>
                 <MoveNotifyButton move={move} />
                 <ResendTrackingLinkButton move={move} />
+                <SendMoveReminderButton move={move} />
                 {isSuperAdmin && <ResendBookingEmailsButton move={move} />}
                 <PageMetaDivider />
               </>
