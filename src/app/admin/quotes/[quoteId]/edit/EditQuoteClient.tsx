@@ -928,13 +928,24 @@ export default function EditQuoteClient({
     // positive price + reason >= 3 chars or the entry is dropped.
     if (
       serviceType === "local_move" ||
-      serviceType === "long_distance"
+      serviceType === "long_distance" ||
+      serviceType === "office_move"
     ) {
+      // Office added 2026-06-30: the edit form's per-tier override
+      // editor is now mounted for office too, so the payload must
+      // ship the office tier keys. Without this fix the operator
+      // could type an override on Priority but the payload-build
+      // skipped office and the server never saw it -- same root
+      // cause that bit the new-quote form yesterday.
+      const tierKeys: readonly ("essential" | "signature" | "estate" | "priority")[] =
+        serviceType === "office_move"
+          ? ["essential", "signature", "priority"]
+          : ["essential", "signature", "estate"];
       const cleanedOverrides: Record<
         string,
         { price: number; reason: string }
       > = {};
-      for (const tk of ["essential", "signature", "estate"] as const) {
+      for (const tk of tierKeys) {
         const entry = tierPriceOverrides[tk];
         if (!entry) continue;
         const p = parseFloat(entry.price);
@@ -2301,9 +2312,15 @@ export default function EditQuoteClient({
             Same UX as the create form (admin/quotes/new). Wrapped in
             EditSection so it's collapsed by default — most edits don't
             touch pricing directly, but when the coordinator does want
-            to override, this is the canonical surface. */}
+            to override, this is the canonical surface.
+
+            office_move added 2026-06-30: edit form was missing per-tier
+            override entirely; operator could only set a global pre-tax
+            override. Now mirrors the new-quote form with three tier
+            rows including Priority. */}
         {(serviceType === "local_move" ||
-          serviceType === "long_distance") && (
+          serviceType === "long_distance" ||
+          serviceType === "office_move") && (
           <EditSection
             eyebrow="Pricing"
             title="Pricing & overrides"
@@ -2323,50 +2340,37 @@ export default function EditQuoteClient({
             }
           >
             <div className="mt-3">
-              <TierPriceOverrideEditor
-                value={tierPriceOverrides}
-                onChange={setTierPriceOverrides}
-                enginePrices={{
-                  essential:
-                    typeof newQuoteResult?.tiers?.essential?.price === "number"
-                      ? newQuoteResult.tiers.essential.price
-                      : typeof oq.tiers?.essential?.price === "number"
-                        ? oq.tiers.essential.price
-                        : undefined,
-                  signature:
-                    typeof newQuoteResult?.tiers?.signature?.price === "number"
-                      ? newQuoteResult.tiers.signature.price
-                      : typeof oq.tiers?.signature?.price === "number"
-                        ? oq.tiers.signature.price
-                        : undefined,
-                  estate:
-                    typeof newQuoteResult?.tiers?.estate?.price === "number"
-                      ? newQuoteResult.tiers.estate.price
-                      : typeof oq.tiers?.estate?.price === "number"
-                        ? oq.tiers.estate.price
-                        : undefined,
-                }}
-                savedPrices={{
-                  essential:
-                    typeof newQuoteResult?.tiers?.essential?.price === "number"
-                      ? newQuoteResult.tiers.essential.price
-                      : typeof oq.tiers?.essential?.price === "number"
-                        ? oq.tiers.essential.price
-                        : undefined,
-                  signature:
-                    typeof newQuoteResult?.tiers?.signature?.price === "number"
-                      ? newQuoteResult.tiers.signature.price
-                      : typeof oq.tiers?.signature?.price === "number"
-                        ? oq.tiers.signature.price
-                        : undefined,
-                  estate:
-                    typeof newQuoteResult?.tiers?.estate?.price === "number"
-                      ? newQuoteResult.tiers.estate.price
-                      : typeof oq.tiers?.estate?.price === "number"
-                        ? oq.tiers.estate.price
-                        : undefined,
-                }}
-              />
+              {(() => {
+                // Build the price map for whichever tier set this
+                // service uses. Residential = essential/signature/
+                // estate; office = essential/signature/priority. The
+                // editor accepts both via tierOrder prop.
+                const pick = (tk: "essential" | "signature" | "estate" | "priority") => {
+                  const p =
+                    typeof newQuoteResult?.tiers?.[tk]?.price === "number"
+                      ? newQuoteResult.tiers[tk].price
+                      : typeof oq.tiers?.[tk]?.price === "number"
+                        ? oq.tiers[tk].price
+                        : undefined;
+                  return p;
+                };
+                const isOffice = serviceType === "office_move";
+                const order: ("essential" | "signature" | "estate" | "priority")[] =
+                  isOffice
+                    ? ["essential", "signature", "priority"]
+                    : ["essential", "signature", "estate"];
+                const prices: Record<string, number | undefined> = {};
+                for (const tk of order) prices[tk] = pick(tk);
+                return (
+                  <TierPriceOverrideEditor
+                    value={tierPriceOverrides}
+                    onChange={setTierPriceOverrides}
+                    tierOrder={order}
+                    enginePrices={prices}
+                    savedPrices={prices}
+                  />
+                );
+              })()}
             </div>
 
             <div className="rounded-xl border border-[var(--brd)] bg-white p-4 mt-3 space-y-2">

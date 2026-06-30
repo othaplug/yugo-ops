@@ -227,18 +227,25 @@ export default function OfficeLayout({
       {/* ── Tiered packages ── */}
       {officeTiered && tiers ? (
         <div>
+          {/* Heading copy is presentation-mode aware. In priority_only
+             the client sees a single card -- "Choose your package /
+             Three flat-rate packages" framing reads as broken
+             (operator caught on YG-30348: the line implies three
+             cards but only Priority renders). Switch to the
+             single-tier framing for this mode. */}
           <h2
             className="admin-section-h2 mb-1 text-center"
             style={{ color: headingColor }}
           >
-            Choose your package
+            {isPriorityOnly ? "Your proposal" : "Choose your package"}
           </h2>
           <p
             className="text-[12px] text-center mb-5"
             style={{ color: mutedColor }}
           >
-            Three flat-rate packages. The difference is how much your team does
-            versus how much Yugo handles.
+            {isPriorityOnly
+              ? "The package your coordinator recommends for this move."
+              : "Three flat-rate packages. The difference is how much your team does versus how much Yugo handles."}
           </p>
           <div
             className={`grid gap-4 ${
@@ -453,15 +460,18 @@ export default function OfficeLayout({
         </div>
       ) : null}
 
-      {/* ── Your Move Includes (Priority hero modes only) ──
-         When the client sees only Priority (priority_only) or
-         Priority dominant (priority_featured), reinforce the value
-         with a fully-spelled-out inclusion list and a phased
-         timeline. Mirrors the residential "Your Move Includes"
-         pattern for Estate. Suppressed for the comparison layout
-         since the side-by-side cards already do this work. */}
+      {/* ── Your Move Includes (priority_featured only) ──
+         In priority_featured the hero card shows only the delta over
+         Signature ("Everything in Signature, plus...") so the full
+         list still needs to render below. In priority_only the hero
+         already shows the FULL Priority list (see showFullList logic
+         above), so this section would just repeat the same 16
+         bullets a few hundred pixels later. Operator caught the
+         duplication on YG-30348. Gate tightened to priority_featured
+         only; comparison mode still suppressed since the
+         side-by-side cards already cover it. */}
       {officeTiered &&
-        (isPriorityOnly || isPriorityFeatured) &&
+        isPriorityFeatured &&
         tiers.priority && (
           <div className={`pt-8 border-t ${sectionBorderClass}`}>
             <div className="text-center mb-6">
