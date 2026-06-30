@@ -185,8 +185,58 @@ export async function POST(req: NextRequest) {
       .select("key, value")
       .in("key", ["coordinator_name", "coordinator_phone", "quote_expiry_days"]);
 
-    const coordinatorName = coordConfig?.find((c) => c.key === "coordinator_name")?.value || null;
-    const coordinatorPhone = coordConfig?.find((c) => c.key === "coordinator_phone")?.value || null;
+    // Coordinator name precedence:
+    //   1) quote.factors_applied.coordinator_name -- the per-quote
+    //      value the operator typed into the form on create. THIS
+    //      was the missing link before today; YG-30348 had
+    //      'Jon' in factors but the route never looked there, so
+    //      the email rendered with the global config or the literal
+    //      'Yugo' fallback.
+    //   2) platform_config.coordinator_name -- global override.
+    //   3) operator profile name / auth email local-part -- last
+    //      resort so the email is never sent with an empty
+    //      coordinator block.
+    let coordinatorName: string | null = null;
+    const factorsCoord = (factors as Record<string, unknown>)
+      ?.coordinator_name;
+    if (typeof factorsCoord === "string" && factorsCoord.trim()) {
+      coordinatorName = factorsCoord.trim();
+    }
+    if (!coordinatorName) {
+      coordinatorName =
+        coordConfig?.find((c) => c.key === "coordinator_name")?.value || null;
+    }
+    const coordinatorPhone =
+      coordConfig?.find((c) => c.key === "coordinator_phone")?.value || null;
+    if (!coordinatorName && user) {
+      // Try the operator's profile name first, then fall back to the
+      // local-part of their auth email.
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, name")
+        .eq("id", user.id)
+        .maybeSingle();
+      const profileName = (
+        (profile as { full_name?: string | null; name?: string | null } | null)
+          ?.full_name ??
+        (profile as { full_name?: string | null; name?: string | null } | null)
+          ?.name ??
+        ""
+      ).trim();
+      if (profileName) {
+        coordinatorName = profileName;
+      } else {
+        const email = (user as { email?: string | null }).email ?? "";
+        const local = email.split("@")[0] ?? "";
+        const pretty =
+          local
+            .replace(/[._-]+/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .replace(/\b\w/g, (c) => c.toUpperCase()) || null;
+        coordinatorName = pretty;
+      }
+    }
     const expiryDays = parseInt(coordConfig?.find((c) => c.key === "quote_expiry_days")?.value || "7", 10);
 
     const eventNameForSubject = (factors.event_name as string) ?? null;
@@ -356,6 +406,20 @@ export async function POST(req: NextRequest) {
         coordinatorName,
         coordinatorPhone,
         recommendedTier: quote.recommended_tier ?? "signature",
+        // Office: surface the recommended tier's day count so the
+        // office email template renders a date range (Jul 11 - Jul
+        // 12) for multi-day moves instead of a single date.
+        officeDayCount: (() => {
+          if (serviceType !== "office_move") return null;
+          const perTier = (factors as Record<string, unknown>)
+            .office_per_tier_days as Record<string, number> | undefined;
+          if (!perTier) return null;
+          const tier = (
+            (quote.recommended_tier as string | null) ?? "priority"
+          ).toLowerCase();
+          const days = perTier[tier];
+          return typeof days === "number" && days > 0 ? days : null;
+        })(),
         // Feed presentation_mode through so the residential email
         // honors the operator's layout choice (Estate-featured / Estate-
         // only / comparison). Without this the email always rendered

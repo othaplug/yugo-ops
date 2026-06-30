@@ -272,6 +272,11 @@ export interface QuoteTemplateData {
   coordinatorName?: string | null;
   coordinatorPhone?: string | null;
   recommendedTier?: string | null;
+  /** Office only: number of days for the recommended tier. Drives the
+   *  multi-day date range render (Jul 11 – Jul 12 instead of single
+   *  Jul 11). Read from factors.office_per_tier_days[recommended] in
+   *  the send route. */
+  officeDayCount?: number | null;
   /**
    * Client-facing presentation layout. Read from
    * quotes.presentation_mode. Drives the residential email:
@@ -343,6 +348,26 @@ function dateDisplay(dateStr: string | null | undefined): string {
     day: "numeric",
     timeZone: "America/Toronto",
   });
+}
+
+/** Office: render Jul 11 - Jul 12 when the tier spans multiple days.
+ *  Single-day moves fall back to the existing single-date format. */
+function officeMoveDateDisplay(
+  dateStr: string | null | undefined,
+  dayCount: number | null | undefined,
+): string {
+  if (!dateStr) return "To be confirmed";
+  const days = Math.max(1, Math.floor(dayCount ?? 1));
+  const start = dateDisplay(dateStr);
+  if (days <= 1) return start;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+  if (!m) return start;
+  const y = Number(m[1]);
+  const mo = Number(m[2]) - 1;
+  const d = Number(m[3]) + (days - 1);
+  const end = new Date(y, mo, d);
+  const endIso = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
+  return `${start} - ${dateDisplay(endIso)}`;
 }
 
 function expiryNote(expiresAt: string | null | undefined): string {
@@ -901,9 +926,24 @@ function officeTemplate(d: QuoteTemplateData): string {
       d.toAccess,
     ),
   );
-  rows.push(["Target Date", dateDisplay(d.moveDate)]);
+  // Target date: render a range for multi-day moves (Jul 11 – Jul 12)
+  // instead of just the start date. Operator caught on YG-30348 where
+  // a 2-day office move emailed as a single 'Saturday, July 11'.
+  // Driven by officeDayCount derived from factors.office_per_tier_days
+  // for the recommended tier, passed through the send route.
+  rows.push(["Target Date", officeMoveDateDisplay(d.moveDate, d.officeDayCount)]);
 
-  const price = d.customPrice;
+  // Headline price: prefer the recommended tier's price from the
+  // tiers map (so a per-tier override is reflected) over the stale
+  // top-level custom_price column. Without this the email showed
+  // $9,600 (pre-override engine price) even though the client quote
+  // page and DB row had $10,800. Operator caught on YG-30348.
+  const recTier = (d.recommendedTier ?? "priority").toLowerCase();
+  const tierPrice =
+    d.tiers && typeof d.tiers[recTier]?.price === "number"
+      ? d.tiers[recTier]!.price
+      : undefined;
+  const price = tierPrice ?? d.customPrice;
 
   return quoteEmailLayout(`
     ${subHeading("Relocation Proposal")}
