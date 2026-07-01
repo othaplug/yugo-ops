@@ -94,7 +94,56 @@ export const TRACKING_STATUS_LABELS: Record<TrackingStatus, string> = {
   en_route: "En route",
   arrived: "Arrived",
   delivering: "Delivering / Installing",
+  // Office-specific stages (Day 1 pack day)
+  initial_walkthrough: "Site walkthrough",
+  it_documentation: "IT documentation",
+  packing_started: "Packing started",
+  packing_complete: "Packing complete",
+  setup: "Setup",
 };
+
+/**
+ * Office move flow, Day 1 + Day 2 combined.
+ * Day 1 is prep-heavy and unique (walkthrough / IT documentation /
+ * pack). Day 2 mirrors residential (en_route ... unloading) plus a
+ * `setup` step before completion.
+ */
+export const OFFICE_MOVE_STATUS_FLOW: TrackingStatus[] = [
+  "initial_walkthrough",
+  "it_documentation",
+  "packing_started",
+  "packing_complete",
+  "en_route_to_pickup",
+  "arrived_at_pickup",
+  "loading",
+  "en_route_to_destination",
+  "arrived_at_destination",
+  "unloading",
+  "setup",
+  "completed",
+];
+
+/**
+ * Split of {@link OFFICE_MOVE_STATUS_FLOW} into Day 1 and Day 2 for
+ * the tracking page's phased view. Day 1 = prep + pack; Day 2 = move
+ * + placement.
+ */
+export const OFFICE_MOVE_DAY_1_STAGES: TrackingStatus[] = [
+  "initial_walkthrough",
+  "it_documentation",
+  "packing_started",
+  "packing_complete",
+];
+export const OFFICE_MOVE_DAY_2_STAGES: TrackingStatus[] = [
+  "en_route_to_pickup",
+  "arrived_at_pickup",
+  "loading",
+  "en_route_to_destination",
+  "arrived_at_destination",
+  "unloading",
+  "setup",
+  "completed",
+];
 
 export function getNextStatus(
   current: string,
@@ -183,14 +232,25 @@ const WHITE_GLOVE_INHOME_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, strin
   completed: "Client Sign-off",
 };
 
-/** Office / commercial move copy (6-step trimmed flow). */
+/** Office / commercial move copy (12-step Day 1 + Day 2 flow).
+ *  Day 1 covers on-site prep (walkthrough / IT photos / packing).
+ *  Day 2 mirrors residential (en_route ... unloading) plus a
+ *  `setup` step before client sign-off. See OFFICE_MOVE_STATUS_FLOW. */
 const OFFICE_MOVE_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
-  en_route_to_pickup: "En Route to Origin",
-  arrived_at_pickup: "At Origin",
-  en_route_to_destination: "In Transit",
-  arrived_at_destination: "At Destination",
-  walkthrough_photos: "Verify",
-  completed: "Client Sign-off",
+  // Day 1
+  initial_walkthrough: "Site walkthrough",
+  it_documentation: "IT documentation",
+  packing_started: "Packing started",
+  packing_complete: "Packing complete",
+  // Day 2
+  en_route_to_pickup: "En route to origin",
+  arrived_at_pickup: "At origin",
+  loading: "Loading",
+  en_route_to_destination: "In transit",
+  arrived_at_destination: "At destination",
+  unloading: "Unloading",
+  setup: "Placement & setup",
+  completed: "Client sign-off",
 };
 
 /** Residential A→B move copy (6-step trimmed). Final walkthrough + sign-off. */

@@ -32,7 +32,13 @@ export type PartnerCheckpointStatus =
   | "completed"
   | "en_route"
   | "arrived"
-  | "delivering";
+  | "delivering"
+  // Office-specific stages (mirrors TrackingStatus)
+  | "initial_walkthrough"
+  | "it_documentation"
+  | "packing_started"
+  | "packing_complete"
+  | "setup";
 
 function digitsOnly(phone: string): string {
   return (phone || "").replace(/\D/g, "");

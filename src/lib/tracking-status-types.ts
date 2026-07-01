@@ -25,4 +25,18 @@ export type TrackingStatus =
   | "completed"
   | "en_route"
   | "arrived"
-  | "delivering";
+  | "delivering"
+  /* ── Office move Day 1 (pack day) ──
+     Added 2026-06-30 for the office relocation crew flow. Day 1
+     mirrors the on-site preparation an Estate crew walks through,
+     tailored for commercial: initial site walkthrough with the
+     client's office manager, IT documentation (borrowed from the
+     Estate photo-inventory pattern but scoped to workstations +
+     server racks), then packing. Day 2 uses the generic move flow
+     (en_route_to_pickup ... completed) with an added 'setup'
+     stage. */
+  | "initial_walkthrough"
+  | "it_documentation"
+  | "packing_started"
+  | "packing_complete"
+  | "setup";
