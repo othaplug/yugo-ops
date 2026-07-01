@@ -1029,6 +1029,44 @@ export default function EditQuoteClient({
       payload.has_conference_room = hasConferenceRoom;
       payload.has_reception_area = hasReceptionArea;
       if (timingPreference) payload.timing_preference = timingPreference;
+
+      // Reconstruct the office_inventory payload from saved factors so
+      // the live preview engine receives real per-line data and doesn't
+      // hit the $1,500 minPrice floor on every tier. Without this,
+      // opening the edit form for an office quote (where inventory_items
+      // is empty -- the office engine writes its lines to
+      // factors_applied.office_inventory, not the inventory_items
+      // column) produced Essential $1,550 / Signature $1,550 / Priority
+      // $1,550 in the live preview, masking the actual $6,650/$8,650/
+      // $9,400 from the saved row.
+      //
+      // We also forward the per-quote scope flags from factors so the
+      // engine reproduces the same scenario (after-hours / weekend /
+      // partial / moving sqft / distance).
+      const savedOfficeInv = (factors as Record<string, unknown>)
+        .office_inventory;
+      if (Array.isArray(savedOfficeInv) && savedOfficeInv.length > 0) {
+        payload.office_inventory = savedOfficeInv.map((row) => {
+          const r = row as { slug?: string; quantity?: number };
+          return {
+            slug: r.slug ?? "",
+            quantity: Math.max(0, Math.floor(r.quantity ?? 0)),
+          };
+        });
+      }
+      if (factors.office_after_hours === true) {
+        payload.office_after_hours = true;
+      }
+      if (factors.office_weekend === true) {
+        payload.office_weekend = true;
+      }
+      if (factors.office_partial_move === true) {
+        payload.office_partial_move = true;
+      }
+      const sqft = factors.office_moving_sqft;
+      if (typeof sqft === "number" && sqft > 0) {
+        payload.office_moving_sqft = sqft;
+      }
     }
 
     if (serviceType === "single_item") {

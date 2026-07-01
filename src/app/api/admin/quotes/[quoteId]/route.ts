@@ -39,6 +39,9 @@ export async function PATCH(
     auto_followup_active?: boolean;
     loss_reason?: string | null;
     cold_reason?: string | null;
+    /** ISO 8601 timestamp. Set when the coordinator extends the
+     *  quote's expiry from the engagement banner on the detail page. */
+    expires_at?: string;
   };
 
   const admin = createAdminClient();
@@ -57,6 +60,31 @@ export async function PATCH(
 
   if (typeof body.auto_followup_active === "boolean") {
     patch.auto_followup_active = body.auto_followup_active;
+  }
+
+  // Expiry extension. Only accept future ISO timestamps so the
+  // banner's "Extend by N days" action can't accidentally write a
+  // value in the past. When the operator reopens an already-expired
+  // quote we also flip status from 'expired' back to 'sent' so the
+  // pipeline reflects the new state.
+  if (typeof body.expires_at === "string" && body.expires_at.trim()) {
+    const next = new Date(body.expires_at.trim());
+    if (Number.isNaN(next.getTime())) {
+      return NextResponse.json(
+        { error: "Invalid expires_at timestamp" },
+        { status: 400 },
+      );
+    }
+    if (next.getTime() <= Date.now()) {
+      return NextResponse.json(
+        { error: "expires_at must be in the future" },
+        { status: 400 },
+      );
+    }
+    patch.expires_at = next.toISOString();
+    if (prevStatus === "expired") {
+      patch.status = "sent";
+    }
   }
 
   if (body.status !== undefined) {

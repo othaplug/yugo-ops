@@ -523,18 +523,39 @@ export function calculateDeposit(
   }
 }
 
-/** Pre-tax and tax-inclusive totals from stored tier or custom price (aligned with createMoveFromQuote). */
+/** Pre-tax and tax-inclusive totals from stored tier or custom price (aligned with createMoveFromQuote).
+ *
+ *  Precedence:
+ *   1) selected_tier (client locked in via checkout / external booking)
+ *   2) recommended_tier (operator's pick) -- THIS reads from the tiers
+ *      map so a per-tier override is honored. Without this fallback the
+ *      header on /admin/quotes/[id] read custom_price ($9,600 engine)
+ *      for a YG-30348-style office quote even though the operator had
+ *      overridden Priority to $10,800. Header rendered Total $10,848 /
+ *      First payment $2,790; the real numbers after override were
+ *      $12,204 / $3,240.
+ *   3) custom_price -- the legacy single-price fallback.
+ */
 export function getQuoteTotalWithTaxFromRow(quote: {
   selected_tier?: string | null;
+  recommended_tier?: string | null;
   tiers?: unknown;
   custom_price?: number | null;
 }): { basePrice: number; totalWithTax: number } {
-  const selectedTier = quote.selected_tier;
   const tiers = quote.tiers as
     | Record<string, { price: number; total: number }>
     | undefined;
+  const selectedTier = quote.selected_tier;
   if (selectedTier && tiers?.[selectedTier]) {
     const tierData = tiers[selectedTier];
+    const basePrice = tierData?.price ?? 0;
+    const totalWithTax =
+      tierData?.total ?? Math.round(basePrice * 1.13);
+    return { basePrice, totalWithTax };
+  }
+  const recTier = quote.recommended_tier;
+  if (recTier && tiers?.[recTier]) {
+    const tierData = tiers[recTier];
     const basePrice = tierData?.price ?? 0;
     const totalWithTax =
       tierData?.total ?? Math.round(basePrice * 1.13);
@@ -550,6 +571,7 @@ export function getQuoteTotalWithTaxFromRow(quote: {
 export function getOfflineDepositInclusiveFromQuote(quote: {
   service_type?: string | null;
   selected_tier?: string | null;
+  recommended_tier?: string | null;
   tiers?: unknown;
   custom_price?: number | null;
   deposit_amount?: number | null;
@@ -557,6 +579,26 @@ export function getOfflineDepositInclusiveFromQuote(quote: {
 }): number {
   const { basePrice, totalWithTax } = getQuoteTotalWithTaxFromRow(quote);
   const st = String(quote.service_type ?? "");
+
+  // For an office quote with a per-tier override, the deposit on the
+  // tier row IS the truth (set by the engine in route.ts when the
+  // override lands). Use it directly when present so the header reads
+  // the override deposit ($3,240 on YG-30348) rather than a stale
+  // engine-derived value ($2,790).
+  const tiers = quote.tiers as
+    | Record<string, { price: number; deposit?: number; total?: number }>
+    | undefined;
+  const tierKey = quote.selected_tier ?? quote.recommended_tier ?? null;
+  if (tierKey && tiers?.[tierKey]?.deposit && tiers[tierKey].deposit! > 0) {
+    const depositPreTax = tiers[tierKey].deposit!;
+    const tierTotal =
+      tiers[tierKey].total ?? Math.round(basePrice * 1.13);
+    // Tax-inclusive deposit using the same ratio the tier row carries.
+    return Math.min(
+      tierTotal,
+      Math.round((depositPreTax / basePrice) * tierTotal * 100) / 100,
+    );
+  }
 
   if (quote.deposit_amount != null && Number(quote.deposit_amount) > 0) {
     return Math.min(totalWithTax, Number(quote.deposit_amount));
@@ -572,7 +614,7 @@ export function getOfflineDepositInclusiveFromQuote(quote: {
     return totalWithTax;
   }
 
-  const tier = String(quote.selected_tier ?? "");
+  const tier = String(quote.selected_tier ?? quote.recommended_tier ?? "");
   let depositPreTax: number;
   if (st === "local_move" && tier) {
     depositPreTax = calculateTieredDeposit(tier, basePrice);

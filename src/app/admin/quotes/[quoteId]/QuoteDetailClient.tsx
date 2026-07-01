@@ -469,6 +469,71 @@ export default function QuoteDetailClient({
   const [versionHistory, setVersionHistory] = useState<Array<{ version_number: number; created_at: string; snapshot: Record<string, unknown> }> | null>(null);
   const [versionHistoryLoading, setVersionHistoryLoading] = useState(false);
 
+  // HubSpot deal stage (lazy-loaded after mount when a deal is linked).
+  // Surfaces "Stage: Proposal Sent" next to the deal id so the
+  // coordinator doesn't have to pivot to HubSpot before every call.
+  const [hubspotStage, setHubspotStage] = useState<{
+    stageId: string | null;
+    stageLabel: string | null;
+  } | null>(null);
+  useEffect(() => {
+    if (!hubspotDealId) return;
+    let cancelled = false;
+    void fetch(
+      `/api/admin/hubspot/deal-stage?dealId=${encodeURIComponent(hubspotDealId)}`,
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        setHubspotStage({
+          stageId: data.stageId ?? null,
+          stageLabel: data.stageLabel ?? null,
+        });
+      })
+      .catch(() => {
+        /* silent — banner just won't show */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [hubspotDealId]);
+
+  // Extend-expiry action (used by the engagement banner). Calls the
+  // existing PATCH /api/quotes/[id] endpoint with a new expires_at
+  // computed as (current expires_at OR now) + N days.
+  const [extendingExpiry, setExtendingExpiry] = useState(false);
+  const [extendExpiryMsg, setExtendExpiryMsg] = useState<string | null>(null);
+  const extendExpiryDays = async (days: number) => {
+    if (extendingExpiry) return;
+    setExtendingExpiry(true);
+    setExtendExpiryMsg(null);
+    try {
+      const base = quote.expires_at
+        ? new Date(quote.expires_at)
+        : new Date();
+      const baseMs = base.getTime();
+      const nowMs = Date.now();
+      const start = baseMs > nowMs ? baseMs : nowMs;
+      const next = new Date(start + days * 86_400_000).toISOString();
+      const res = await fetch(`/api/admin/quotes/${quote.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expires_at: next }),
+      });
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        setExtendExpiryMsg(j.error || "Could not extend expiry.");
+      } else {
+        setExtendExpiryMsg(`Extended by ${days} days. Refreshing…`);
+        setTimeout(() => window.location.reload(), 700);
+      }
+    } catch {
+      setExtendExpiryMsg("Network error — try again.");
+    }
+    setExtendingExpiry(false);
+  };
   const [pipelineStatus, setPipelineStatus] = useState(
     String(quote.status || "draft"),
   );
@@ -1036,6 +1101,11 @@ export default function QuoteDetailClient({
                   <code className="text-[11px] font-mono bg-[var(--bg)] px-1.5 py-0.5 rounded border border-[var(--brd)] text-[var(--tx)]">
                     {hubspotLinkedId}
                   </code>
+                  {hubspotStage?.stageLabel && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--wine)]/10 text-[var(--wine)] text-[10px] font-bold uppercase tracking-wider">
+                      {hubspotStage.stageLabel}
+                    </span>
+                  )}
                   <InfoHint
                     variant="admin"
                     align="start"
@@ -1698,6 +1768,109 @@ export default function QuoteDetailClient({
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left: Quote Details */}
           <div className="lg:col-span-2 space-y-0">
+            {/* Expiry / engagement banner: when the client is actively
+               engaging and the quote is about to expire (or already has),
+               surface that to the coordinator with a one-click extend
+               action. Operator caught on YG-30348: quote expired Jul 6
+               for a Jul 11 move with 4 views + Priority click -- the
+               coordinator had no signal until the client tried to book. */}
+            {quote.expires_at && (() => {
+              const expiresAt = new Date(quote.expires_at);
+              const now = new Date();
+              const msPerDay = 86400000;
+              const daysUntilExpiry = Math.floor(
+                (expiresAt.getTime() - now.getTime()) / msPerDay,
+              );
+              const isExpired = daysUntilExpiry < 0;
+              // Derive a single "tier the client cares about" from
+              // the click counts. Highest non-zero wins; tied or empty
+              // is null.
+              const tierInterest = (() => {
+                const counts = engagementMetrics?.tierClickCounts;
+                if (!counts) return null;
+                let best: string | null = null;
+                let bestN = 0;
+                for (const [k, v] of Object.entries(counts)) {
+                  if (v > bestN) {
+                    best = k;
+                    bestN = v;
+                  }
+                }
+                return bestN > 0 ? best : null;
+              })();
+              const isActivelyEngaged =
+                !!engagementMetrics &&
+                (engagementMetrics.pageViewCount >= 2 ||
+                  engagementMetrics.distinctViewDays >= 2 ||
+                  engagementMetrics.comparingRecommended ||
+                  tierInterest != null);
+              // Warning window: 7 days. 5 was too narrow -- a quote
+              // expiring Jul 6 for a Jul 11 move triggered no signal
+              // until Jul 1, leaving the coordinator one business day
+              // to react. 7 days gives a full week of lead time.
+              const EXPIRY_WARN_DAYS = 7;
+              if (
+                !isActivelyEngaged ||
+                (daysUntilExpiry > EXPIRY_WARN_DAYS && !isExpired)
+              ) {
+                return null;
+              }
+              const firstName =
+                (contact?.name ?? "").split(" ")[0] || "the client";
+              const tierName = tierInterest
+                ? tierInterest[0].toUpperCase() + tierInterest.slice(1)
+                : null;
+              return (
+                <div
+                  className={`mb-4 rounded-xl border p-3 ${
+                    isExpired
+                      ? "border-red-500/50 bg-red-500/5"
+                      : "border-amber-400/60 bg-amber-400/5"
+                  }`}
+                >
+                  <p
+                    className={`text-[11px] font-bold uppercase tracking-wider mb-1 ${
+                      isExpired ? "text-red-500" : "text-amber-600"
+                    }`}
+                  >
+                    {isExpired
+                      ? `Expired ${Math.abs(daysUntilExpiry)} day${Math.abs(daysUntilExpiry) === 1 ? "" : "s"} ago — client still engaged`
+                      : `Expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? "" : "s"} — client is actively engaged`}
+                  </p>
+                  <p className="text-[11px] text-[var(--tx2)] leading-snug">
+                    {firstName} viewed this quote{" "}
+                    {engagementMetrics?.pageViewCount ?? 0} time
+                    {(engagementMetrics?.pageViewCount ?? 0) === 1 ? "" : "s"}
+                    {engagementMetrics?.distinctViewDays
+                      ? ` across ${engagementMetrics.distinctViewDays} day${engagementMetrics.distinctViewDays === 1 ? "" : "s"}`
+                      : ""}
+                    {tierName
+                      ? ` and is comparing ${tierName}`
+                      : engagementMetrics?.comparingRecommended
+                        ? " and is comparing the recommended tier"
+                        : ""}
+                    . Consider extending expiry or reaching out.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => extendExpiryDays(14)}
+                    disabled={extendingExpiry}
+                    className={`mt-2 inline-flex items-center text-[11px] font-semibold ${
+                      isExpired ? "text-red-500" : "text-amber-700"
+                    } hover:underline disabled:opacity-50`}
+                  >
+                    {extendingExpiry
+                      ? "Extending…"
+                      : `${isExpired ? "Reopen" : "Extend"} by 14 days →`}
+                  </button>
+                  {extendExpiryMsg && (
+                    <p className="text-[10px] text-[var(--tx2)] mt-1">
+                      {extendExpiryMsg}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
             {/* Quote Summary */}
             <div className="pb-6">
               <h2 className="admin-section-h2 mb-5">Quote Summary</h2>
@@ -1937,19 +2110,41 @@ export default function QuoteDetailClient({
                         : null;
                     if (quote.tiers) {
                       const t = quote.tiers as Record<string, any>;
-                      // When the client has locked in a tier (booked / paid
-                      // deposit / external booking recorded), the accepted
-                      // amount is the only one that matters — surface it
-                      // singly instead of the original lo–hi range. The
-                      // booked tier is stored in `selected_tier` (set by
-                      // checkout / external-booking flow); we treat the
-                      // presence of a linked move/delivery as a separate
-                      // confirmation signal.
+                      // Surface a single tier amount (not the lo–hi range)
+                      // when:
+                      //   a) the client has locked in a tier (selected_tier
+                      //      set via checkout / external booking)
+                      //   b) there's a linked move/delivery -- treat
+                      //      recommended_tier as the booked one
+                      //   c) NEW (2026-06-30): the operator has applied a
+                      //      per-tier override on the recommended tier.
+                      //      An override is a coordinator decision -- the
+                      //      operator has named a specific price for the
+                      //      client; surfacing the range still anchors the
+                      //      header on engine numbers that no longer
+                      //      apply. The range view (case d) stays for
+                      //      pure engine-priced quotes where no operator
+                      //      decision has been made.
+                      const overrides =
+                        (quote as { tier_price_overrides?: unknown })
+                          .tier_price_overrides;
+                      const hasRecOverride =
+                        typeof quote.recommended_tier === "string" &&
+                        overrides &&
+                        typeof overrides === "object" &&
+                        (overrides as Record<string, unknown>)[
+                          quote.recommended_tier
+                        ] != null;
                       const bookedTierKey =
                         (typeof quote.selected_tier === "string" &&
                           t[quote.selected_tier]) ||
                         (typeof quote.recommended_tier === "string" &&
                         (linkedMoveCode || linkedDeliveryNumber) &&
+                        t[quote.recommended_tier]
+                          ? quote.recommended_tier
+                          : null) ||
+                        (hasRecOverride &&
+                        typeof quote.recommended_tier === "string" &&
                         t[quote.recommended_tier]
                           ? quote.recommended_tier
                           : null)
@@ -1968,7 +2163,24 @@ export default function QuoteDetailClient({
                               ? "Signature"
                               : bookedTierKey === "essential"
                                 ? "Essential"
-                                : bookedTierKey;
+                                : bookedTierKey === "priority"
+                                  ? "Priority"
+                                  : bookedTierKey;
+                        // Status copy: "locked" reads stronger than the
+                        // truth when the only signal we have is an
+                        // operator override (no actual client lock-in).
+                        // Distinguish the three sub-cases so the
+                        // coordinator can tell at a glance.
+                        const isClientLocked =
+                          typeof quote.selected_tier === "string" &&
+                          t[quote.selected_tier];
+                        const isBookingLinked =
+                          !!(linkedMoveCode || linkedDeliveryNumber);
+                        const statusLabel = isClientLocked
+                          ? `${tierLabelOut} tier locked`
+                          : isBookingLinked
+                            ? `${tierLabelOut} tier booked`
+                            : `${tierLabelOut} (operator override)`;
                         return (
                           <>
                             <p className="text-[22px] font-bold text-[var(--gold)] font-heading leading-tight">
@@ -1978,7 +2190,7 @@ export default function QuoteDetailClient({
                               +{fmtCurrency(Math.round(bookedPrice * HST))} HST (13%)
                               {" · "}
                               <span className="text-[var(--gold)]/85 font-semibold">
-                                {tierLabelOut} tier locked
+                                {statusLabel}
                               </span>
                             </p>
                           </>
@@ -2616,9 +2828,33 @@ export default function QuoteDetailClient({
                         Time on page
                       </span>
                       <span className="text-[var(--tx)] font-medium text-right">
-                        {engagementMetrics.maxSessionSeconds > 0
-                          ? `up to ${fmtDuration(engagementMetrics.maxSessionSeconds)}`
-                          : "—"}
+                        {(() => {
+                          // Cap displayed session duration at 30 minutes.
+                          // Raw maxSessionSeconds can run to 700+ minutes
+                          // when a client leaves the browser tab open
+                          // overnight -- not real engagement. Anything
+                          // above the cap renders the cap value with a
+                          // "(tab left open)" note so the coordinator
+                          // doesn't read it as "client studied the
+                          // quote for 12 hours."
+                          const SESSION_CAP_SECONDS = 30 * 60;
+                          const raw = engagementMetrics.maxSessionSeconds;
+                          if (raw <= 0) return "—";
+                          const tabLeftOpen = raw > SESSION_CAP_SECONDS;
+                          const display = tabLeftOpen
+                            ? SESSION_CAP_SECONDS
+                            : raw;
+                          return (
+                            <>
+                              up to {fmtDuration(display)}
+                              {tabLeftOpen && (
+                                <span className="text-[var(--tx3)] ml-1">
+                                  (tab left open)
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
                         {engagementMetrics.maxScrollPct > 0
                           ? ` · scroll ${engagementMetrics.maxScrollPct}%`
                           : ""}
@@ -2653,13 +2889,29 @@ export default function QuoteDetailClient({
                     <div className="flex justify-between">
                       <span className="text-[var(--tx3)]">Longest session</span>
                       <span className="text-[var(--tx)] font-medium">
-                        {fmtDuration(
-                          Math.max(
+                        {(() => {
+                          // Same 30-min cap applied to the "Time on page"
+                          // summary line above. Legacy stats block was
+                          // rendering the raw 713m 41s next to the capped
+                          // display which read as a contradiction.
+                          const raw = Math.max(
                             ...engagementAfterSend.map(
                               (e) => e.session_duration_seconds ?? 0,
                             ),
-                          ),
-                        )}
+                          );
+                          const CAP = 30 * 60;
+                          const tabLeftOpen = raw > CAP;
+                          return (
+                            <>
+                              {fmtDuration(tabLeftOpen ? CAP : raw)}
+                              {tabLeftOpen && (
+                                <span className="text-[var(--tx3)] ml-1 text-[10px]">
+                                  (tab left open)
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
                       </span>
                     </div>
                     <div className="flex justify-between">
