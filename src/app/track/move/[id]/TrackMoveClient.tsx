@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import { OfficeTrackHero } from "./OfficeTrackHero";
 import Script from "next/script";
 import { getMoveCode, formatJobId } from "@/lib/move-code";
 import TrackInventory from "./TrackInventory";
@@ -561,6 +562,10 @@ export default function TrackMoveClient({
   companyContactEmail = process.env.NEXT_PUBLIC_YUGO_EMAIL || "support@helloyugo.com",
   coordinatorName = null,
   coordinatorPhone = null,
+  officeDayCount = null,
+  officeTruckCount = null,
+  officeProjectManagerName = null,
+  officeProjectManagerPhone = null,
   suppliesCatalog = [],
   suppliesHasCardOnFile = false,
   suppliesUseSandbox = false,
@@ -649,6 +654,13 @@ export default function TrackMoveClient({
   coordinatorName?: string | null;
   /** Optional phone for coordinator. Falls back to YUGO_PHONE if missing. */
   coordinatorPhone?: string | null;
+  /** Office move: number of days for the booked tier (drives Day 1 / Day 2 phased view). */
+  officeDayCount?: number | null;
+  /** Office move: total trucks (drives "N × <truck>" fleet label). */
+  officeTruckCount?: number | null;
+  /** Office move: dedicated project manager (falls back to coordinator when null). */
+  officeProjectManagerName?: string | null;
+  officeProjectManagerPhone?: string | null;
   /** Self-purchasable supply add-ons (empty when move is past/cancelled). */
   suppliesCatalog?: SupplyCatalogItem[];
   /** Whether the move has a Square card on file for one-tap supplies checkout. */
@@ -1626,6 +1638,31 @@ export default function TrackMoveClient({
           </div>
         )}
         <main className="flex-1 max-w-[800px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-6 min-w-0 w-full pb-8 scroll-pb-8">
+          {/* Office-specific hero + Day 1 / Day 2 phased view. Renders
+             ONLY for office_move service type; residential/other flows
+             skip it and go straight to the existing content below. */}
+          {serviceType === "office_move" && (
+            <OfficeTrackHero
+              currentStage={liveStage ?? move.stage ?? null}
+              officeDayCount={officeDayCount}
+              moveDate={move.move_date ?? null}
+              coordinatorName={coordinatorName}
+              coordinatorPhone={coordinatorPhone}
+              projectManagerName={officeProjectManagerName}
+              projectManagerPhone={officeProjectManagerPhone}
+              fleetLabel={
+                officeTruckCount && officeTruckCount > 1
+                  ? `${officeTruckCount} × ${move.truck_primary ?? "16ft"}`
+                  : (move.truck_primary as string | null) ?? null
+              }
+              crewSize={
+                typeof crewSize === "number" && crewSize > 0
+                  ? crewSize
+                  : (move.crew_size as number | null) ?? null
+              }
+              showShareBanner={true}
+            />
+          )}
           {showPaymentSuccess && (
             <div className="mb-5 text-center py-6 animate-fade-up">
               <div

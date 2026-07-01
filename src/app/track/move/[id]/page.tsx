@@ -329,6 +329,44 @@ export default async function TrackMovePage({
     }
   }
 
+  // Office move: pull day count and truck count from the originating
+  // quote's factors so the office track hero can render the phased
+  // Day 1 / Day 2 view and the "N × 16ft Box Truck" fleet label.
+  let officeDayCount: number | null = null;
+  let officeTruckCount: number | null = null;
+  let officeProjectManagerName: string | null = null;
+  let officeProjectManagerPhone: string | null = null;
+  if ((move as { service_type?: string }).service_type === "office_move") {
+    const quoteIdForTrack = (move as { quote_id?: string | null }).quote_id;
+    if (quoteIdForTrack) {
+      const { data: qRow } = await supabase
+        .from("quotes")
+        .select("factors_applied, recommended_tier, selected_tier")
+        .eq("id", quoteIdForTrack)
+        .maybeSingle();
+      const factors = (qRow?.factors_applied ?? {}) as Record<string, unknown>;
+      const perTier = factors.office_per_tier_days as
+        | Record<string, number>
+        | undefined;
+      const tk = (
+        (qRow?.selected_tier as string | null) ??
+        (qRow?.recommended_tier as string | null) ??
+        "priority"
+      ).toLowerCase();
+      const days = perTier?.[tk];
+      officeDayCount = typeof days === "number" && days > 0 ? days : null;
+      const trucks = factors.office_trucks;
+      officeTruckCount =
+        typeof trucks === "number" && trucks > 0 ? trucks : null;
+      const pmName = factors.project_manager_name;
+      officeProjectManagerName =
+        typeof pmName === "string" && pmName.trim() ? pmName.trim() : null;
+      const pmPhone = factors.project_manager_phone;
+      officeProjectManagerPhone =
+        typeof pmPhone === "string" && pmPhone.trim() ? pmPhone.trim() : null;
+    }
+  }
+
   return (
     <TrackMoveClient
       move={move}
@@ -338,6 +376,10 @@ export default async function TrackMovePage({
       fromNotify={from === "notify"}
       paymentSuccess={payment === "success"}
       linkExpired={linkExpired}
+      officeDayCount={officeDayCount}
+      officeTruckCount={officeTruckCount}
+      officeProjectManagerName={officeProjectManagerName}
+      officeProjectManagerPhone={officeProjectManagerPhone}
       additionalFeesCents={additionalFeesCents}
       changeRequestFeesCents={changeFeesCents}
       extraItemFeesCents={extraFeesCents}
