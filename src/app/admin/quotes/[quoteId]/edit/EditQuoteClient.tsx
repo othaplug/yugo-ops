@@ -2938,7 +2938,25 @@ export default function EditQuoteClient({
             <EditSection
               eyebrow="Scope"
               title="Furniture & inventory"
-              summary={`${inventoryItems.length} item${inventoryItems.length === 1 ? "" : "s"} · ${clientBoxCount || "no"} boxes`}
+              summary={(() => {
+                // Office quotes store their line count in
+                // factors.office_unit_count (the engine's aggregate)
+                // rather than in inventory_items rows. Reading
+                // inventoryItems.length gives "0 items" even when the
+                // saved quote has 327 units, which reads as broken.
+                // Prefer the factors count for office and fall through
+                // to the row count everywhere else.
+                if (serviceType === "office_move") {
+                  const officeCount = Number(
+                    (factors as Record<string, unknown>)
+                      ?.office_unit_count ?? 0,
+                  );
+                  if (officeCount > 0) {
+                    return `${officeCount} unit${officeCount === 1 ? "" : "s"} (saved)`;
+                  }
+                }
+                return `${inventoryItems.length} item${inventoryItems.length === 1 ? "" : "s"} · ${clientBoxCount || "no"} boxes`;
+              })()}
               defaultOpen={false}
             >
               <InventoryInput
