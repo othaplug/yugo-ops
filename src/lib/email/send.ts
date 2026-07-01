@@ -6,6 +6,12 @@ import {
   PreMove72hrData,
   preMove24hrEmail,
   PreMove24hrData,
+  preMove72hrOfficeEmail,
+  PreMove72hrOfficeData,
+  preMove24hrOfficeEmail,
+  PreMove24hrOfficeData,
+  officePreMoveSurveyEmail,
+  OfficePreMoveSurveyData,
   moveCompleteEmail,
   MoveCompleteData,
   balanceReceiptEmail,
@@ -81,6 +87,9 @@ export type TemplateName =
   | "quote-b2boneoff"
   | "pre-move-72hr"
   | "pre-move-24hr"
+  | "pre-move-72hr-office"
+  | "pre-move-24hr-office"
+  | "office-pre-move-survey"
   | "balance-receipt"
   | "move-complete"
   | "review-request"
@@ -133,6 +142,9 @@ type TemplateDataMap = {
   "quote-b2boneoff": QuoteTemplateData;
   "pre-move-72hr": PreMove72hrData;
   "pre-move-24hr": PreMove24hrData;
+  "pre-move-72hr-office": PreMove72hrOfficeData;
+  "pre-move-24hr-office": PreMove24hrOfficeData;
+  "office-pre-move-survey": OfficePreMoveSurveyData;
   "balance-receipt": BalanceReceiptData;
   "move-complete": MoveCompleteData;
   "review-request": ReviewRequestData;
@@ -242,6 +254,9 @@ function renderTemplate(template: string, data: unknown): string {
   const renderers: Record<string, (d: any) => string> = {
     "pre-move-72hr": preMove72hrEmail,
     "pre-move-24hr": preMove24hrEmail,
+    "pre-move-72hr-office": preMove72hrOfficeEmail,
+    "pre-move-24hr-office": preMove24hrOfficeEmail,
+    "office-pre-move-survey": officePreMoveSurveyEmail,
     "balance-receipt": balanceReceiptEmail,
     "move-complete": moveCompleteEmail,
     "review-request": reviewRequestEmail,

@@ -355,6 +355,187 @@ export function preMove24hrEmail(d: PreMove24hrData): string {
   `);
 }
 
+/* ── Office pre-move survey (T-N days after booking) ── */
+
+export interface OfficePreMoveSurveyData {
+  clientName: string;
+  moveCode: string;
+  moveDate: string | null;
+  fromAddress: string;
+  toAddress: string;
+  trackingUrl: string;
+  /** Fill-in survey link (Google Form / Typeform / internal page). */
+  surveyUrl?: string | null;
+  projectManagerName?: string | null;
+  projectManagerPhone?: string | null;
+}
+
+export function officePreMoveSurveyEmail(d: OfficePreMoveSurveyData): string {
+  const pm = d.projectManagerName || "your project manager";
+  return emailLayout(`
+    <div style="${FOREST_EYEBROW_UPPER}">One quick step</div>
+    <h1 style="${EQ_H1}">Help us plan your relocation${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <p style="${EQ_LEAD}">
+      To get your office relocation ready, ${pm} needs a few details from you. This takes about 5 minutes and helps us reserve the right resources for move day.
+    </p>
+
+    <div class="yugo-on-wine" style="${EQ_PANEL}">
+      <div style="${PANEL_KICKER_ON_WINE_UPPER};margin-bottom:14px;">What we need</div>
+      <div style="font-size:13px;${EQ_ON_WINE_PANEL_STYLE};line-height:2;font-family:${PREMIUM_FONT}">
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Current floor plan (PDF or photo)</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— New office floor plan with seat assignments</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Confirmed workstation count</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— IT equipment inventory (monitors, docks, servers)</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Elevator + loading dock reservation windows at both locations</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Building management contact (for the COI)</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Your on-site IT lead's name + phone</div>
+      </div>
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:22px;font-family:${PREMIUM_FONT}">
+      <tr><td style="${CONTRACT_HDR_FULL}">Your relocation</td></tr>
+      ${creamContractKvRow("Reference", escapeHtmlEmail(d.moveCode), LKV_VALUE_REF)}
+      ${creamContractKvRow("Move date", escapeHtmlEmail(dateDisplay(d.moveDate)), LKV_VALUE)}
+      ${creamContractKvRow("Current office", emailMapLinkHtml(d.fromAddress), LKV_VALUE_TOP, LKV_LABEL_TOP)}
+      ${creamContractKvRow("New office", emailMapLinkHtml(d.toAddress), LKV_VALUE_TOP, LKV_LABEL_TOP)}
+    </table>
+
+    ${d.surveyUrl ? ctaButton(d.surveyUrl, "Complete the pre-move survey") : ""}
+    ${!d.surveyUrl ? ctaButton(d.trackingUrl, "View your relocation") : ""}
+    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${PREMIUM_FONT}">
+      Questions? Reply to this email or contact ${pm}${d.projectManagerPhone ? ` at ${formatPhone(d.projectManagerPhone)}` : ""}.
+    </p>
+  `);
+}
+
+/* ── Office T-72h checklist ── */
+
+export interface PreMove72hrOfficeData {
+  clientName: string;
+  moveCode: string;
+  moveDate: string | null;
+  fromAddress: string;
+  toAddress: string;
+  fromAccess?: string | null;
+  toAccess?: string | null;
+  trackingUrl: string;
+  projectManagerName?: string | null;
+}
+
+export function preMove72hrOfficeEmail(d: PreMove72hrOfficeData): string {
+  const pm = d.projectManagerName || "your project manager";
+  return emailLayout(`
+    <div style="${FOREST_EYEBROW_UPPER}">Three days to move day</div>
+    <h1 style="${EQ_H1}">Final checklist${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <p style="${EQ_LEAD}">
+      Your office relocation is confirmed for <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. Here is what to have ready over the next 72 hours so ${pm} and the crew hit the ground running.
+    </p>
+
+    <div class="yugo-on-wine" style="${EQ_PANEL}">
+      <div style="${PANEL_KICKER_ON_WINE_UPPER};margin-bottom:14px;">Before we arrive</div>
+      <div style="font-size:13px;${EQ_ON_WINE_PANEL_STYLE};line-height:2;font-family:${PREMIUM_FONT}">
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Confirm elevator + loading dock reservations at both offices</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Label workstations with employee name + destination desk number</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Prepare an IT power-down plan (which machines go down when)</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Collect access cards, fobs, and keys for both locations</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Backup critical systems + confirm data snapshots complete</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Notify staff of pack day / move day + arrival windows</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Clear hallways, remove personal valuables from workstations</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Confirm your on-site point of contact for each location</div>
+      </div>
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:22px;font-family:${PREMIUM_FONT}">
+      <tr><td style="${CONTRACT_HDR_FULL}">Relocation details</td></tr>
+      ${creamContractKvRow("Reference", escapeHtmlEmail(d.moveCode), LKV_VALUE_REF)}
+      ${creamContractKvRow("From", emailMapLinkHtml(d.fromAddress), LKV_VALUE_TOP, LKV_LABEL_TOP)}
+      ${creamContractKvRow("To", emailMapLinkHtml(d.toAddress), LKV_VALUE_TOP, LKV_LABEL_TOP)}
+    </table>
+
+    ${ctaButton(d.trackingUrl, PREMIUM_TRACK_CTA_LABEL)}
+    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${PREMIUM_FONT}">
+      Anything unclear? Reply here — ${pm} is on the other side.
+    </p>
+  `);
+}
+
+/* ── Office T-24h crew details ── */
+
+export interface PreMove24hrOfficeData {
+  clientName: string;
+  moveCode: string;
+  moveDate: string | null;
+  fromAddress: string;
+  toAddress: string;
+  crewMembers?: string[] | null;
+  crewSize?: number | null;
+  truckInfo?: string | null;
+  arrivalWindow?: string | null;
+  projectManagerName?: string | null;
+  projectManagerPhone?: string | null;
+  itLeadContact?: string | null;
+  floorPlanUrl?: string | null;
+  trackingUrl: string;
+}
+
+export function preMove24hrOfficeEmail(d: PreMove24hrOfficeData): string {
+  const pm = d.projectManagerName || "Your project manager";
+  const names = Array.isArray(d.crewMembers) ? d.crewMembers : [];
+  const namesLine = formatCrewNames(names);
+  return emailLayout(`
+    <div style="${FOREST_EYEBROW_UPPER}">Tomorrow&apos;s the day</div>
+    <h1 style="${EQ_H1}">Your relocation team is ready${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <p style="${EQ_LEAD}">
+      Everything is in place for tomorrow. Here is your team, the plan, and the contacts you will need.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:18px;font-family:${PREMIUM_FONT}">
+      <tr><td style="${CONTRACT_HDR_FULL}">Your team</td></tr>
+      ${creamContractKvRow("Project manager", escapeHtmlEmail(pm), LKV_VALUE)}
+      ${d.projectManagerPhone ? creamContractKvRow("PM phone", escapeHtmlEmail(formatPhone(d.projectManagerPhone)), LKV_VALUE) : ""}
+      ${namesLine ? creamContractKvRow("Crew", escapeHtmlEmail(namesLine), LKV_VALUE) : ""}
+      ${d.crewSize ? creamContractKvRow("Crew size", `${d.crewSize} team members`, LKV_VALUE) : ""}
+      ${d.truckInfo ? creamContractKvRow("Fleet", escapeHtmlEmail(d.truckInfo), LKV_VALUE) : ""}
+      ${creamContractKvRow("Arrival", escapeHtmlEmail(d.arrivalWindow ?? "Morning window - PM will confirm exact time"), LKV_VALUE_REF)}
+    </table>
+
+    ${
+      d.itLeadContact
+        ? `
+      <div style="${CALLOUT_TOP_FOREST}">
+        <div style="${FOREST_EYEBROW_UPPER};margin-bottom:6px">Your IT lead (on file)</div>
+        <div style="font-size:13px;color:${PROMO_CREAM_BODY};margin-top:4px">${escapeHtmlEmail(d.itLeadContact)}</div>
+        <div style="font-size:11px;color:${PROMO_CREAM_MUTED};margin-top:4px">${pm} will coordinate with them for the IT documentation walkthrough on Day 1.</div>
+      </div>
+    `
+        : ""
+    }
+
+    ${
+      d.floorPlanUrl
+        ? `
+      <div style="${CALLOUT_TOP_FOREST}">
+        <div style="${FOREST_EYEBROW_UPPER};margin-bottom:6px">Floor plan on file</div>
+        <div style="font-size:12px;color:${PROMO_CREAM_MUTED};margin-top:4px;line-height:1.6">The crew will place every workstation and piece of furniture per this plan. If anything has changed, reply to this email before end of day.</div>
+      </div>
+    `
+        : ""
+    }
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:20px;font-family:${PREMIUM_FONT}">
+      <tr><td style="${CONTRACT_HDR_FULL}">Relocation details</td></tr>
+      ${creamContractKvRow("Date", escapeHtmlEmail(dateDisplay(d.moveDate)), LKV_VALUE)}
+      ${creamContractKvRow("From", emailMapLinkHtml(d.fromAddress), LKV_VALUE_TOP, LKV_LABEL_TOP)}
+      ${creamContractKvRow("To", emailMapLinkHtml(d.toAddress), LKV_VALUE_TOP, LKV_LABEL_TOP)}
+    </table>
+
+    ${ctaButton(d.trackingUrl, "TRACK YOUR RELOCATION LIVE")}
+    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${PREMIUM_FONT}">
+      ${pm} will call approximately 30 minutes before arrival.
+    </p>
+  `);
+}
+
 /* ── Balance Receipt ── */
 
 export interface BalanceReceiptData {

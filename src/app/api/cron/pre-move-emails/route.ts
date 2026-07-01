@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
   const { data: moves72 } = await supabase
     .from("moves")
     .select(
-      "id, move_code, client_name, client_email, client_phone, scheduled_date, scheduled_time, from_address, to_address, from_access, to_access, balance_amount, balance_paid_at, deposit_paid_at, tier_selected, square_card_id, service_type, move_type",
+      "id, move_code, client_name, client_email, client_phone, scheduled_date, scheduled_time, from_address, to_address, from_access, to_access, balance_amount, balance_paid_at, deposit_paid_at, tier_selected, square_card_id, service_type, move_type, quote_id",
     )
     .in("status", ["confirmed", "scheduled", "paid"])
     .eq("scheduled_date", threeDaysOut)
@@ -92,22 +92,62 @@ export async function GET(req: NextRequest) {
           .eq("id", move.id);
       } else
       try {
+        // Office moves get an office-specific checklist template.
+        // The residential checklist is heavy on residential-only
+        // items (defrost freezer, kid + pet care, pack remaining
+        // boxes) which read as tone-deaf for a commercial move.
+        // Office variant covers elevators, docks, workstation
+        // labels, IT power-down, access cards, staff
+        // notifications.
+        const isOfficeMove = String(move.service_type ?? "") === "office_move";
+        // Office T-72h PM name comes from the originating quote's
+        // factors (project_manager_name field). Small extra query
+        // scoped to office quotes only.
+        let pmName: string | null = null;
+        if (isOfficeMove && move.quote_id) {
+          const { data: qRow72 } = await supabase
+            .from("quotes")
+            .select("factors_applied")
+            .eq("id", move.quote_id)
+            .maybeSingle();
+          const f72 = (qRow72?.factors_applied ?? {}) as Record<string, unknown>;
+          if (
+            typeof f72.project_manager_name === "string" &&
+            f72.project_manager_name.trim()
+          ) {
+            pmName = f72.project_manager_name.trim();
+          }
+        }
         const result = await sendEmail({
           to: move.client_email,
           subject: isEstate
             ? `Your Estate move is in 3 days - ${move.move_code || "Checklist"}`
-            : `Your move is in 3 days - ${move.move_code || "Checklist"}`,
-          template: "pre-move-72hr",
-          data: {
-            clientName: move.client_name || "",
-            moveCode: move.move_code || move.id,
-            moveDate: move.scheduled_date,
-            fromAddress: move.from_address || "",
-            toAddress: move.to_address || "",
-            fromAccess: move.from_access,
-            toAccess: move.to_access,
-            trackingUrl,
-          },
+            : isOfficeMove
+              ? `Your office relocation is in 3 days - ${move.move_code || "Checklist"}`
+              : `Your move is in 3 days - ${move.move_code || "Checklist"}`,
+          template: isOfficeMove ? "pre-move-72hr-office" : "pre-move-72hr",
+          data: isOfficeMove
+            ? {
+                clientName: move.client_name || "",
+                moveCode: move.move_code || move.id,
+                moveDate: move.scheduled_date,
+                fromAddress: move.from_address || "",
+                toAddress: move.to_address || "",
+                fromAccess: move.from_access,
+                toAccess: move.to_access,
+                trackingUrl,
+                projectManagerName: pmName,
+              }
+            : {
+                clientName: move.client_name || "",
+                moveCode: move.move_code || move.id,
+                moveDate: move.scheduled_date,
+                fromAddress: move.from_address || "",
+                toAddress: move.to_address || "",
+                fromAccess: move.from_access,
+                toAccess: move.to_access,
+                trackingUrl,
+              },
         });
 
         if (result.success) {
@@ -437,7 +477,8 @@ export async function GET(req: NextRequest) {
       id, move_code, client_name, client_email, client_phone,
       scheduled_date, scheduled_time, from_address, to_address,
       crew_id, crew_size, est_crew_size, assigned_members,
-      truck_info, arrival_window, tier_selected
+      truck_info, arrival_window, tier_selected, service_type,
+      coordinator_name, coordinator_phone, quote_id
     `,
     )
     .in("status", ["confirmed", "scheduled", "paid"])
@@ -484,26 +525,89 @@ export async function GET(req: NextRequest) {
       try {
         const isEstate24 =
           String(move.tier_selected || "").toLowerCase().trim() === "estate";
+        const isOfficeMove24 = String(move.service_type ?? "") === "office_move";
+        // Office T-24h: pull PM name + IT lead + floor plan from the
+        // originating quote's factors. factors_applied lives on the
+        // quotes table (not moves), so we do a small lookup only for
+        // office quotes. Falls back to move.coordinator_name when the
+        // operator set that instead.
+        let pmName24: string | null = null;
+        let pmPhone24: string | null = null;
+        let itLead24: string | null = null;
+        let floorPlan24: string | null = null;
+        if (isOfficeMove24 && move.quote_id) {
+          const { data: qRow24 } = await supabase
+            .from("quotes")
+            .select("factors_applied")
+            .eq("id", move.quote_id)
+            .maybeSingle();
+          const factors24 = (qRow24?.factors_applied ?? {}) as Record<
+            string,
+            unknown
+          >;
+          pmName24 =
+            (typeof factors24.project_manager_name === "string" &&
+              factors24.project_manager_name.trim()) ||
+            null;
+          pmPhone24 =
+            (typeof factors24.project_manager_phone === "string" &&
+              factors24.project_manager_phone.trim()) ||
+            null;
+          itLead24 =
+            (typeof factors24.it_lead_contact === "string" &&
+              factors24.it_lead_contact.trim()) ||
+            null;
+          floorPlan24 =
+            (typeof factors24.floor_plan_url === "string" &&
+              factors24.floor_plan_url.trim()) ||
+            null;
+        }
+        // Additional fallback: move.coordinator_name/phone.
+        if (isOfficeMove24 && !pmName24 && move.coordinator_name) {
+          pmName24 = String(move.coordinator_name);
+        }
+        if (isOfficeMove24 && !pmPhone24 && move.coordinator_phone) {
+          pmPhone24 = String(move.coordinator_phone);
+        }
         const result = await sendEmail({
           to: move.client_email,
           subject: isEstate24
             ? `Your Estate crew is confirmed for tomorrow - ${move.move_code || "Details"}`
-            : `Your crew is confirmed for tomorrow - ${move.move_code || "Details"}`,
-          template: "pre-move-24hr",
-          data: {
-            clientName: move.client_name || "",
-            moveCode: move.move_code || move.id,
-            moveDate: move.scheduled_date,
-            fromAddress: move.from_address || "",
-            toAddress: move.to_address || "",
-            crewMembers: assignedNames,
-            crewSize,
-            truckInfo: move.truck_info || null,
-            arrivalWindow: move.arrival_window || move.scheduled_time || null,
-            coordinatorName,
-            coordinatorPhone,
-            trackingUrl,
-          },
+            : isOfficeMove24
+              ? `Your relocation team is confirmed for tomorrow - ${move.move_code || "Details"}`
+              : `Your crew is confirmed for tomorrow - ${move.move_code || "Details"}`,
+          template: isOfficeMove24 ? "pre-move-24hr-office" : "pre-move-24hr",
+          data: isOfficeMove24
+            ? {
+                clientName: move.client_name || "",
+                moveCode: move.move_code || move.id,
+                moveDate: move.scheduled_date,
+                fromAddress: move.from_address || "",
+                toAddress: move.to_address || "",
+                crewMembers: assignedNames,
+                crewSize,
+                truckInfo: move.truck_info || null,
+                arrivalWindow: move.arrival_window || move.scheduled_time || null,
+                projectManagerName: pmName24 ?? coordinatorName,
+                projectManagerPhone: pmPhone24 ?? coordinatorPhone,
+                itLeadContact: itLead24,
+                floorPlanUrl: floorPlan24,
+                trackingUrl,
+              }
+            : {
+                clientName: move.client_name || "",
+                moveCode: move.move_code || move.id,
+                moveDate: move.scheduled_date,
+                fromAddress: move.from_address || "",
+                toAddress: move.to_address || "",
+                crewMembers: assignedNames,
+                crewSize,
+                truckInfo: move.truck_info || null,
+                arrivalWindow: move.arrival_window || move.scheduled_time || null,
+                coordinatorName,
+                coordinatorPhone,
+                trackingUrl,
+              },
         });
 
         if (result.success) {

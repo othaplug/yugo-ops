@@ -7,7 +7,7 @@ import { buildHubSpotDealName } from "@/lib/hubspot/deal-name";
 import { buildAllDealProperties } from "@/lib/hubspot/deal-properties-builder";
 import { safePatchDeal } from "@/lib/hubspot/safe-deal-write";
 import { getResend } from "@/lib/resend";
-import { getEmailFrom } from "@/lib/email/send";
+import { getEmailFrom, sendEmail } from "@/lib/email/send";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { signTrackToken } from "@/lib/track-token";
 import { isFullRelocationMove } from "@/lib/track-non-move-product";
@@ -732,6 +732,56 @@ export async function runPostPaymentActions(
         // Suppress unused-var warning if moveContextLine is later promoted
         // into a structured footer slot of statusUpdateEmailHtml.
         void moveContextLine;
+      },
+    },
+
+    /* ── 2c. Office pre-move survey (Priority tier only) ──
+       Sent immediately after booking so the operator gets floor
+       plans, IT counts, elevator windows, and building management
+       contact within the first day. Same trigger point as the
+       residential survey but different template + copy. */
+    {
+      name: "office_pre_move_survey_email",
+      critical: false,
+      fn: async () => {
+        if (!clientEmail) return;
+        if (quote.service_type !== "office_move") return;
+        const tier = String(selectedTier ?? "").toLowerCase();
+        if (tier !== "priority") return;
+        const surveyUrl = surveyTokenForEmail
+          ? `${baseUrl}/survey/${surveyTokenForEmail}`
+          : null;
+        const factorsForSurvey = (quote.factors_applied ?? {}) as Record<
+          string,
+          unknown
+        >;
+        const pmName =
+          typeof factorsForSurvey.project_manager_name === "string" &&
+          factorsForSurvey.project_manager_name.trim()
+            ? factorsForSurvey.project_manager_name.trim()
+            : null;
+        const pmPhone =
+          typeof factorsForSurvey.project_manager_phone === "string" &&
+          factorsForSurvey.project_manager_phone.trim()
+            ? factorsForSurvey.project_manager_phone.trim()
+            : null;
+        const first = clientName.trim().split(/\s+/)[0] || "there";
+        await sendEmail({
+          to: clientEmail,
+          subject: `${first}, help us plan your office relocation`,
+          template: "office-pre-move-survey",
+          data: {
+            clientName: clientName || "",
+            moveCode: input.moveCode,
+            moveDate: quote.move_date,
+            fromAddress: quote.from_address,
+            toAddress: quote.to_address,
+            trackingUrl,
+            surveyUrl,
+            projectManagerName: pmName,
+            projectManagerPhone: pmPhone,
+          },
+        });
       },
     },
 
