@@ -5814,30 +5814,17 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       if (existing.length > 0) coord = existing;
     }
     if (!coord && authUser) {
-      const { data: profile } = await sb
-        .from("profiles")
-        .select("full_name, name")
-        .eq("id", authUser.id)
+      // Profile lives in platform_users.name (backing the Settings →
+      // Personal & profile "Full Name" field). Do NOT read from the
+      // profiles table — that's a different Supabase auth artifact and
+      // the fall-through to email local-part produced "Othaplug".
+      const { data: pu } = await sb
+        .from("platform_users")
+        .select("name")
+        .eq("user_id", authUser.id)
         .maybeSingle();
-      const profileName = (
-        (profile as { full_name?: string | null; name?: string | null } | null)
-          ?.full_name ??
-        (profile as { full_name?: string | null; name?: string | null } | null)
-          ?.name ??
-        ""
-      ).trim();
-      if (profileName) {
-        coord = profileName;
-      } else {
-        const email = authUser.email ?? "";
-        const local = email.split("@")[0] ?? "";
-        const pretty = local
-          .replace(/[._-]+/g, " ")
-          .replace(/\s+/g, " ")
-          .trim()
-          .replace(/\b\w/g, (c) => c.toUpperCase());
-        if (pretty) coord = pretty;
-      }
+      const puName = ((pu as { name?: string | null } | null)?.name ?? "").trim();
+      if (puName) coord = puName;
     }
     factorsBag.coordinator_name = coord;
   }

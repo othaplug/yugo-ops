@@ -209,33 +209,17 @@ export async function POST(req: NextRequest) {
     const coordinatorPhone =
       coordConfig?.find((c) => c.key === "coordinator_phone")?.value || null;
     if (!coordinatorName && user) {
-      // Try the operator's profile name first, then fall back to the
-      // local-part of their auth email.
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, name")
-        .eq("id", user.id)
+      // Fall back to the sender's Settings profile ("Full Name" on
+      // Personal & profile). Stored in platform_users.name — NOT the
+      // profiles table (that lookup returned nothing and dropped to
+      // email local-part "Othaplug").
+      const { data: pu } = await supabase
+        .from("platform_users")
+        .select("name")
+        .eq("user_id", user.id)
         .maybeSingle();
-      const profileName = (
-        (profile as { full_name?: string | null; name?: string | null } | null)
-          ?.full_name ??
-        (profile as { full_name?: string | null; name?: string | null } | null)
-          ?.name ??
-        ""
-      ).trim();
-      if (profileName) {
-        coordinatorName = profileName;
-      } else {
-        const email = (user as { email?: string | null }).email ?? "";
-        const local = email.split("@")[0] ?? "";
-        const pretty =
-          local
-            .replace(/[._-]+/g, " ")
-            .replace(/\s+/g, " ")
-            .trim()
-            .replace(/\b\w/g, (c) => c.toUpperCase()) || null;
-        coordinatorName = pretty;
-      }
+      const puName = ((pu as { name?: string | null } | null)?.name ?? "").trim();
+      if (puName) coordinatorName = puName;
     }
     const expiryDays = parseInt(coordConfig?.find((c) => c.key === "quote_expiry_days")?.value || "7", 10);
 

@@ -54,25 +54,17 @@ export default async function NewQuotePage() {
   const userRole = pu?.role ?? "viewer";
   const isSuperAdmin = isSuperAdminEmail(user?.email);
 
-  const { data: operatorProfile } = user
+  // Profile source of truth: platform_users.name — this is what the
+  // Settings → Personal & profile "Full Name" field writes to.
+  const { data: operatorRow } = user
     ? await db
-        .from("profiles")
-        .select("full_name, name")
-        .eq("id", user.id)
+        .from("platform_users")
+        .select("name")
+        .eq("user_id", user.id)
         .maybeSingle()
     : { data: null };
-  const operatorName = (() => {
-    const p = operatorProfile as { full_name?: string | null; name?: string | null } | null;
-    const raw = (p?.full_name ?? p?.name ?? "").trim();
-    if (raw) return raw;
-    const email = user?.email ?? "";
-    const local = email.split("@")[0] ?? "";
-    return local
-      .replace(/[._-]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-  })();
+  const operatorName =
+    ((operatorRow as { name?: string | null } | null)?.name ?? "").trim();
 
   const config: Record<string, string> = {};
   for (const r of configRows ?? []) config[r.key] = r.value;
