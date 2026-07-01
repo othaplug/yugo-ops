@@ -1101,11 +1101,45 @@ export default function QuoteDetailClient({
                   <code className="text-[11px] font-mono bg-[var(--bg)] px-1.5 py-0.5 rounded border border-[var(--brd)] text-[var(--tx)]">
                     {hubspotLinkedId}
                   </code>
-                  {hubspotStage?.stageLabel && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--wine)]/10 text-[var(--wine)] text-[10px] font-bold uppercase tracking-wider">
-                      {hubspotStage.stageLabel}
-                    </span>
-                  )}
+                  {hubspotStage?.stageLabel && (() => {
+                    // Color-coded stage indicator. The stageId is what
+                    // HubSpot returns as a raw pipeline stage key
+                    // (e.g. 'presentationscheduled', 'contractsent',
+                    // 'closedwon'). Group visually so the coordinator
+                    // reads state at a glance instead of parsing text.
+                    const s = (hubspotStage.stageId || "").toLowerCase();
+                    const win = /won|closedwon|deposit|paid/.test(s);
+                    const lost = /lost|closedlost|expired/.test(s);
+                    const late = /decision|proposal|contract|negotiat/.test(s);
+                    const early = /appointmentscheduled|qualified|new|lead|preso|presentation/.test(s);
+                    const cls = win
+                      ? "ring-emerald-500/60 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                      : lost
+                        ? "ring-red-500/60 bg-red-500/10 text-red-500"
+                        : late
+                          ? "ring-amber-500/60 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                          : early
+                            ? "ring-blue-500/60 bg-blue-500/10 text-blue-500"
+                            : "ring-[var(--wine)]/50 bg-[var(--wine)]/10 text-[var(--wine)]";
+                    const dotCls = win
+                      ? "bg-emerald-500"
+                      : lost
+                        ? "bg-red-500"
+                        : late
+                          ? "bg-amber-500"
+                          : early
+                            ? "bg-blue-500"
+                            : "bg-[var(--wine)]";
+                    return (
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ring-2 ${cls} text-[10px] font-bold uppercase tracking-wider`}
+                        title={`HubSpot stage: ${hubspotStage.stageLabel}`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${dotCls}`} />
+                        {hubspotStage.stageLabel}
+                      </span>
+                    );
+                  })()}
                   <InfoHint
                     variant="admin"
                     align="start"
@@ -1992,22 +2026,63 @@ export default function QuoteDetailClient({
                     </div>
                   </div>
                 )}
-                {/* Move Date */}
+                {/* Move Date -- multi-day aware.
+                   For an office move (or any tier with
+                   perTierDays > 1) show the range: 'Sat Jul 11 - Sun
+                   Jul 12'. Client quote page already does this;
+                   admin detail was showing only the start. */}
                 <div>
                   <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)] mb-1.5">
-                    Move Date
+                    {(() => {
+                      const per = (factors as Record<string, unknown>)
+                        ?.office_per_tier_days as
+                        | Record<string, number>
+                        | undefined;
+                      const tk = (
+                        (quote.selected_tier as string | null) ??
+                        (quote.recommended_tier as string | null) ??
+                        "priority"
+                      ).toLowerCase();
+                      const d = per?.[tk] ?? 1;
+                      return d > 1 ? "Move Dates" : "Move Date";
+                    })()}
                   </p>
                   <p className="text-[15px] font-semibold text-[var(--tx)] leading-tight">
-                    {quote.move_date
-                      ? formatPlatformDisplay(
-                          new Date(quote.move_date + "T00:00:00"),
-                          {
-                            weekday: "short",
-                            month: "short",
-                            day: "numeric",
-                          },
-                        )
-                      : "TBD"}
+                    {(() => {
+                      if (!quote.move_date) return "TBD";
+                      const per = (factors as Record<string, unknown>)
+                        ?.office_per_tier_days as
+                        | Record<string, number>
+                        | undefined;
+                      const tk = (
+                        (quote.selected_tier as string | null) ??
+                        (quote.recommended_tier as string | null) ??
+                        "priority"
+                      ).toLowerCase();
+                      const days = Math.max(
+                        1,
+                        Math.floor(per?.[tk] ?? 1),
+                      );
+                      const start = formatPlatformDisplay(
+                        new Date(quote.move_date + "T00:00:00"),
+                        { weekday: "short", month: "short", day: "numeric" },
+                      );
+                      if (days <= 1) return start;
+                      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(
+                        String(quote.move_date),
+                      );
+                      if (!m) return start;
+                      const y = Number(m[1]);
+                      const mo = Number(m[2]) - 1;
+                      const d = Number(m[3]) + (days - 1);
+                      const end = new Date(y, mo, d);
+                      const endStr = formatPlatformDisplay(end, {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      });
+                      return `${start} - ${endStr}`;
+                    })()}
                   </p>
                 </div>
                 {/* Route — shows every pickup and drop-off. Multi-origin
@@ -2320,11 +2395,41 @@ export default function QuoteDetailClient({
                         Vehicle
                       </span>
                       <p className="text-[11px] font-medium text-[var(--tx)] mt-0.5">
-                        {displayLabel(quote.truck_primary) ||
-                          toTitleCase(quote.truck_primary)}
-                        {quote.truck_secondary
-                          ? ` + ${displayLabel(quote.truck_secondary) || toTitleCase(quote.truck_secondary)}`
-                          : ""}
+                        {(() => {
+                          // Office moves can use N trucks of the same
+                          // size (e.g. 2 x 16ft for a 327-item move).
+                          // truck.secondary is only populated when the
+                          // second truck is a DIFFERENT size, so a
+                          // same-size fleet count lives in
+                          // factors.office_trucks. Without prefixing
+                          // that count the header reads '16ft' for
+                          // what is actually two trucks.
+                          const primary =
+                            displayLabel(quote.truck_primary) ||
+                            toTitleCase(quote.truck_primary);
+                          const officeTruckCount =
+                            quote.service_type === "office_move"
+                              ? Math.max(
+                                  1,
+                                  Number(
+                                    (factors as Record<string, unknown>)
+                                      ?.office_trucks ?? 1,
+                                  ) || 1,
+                                )
+                              : 1;
+                          const primaryLabel =
+                            officeTruckCount > 1
+                              ? `${officeTruckCount} × ${primary}`
+                              : primary;
+                          return (
+                            <>
+                              {primaryLabel}
+                              {quote.truck_secondary
+                                ? ` + ${displayLabel(quote.truck_secondary) || toTitleCase(quote.truck_secondary)}`
+                                : ""}
+                            </>
+                          );
+                        })()}
                       </p>
                     </div>
                   )}

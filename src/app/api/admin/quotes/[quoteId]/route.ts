@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail } from "@/lib/email/send";
+import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { isSuperAdminEmail, requireStaff } from "@/lib/api-auth";
 import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
@@ -148,7 +150,83 @@ export async function PATCH(
     }
   }
 
+  // When the operator extends expiry from the engagement banner,
+  // also fire a nurture email so the client knows the quote is
+  // still active. Non-blocking -- if email send fails the extend
+  // itself still succeeds. Only fires when the sole change is the
+  // expiry extension (not part of a bulk status update).
+  if (
+    typeof body.expires_at === "string" &&
+    body.expires_at.trim() &&
+    body.status === undefined
+  ) {
+    void sendExtendedExpiryNurtureEmail(
+      admin,
+      quoteId,
+      String(patch.expires_at),
+    ).catch((err) => {
+      console.warn("[extend-expiry nurture email]", err?.message ?? err);
+    });
+  }
+
   return NextResponse.json({ ok: true });
+}
+
+/** Sends a one-off "we've extended your quote" email to the client
+ *  contact. Reuses the platform email base URL so the CTA lands on
+ *  the same client quote page the operator's banner extended. */
+async function sendExtendedExpiryNurtureEmail(
+  admin: ReturnType<typeof createAdminClient>,
+  quoteInternalId: string,
+  newExpiresAt: string,
+): Promise<void> {
+  const { data: quote } = await admin
+    .from("quotes")
+    .select("quote_id, contact_id, service_type")
+    .eq("id", quoteInternalId)
+    .maybeSingle();
+  if (!quote) return;
+  const contactId = (quote as { contact_id?: string | null }).contact_id;
+  if (!contactId) return;
+  const { data: contact } = await admin
+    .from("contacts")
+    .select("name, email")
+    .eq("id", contactId)
+    .maybeSingle();
+  const email = (contact as { email?: string | null } | null)?.email?.trim();
+  if (!email) return;
+  const first =
+    ((contact as { name?: string | null } | null)?.name ?? "").split(" ")[0] ||
+    "there";
+  const url = `${getEmailBaseUrl()}/quote/${(quote as { quote_id: string }).quote_id}`;
+  const newDate = new Date(newExpiresAt).toLocaleDateString("en-CA", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "America/Toronto",
+  });
+  const subject = `${first}, your Yugo quote is still active (${(quote as { quote_id: string }).quote_id})`;
+  const html = `
+    <div style="font-family: Georgia, 'Times New Roman', serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; color: #2c1a1a;">
+      <h1 style="font-size: 24px; margin: 0 0 16px; font-weight: 400;">Hi ${first},</h1>
+      <p style="font-size: 14px; line-height: 1.7; margin: 0 0 20px;">
+        Just a note that we've extended your Yugo quote so you have more time
+        to review the details. Your new expiry is <strong>${newDate}</strong>.
+      </p>
+      <p style="font-size: 14px; line-height: 1.7; margin: 0 0 24px;">
+        If you have questions or want to talk through the packages, reply to
+        this email or give me a call — happy to help.
+      </p>
+      <p style="margin: 0 0 24px;">
+        <a href="${url}" style="background: #4a1f1f; color: #ffffff; padding: 12px 22px; text-decoration: none; border-radius: 4px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">View your quote</a>
+      </p>
+      <p style="font-size: 12px; color: #7a6767; line-height: 1.6; margin: 24px 0 0;">
+        Not the right time? Simply reply and let us know — we'll pause
+        follow-ups.
+      </p>
+    </div>`;
+  await sendEmail({ to: email, subject, html });
 }
 
 /**
