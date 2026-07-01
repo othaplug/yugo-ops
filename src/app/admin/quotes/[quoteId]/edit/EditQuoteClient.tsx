@@ -562,6 +562,17 @@ export default function EditQuoteClient({
       typeof oq.override_reason === "string" ? oq.override_reason : "",
     );
 
+  // Coordinator assigned to this quote — surfaced on client emails,
+  // tracking page, and copied to moves.coordinator_name on booking.
+  // Persisted in factors_applied.coordinator_name. Editable here so
+  // operators can retroactively fix quotes that shipped with the wrong
+  // name (or the fallback operator name).
+  const [coordinatorName, setCoordinatorName] = useState<string>(
+    typeof factors.coordinator_name === "string"
+      ? (factors.coordinator_name as string)
+      : "",
+  );
+
   // ── Office move fields ────────────────────────────────────
   const [squareFootage, setSquareFootage] = useState(
     String(factors.square_footage || oq.square_footage || ""),
@@ -990,6 +1001,9 @@ export default function EditQuoteClient({
           quotePreTaxOverrideReason.trim();
       }
     }
+    // Always ship coordinator_name so re-generating clears or updates
+    // factors.coordinator_name in lockstep with what the operator sees.
+    payload.coordinator_name = coordinatorName.trim();
     // Carry-forward of operator-set fields that have no dedicated UI on
     // this page. Without these, hitting Re-Generate would silently drop
     // presentation mode, valuation upgrade, and the size-conflict
@@ -1239,6 +1253,7 @@ export default function EditQuoteClient({
     tierPriceOverrides,
     quotePreTaxOverride,
     quotePreTaxOverrideReason,
+    coordinatorName,
     // Labour-only scope inputs. Without these in the dep array the
     // fingerprint never registers changes to labour fields and the
     // Save buttons stay disabled while the operator edits them.
@@ -2361,6 +2376,38 @@ export default function EditQuoteClient({
               </div>
             </EditSection>
           )}
+
+        {/* ── Assigned coordinator ──
+            Editable so a bad send (e.g. blank field on create → fallback
+            to operator profile "Othaplug") can be repaired without a
+            SQL patch. Persisted to factors_applied.coordinator_name and
+            copied to moves.coordinator_name on booking. */}
+        <EditSection
+          eyebrow="Coordinator"
+          title="Assigned coordinator"
+          summary={
+            coordinatorName.trim() ||
+            "Blank → email/tracking will show operator profile name"
+          }
+          defaultOpen={coordinatorName.trim().length === 0}
+        >
+          <div className="max-w-md">
+            <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--tx3)]">
+              Coordinator name
+            </label>
+            <input
+              type="text"
+              value={coordinatorName}
+              onChange={(e) => setCoordinatorName(e.target.value)}
+              placeholder="e.g. Jon"
+              className={`${inputClass} mt-1`}
+            />
+            <p className="text-[11px] text-[var(--tx3)] mt-1.5">
+              Shown on the client tracking page and every email signature
+              for this quote. Save & re-send to update the client.
+            </p>
+          </div>
+        </EditSection>
 
         {/* ── Per-tier price override + global coordinator override ──
             Same UX as the create form (admin/quotes/new). Wrapped in

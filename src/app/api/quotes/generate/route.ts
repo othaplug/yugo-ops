@@ -5796,10 +5796,50 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   // Persist the coordinator's name into factors_applied so the
   // booking → move-create path can copy it onto moves.coordinator_name.
   // Kept as a string (never the literal "false") — empty trims become null.
-  if (typeof input.coordinator_name === "string") {
-    const trimmed = input.coordinator_name.trim();
-    (factors as Record<string, unknown>).coordinator_name =
-      trimmed.length > 0 ? trimmed : null;
+  //
+  // Backfill from the operator's profile / auth email when the form
+  // field is empty. Without this, quotes created with a blank coordinator
+  // field left factors.coordinator_name = undefined, and the send route
+  // fell through to whichever operator hit "Send" — producing emails
+  // signed by e.g. "Othaplug" instead of a real coordinator name.
+  {
+    const factorsBag = factors as Record<string, unknown>;
+    let coord: string | null = null;
+    if (typeof input.coordinator_name === "string") {
+      const trimmed = input.coordinator_name.trim();
+      if (trimmed.length > 0) coord = trimmed;
+    }
+    if (!coord && typeof factorsBag.coordinator_name === "string") {
+      const existing = (factorsBag.coordinator_name as string).trim();
+      if (existing.length > 0) coord = existing;
+    }
+    if (!coord && authUser) {
+      const { data: profile } = await sb
+        .from("profiles")
+        .select("full_name, name")
+        .eq("id", authUser.id)
+        .maybeSingle();
+      const profileName = (
+        (profile as { full_name?: string | null; name?: string | null } | null)
+          ?.full_name ??
+        (profile as { full_name?: string | null; name?: string | null } | null)
+          ?.name ??
+        ""
+      ).trim();
+      if (profileName) {
+        coord = profileName;
+      } else {
+        const email = authUser.email ?? "";
+        const local = email.split("@")[0] ?? "";
+        const pretty = local
+          .replace(/[._-]+/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+        if (pretty) coord = pretty;
+      }
+    }
+    factorsBag.coordinator_name = coord;
   }
 
   const factorsRecord = factors as Record<string, unknown>

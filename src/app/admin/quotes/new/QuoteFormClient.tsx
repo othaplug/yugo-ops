@@ -1267,6 +1267,7 @@ export default function QuoteFormClient({
   /** When `"v2"`, Yugo+ admin shell tokens (surface, line, purple accent) replace legacy gold/wine. */
   uiVariant = "v1",
   backFallback = "/admin",
+  operatorName = "",
 }: {
   addons: Addon[];
   config: Record<string, string>;
@@ -1287,6 +1288,9 @@ export default function QuoteFormClient({
   uiVariant?: "v1" | "v2";
   /** Used when `router.back()` has no history. */
   backFallback?: string;
+  /** Logged-in operator's display name; prefills the Coordinator field so
+   *  factors.coordinator_name is never blank at generate time. */
+  operatorName?: string;
 }) {
   const isV2 = uiVariant === "v2";
   const checkboxAccentClass = isV2
@@ -1346,7 +1350,7 @@ export default function QuoteFormClient({
   // page after booking. Stored in factors_applied.coordinator_name and
   // copied to moves.coordinator_name when the move is created from the
   // quote (createMoveFromQuote).
-  const [coordinatorName, setCoordinatorName] = useState("");
+  const [coordinatorName, setCoordinatorName] = useState(operatorName ?? "");
   const [quoteFlowStep, setQuoteFlowStep] = useState(0);
   const quoteFlowContentRef = useRef<HTMLDivElement>(null);
 
