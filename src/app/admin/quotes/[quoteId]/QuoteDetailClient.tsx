@@ -1843,7 +1843,25 @@ export default function QuoteDetailClient({
               // until Jul 1, leaving the coordinator one business day
               // to react. 7 days gives a full week of lead time.
               const EXPIRY_WARN_DAYS = 7;
+              // Suppress the banner entirely when the quote is already
+              // booked (linked move or delivery exists). Even if
+              // quote.status is stale (viewed) because the payment
+              // webhook race hasn't run yet, the presence of a linked
+              // job means expiry is moot. Also suppress on the
+              // canonical accepted/lost/cold/superseded terminal
+              // states so old quotes don't nag.
+              const isBooked = !!(linkedMoveCode || linkedDeliveryNumber);
+              const terminal =
+                String(quote.status || "").toLowerCase();
+              const isTerminal =
+                terminal === "accepted" ||
+                terminal === "lost" ||
+                terminal === "cold" ||
+                terminal === "superseded" ||
+                terminal === "declined";
               if (
+                isBooked ||
+                isTerminal ||
                 !isActivelyEngaged ||
                 (daysUntilExpiry > EXPIRY_WARN_DAYS && !isExpired)
               ) {
@@ -2844,8 +2862,30 @@ export default function QuoteDetailClient({
                       <div className="flex justify-between">
                         <span className="text-[var(--tx3)]">Vehicle</span>
                         <span className="text-[var(--tx)] font-medium">
-                          {displayLabel(quote.truck_primary) ||
-                            toTitleCase(quote.truck_primary)}
+                          {(() => {
+                            // Right-rail Move Details render (separate
+                            // from the middle-panel Vehicle field). Same
+                            // multi-truck prefix logic — office moves
+                            // with factors.office_trucks > 1 render
+                            // "2 × 16ft Box Truck" instead of a bare
+                            // "16ft".
+                            const primary =
+                              displayLabel(quote.truck_primary) ||
+                              toTitleCase(quote.truck_primary);
+                            const officeCount =
+                              quote.service_type === "office_move"
+                                ? Math.max(
+                                    1,
+                                    Number(
+                                      (factors as Record<string, unknown>)
+                                        ?.office_trucks ?? 1,
+                                    ) || 1,
+                                  )
+                                : 1;
+                            return officeCount > 1
+                              ? `${officeCount} × ${primary}`
+                              : primary;
+                          })()}
                         </span>
                       </div>
                     )}
