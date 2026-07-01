@@ -88,6 +88,36 @@ const CONFIG: Record<
     notifyAdmin: false,
     notifyPartner: false,
   },
+  // ── Office-specific stages (Day 1 pack, Day 2 setup) ──
+  // The client wants visibility on the "we've started your Day 1"
+  // signal and again on the "we're wrapping Day 1 packing" milestone
+  // — the two moments they'd otherwise be wondering. Loading /
+  // unloading are covered by the residential-compatible Day 2 rows.
+  initial_walkthrough: {
+    notifyClient: true,
+    notifyAdmin: true,
+    notifyPartner: false,
+  },
+  it_documentation: {
+    notifyClient: false, // fast-moving crew step, not a client signal
+    notifyAdmin: false,
+    notifyPartner: false,
+  },
+  packing_started: {
+    notifyClient: true,
+    notifyAdmin: true,
+    notifyPartner: false,
+  },
+  packing_complete: {
+    notifyClient: true,
+    notifyAdmin: true,
+    notifyPartner: false,
+  },
+  setup: {
+    notifyClient: true,
+    notifyAdmin: true,
+    notifyPartner: false,
+  },
 };
 
 function isEstateTier(t: string | null | undefined): boolean {
@@ -104,6 +134,7 @@ function headlineForTrackingCheckpoint(
   jobType: "move" | "delivery",
   estateMove = false,
   b2bPartnerJobStart = false,
+  officeMove = false,
 ): string {
   if (
     b2bPartnerJobStart &&
@@ -112,6 +143,31 @@ function headlineForTrackingCheckpoint(
     return jobType === "move"
       ? "Your crew has started the move. We will keep you updated at every step."
       : "Your crew has started the job. We will keep you updated at every step.";
+  }
+  if (jobType === "move" && officeMove) {
+    // Office-specific stage transition copy.
+    switch (status) {
+      case "initial_walkthrough":
+        return "Your project manager is on-site starting the Day 1 walkthrough.";
+      case "packing_started":
+        return "Packing has started at your office. Your team can leave when ready.";
+      case "packing_complete":
+        return "Day 1 is complete — everything is packed and staged for tomorrow's move.";
+      case "en_route_to_pickup":
+        return "Day 2: your relocation crew is on the way to load the truck.";
+      case "arrived_at_pickup":
+        return "Your crew has arrived to load. We're on schedule.";
+      case "en_route_to_destination":
+        return "Everything is loaded. Your crew is now heading to the new office.";
+      case "arrived_at_destination":
+        return "Your crew has arrived at the new office and is ready to unload.";
+      case "setup":
+        return "Furniture and IT are being placed per your floor plan. Almost home.";
+      case "completed":
+        return "Relocation complete. Thank you for choosing Yugo.";
+      default:
+        break;
+    }
   }
   if (jobType === "move") {
     if (estateMove) {
@@ -271,6 +327,7 @@ export async function notifyOnCheckpoint(
   let deliveryClientName: string | undefined;
 
   let estateMove = false;
+  let officeMove = false;
   let movePartnerEligible = false;
   let moveRowForSms: {
     id: string;
@@ -299,7 +356,7 @@ export async function notifyOnCheckpoint(
     const { data: move } = await admin
       .from("moves")
       .select(
-        "id, client_email, move_code, from_address, to_address, client_name, tier_selected, organization_id, client_phone, is_pm_move",
+        "id, client_email, move_code, from_address, to_address, client_name, tier_selected, organization_id, client_phone, is_pm_move, service_type",
       )
       .eq("id", jobId)
       .single();
@@ -314,6 +371,12 @@ export async function notifyOnCheckpoint(
       estateMove = isEstateTier(
         (move as { tier_selected?: string | null }).tier_selected,
       );
+      // Office moves get office-specific transition copy (project
+      // manager framing, "Day 1 walkthrough", "Day 2 en route" etc.).
+      officeMove =
+        String(
+          (move as { service_type?: string | null }).service_type ?? "",
+        ) === "office_move";
       clientEmail = move.client_email || null;
       const orgId = (move as { organization_id?: string | null })
         .organization_id;
@@ -467,6 +530,7 @@ export async function notifyOnCheckpoint(
     jobType,
     estateMove && jobType === "move",
     b2bPartnerJobStart,
+    officeMove && jobType === "move",
   );
   const body = bodyForTrackingCheckpoint(
     status,
