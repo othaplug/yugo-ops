@@ -868,6 +868,14 @@ export async function createMoveFromQuote(
   const residentialMultiDayQuote =
     (svcForProject === "local_move" || svcForProject === "long_distance") &&
     rowsToInsert.length === 1;
+  // Office move: pull day count from factors.office_per_tier_days for
+  // the booked tier. Office quotes don't populate the top-level
+  // estimated_days column that residential uses, so the multi-day
+  // project path was skipping every office booking (even 2-day
+  // Priority). Detect > 1 days from factors and attach the same
+  // move_project multi-day scaffold residential uses.
+  const officeMultiDayQuote =
+    svcForProject === "office_move" && rowsToInsert.length === 1;
 
   if (residentialMultiDayQuote) {
     const rawDays = (quote as { estimated_days?: unknown }).estimated_days;
@@ -900,6 +908,53 @@ export async function createMoveFromQuote(
         scheduledDateIso: scheduledIso,
         estimatedDays,
         dayBreakdown: dayBreakdown ?? [],
+      });
+    }
+  } else if (officeMultiDayQuote) {
+    const factors = (quote.factors_applied ?? {}) as Record<string, unknown>;
+    const perTier = factors.office_per_tier_days as
+      | Record<string, number>
+      | undefined;
+    const tierKey = (
+      (quote as { selected_tier?: string | null }).selected_tier ??
+      (quote as { recommended_tier?: string | null }).recommended_tier ??
+      "priority"
+    ).toLowerCase();
+    const officeDayCount = perTier?.[tierKey];
+    if (typeof officeDayCount === "number" && officeDayCount > 1) {
+      const scheduledIso =
+        String(rowsToInsert[0]?.scheduled_date ?? quote.move_date ?? "").slice(
+          0,
+          10,
+        ) || new Date().toISOString().slice(0, 10);
+      const { attachMultiDayMoveProjectFromScope } = await import(
+        "@/lib/move-projects/create-from-move-scope"
+      );
+      // Office day breakdown: Day 1 = pack, Day 2 = move, optional
+      // Day 3 = unpack/setup. Same shape residential day_breakdown
+      // uses so the track page's phased view renders identically.
+      const officeDayBreakdown =
+        officeDayCount >= 3
+          ? [
+              { day_number: 1, day_type: "pack", label: "Pack & prep" },
+              { day_number: 2, day_type: "move", label: "Move day" },
+              { day_number: 3, day_type: "unpack", label: "Unpack & set up" },
+            ]
+          : [
+              { day_number: 1, day_type: "pack", label: "Pack & IT prep" },
+              { day_number: 2, day_type: "move", label: "Move & set up" },
+            ];
+      await attachMultiDayMoveProjectFromScope(supabase, {
+        moveId: primary.id,
+        quoteUuid: quote.id as string,
+        contactId:
+          (quote as { contact_id?: string | null }).contact_id ?? null,
+        clientName,
+        fromAddress: String(quote.from_address || "").trim(),
+        toAddress: String(quote.to_address || "").trim(),
+        scheduledDateIso: scheduledIso,
+        estimatedDays: officeDayCount,
+        dayBreakdown: officeDayBreakdown,
       });
     }
   }

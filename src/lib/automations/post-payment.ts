@@ -845,13 +845,19 @@ export async function runPostPaymentActions(
       },
     },
 
-    /* ── 4b. Estate-specific: notify all admins to assign coordinator ── */
+    /* ── 4b. Estate-specific: notify all admins to assign coordinator ──
+       Also fires for Priority-tier office_move bookings so a
+       project manager gets assigned promptly. Estate + office
+       Priority both need a same-day human handoff; the alert
+       copy is service-aware so admins can tell them apart. */
     {
       name: "estate_coordinator_notification",
       critical: false,
       fn: async () => {
         const tier = selectedTier ?? "";
-        if (tier !== "estate") return;
+        const isOfficePriority =
+          tier === "priority" && quote.service_type === "office_move";
+        if (tier !== "estate" && !isOfficePriority) return;
 
         const { notifyAdmins } = await import("@/lib/notifications/dispatch");
         const { estateBookingAdminEmailHtml } =
@@ -863,10 +869,15 @@ export async function runPostPaymentActions(
             )
           : "TBD";
 
+        const labelPrefix = isOfficePriority ? "Office Priority" : "Estate";
+        const actionCopy = isOfficePriority
+          ? "Assign project manager, schedule site walkthrough."
+          : "Assign coordinator and schedule walkthrough.";
+
         await notifyAdmins("quote_accepted", {
-          subject: `Estate booking: ${clientName} ${dateLabel} ${formatCurrency(totalWithTax)}`,
-          body: `Estate booking! ${clientName}, ${dateLabel}, ${formatCurrency(totalWithTax)}. Assign coordinator and schedule walkthrough.`,
-          description: `Estate booking! ${clientName}, ${dateLabel}, ${formatCurrency(totalWithTax)}. Assign coordinator and schedule walkthrough.`,
+          subject: `${labelPrefix} booking: ${clientName} ${dateLabel} ${formatCurrency(totalWithTax)}`,
+          body: `${labelPrefix} booking! ${clientName}, ${dateLabel}, ${formatCurrency(totalWithTax)}. ${actionCopy}`,
+          description: `${labelPrefix} booking! ${clientName}, ${dateLabel}, ${formatCurrency(totalWithTax)}. ${actionCopy}`,
           moveId: input.moveId,
           clientName,
           amount: totalWithTax,
