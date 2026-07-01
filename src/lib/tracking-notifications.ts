@@ -118,6 +118,34 @@ const CONFIG: Record<
     notifyAdmin: true,
     notifyPartner: false,
   },
+  // ── Event stages (delivery leg: to venue + setup; return leg: teardown +
+  // back to origin). Transit milestones notify the client; on-site work steps
+  // (event_active, teardown) stay quiet like loading/unloading. ──
+  en_route_venue: {
+    notifyClient: true,
+    notifyAdmin: true,
+    notifyPartner: true,
+  },
+  arrived_venue: {
+    notifyClient: true,
+    notifyAdmin: true,
+    notifyPartner: true,
+  },
+  event_active: {
+    notifyClient: false,
+    notifyAdmin: true,
+    notifyPartner: false,
+  },
+  teardown: {
+    notifyClient: false,
+    notifyAdmin: true,
+    notifyPartner: false,
+  },
+  en_route_return: {
+    notifyClient: true,
+    notifyAdmin: true,
+    notifyPartner: true,
+  },
 };
 
 function isEstateTier(t: string | null | undefined): boolean {
@@ -135,6 +163,8 @@ function headlineForTrackingCheckpoint(
   estateMove = false,
   b2bPartnerJobStart = false,
   officeMove = false,
+  eventMove = false,
+  eventPhase: string | null = null,
 ): string {
   if (
     b2bPartnerJobStart &&
@@ -143,6 +173,47 @@ function headlineForTrackingCheckpoint(
     return jobType === "move"
       ? "Your crew has started the move. We will keep you updated at every step."
       : "Your crew has started the job. We will keep you updated at every step.";
+  }
+  if (jobType === "move" && eventMove) {
+    // Event copy is phase-aware: the delivery leg drops off and sets up at the
+    // venue; the return leg comes back after the event to pack up and return.
+    const phase = String(eventPhase || "").toLowerCase().trim();
+    if (phase === "return") {
+      switch (status) {
+        case "en_route_to_pickup":
+        case "en_route_venue":
+          return "Your crew is heading back to the venue to collect your items.";
+        case "arrived_at_pickup":
+        case "arrived_venue":
+          return "Your crew has arrived at the venue to pack up.";
+        case "teardown":
+          return "Teardown is underway at the venue.";
+        case "en_route_return":
+        case "en_route_to_destination":
+          return "Your items are on the way back.";
+        case "completed":
+          return "Everything is back and your event service is complete. Thank you for choosing Yugo.";
+        default:
+          return "A status update on your event.";
+      }
+    }
+    // Delivery leg (default).
+    switch (status) {
+      case "en_route_to_pickup":
+        return "Your crew is on the way to collect your items for the event.";
+      case "arrived_at_pickup":
+        return "Your crew has arrived to load your items.";
+      case "en_route_venue":
+      case "en_route_to_destination":
+        return "Your items are on the way to the venue.";
+      case "arrived_venue":
+      case "arrived_at_destination":
+        return "Your crew has arrived at the venue and is setting up.";
+      case "completed":
+        return "Your delivery to the venue is complete. We will return to collect everything after your event.";
+      default:
+        return "A status update on your event.";
+    }
   }
   if (jobType === "move" && officeMove) {
     // Office-specific stage transition copy.
@@ -328,6 +399,8 @@ export async function notifyOnCheckpoint(
 
   let estateMove = false;
   let officeMove = false;
+  let eventMove = false;
+  let eventPhase: string | null = null;
   let movePartnerEligible = false;
   let moveRowForSms: {
     id: string;
@@ -356,7 +429,7 @@ export async function notifyOnCheckpoint(
     const { data: move } = await admin
       .from("moves")
       .select(
-        "id, client_email, move_code, from_address, to_address, client_name, tier_selected, organization_id, client_phone, is_pm_move, service_type",
+        "id, client_email, move_code, from_address, to_address, client_name, tier_selected, organization_id, client_phone, is_pm_move, service_type, event_phase",
       )
       .eq("id", jobId)
       .single();
@@ -377,6 +450,12 @@ export async function notifyOnCheckpoint(
         String(
           (move as { service_type?: string | null }).service_type ?? "",
         ) === "office_move";
+      eventMove =
+        String(
+          (move as { service_type?: string | null }).service_type ?? "",
+        ) === "event";
+      eventPhase =
+        (move as { event_phase?: string | null }).event_phase ?? null;
       clientEmail = move.client_email || null;
       const orgId = (move as { organization_id?: string | null })
         .organization_id;
@@ -531,6 +610,8 @@ export async function notifyOnCheckpoint(
     estateMove && jobType === "move",
     b2bPartnerJobStart,
     officeMove && jobType === "move",
+    eventMove && jobType === "move",
+    eventPhase,
   );
   const body = bodyForTrackingCheckpoint(
     status,
@@ -668,6 +749,8 @@ export async function notifyOnCheckpoint(
             : deliveryClientName ?? undefined,
         trackUrl: smsTrackUrl ?? trackUrl,
         estateMove: estateMove && jobType === "move",
+        eventMove: eventMove && jobType === "move",
+        eventPhase,
         jobUuid: jobId,
       }).catch(() => {});
     }

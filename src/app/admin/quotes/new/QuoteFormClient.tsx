@@ -331,6 +331,10 @@ type PhotoReviewQuoteHandoffShape = {
 const QUOTE_SERVICE_TYPES_HIDDEN_FROM_STEP1_PICKER = new Set([
   "b2b_delivery",
   "bin_rental",
+  // Outbound staging has no quote-form field handling and cannot be booked into
+  // a move (createMoveFromQuote throws for it). Keep it out of the picker until a
+  // dedicated outbound-staging quote/creator flow exists.
+  "b2b_outbound_stage",
 ]);
 
 const SERVICE_TYPES: {
@@ -1617,6 +1621,9 @@ export default function QuoteFormClient({
   const [extraVenueStops, setExtraVenueStops] = useState<StopEntry[]>([]);
   const [eventReturnDate, setEventReturnDate] = useState("");
   const [eventSetupRequired, setEventSetupRequired] = useState(false);
+  // Teardown on the return leg. Defaults on (Yugo tears down); operators can
+  // uncheck when the client's team handles teardown themselves.
+  const [eventTeardownRequired, setEventTeardownRequired] = useState(true);
   const [eventSetupHours, setEventSetupHours] = useState(2);
   const [eventSetupInstructions, setEventSetupInstructions] = useState("");
   const [eventSameDay, setEventSameDay] = useState(false);
@@ -3126,6 +3133,7 @@ export default function QuoteFormClient({
           const evTruck = cStr(fa.event_truck_type);
           if (evTruck) setEventTruckType(evTruck);
           if (fa.event_setup_required === true) setEventSetupRequired(true);
+          if (fa.teardown_required === false) setEventTeardownRequired(false);
           const setupHours = faNum("event_setup_hours");
           if (setupHours != null && setupHours > 0) {
             setEventSetupHours(setupHours);
@@ -3788,6 +3796,7 @@ export default function QuoteFormClient({
     setVenueAddress("");
     setEventReturnDate("");
     setEventSetupRequired(false);
+    setEventTeardownRequired(true);
     setB2bBusinessName("");
     setB2bTimeBand("morning");
     setB2bPriceOverrideOn(false);
@@ -5031,6 +5040,9 @@ export default function QuoteFormClient({
           : undefined;
         base.event_setup_instructions =
           eventSetupInstructions.trim() || undefined;
+        // Teardown is optional on the return leg. Persisted to factors_applied
+        // so the crew flow, client timeline, and notifications can branch on it.
+        base.teardown_required = eventTeardownRequired;
         base.event_items = eventItems.length > 0 ? eventItems : undefined;
         base.event_additional_services =
           eventAdditionalServices.length > 0
@@ -5419,6 +5431,7 @@ export default function QuoteFormClient({
       venueAddress,
       eventReturnDate,
       eventSetupRequired,
+      eventTeardownRequired,
       eventSetupHours,
       eventSetupInstructions,
       eventLuxury,
@@ -10369,6 +10382,22 @@ export default function QuoteFormClient({
                         )}
                       </div>
                     )}
+
+                    {/* Teardown (return leg) — optional */}
+                    <label className="flex items-start gap-2 cursor-pointer pt-1">
+                      <input
+                        type="checkbox"
+                        checked={eventTeardownRequired}
+                        onChange={(e) => setEventTeardownRequired(e.target.checked)}
+                        className={`${checkboxAccentClass} w-3.5 h-3.5 mt-0.5`}
+                      />
+                      <span className="text-[11px] text-[var(--tx2)] leading-snug">
+                        Teardown by Yugo on the return leg
+                        <span className="block text-[10px] text-[var(--tx3)]">
+                          Uncheck if the client&apos;s team breaks down the setup themselves.
+                        </span>
+                      </span>
+                    </label>
 
                     {/* Additional services */}
                     <div className="space-y-1.5 pt-1">

@@ -562,6 +562,7 @@ export default function TrackMoveClient({
   companyContactEmail = process.env.NEXT_PUBLIC_YUGO_EMAIL || "support@helloyugo.com",
   coordinatorName = null,
   coordinatorPhone = null,
+  eventSibling = null,
   officeDayCount = null,
   officeTruckCount = null,
   officeProjectManagerName = null,
@@ -654,6 +655,13 @@ export default function TrackMoveClient({
   coordinatorName?: string | null;
   /** Optional phone for coordinator. Falls back to YUGO_PHONE if missing. */
   coordinatorPhone?: string | null;
+  /** Event booking: the other leg (delivery/return) in the same event group. */
+  eventSibling?: {
+    phase: string | null;
+    scheduledDate: string | null;
+    status: string | null;
+    trackUrl: string;
+  } | null;
   /** Office move: number of days for the booked tier (drives Day 1 / Day 2 phased view). */
   officeDayCount?: number | null;
   /** Office move: total trucks (drives "N × <truck>" fleet label). */
@@ -3892,6 +3900,31 @@ export default function TrackMoveClient({
                       </div>
                     </div>
                   </div>
+                  {eventSibling && eventSibling.trackUrl && (
+                    <a
+                      href={eventSibling.trackUrl}
+                      className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-[12px] font-medium"
+                      style={{ background: "#7C3AED14", color: "#6D28D9" }}
+                    >
+                      <span>
+                        {eventSibling.phase === "return"
+                          ? "Track the return leg"
+                          : "Track the delivery leg"}
+                        {eventSibling.scheduledDate
+                          ? ` · ${new Date(
+                              eventSibling.scheduledDate + "T00:00:00",
+                            ).toLocaleDateString("en-CA", {
+                              month: "short",
+                              day: "numeric",
+                            })}`
+                          : ""}
+                        {eventSibling.status === "completed"
+                          ? " · Completed"
+                          : ""}
+                      </span>
+                      <span aria-hidden>→</span>
+                    </a>
+                  )}
                 </div>
               )}
 
@@ -4267,8 +4300,13 @@ export default function TrackMoveClient({
                 )}
 
               {/* ── Live Move Timeline (move day or in-progress) ── */}
+              {/* Office moves render their phased Day 1 / Day 2 timeline via
+                 OfficeTrackHero above (which understands the 12-step office
+                 flow), so the generic residential timeline is suppressed for
+                 them to avoid a duplicate / partial view. */}
               {!isCompleted &&
                 !isNonMoveProductTrack &&
+                serviceType !== "office_move" &&
                 (daysUntil === 0 || isInProgress) && (
                 <div className="mt-5">
                   <LiveMoveTimeline

@@ -236,6 +236,17 @@ interface MoveDetailClientProps {
     client_name: string | null;
     status: string | null;
   } | null;
+  /** Other move rows in the same event_group_id (delivery/return legs). */
+  eventSiblings?: {
+    id: string;
+    move_code: string | null;
+    scheduled_date: string | null;
+    client_name: string | null;
+    status: string | null;
+    event_phase: string | null;
+    from_address: string | null;
+    to_address: string | null;
+  }[];
   residentialMoveProject?: {
     project: Record<string, unknown>;
     phases: {
@@ -527,6 +538,7 @@ export default function MoveDetailClient({
   postCompletionPriceEdits = [],
   moveWaivers = [],
   pmLinkedPeer = null,
+  eventSiblings = [],
   residentialMoveProject = null,
   resolvedAddons = [],
   clientPhotosUpdate = null,
@@ -1184,6 +1196,59 @@ export default function MoveDetailClient({
           ) : null}
         </div>
       )}
+
+      {eventSiblings.length > 0 && (() => {
+        const phaseLabel = (p: string | null | undefined) => {
+          const v = String(p || "").toLowerCase().trim();
+          if (v === "delivery") return "Delivery";
+          if (v === "return") return "Return";
+          if (v === "setup") return "Setup";
+          return "Leg";
+        };
+        const thisPhase = phaseLabel(
+          (move as { event_phase?: string | null }).event_phase,
+        );
+        return (
+          <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] px-4 py-3 text-[12px]">
+            <p className="yu3-t-eyebrow text-[var(--yu3-ink-muted)] mb-1.5">
+              Event legs
+            </p>
+            <p className="mb-2">
+              <span className="yu3-num font-semibold text-[var(--yu3-ink-strong)]">
+                {move.move_code || "This move"}
+              </span>{" "}
+              <span className="text-[var(--yu3-ink-muted)]">
+                is the {thisPhase} leg.
+              </span>
+            </p>
+            <div className="space-y-1.5">
+              {eventSiblings.map((s) => (
+                <div key={s.id} className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--yu3-ink-muted)] w-16 shrink-0">
+                    {phaseLabel(s.event_phase)}
+                  </span>
+                  <Link
+                    href={getMoveDetailPath(s)}
+                    className="yu3-num font-semibold text-[var(--yu3-wine)] hover:underline"
+                  >
+                    {s.move_code || s.id}
+                  </Link>
+                  {s.scheduled_date ? (
+                    <span className="text-[11px] text-[var(--yu3-ink-muted)]">
+                      {formatMoveDate(String(s.scheduled_date))}
+                    </span>
+                  ) : null}
+                  {s.status ? (
+                    <span className="text-[11px] text-[var(--yu3-ink-muted)]">
+                      &middot; {s.status}
+                    </span>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Status, live stage, checklist, progress */}
       <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] overflow-hidden p-4 sm:p-5 shadow-[0_1px_0_0_rgba(0,0,0,0.03)]">

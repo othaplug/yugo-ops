@@ -21,11 +21,56 @@ function clientSmsBody(
   clientName: string | null | undefined,
   trackUrl: string | undefined,
   estateMove: boolean,
+  eventMove = false,
+  eventPhase: string | null = null,
 ): string {
   const name = firstName(clientName);
   // Put the tracking link in its own paragraph with a clear label, never a bare
   // URL crammed under the message.
-  const link = trackUrl ? `\n\nTrack your ${jobType} here:\n${trackUrl}` : "";
+  const linkNoun = eventMove ? "event" : jobType;
+  const link = trackUrl ? `\n\nTrack your ${linkNoun} here:\n${trackUrl}` : "";
+
+  if (jobType === "move" && eventMove) {
+    const phase = String(eventPhase || "").toLowerCase().trim();
+    if (phase === "return") {
+      switch (status) {
+        case "en_route_to_pickup":
+        case "en_route_venue":
+        case "en_route":
+          return `Hi ${name},\n\nYour crew is heading back to the venue to collect your items.${link}`;
+        case "arrived_at_pickup":
+        case "arrived_venue":
+        case "arrived":
+          return `Hi ${name},\n\nYour crew has arrived at the venue to pack up.`;
+        case "teardown":
+          return `Hi ${name},\n\nTeardown is underway at the venue.${link}`;
+        case "en_route_return":
+        case "en_route_to_destination":
+          return `Hi ${name},\n\nYour items are on the way back.${link}`;
+        case "completed":
+          return `Hi ${name},\n\nEverything is back and your event service is complete. Thank you for trusting Yugo.\n\nWarm regards, Yugo`;
+        default:
+          return `Hi ${name},\n\nA quick update on your event from Yugo.${link}`;
+      }
+    }
+    switch (status) {
+      case "en_route_to_pickup":
+      case "en_route":
+        return `Hi ${name},\n\nYour crew is on the way to collect your items for the event.${link}`;
+      case "arrived_at_pickup":
+        return `Hi ${name},\n\nYour crew has arrived to load your items.`;
+      case "en_route_venue":
+      case "en_route_to_destination":
+        return `Hi ${name},\n\nYour items are on the way to the venue.${link}`;
+      case "arrived_venue":
+      case "arrived_at_destination":
+        return `Hi ${name},\n\nYour crew has arrived at the venue and is setting up.`;
+      case "completed":
+        return `Hi ${name},\n\nYour delivery to the venue is complete. We will return to collect everything after your event.${link}`;
+      default:
+        return `Hi ${name},\n\nA quick update on your event from Yugo.${link}`;
+    }
+  }
 
   if (jobType === "move") {
     if (estateMove) {
@@ -101,6 +146,8 @@ export async function sendClientTrackingCheckpointSms(opts: {
   clientName: string | null | undefined;
   trackUrl: string | undefined;
   estateMove: boolean;
+  eventMove?: boolean;
+  eventPhase?: string | null;
   jobUuid: string;
 }): Promise<void> {
   const raw = (opts.phone || "").trim();
@@ -112,6 +159,8 @@ export async function sendClientTrackingCheckpointSms(opts: {
     opts.clientName,
     opts.trackUrl,
     opts.estateMove,
+    opts.eventMove ?? false,
+    opts.eventPhase ?? null,
   ).slice(0, 1500);
 
   const result = await sendSMS(raw, body);

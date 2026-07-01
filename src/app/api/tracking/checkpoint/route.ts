@@ -71,15 +71,18 @@ export async function POST(req: NextRequest) {
   let moveServiceType: string | null | undefined;
   let moveMoveType: string | null | undefined;
   let moveWhiteGloveKind: string | null | undefined;
+  let moveEventPhase: string | null | undefined;
+  let moveTeardownRequired = true;
   let moveSameAddress = false;
   if (session.job_type === "move") {
     const { data: moveRow } = await admin
       .from("moves")
-      .select("service_type, move_type, quote_id, from_address, to_address")
+      .select("service_type, move_type, quote_id, from_address, to_address, event_phase")
       .eq("id", session.job_id)
       .maybeSingle();
     moveServiceType = moveRow?.service_type as string | null | undefined;
     moveMoveType = moveRow?.move_type as string | null | undefined;
+    moveEventPhase = moveRow?.event_phase as string | null | undefined;
     const fa = (moveRow?.from_address as string | null) || "";
     const ta = (moveRow?.to_address as string | null) || "";
     moveSameAddress =
@@ -98,6 +101,9 @@ export async function POST(req: NextRequest) {
       if (fa2 && typeof fa2 === "object") {
         const k = (fa2 as { white_glove_kind?: unknown }).white_glove_kind;
         if (typeof k === "string") moveWhiteGloveKind = k;
+        if ((fa2 as { teardown_required?: unknown }).teardown_required === false) {
+          moveTeardownRequired = false;
+        }
       }
     }
   }
@@ -124,6 +130,8 @@ export async function POST(req: NextRequest) {
       ? getCrewStatusFlowForMove(moveServiceType, moveMoveType, {
           whiteGloveKind: moveWhiteGloveKind ?? null,
           sameAddress: moveSameAddress,
+          eventPhase: moveEventPhase ?? null,
+          teardownRequired: moveTeardownRequired,
         })
       : getCrewStatusFlowForDelivery(deliveryServiceType, deliveryBookingType);
   const allowed = new Set<string>([...flowForJob, "completed"]);

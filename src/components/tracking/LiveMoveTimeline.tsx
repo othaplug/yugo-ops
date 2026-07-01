@@ -35,6 +35,25 @@ export const STATUS_TO_TIMELINE: Record<
   completed: { label: "Move complete", icon: "CheckCircle" },
 };
 
+/** Client-facing labels for event / round-trip venue jobs. Uses the event
+ *  tracking-status keys (en_route_venue, arrived_venue, event_active, teardown,
+ *  en_route_return) so the venue/teardown milestones render instead of blank. */
+export const STATUS_TO_TIMELINE_EVENT: Record<
+  string,
+  { label: string; icon: string }
+> = {
+  confirmed: { label: "Event booking confirmed", icon: "CheckCircle" },
+  dispatched: { label: "Crew dispatched", icon: "Truck" },
+  en_route_to_pickup: { label: "Crew en route to pickup", icon: "Truck" },
+  arrived_at_pickup: { label: "Crew arrived at pickup", icon: "MapPin" },
+  en_route_venue: { label: "En route to your venue", icon: "Truck" },
+  arrived_venue: { label: "Arrived at your venue", icon: "MapPin" },
+  event_active: { label: "Setup complete, event underway", icon: "CheckCircle" },
+  teardown: { label: "Teardown started", icon: "stack" },
+  en_route_return: { label: "Crew en route back", icon: "Truck" },
+  completed: { label: "Event complete", icon: "CheckCircle" },
+};
+
 /** Client-facing labels when the job is logistics / delivery (not a residential move). */
 export const STATUS_TO_TIMELINE_DELIVERY: Record<
   string,

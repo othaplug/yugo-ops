@@ -18,6 +18,10 @@ import {
   ESTATE_ADDON_UI_LINES,
 } from "@/lib/quotes/addon-visibility";
 import { quoteFormServiceDateLabel } from "@/lib/quotes/quote-field-labels";
+import {
+  isB2BDeliveryQuoteServiceType,
+  isB2BOutboundStageServiceType,
+} from "@/lib/quotes/b2b-quote-copy";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import TierPriceOverrideEditor, {
   type TierPriceOverrideMap,
@@ -343,7 +347,19 @@ export default function EditQuoteClient({
   const contact = Array.isArray(oq.contacts) ? oq.contacts[0] : oq.contacts;
   const [serviceType] = useState<string>(oq.service_type);
   /** B2B quotes use dimensional pricing on the quote detail page — this screen only supports move-style re-quotes. */
-  const isB2bQuote = serviceType === "b2b_delivery";
+  const isB2bQuote = isB2BDeliveryQuoteServiceType(serviceType);
+  /**
+   * Types whose scope would be destroyed by the move-engine re-quote on this
+   * screen: B2B delivery/outbound (dimensional/partner pricing), event (multi-leg
+   * legs live in factors_applied, not this form) and bin_rental (bin schedule).
+   * buildPayload has no branch for these, so regenerating would re-price them as
+   * a plain move. Block re-pricing here; edit them via the Generate Quote flow.
+   */
+  const blockMoveEngineRegen =
+    isB2bQuote ||
+    isB2BOutboundStageServiceType(serviceType) ||
+    serviceType === "event" ||
+    serviceType === "bin_rental";
   const factors = (oq.factors_applied ?? {}) as Record<string, any>;
 
   // ── Core fields ──────────────────────────────────────────
@@ -1259,7 +1275,7 @@ export default function EditQuoteClient({
 
   // ── Debounced live preview (only when pricing inputs differ from post-load baseline) ──
   useEffect(() => {
-    if (isB2bQuote) {
+    if (blockMoveEngineRegen) {
       setLivePreview(null);
       setPreviewLoading(false);
       return;
@@ -1307,7 +1323,7 @@ export default function EditQuoteClient({
       if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
     };
   }, [
-    isB2bQuote,
+    blockMoveEngineRegen,
     jobStopsLoaded,
     buildPayload,
     fromAddress,
@@ -1516,7 +1532,7 @@ export default function EditQuoteClient({
    *  Re-derived on every render via buildPayload so any section's
    *  state change flips it without explicit per-field bookkeeping. */
   const hasChanges = (() => {
-    if (isB2bQuote) return false;
+    if (blockMoveEngineRegen) return false;
     const baseline = baselineFingerprintRef.current;
     if (baseline === null) return false;
     try {
@@ -3244,7 +3260,15 @@ export default function EditQuoteClient({
           new version, and surfaces the result panel below for the
           operator to verify. No client email is sent at this step —
           that's the "Save & resend" button in the result panel. */}
-      {!newQuoteResult && (
+      {!newQuoteResult && blockMoveEngineRegen && (
+        <div className="rounded-xl px-4 py-3 text-[12px] border bg-[var(--gold)]/5 border-[var(--gold)]/20 text-[var(--tx2)]">
+          This quote type is priced outside the move engine, so re-pricing is
+          disabled here to protect its scope. To change it, regenerate it from
+          the Generate Quote flow.
+        </div>
+      )}
+
+      {!newQuoteResult && !blockMoveEngineRegen && (
         <button
           onClick={handleRegenerate}
           disabled={generating}

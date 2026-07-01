@@ -553,6 +553,8 @@ export async function GET(
   let quotePickups: StopLoc[] = [];
   let quoteDropoffs: StopLoc[] = [];
   let whiteGloveKindOut: string | null = null;
+  // Event return leg: teardown shown unless the quote explicitly opted out.
+  let teardownRequiredOut = true;
   if (m.quote_id) {
     const { data: qf } = await admin
       .from("quotes")
@@ -567,6 +569,9 @@ export async function GET(
     if (Array.isArray(fa.dropoff_locations)) quoteDropoffs = fa.dropoff_locations as StopLoc[];
     const k = (fa as { white_glove_kind?: unknown }).white_glove_kind;
     if (typeof k === "string") whiteGloveKindOut = k;
+    if ((fa as { teardown_required?: unknown }).teardown_required === false) {
+      teardownRequiredOut = false;
+    }
   }
 
   const { data: jobStopRows } = await admin
@@ -956,6 +961,8 @@ export async function GET(
       (m.move_type as string | null) ||
       null,
     whiteGloveKind: whiteGloveKindOut,
+    eventPhase: (m.event_phase as string | null) ?? null,
+    teardownRequired: teardownRequiredOut,
     complexityBadges: complexityBadgeLabels(m.complexity_indicators),
     preMoveChecklistDone,
     preMoveChecklistTotal,

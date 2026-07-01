@@ -1,6 +1,7 @@
 import {
   DELIVERY_STATUS_FLOW,
   MOVE_STATUS_FLOW,
+  OFFICE_MOVE_STATUS_FLOW,
   type TrackingStatus,
 } from "@/lib/crew-tracking-status";
 import { normalizeCrewServiceCategory } from "./crew-service-category";
@@ -68,6 +69,30 @@ export const EVENT_MOVE_FLOW: TrackingStatus[] = [
   "completed",
 ];
 
+/**
+ * Event bookings create two move rows sharing an event_group_id: a "delivery"
+ * phase (origin → venue: load, drive, unload + setup) and a "return" phase
+ * (venue → origin: load-out, optional teardown, drive back, unload). Each crew
+ * session only sees its own leg. `event_active` (the event itself, no crew on
+ * site) belongs to neither crew flow — it is the client-facing "between legs"
+ * state. Keys are the DB-stable TrackingStatus values already used everywhere.
+ */
+export const EVENT_DELIVERY_FLOW: TrackingStatus[] = [
+  "en_route_to_pickup",
+  "arrived_at_pickup",
+  "en_route_venue",
+  "arrived_venue",
+  "completed",
+];
+
+export const EVENT_RETURN_FLOW: TrackingStatus[] = [
+  "en_route_venue",
+  "arrived_venue",
+  "teardown",
+  "en_route_return",
+  "completed",
+];
+
 // White-glove is a vendor pickup + placement delivery, not a residential move.
 // No "wrapping" or "unwrapping_placement" stages — items arrive packaged from
 // the vendor, the crew inspects each piece before loading, places to spec at
@@ -122,16 +147,12 @@ export const WHITE_GLOVE_INHOME_STAGE_LABELS: Partial<Record<TrackingStatus, str
   completed: "Client sign-off",
 };
 
-// Office / commercial move: 6-step hands-free flow. At-origin absorbs
-// label-and-plan + load; at-destination absorbs place + IT-setup.
-const OFFICE_MOVE_FLOW: TrackingStatus[] = [
-  "en_route_to_pickup",
-  "arrived_at_pickup",
-  "en_route_to_destination",
-  "arrived_at_destination",
-  "walkthrough_photos",
-  "completed",
-];
+// Office / commercial move: crews use the full 12-step OFFICE_MOVE_STATUS_FLOW
+// (Day 1 walkthrough / IT documentation / packing, then Day 2 move + setup) so
+// they can check off the pack-day work. The Day 1 / Day 2 grouping is purely a
+// client-display concern (OfficeTrackHero); the crew checklist is one linear
+// sequence and is valid for both single- and multi-day office moves. See
+// OFFICE_MOVE_STATUS_FLOW in crew-tracking-status.ts.
 
 export const OFFICE_MOVE_STAGE_LABELS: Partial<Record<TrackingStatus, string>> = {
   en_route_to_pickup: "En route to origin",
@@ -171,13 +192,21 @@ export const getCrewStatusFlowForMove = (
   opts?: {
     whiteGloveKind?: string | null;
     sameAddress?: boolean;
+    /** Event bookings only: "delivery" or "return" leg (from moves.event_phase). */
+    eventPhase?: string | null;
+    /**
+     * Event return leg only: whether the crew tears down the setup before packing.
+     * From quotes.factors_applied.teardown_required (JSON, not a moves column).
+     * Defaults to true (teardown shown) unless explicitly false.
+     */
+    teardownRequired?: boolean | null;
   },
 ): TrackingStatus[] => {
   // Office moves are normalized to "b2b_delivery" by the category mapper, so
   // intercept the raw service type BEFORE the bucket lookup to give them a
   // dedicated office flow.
   const rawSt = (serviceType || "").toLowerCase().trim();
-  if (rawSt === "office_move") return [...OFFICE_MOVE_FLOW];
+  if (rawSt === "office_move") return [...OFFICE_MOVE_STATUS_FLOW];
 
   const key = normalizeCrewServiceCategory(serviceType, moveType);
   switch (key) {
@@ -191,8 +220,21 @@ export const getCrewStatusFlowForMove = (
       return [...B2B_MOVE_LIKE_FLOW];
     case "single_item":
       return [...SINGLE_ITEM_FLOW];
-    case "event":
-      return [...EVENT_MOVE_FLOW];
+    case "event": {
+      const phase = (opts?.eventPhase || "").toLowerCase().trim();
+      // Teardown shown unless the quote explicitly opted out.
+      const includeTeardown = opts?.teardownRequired !== false;
+      if (phase === "delivery") return [...EVENT_DELIVERY_FLOW];
+      if (phase === "return") {
+        return includeTeardown
+          ? [...EVENT_RETURN_FLOW]
+          : EVENT_RETURN_FLOW.filter((s) => s !== "teardown");
+      }
+      // single_day / setup / unknown phase → full round-trip flow.
+      return includeTeardown
+        ? [...EVENT_MOVE_FLOW]
+        : EVENT_MOVE_FLOW.filter((s) => s !== "teardown");
+    }
     case "white_glove": {
       const kind = (opts?.whiteGloveKind || "").toLowerCase().trim();
       // Explicit kind wins. Same-address is the safety net for legacy rows.
@@ -264,7 +306,7 @@ const STATUS_UNION: readonly string[] = [
       ...EVENT_MOVE_FLOW,
       ...WHITE_GLOVE_FLOW,
       ...WHITE_GLOVE_INHOME_FLOW,
-      ...OFFICE_MOVE_FLOW,
+      ...OFFICE_MOVE_STATUS_FLOW,
       ...BIN_RENTAL_FLOW,
       ...BIN_RENTAL_PICKUP_FLOW,
     ].flat(),

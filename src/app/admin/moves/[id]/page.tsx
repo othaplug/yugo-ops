@@ -316,6 +316,22 @@ export default async function MoveDetailPage({
         .maybeSingle()
     : { data: null };
 
+  // Event bookings split into delivery + return move rows sharing an
+  // event_group_id (multi-event has several such pairs). Load the other leg(s)
+  // so the move detail can show a linked two-leg panel with navigation.
+  const eventGroupId = (move as { event_group_id?: string | null })
+    .event_group_id;
+  const { data: eventSiblings } = eventGroupId
+    ? await db
+        .from("moves")
+        .select(
+          "id, move_code, scheduled_date, client_name, status, event_phase, from_address, to_address",
+        )
+        .eq("event_group_id", eventGroupId)
+        .neq("id", move.id)
+        .order("scheduled_date", { ascending: true })
+    : { data: null };
+
   const moveWaivers = await Promise.all(
     (moveWaiverRows ?? []).map(
       async (w: {
@@ -445,6 +461,7 @@ export default async function MoveDetailPage({
       move={move}
       clientPhotosUpdate={clientPhotosUpdate}
       pmLinkedPeer={pmLinkedPeer}
+      eventSiblings={eventSiblings ?? []}
       crews={crews ?? []}
       isOffice={isOffice}
       userRole={userRole}

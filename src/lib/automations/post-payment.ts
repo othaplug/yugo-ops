@@ -32,6 +32,7 @@ import {
   officeConfirmationEmail,
   binRentalConfirmationEmail,
   singleItemConfirmationEmail,
+  eventConfirmationEmail,
   statusUpdateEmailHtml,
   type TierConfirmationParams,
 } from "@/lib/email-templates";
@@ -508,6 +509,55 @@ export async function runPostPaymentActions(
             from: emailFrom,
             to: clientEmail,
             subject: `Booking confirmed, ${input.moveCode}`,
+            html,
+            headers: {
+              Precedence: "auto",
+              "X-Auto-Response-Suppress": "All",
+            },
+          });
+          return;
+        }
+
+        // Event bookings run as two legs (deliver + set up, then return to pack
+        // up and optionally tear down). Dedicated event copy instead of the
+        // residential move fallback.
+        if (quote.service_type === "event") {
+          const returnDateRaw =
+            typeof factors.return_date === "string" && factors.return_date.trim()
+              ? factors.return_date.trim()
+              : null;
+          const eventCrew =
+            (move.crew_size as number) ||
+            (quote.est_crew_size as number) ||
+            (typeof factors.event_crew === "number"
+              ? (factors.event_crew as number)
+              : null);
+          const html = eventConfirmationEmail({
+            clientName,
+            moveCode: input.moveCode,
+            eventName:
+              typeof factors.event_name === "string" && factors.event_name.trim()
+                ? factors.event_name.trim()
+                : null,
+            venueAddress: quote.to_address,
+            originAddress: quote.from_address,
+            deliveryDate: quote.move_date,
+            deliveryWindow: (move.arrival_window as string) || null,
+            returnDate: returnDateRaw,
+            sameDay: factors.event_same_day === true,
+            teardownRequired: factors.teardown_required !== false,
+            crewSize: eventCrew,
+            totalWithTax,
+            depositPaid: depositAmount,
+            balanceRemaining: balanceAmount,
+            trackingUrl,
+            coordinatorName: (move.coordinator_name as string) || null,
+          });
+          const emailFrom = await getEmailFrom();
+          await resend.emails.send({
+            from: emailFrom,
+            to: clientEmail,
+            subject: `Your event is confirmed, ${input.moveCode}`,
             html,
             headers: {
               Precedence: "auto",

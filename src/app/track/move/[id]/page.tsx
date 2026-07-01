@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLegalBranding } from "@/lib/legal-branding";
-import { verifyTrackToken } from "@/lib/track-token";
+import { verifyTrackToken, signTrackToken } from "@/lib/track-token";
 import { isMoveIdUuid } from "@/lib/move-code";
 import { isFeatureEnabled, getFeatureConfig } from "@/lib/platform-settings";
 import { parseDateOnly } from "@/lib/date-format";
@@ -367,9 +367,40 @@ export default async function TrackMovePage({
     }
   }
 
+  // Event booking: the other leg (delivery/return) is a separate move row in the
+  // same event_group_id. Surface its date, live status, and a link to its own
+  // tracker so the client can follow both legs.
+  let eventSibling: {
+    phase: string | null;
+    scheduledDate: string | null;
+    status: string | null;
+    trackUrl: string;
+  } | null = null;
+  const evGroupId = (move as { event_group_id?: string | null }).event_group_id;
+  if (evGroupId) {
+    const { data: sib } = await supabase
+      .from("moves")
+      .select("id, scheduled_date, status, event_phase")
+      .eq("event_group_id", evGroupId)
+      .neq("id", move.id)
+      .order("scheduled_date", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (sib) {
+      const sibId = sib.id as string;
+      eventSibling = {
+        phase: (sib.event_phase as string | null) ?? null,
+        scheduledDate: (sib.scheduled_date as string | null) ?? null,
+        status: (sib.status as string | null) ?? null,
+        trackUrl: `/track/move/${sibId}?token=${signTrackToken("move", sibId)}`,
+      };
+    }
+  }
+
   return (
     <TrackMoveClient
       move={move}
+      eventSibling={eventSibling}
       companyContactEmail={companyContactEmail}
       crew={crew}
       token={token || ""}

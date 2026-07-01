@@ -2258,6 +2258,112 @@ export function singleItemConfirmationEmail(
   `);
 }
 
+export interface EventConfirmationParams {
+  clientName: string;
+  moveCode: string;
+  eventName: string | null;
+  venueAddress: string;
+  originAddress: string;
+  /** Delivery leg date (ISO yyyy-mm-dd). */
+  deliveryDate: string;
+  deliveryWindow?: string | null;
+  /** Return leg date (ISO). Null when same day or to-be-confirmed. */
+  returnDate: string | null;
+  sameDay: boolean;
+  teardownRequired: boolean;
+  crewSize?: number | null;
+  totalWithTax: number;
+  depositPaid: number;
+  balanceRemaining: number;
+  trackingUrl: string;
+  coordinatorName?: string | null;
+}
+
+/**
+ * Event booking confirmation. Events run as two legs (deliver + set up at the
+ * venue, then return after the event to pack up and, optionally, tear down).
+ * Copy is event specific: no residential "move" / truck / from-to framing.
+ */
+export function eventConfirmationEmail(p: EventConfirmationParams): string {
+  const firstName =
+    (p.clientName || "").trim().split(/\s+/).filter(Boolean)[0] || "";
+  const headline = firstName
+    ? `Your event is confirmed, ${firstName}.`
+    : "Your event is confirmed.";
+  const deliveryStr = `${confirmDateDisplay(p.deliveryDate)}${p.deliveryWindow ? ` · ${p.deliveryWindow}` : ""}`;
+  const returnStr = p.sameDay
+    ? "Same day, after your event"
+    : p.returnDate
+      ? confirmDateDisplay(p.returnDate)
+      : "To be confirmed with your coordinator";
+  const teardownStr = p.teardownRequired
+    ? "Included on the return leg"
+    : "Handled by your team";
+  const crew = p.crewSize && p.crewSize > 0 ? Math.round(p.crewSize) : null;
+  const paidInFull = p.balanceRemaining <= 0;
+
+  const sB = `1px solid ${PREMIUM_RULE}`;
+  const sL = `padding:4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`;
+  const sV = `padding:4px 0;font-size:12px;color:${PREMIUM_BODY};font-weight:600;text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`;
+  const sVg = `${sV};color:#2D7A4F`;
+
+  return emailLayout(`
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;font-family:${PREMIUM_FONT};">Booking confirmed</div>
+    <h1 style="font-size:28px;font-weight:700;letter-spacing:0;margin:0 0 12px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};text-transform:none;">${headline}</h1>
+    <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 24px">
+      ${p.eventName ? `${escapeHtmlEmail(p.eventName)} is all set. ` : ""}We deliver and set up at your venue, then return after the event to pack everything up${p.teardownRequired ? ", tear down the setup," : ""} and bring it back.
+    </p>
+
+    ${premiumSectionRule()}
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td style="padding:0;">
+      <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">Your event</div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;font-size:12px;border-collapse:collapse">
+        ${p.eventName ? emailNestedKvRow({ borderTop: "none", labelStyle: sL, valueStyle: sV, label: "Event", valueHtml: escapeHtmlEmail(p.eventName) }) : ""}
+        ${emailNestedKvRow({ borderTop: p.eventName ? sB : "none", labelStyle: sL, valueStyle: sV, label: "Delivery", valueHtml: escapeHtmlEmail(deliveryStr) })}
+        ${emailNestedKvRow({ borderTop: sB, labelStyle: sL, valueStyle: sV, label: "Return", valueHtml: escapeHtmlEmail(returnStr) })}
+        ${emailNestedKvRow({ borderTop: sB, labelStyle: sL, valueStyle: sV, label: "Venue", valueHtml: emailMapLinkHtml(p.venueAddress) })}
+        ${emailNestedKvRow({ borderTop: sB, labelStyle: sL, valueStyle: sV, label: "Origin", valueHtml: emailMapLinkHtml(p.originAddress) })}
+        ${crew ? emailNestedKvRow({ borderTop: sB, labelStyle: sL, valueStyle: sV, label: "Crew", valueHtml: escapeHtmlEmail(`${crew}-person crew`) }) : ""}
+        ${emailNestedKvRow({ borderTop: sB, labelStyle: sL, valueStyle: sV, label: "Teardown", valueHtml: escapeHtmlEmail(teardownStr) })}
+        ${emailNestedKvRow({ borderTop: sB, labelStyle: sL, valueStyle: sV, label: "Total", valueHtml: escapeHtmlEmail(`${formatCurrencyEmail(p.totalWithTax)} (guaranteed - no surprises)`) })}
+      </table>
+    </td></tr></table>
+
+    ${premiumSectionRule()}
+    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">How the day works</div>
+    <div style="font-size:13px;color:${PREMIUM_BODY};line-height:1.8">
+      <div>&middot; Leg 1: we load at your origin, deliver, and set up at the venue</div>
+      <div>&middot; Your event runs. Our crew is off site during this time</div>
+      <div>&middot; Leg 2: we return to the venue, pack up${p.teardownRequired ? " and tear down" : ""}, and bring everything back to your origin</div>
+    </div>
+
+    ${premiumSectionRule()}
+    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">Your tracking page</div>
+    <div style="font-size:13px;color:${PREMIUM_BODY_MUTED};line-height:1.6">Follow both legs in real time:</div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;margin-bottom:20px;"><tr><td align="center">
+      ${premiumCompactWineCtaAnchor(p.trackingUrl, PREMIUM_TRACK_CTA_LABEL, "block")}
+    </td></tr></table>
+
+    <div style="background:${EMAIL_PREMIUM_ISLAND};border:1px solid ${PREMIUM_RULE};padding:${PREMIUM_CALLOUT_PAD};margin-bottom:16px;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;font-size:12px;border-collapse:collapse">
+        ${
+          paidInFull
+            ? emailNestedKvRow({ borderTop: "none", labelStyle: sL, valueStyle: sVg, label: "Paid in full", valueHtml: formatCurrencyEmail(p.depositPaid) })
+            : `${emailNestedKvRow({ borderTop: "none", labelStyle: sL, valueStyle: sVg, label: "Paid today", valueHtml: formatCurrencyEmail(p.depositPaid) })}
+        ${emailNestedKvRow({ borderTop: sB, labelStyle: sL, valueStyle: sV, label: "Balance remaining", valueHtml: formatCurrencyEmail(p.balanceRemaining) })}`
+        }
+      </table>
+    </div>
+
+    <p style="font-size:12px;color:${PREMIUM_BODY_MUTED};margin:0 0 16px;text-align:center">
+      ${p.coordinatorName ? `${escapeHtmlEmail(p.coordinatorName)} is your coordinator and will be in touch.<br/>` : ""}
+      Looking forward to your event.<br/>
+      <strong style="color:${PREMIUM_BODY}">- The Yugo Team</strong>
+    </p>
+  `);
+}
+
 export interface BinRentalConfirmationParams {
   clientName: string;
   moveCode: string;

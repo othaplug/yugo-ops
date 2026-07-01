@@ -263,6 +263,10 @@ interface JobDetail {
   serviceType?: string | null;
   /** White-glove sub-kind: "delivery" (vendor → client) or "service" (in-home assembly/install). */
   whiteGloveKind?: string | null;
+  /** Event bookings only: "delivery" or "return" leg (from moves.event_phase). */
+  eventPhase?: string | null;
+  /** Event return leg only: whether teardown is in scope (default true). */
+  teardownRequired?: boolean | null;
   /** Partner org vertical (deliveries); used for B2B context in crew UI. */
   partnerVertical?: string | null;
   complexityBadges?: string[];
@@ -407,8 +411,10 @@ export default function CrewJobPage({
         !!job?.toAddress &&
         job.fromAddress.trim().toLowerCase() === job.toAddress.trim().toLowerCase(),
       moveType: job?.moveType ?? null,
+      eventPhase: job?.eventPhase ?? null,
+      teardownRequired: job?.teardownRequired ?? null,
     }),
-    [job?.whiteGloveKind, job?.fromAddress, job?.toAddress, job?.moveType],
+    [job?.whiteGloveKind, job?.fromAddress, job?.toAddress, job?.moveType, job?.eventPhase, job?.teardownRequired],
   );
   const moveStatusFlow = useMemo(
     () => getCrewStatusFlowForMove(job?.serviceType, job?.moveType, flowVariantOpts),

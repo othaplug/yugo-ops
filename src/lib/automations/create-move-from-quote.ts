@@ -152,6 +152,16 @@ export async function createMoveFromQuote(
     );
   }
 
+  // b2b_outbound_stage is a warehouse -> carrier staging job, not a move. It has
+  // no SERVICE_TO_MOVE_TYPE mapping, so without this guard it would silently be
+  // created as a "residential" move (wrong badge, wrong flow, no staging scope).
+  // Fail loud until a dedicated outbound-staging creator exists.
+  if (String(quote.service_type ?? "") === "b2b_outbound_stage") {
+    throw new Error(
+      "b2b_outbound_stage quotes cannot be converted into a move. Outbound staging is not yet wired to a move/shipment creator.",
+    );
+  }
+
   const contact = quote.contacts as {
     name: string;
     email: string | null;

@@ -59,14 +59,14 @@ export async function POST(req: NextRequest) {
       ? await admin
           .from("moves")
           .select(
-            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type, move_type, from_address, to_address, quote_id, status",
+            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type, move_type, from_address, to_address, quote_id, status, event_phase",
           )
           .eq("id", rawJobId)
           .maybeSingle()
       : await admin
           .from("moves")
           .select(
-            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type, move_type, from_address, to_address, quote_id, status",
+            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type, move_type, from_address, to_address, quote_id, status, event_phase",
           )
           .ilike("move_code", rawJobId.replace(/^#/, "").toUpperCase())
           .maybeSingle();
@@ -153,6 +153,7 @@ export async function POST(req: NextRequest) {
   }
 
   let moveWhiteGloveKind: string | null = null;
+  let moveTeardownRequired = true;
   if (jobType === "move") {
     const mr = jobRow as { quote_id?: string | null };
     if (mr.quote_id) {
@@ -166,6 +167,9 @@ export async function POST(req: NextRequest) {
       if (fac && typeof fac === "object") {
         const k = (fac as { white_glove_kind?: unknown }).white_glove_kind;
         if (typeof k === "string") moveWhiteGloveKind = k;
+        if ((fac as { teardown_required?: unknown }).teardown_required === false) {
+          moveTeardownRequired = false;
+        }
       }
     }
   }
@@ -177,12 +181,15 @@ export async function POST(req: NextRequest) {
             move_type?: string | null;
             from_address?: string | null;
             to_address?: string | null;
+            event_phase?: string | null;
           };
           const fa = (mr.from_address || "").trim().toLowerCase();
           const ta = (mr.to_address || "").trim().toLowerCase();
           return getCrewStatusFlowForMove(mr.service_type, mr.move_type, {
             whiteGloveKind: moveWhiteGloveKind,
             sameAddress: !!fa && !!ta && fa === ta,
+            eventPhase: mr.event_phase ?? null,
+            teardownRequired: moveTeardownRequired,
           });
         })()
       : undefined;
