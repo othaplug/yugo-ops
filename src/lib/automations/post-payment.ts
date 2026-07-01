@@ -29,6 +29,7 @@ import {
   curatedConfirmationEmail,
   signatureConfirmationEmail,
   estateConfirmationEmail,
+  officeConfirmationEmail,
   binRentalConfirmationEmail,
   singleItemConfirmationEmail,
   statusUpdateEmailHtml,
@@ -532,6 +533,30 @@ export async function runPostPaymentActions(
         const timeWindow =
           (move.arrival_window as string) || "Morning (7 AM – 12 PM)";
 
+        // Office-specific: pull day count for the booked tier from
+        // factors, and derive project manager name from quote
+        // factors.project_manager_name (falls back to coordinator).
+        const quoteFactors = (quote.factors_applied ?? {}) as Record<
+          string,
+          unknown
+        >;
+        const officeDayCount = (() => {
+          if (quote.service_type !== "office_move") return null;
+          const per = quoteFactors.office_per_tier_days as
+            | Record<string, number>
+            | undefined;
+          const n = per?.[tier ?? "priority"];
+          return typeof n === "number" && n > 0 ? n : null;
+        })();
+        const projectManagerName =
+          (typeof quoteFactors.project_manager_name === "string" &&
+            quoteFactors.project_manager_name.trim()) ||
+          null;
+        const projectManagerPhone =
+          (typeof quoteFactors.project_manager_phone === "string" &&
+            quoteFactors.project_manager_phone.trim()) ||
+          null;
+
         // welcomePackageUrl is computed once in shared scope above.
         const confirmParams: TierConfirmationParams = {
           clientName,
@@ -554,8 +579,16 @@ export async function runPostPaymentActions(
           coordinatorEmail: (move.coordinator_email as string) || null,
           welcomePackageUrl,
           addonLines: resolvedAddonLines.length > 0 ? resolvedAddonLines : undefined,
+          officeDayCount,
+          projectManagerName,
+          projectManagerPhone,
         };
 
+        // Priority + office_move now goes to a tailored office
+        // template (was falling back to Estate as a placeholder until
+        // dedicated office copy shipped 2026-06-30).
+        const isOfficePriority =
+          tier === "priority" && quote.service_type === "office_move";
         const templateFns: Record<
           string,
           (p: TierConfirmationParams) => string
@@ -564,17 +597,17 @@ export async function runPostPaymentActions(
           curated: essentialConfirmationEmail,
           signature: signatureConfirmationEmail,
           estate: estateConfirmationEmail,
-          // Office moves bookable on the Priority tier. No dedicated
-          // Priority email template yet (Priority = office, Estate =
-          // residential — same "premium / we handle everything" tone
-          // so the existing Estate template works as a fallback until
-          // a tailored Priority copy block ships).
+          // Priority-tier residential (rare) keeps the Estate copy;
+          // Priority-tier office_move (below) picks the dedicated
+          // office template via the isOfficePriority override.
           priority: estateConfirmationEmail,
           // legacy keys for moves created before the rename
           essentials: essentialConfirmationEmail,
           premier: signatureConfirmationEmail,
         };
-        const templateFn = templateFns[tier] ?? signatureConfirmationEmail;
+        const templateFn = isOfficePriority
+          ? officeConfirmationEmail
+          : templateFns[tier] ?? signatureConfirmationEmail;
 
         const estateDateLabel = quote.move_date
           ? new Date(quote.move_date + "T12:00:00").toLocaleDateString(
@@ -738,29 +771,39 @@ export async function runPostPaymentActions(
             ? `Move-day checklist:\n${baseUrl}/checklist/${checklistTokenForEmail}`
             : null;
 
-        // Estate is a white-glove concierge tier — its booking text should feel
-        // bespoke, not the standard confirmation. Lead with the personal
-        // coordinator, point to the curated Estate welcome package, and use
-        // warmer language. Falls back gracefully if the welcome link is absent.
-        const smsBody = isEstateBooking
+        // Office Priority: business-focused SMS mentioning the
+        // project manager (not just "coordinator"), the phased plan,
+        // and the shareable tracking link. Estate: white-glove
+        // concierge tone. Everyone else: standard.
+        const isOfficePrioritySms =
+          (selectedTier ?? "") === "priority" &&
+          quote.service_type === "office_move";
+        const smsBody = isOfficePrioritySms
           ? [
-              `${first}, welcome to ${companyDisplayName} Estate.`,
-              `It is our privilege to handle your move (ref ${input.moveCode}). Your dedicated coordinator will call you personally within 24 hours to begin tailoring every detail.`,
-              welcomePackageUrl
-                ? `Your private Estate welcome package is ready, with your concierge contacts, your timeline, and everything to expect:\n${welcomePackageUrl}`
-                : `Your private move portal:\n${trackingUrl}`,
-              ...(welcomePackageUrl ? [`Track your move anytime:\n${trackingUrl}`] : []),
-              `We are at your service. Reply here or call (647) 370-4525.`,
+              `${first}, your ${companyDisplayName} office relocation is booked.`,
+              `Reference: ${input.moveCode}. Your project manager will reach out today to walk through the plan.`,
+              `Track your relocation (share with your team):\n${trackingUrl}`,
+              `Questions? Reply here or call (647) 370-4525.`,
             ].join("\n\n")
-          : [
-              `Hi ${first},`,
-              `You're booked with ${companyDisplayName}. Reference: ${input.moveCode}.`,
-              `Your coordinator will reach out within 24 hours.`,
-              isBinRental
-                ? `Track your order:\n${trackingUrl}`
-                : `Track your move:\n${trackingUrl}`,
-              ...(checklistLine ? [checklistLine] : []),
-            ].join("\n\n");
+          : isEstateBooking
+            ? [
+                `${first}, welcome to ${companyDisplayName} Estate.`,
+                `It is our privilege to handle your move (ref ${input.moveCode}). Your dedicated coordinator will call you personally within 24 hours to begin tailoring every detail.`,
+                welcomePackageUrl
+                  ? `Your private Estate welcome package is ready, with your concierge contacts, your timeline, and everything to expect:\n${welcomePackageUrl}`
+                  : `Your private move portal:\n${trackingUrl}`,
+                ...(welcomePackageUrl ? [`Track your move anytime:\n${trackingUrl}`] : []),
+                `We are at your service. Reply here or call (647) 370-4525.`,
+              ].join("\n\n")
+            : [
+                `Hi ${first},`,
+                `You're booked with ${companyDisplayName}. Reference: ${input.moveCode}.`,
+                `Your coordinator will reach out within 24 hours.`,
+                isBinRental
+                  ? `Track your order:\n${trackingUrl}`
+                  : `Track your move:\n${trackingUrl}`,
+                ...(checklistLine ? [checklistLine] : []),
+              ].join("\n\n");
 
         await sendSMS(to, smsBody);
       },

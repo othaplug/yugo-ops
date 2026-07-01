@@ -1810,6 +1810,15 @@ export interface TierConfirmationParams {
   welcomePackageUrl?: string | null;
   /** Add-ons selected by the client at booking time. Omit/empty = no section rendered. */
   addonLines?: { name: string; qty?: number; price: number }[];
+  /** Office moves only: number of days for the booked tier. When > 1 the
+   *  confirmation email renders a "Day 1 / Day 2" phased plan and shows
+   *  the date as a range. */
+  officeDayCount?: number | null;
+  /** Office moves only: named project manager (falls back to
+   *  coordinator when null). Rendered as a dedicated PM contact line
+   *  in the office confirmation email. */
+  projectManagerName?: string | null;
+  projectManagerPhone?: string | null;
 }
 
 function confirmDateDisplay(dateStr: string | null): string {
@@ -2681,6 +2690,220 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
     <p style="font-size:13px;color:${ESTATE_WINE_SURFACE_MUTED} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_MUTED};margin:0;font-family:${PREMIUM_FONT};">Yugo Estate Team</p>
     `
     }
+  `)}`;
+}
+
+/** Office booking confirmation email — Priority tier.
+ *  Wine-shell aesthetic (same as Estate) but office-specific copy:
+ *  phased Day 1 / Day 2 plan, project manager contact, office-relevant
+ *  inclusions (COI to building management, workstation labeling, IT
+ *  photography, floor protection). Replaces the Estate placeholder
+ *  that Priority tier office bookings previously fell back to. */
+export function officeConfirmationEmail(p: TierConfirmationParams): string {
+  const firstName = (p.clientName || "").split(" ")[0];
+  const coordName = p.coordinatorName || "your coordinator";
+  const pmName = p.projectManagerName || coordName;
+  const dayCount = Math.max(1, Math.floor(p.officeDayCount ?? 1));
+
+  // Multi-day date range display
+  const dateStr = (() => {
+    if (!p.moveDate) return "To be confirmed";
+    const startFmt = confirmDateDisplay(p.moveDate);
+    if (dayCount <= 1) return startFmt;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(p.moveDate);
+    if (!m) return startFmt;
+    const y = Number(m[1]);
+    const mo = Number(m[2]) - 1;
+    const d = Number(m[3]) + (dayCount - 1);
+    const end = new Date(y, mo, d);
+    const endIso = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
+    return `${startFmt} — ${confirmDateDisplay(endIso)}`;
+  })();
+
+  const estateCoordLinkStyle = `color:${ESTATE_WINE_SURFACE_ROSE} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_ROSE};text-decoration:underline;font-weight:600;`;
+  const coordDigits = p.coordinatorPhone ? normalizePhone(p.coordinatorPhone) : "";
+  const phoneDisplay = p.coordinatorPhone ? formatPhone(p.coordinatorPhone) : "";
+  const coordPhoneHtml =
+    phoneDisplay && coordDigits.length > 0
+      ? `<a href="tel:+1${coordDigits}" style="${estateCoordLinkStyle}">${escapeHtml(phoneDisplay)}</a>`
+      : phoneDisplay
+        ? escapeHtml(phoneDisplay)
+        : "";
+  const coordEmailRaw = p.coordinatorEmail?.trim() ?? "";
+  const coordEmailHtml = coordEmailRaw
+    ? `<a href="mailto:${encodeURIComponent(coordEmailRaw)}" style="${estateCoordLinkStyle}">${escapeHtml(coordEmailRaw)}</a>`
+    : "";
+  const coordContactLine =
+    coordPhoneHtml && coordEmailHtml
+      ? `${coordPhoneHtml}<span style="color:${ESTATE_WINE_SURFACE_MUTED};">&nbsp;&middot;&nbsp;</span>${coordEmailHtml}`
+      : `${coordPhoneHtml}${coordEmailHtml}`;
+
+  const wineTrackCta = `display:inline-block;background-color:${ESTATE_WINE_SAGE_CTA_BG};color:${ESTATE_WINE_SAGE_CTA_TX} !important;-webkit-text-fill-color:${ESTATE_WINE_SAGE_CTA_TX};padding:12px 28px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-decoration:none;border-radius:0;text-transform:uppercase;font-family:${PREMIUM_FONT};border:1px solid rgba(255,255,255,0.22);`;
+
+  const officeIncludes = [
+    `Dedicated commercial crew of ${p.crewSize} — trained for office relocations`,
+    `${p.truckDisplayName} — reserved for your relocation`,
+    "Pre-move site walkthrough at origin AND destination (photographed floor plan)",
+    "Floor, elevator, doorway, and wall protection installed at both locations",
+    "IT equipment photographed and labeled before disconnect",
+    "Full furniture disassembly, transport, and reassembly at destination",
+    "Workstation-by-workstation packing with labeled bins per employee",
+    "Placement per your floor plan — each item to the correct desk / office / room",
+    "Dedicated on-site project manager throughout the move",
+    "$5M commercial general liability insurance",
+    "COI issued directly to your building management",
+    "WSIB Certificate of Clearance on request",
+    "OPS+ real-time tracking for your entire team",
+    "Same-day debris and packing-material removal",
+  ];
+
+  const includesRows = officeIncludes
+    .map(
+      (inc) =>
+        `<tr><td style="padding:10px 0;vertical-align:top;width:20px;font-size:14px;color:${ESTATE_WINE_BULLET};">&#10022;</td><td style="padding:10px 0;font-size:14px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};line-height:1.65;">${escapeHtmlEmail(inc)}</td></tr>`,
+    )
+    .join("");
+
+  // Day-by-day plan (only when > 1 day)
+  const dayPlanRows =
+    dayCount >= 2
+      ? [
+          {
+            label: "Day 1",
+            title: "Site walkthrough, IT documentation, packing",
+            body: "Our team walks both offices, photographs the IT setup, labels every workstation, installs floor and elevator protection, and packs every box.",
+          },
+          {
+            label: "Day 2",
+            title: "Move day",
+            body: `Full transport to the new office. IT and furniture placed per your floor plan. ${pmName} on-site running the day. Packing debris removed before we leave.`,
+          },
+          ...(dayCount >= 3
+            ? [
+                {
+                  label: "Day 3",
+                  title: "Unpack and set up",
+                  body: "Boxes unpacked and contents placed in your new space. Final walkthrough with your team, sign-off, and remaining materials removed.",
+                },
+              ]
+            : []),
+        ]
+      : [];
+
+  const eTableOuter = `1px solid ${ESTATE_WINE_SURFACE_BORDER}`;
+  const eDiv = `1px solid rgba(249,237,228,0.16)`;
+  const eLbl = `padding:12px 14px 12px 16px;font-size:11px;font-weight:700;color:${ESTATE_WINE_SURFACE_MUTED} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_MUTED};text-transform:uppercase;letter-spacing:0.08em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT};line-height:1.4;background-color:${ESTATE_WINE_SURFACE_PAGE};`;
+  const eVal = `padding:12px 16px 12px 8px;font-size:14px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};font-weight:600;text-align:right;vertical-align:top;font-family:${PREMIUM_FONT};line-height:1.45;background-color:${ESTATE_WINE_SURFACE_PAGE};`;
+
+  const dayPlanHtml =
+    dayPlanRows.length > 0
+      ? `
+    ${estateWineDivider()}
+    ${estateWineLabel("Your relocation plan")}
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;margin:0 0 4px;background-color:${ESTATE_WINE_SURFACE_PAGE};">
+      ${dayPlanRows
+        .map(
+          (r) => `
+      <tr>
+        <td style="padding:14px 16px;border-top:${eDiv};background-color:${ESTATE_WINE_SURFACE_PAGE};">
+          <p style="font-family:${ESTATE_GEORGIA};font-size:11px;font-weight:700;letter-spacing:0.12em;color:${ESTATE_WINE_SURFACE_ROSE} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_ROSE};text-transform:uppercase;margin:0 0 6px;">${escapeHtmlEmail(r.label)}</p>
+          <p style="font-size:14px;font-weight:700;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 6px;font-family:${PREMIUM_FONT};">${escapeHtmlEmail(r.title)}</p>
+          <p style="font-size:13px;color:${ESTATE_WINE_SURFACE_MUTED} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_MUTED};margin:0;font-family:${PREMIUM_FONT};line-height:1.65;">${escapeHtmlEmail(r.body)}</p>
+        </td>
+      </tr>`,
+        )
+        .join("")}
+    </table>`
+      : "";
+
+  return `${YUGO_EMAIL_DOC_SURFACE_ESTATE_WINE_MARKER}${estateWineConfirmationLayout(`
+    <p style="font-family:${PREMIUM_FONT};font-size:15px;color:${ESTATE_WINE_SURFACE_MUTED} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_MUTED};margin:0 0 36px;line-height:1.6;">Dear ${firstName || p.clientName || ""},</p>
+
+    <h1 style="font-family:${ESTATE_GEORGIA};font-size:30px;font-weight:700;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 22px;line-height:1.32;letter-spacing:0;">Your office relocation is booked.</h1>
+
+    <p style="font-size:15px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 24px;line-height:1.78;">
+      Thank you for choosing Yugo for your office move. ${pmName} will be your dedicated project manager and will reach out within one business day to walk through the plan.
+    </p>
+
+    ${estateWineDivider()}
+
+    ${estateWineLabel("Your relocation")}
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="font-size:14px;border-collapse:collapse;border:${eTableOuter};margin:0 0 4px;background-color:${ESTATE_WINE_SURFACE_PAGE};">
+      ${emailNestedKvRow({
+        borderTop: "none",
+        labelStyle: eLbl,
+        valueStyle: eVal,
+        label: dayCount > 1 ? "Dates" : "Date",
+        valueHtml: escapeHtml(dateStr),
+      })}
+      ${emailNestedKvRow({
+        borderTop: eDiv,
+        labelStyle: eLbl,
+        valueStyle: eVal,
+        label: "Arrival",
+        valueHtml: escapeHtml(p.timeWindow),
+      })}
+      ${emailNestedKvRow({
+        borderTop: eDiv,
+        labelStyle: eLbl,
+        valueStyle: eVal,
+        label: "Current office",
+        valueHtml: emailMapLinkHtml(p.fromAddress, ESTATE_WINE_SURFACE_ROSE),
+      })}
+      ${emailNestedKvRow({
+        borderTop: eDiv,
+        labelStyle: eLbl,
+        valueStyle: eVal,
+        label: "New office",
+        valueHtml: emailMapLinkHtml(p.toAddress, ESTATE_WINE_SURFACE_ROSE),
+      })}
+      ${emailNestedKvRow({
+        borderTop: eDiv,
+        labelStyle: eLbl,
+        valueStyle: eVal,
+        label: "Fleet",
+        valueHtml: escapeHtml(p.truckDisplayName),
+      })}
+      ${emailNestedKvRow({
+        borderTop: eDiv,
+        labelStyle: eLbl,
+        valueStyle: eVal,
+        label: "Project manager",
+        valueHtml: escapeHtml(pmName),
+      })}
+    </table>
+
+    ${dayPlanHtml}
+
+    ${estateWineDivider()}
+
+    ${estateWineLabel("Your relocation includes")}
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;margin:0 0 4px;background-color:${ESTATE_WINE_SURFACE_PAGE};">
+      ${includesRows}
+    </table>
+
+    ${estateWineDivider()}
+
+    ${estateWineLabel("Track your relocation")}
+    <p style="font-size:14px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 18px;line-height:1.7;">
+      Share this link with anyone on your team who needs visibility — building management, IT lead, office manager. Everyone sees the same live plan.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 8px;background-color:${ESTATE_WINE_SURFACE_PAGE};">
+      <tr><td style="background-color:${ESTATE_WINE_SURFACE_PAGE};">
+        <a href="${p.trackingUrl.replace(/&/g, "&amp;")}" style="${wineTrackCta}">TRACK YOUR RELOCATION&nbsp;&nbsp;&#8250;</a>
+      </td></tr>
+    </table>
+
+    ${estateWineDivider()}
+
+    <p style="font-family:${ESTATE_GEORGIA};font-size:11px;font-weight:700;letter-spacing:0.1em;color:${ESTATE_WINE_SURFACE_ROSE} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_ROSE};text-transform:uppercase;margin:0 0 14px;">Your project manager</p>
+    <p style="font-size:16px;font-weight:700;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 4px;font-family:${PREMIUM_FONT};">${escapeHtmlEmail(pmName)}</p>
+    <p style="font-size:13px;color:${ESTATE_WINE_SURFACE_MUTED} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_MUTED};margin:0 0 8px;font-family:${PREMIUM_FONT};">Office Relocation Project Manager, Yugo</p>
+    <p style="font-size:13px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0;font-family:${PREMIUM_FONT};">
+      ${coordContactLine || "Your project manager will introduce themselves within one business day."}
+    </p>
   `)}`;
 }
 
