@@ -52,6 +52,31 @@ type PmMove = {
 const MOVE_SELECT =
   "id, move_code, client_name, tenant_name, scheduled_date, total_price, amount, estimate, final_amount, from_address, to_address";
 
+const PM_MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+/** Uppercase ordinal suffix (16 -> "TH", 31 -> "ST") for PM invoice titles. */
+function pmOrdinalSuffix(day: number): string {
+  const j = day % 10;
+  const k = day % 100;
+  if (k >= 11 && k <= 13) return "TH";
+  if (j === 1) return "ST";
+  if (j === 2) return "ND";
+  if (j === 3) return "RD";
+  return "TH";
+}
+
+/** "2026-05-16" -> "May 16TH". Parses the ISO date directly (timezone-safe). */
+function pmPeriodDateLabel(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ""));
+  if (!m) return String(iso || "");
+  const month = PM_MONTHS[Number(m[2]) - 1] ?? "";
+  const day = Number(m[3]);
+  return `${month} ${day}${pmOrdinalSuffix(day)}`;
+}
+
 /**
  * Square requires invoice numbers to be unique per location. The base number is
  * derived from the billing cycle, so a partner billed twice in the same cycle
@@ -350,7 +375,7 @@ export async function generateAndSendPmInvoice(
           ],
           deliveryMethod: recipientEmail ? "EMAIL" : "SHARE_MANUALLY",
           invoiceNumber,
-          title: `Yugo+ Property Management — ${displayCompany}`,
+          title: `Residential Relocation | ${pmPeriodDateLabel(periodStart)} to ${pmPeriodDateLabel(periodEnd)} | ${displayCompany}`,
           description: `Billing cycle ${periodStart} – ${periodEnd}. ${moves.length} move${moves.length === 1 ? "" : "s"}.`,
           acceptedPaymentMethods: { card: true, bankAccount: false, squareGiftCard: false },
         },
