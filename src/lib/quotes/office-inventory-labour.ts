@@ -56,22 +56,55 @@ function crewFromVolume(volumeScore: number): number {
   return 8;
 }
 
-/** Truck fleet (simultaneous trucks) — driven by crew, not single-load cube,
- *  because a commercial move shuttles multiple loads over the day(s). */
+/**
+ * Truck fleet SIZE from crew (legacy) — retained for residential callers.
+ * Office uses trucksFromVolume() below so tiny offices don't get 2 trucks
+ * just because commercial crew starts at 4.
+ */
 function trucksFromCrew(crew: number): number {
   return Math.min(5, Math.max(1, Math.round(crew / 2.5)));
 }
 
 /**
- * Truck SIZE from total volumeScore. Small offices ship on 16ft; medium
- * and large offices get 20ft (Yugo's biggest commercial box). Bigger
- * volumes still cap the vehicle size at 20ft — the model adds MORE 20ft
- * trucks via trucksFromCrew() rather than a single monster truck.
- *
- * MV-30348 (volume 306) landed as "large" → 2 × 20ft under this model.
+ * Simultaneous truck COUNT for office moves, derived from volume so the
+ * fleet scales with what actually needs to move. Small offices ship one
+ * vehicle; oversized offices split across multiple 20ft trucks (Yugo's
+ * biggest commercial box) rather than a single monster truck.
  */
-function truckSizeFromVolume(volumeScore: number): "16ft" | "20ft" {
-  return volumeScore >= 150 ? "20ft" : "16ft";
+function trucksFromVolume(volumeScore: number): number {
+  if (volumeScore < 200) return 1;
+  if (volumeScore < 400) return 2;
+  if (volumeScore < 600) return 3;
+  return Math.min(5, Math.ceil(volumeScore / 200));
+}
+
+/**
+ * Truck SIZE for office moves, volume + count aware.
+ *
+ *   Multi-truck jobs → cap at 20ft (Yugo's biggest commercial box). Extra
+ *   volume adds more 20ft trucks rather than jumping to 24 / 26ft.
+ *
+ *   Single-truck jobs → size to volume:
+ *     < 30   sprinter    (very small offices)
+ *     < 80   16ft        (small)
+ *     < 150  20ft        (medium — the default)
+ *     < 200  24ft        (large single-truck)
+ *     ≥ 200  26ft        (extra large single-truck)
+ *
+ * MV-30348 (volume 306, 2 trucks) → 2 × 20ft under this model.
+ */
+export type OfficeTruckSize = "sprinter" | "16ft" | "20ft" | "24ft" | "26ft";
+
+function truckSizeFromVolume(
+  volumeScore: number,
+  trucks: number,
+): OfficeTruckSize {
+  if (trucks >= 2) return "20ft";
+  if (volumeScore < 30) return "sprinter";
+  if (volumeScore < 80) return "16ft";
+  if (volumeScore < 150) return "20ft";
+  if (volumeScore < 200) return "24ft";
+  return "26ft";
 }
 
 export interface OfficeInventoryLine {
@@ -89,8 +122,8 @@ export interface OfficeLabourEstimate {
   volumeScore: number;
   crew: number;
   trucks: number;
-  /** Truck SIZE per unit ("16ft" small offices, "20ft" medium/large). */
-  truckSize: "16ft" | "20ft";
+  /** Truck SIZE per unit — sprinter / 16ft / 20ft / 24ft / 26ft. */
+  truckSize: OfficeTruckSize;
   /** Man-hour buckets (totals across the job). */
   handlingManHours: number;
   transportManHours: number;
@@ -155,8 +188,13 @@ export function estimateOfficeLabour(
   let crew = crewFromVolume(volumeScore);
   // Heavy two-person items present → never run a thin crew.
   if (twoPersonPresent) crew = Math.max(crew, 4);
-  const trucks = trucksFromCrew(crew);
-  const truckSize = truckSizeFromVolume(volumeScore);
+  // Office truck count + size derive from volume so a tiny office
+  // doesn't get a two-truck fleet just because commercial crew starts
+  // at 4. Multi-truck jobs cap at 20ft; single-truck jobs scale to
+  // sprinter → 16ft → 20ft (default) → 24ft → 26ft.
+  void trucksFromCrew; // kept for residential callers via the shared module
+  const trucks = trucksFromVolume(volumeScore);
+  const truckSize = truckSizeFromVolume(volumeScore, trucks);
 
   const moveBase = handlingManHours + transportManHours; // billed on every tier
   const perTierManHours: Record<OfficeTierKey, number> = {
