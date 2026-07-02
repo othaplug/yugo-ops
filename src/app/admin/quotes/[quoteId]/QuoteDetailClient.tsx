@@ -1858,7 +1858,13 @@ export default function QuoteDetailClient({
                 terminal === "lost" ||
                 terminal === "cold" ||
                 terminal === "superseded" ||
-                terminal === "declined";
+                terminal === "declined" ||
+                // Admin manually moved the quote to Expired: it's dead, so stop
+                // showing the "expires in N days / actively engaged / extend"
+                // nag. (Auto date-expired quotes the admin hasn't touched keep
+                // the "Expired N days ago — still engaged" chase banner via the
+                // date-based isExpired path below.)
+                terminal === "expired";
               if (
                 isBooked ||
                 isTerminal ||
@@ -2730,22 +2736,32 @@ export default function QuoteDetailClient({
                     </span>
                   </div>
                 )}
-                {quote.expires_at && (
-                  <div className="flex items-center gap-2.5">
-                    <div
-                      className={`w-1.5 h-1.5 rounded-full ${new Date(quote.expires_at) < new Date() ? "bg-red-400" : "bg-[var(--tx3)]"}`}
-                    />
-                    <span className="text-[var(--tx3)] flex-1">Expires</span>
-                    <span
-                      className={`font-medium ${new Date(quote.expires_at) < new Date() ? "text-red-400" : "text-[var(--tx)]"}`}
-                    >
-                      {formatPlatformDisplay(quote.expires_at, {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                  </div>
-                )}
+                {quote.expires_at && (() => {
+                  // Treat the admin "Expired" pipeline stage as expired too, so
+                  // the timeline doesn't show a future "Expires" date that
+                  // contradicts the Expired badge.
+                  const isExpiredNow =
+                    String(quote.status || "").toLowerCase() === "expired" ||
+                    new Date(quote.expires_at) < new Date();
+                  return (
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className={`w-1.5 h-1.5 rounded-full ${isExpiredNow ? "bg-red-400" : "bg-[var(--tx3)]"}`}
+                      />
+                      <span className="text-[var(--tx3)] flex-1">
+                        {isExpiredNow ? "Expired" : "Expires"}
+                      </span>
+                      <span
+                        className={`font-medium ${isExpiredNow ? "text-red-400" : "text-[var(--tx)]"}`}
+                      >
+                        {formatPlatformDisplay(quote.expires_at, {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 

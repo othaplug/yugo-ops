@@ -79,11 +79,18 @@ export default async function QuoteDetailPage({ params }: Props) {
   // True when the quote stores tier-range pricing but no single tier has been confirmed.
   // This triggers the external booking flow instead of the standard offline payment modal.
   const tiers = quote.tiers as Record<string, { price: number }> | null;
+  // A single-tier presentation (Estate only) showed the client just one tier,
+  // so there is no range to "confirm" — don't fire the tier-not-confirmed
+  // banner even though a full tiers object still exists on the row.
+  const isSingleTierRender =
+    String((quote as { presentation_mode?: string }).presentation_mode ?? "")
+      .toLowerCase() === "estate_only";
   const hasTierRange =
     !!tiers &&
     Object.values(tiers).some((t) => t?.price > 0) &&
     !quote.selected_tier &&
-    !quote.custom_price;
+    !quote.custom_price &&
+    !isSingleTierRender;
 
   const { data: linkedMoveRow } = await db
     .from("moves")
