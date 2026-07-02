@@ -2018,9 +2018,23 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
   const dateStr = confirmDateDisplay(p.moveDate);
   const firstName =
     (p.clientName || "").trim().split(/\s+/).filter(Boolean)[0] || "";
+  // Copy variants let non-residential services (white glove, specialty,
+  // labour, b2b delivery) reuse the same green-premium layout without a
+  // copy-paste clone. Defaults preserve the residential Signature copy.
+  const serviceNoun = (p.serviceLabel || "").toLowerCase().includes("delivery")
+    ? "delivery"
+    : (p.serviceLabel || "").toLowerCase().includes("labour")
+      ? "booking"
+      : (p.serviceLabel || "").toLowerCase().includes("white glove")
+        ? "white glove service"
+        : (p.serviceLabel || "").toLowerCase().includes("specialty")
+          ? "specialty transport"
+          : "move";
   const headline = firstName
-    ? `Your move is confirmed, ${firstName}.`
-    : "Your move is confirmed.";
+    ? `Your ${serviceNoun} is confirmed, ${firstName}.`
+    : `Your ${serviceNoun} is confirmed.`;
+  const sectionLabel = `Your ${(p.tierLabel || "Signature").toLowerCase()} ${serviceNoun}`;
+  const planValue = escapeHtmlEmail(p.tierLabel || "Signature");
   const includesHtml = (p.includes || [])
     .map(
       (inc) =>
@@ -2041,7 +2055,7 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
 
     ${premiumSectionRule()}
     <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td style="padding:0;">
-      <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">Your signature move</div>
+      <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">${escapeHtmlEmail(sectionLabel)}</div>
       <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;font-size:12px;border-collapse:collapse">
         ${emailNestedKvRow({
           borderTop: "none",
@@ -2069,7 +2083,7 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
           labelStyle: sL,
           valueStyle: sVf,
           label: "Plan",
-          valueHtml: "Signature",
+          valueHtml: planValue,
         })}
         ${emailNestedKvRow({
           borderTop: sB,
@@ -3047,6 +3061,96 @@ export function officeConfirmationEmail(p: TierConfirmationParams): string {
       ${coordContactLine || "Your project manager will introduce themselves within one business day."}
     </p>
   `)}`;
+}
+
+/**
+ * White Glove confirmation email. Green premium shell (same as Signature)
+ * with white-glove-specific service label + includes so the KV table
+ * reads "White Glove Service" and the section header says "Your white
+ * glove service" instead of "Your signature move".
+ *
+ * NOTE: this is a thin wrapper around signatureConfirmationEmail with
+ * overridden tierLabel + serviceLabel. Full custom copy can land later
+ * without changing the routing.
+ */
+export function whiteGloveConfirmationEmail(
+  p: TierConfirmationParams,
+): string {
+  return signatureConfirmationEmail({
+    ...p,
+    tierLabel: "White Glove",
+    serviceLabel: "White Glove Service",
+    includes:
+      p.includes && p.includes.length > 0
+        ? p.includes
+        : [
+            "Dedicated white glove crew",
+            "Museum-grade wrapping and padding",
+            "Blanket-and-tape protection at both locations",
+            "Careful placement of every piece to plan",
+            "Full building protection at pickup and destination",
+          ],
+  });
+}
+
+/** Specialty transport confirmation — reuses signature green shell. */
+export function specialtyConfirmationEmail(
+  p: TierConfirmationParams,
+): string {
+  return signatureConfirmationEmail({
+    ...p,
+    tierLabel: p.tierLabel || "Specialty",
+    serviceLabel: "Specialty Transport",
+    includes:
+      p.includes && p.includes.length > 0
+        ? p.includes
+        : [
+            "Specialty crew trained for high-value / oversized items",
+            "Custom crating or blanket wrap as required",
+            "Air-ride truck with tie-downs for the whole route",
+            "Direct handoff, no consolidation",
+          ],
+  });
+}
+
+/** Labour-only confirmation — no truck, no addresses. */
+export function labourOnlyConfirmationEmail(
+  p: TierConfirmationParams,
+): string {
+  return signatureConfirmationEmail({
+    ...p,
+    tierLabel: p.tierLabel || "Labour",
+    serviceLabel: "Labour Only",
+    includes:
+      p.includes && p.includes.length > 0
+        ? p.includes
+        : [
+            "Trained crew for the hours you booked",
+            "Loading, unloading, or in-home rearrangement",
+            "Blankets and dollies included",
+            "Additional hours available on the day if scope grows",
+          ],
+  });
+}
+
+/** B2B delivery confirmation — business tone, delivery-flavored. */
+export function b2bDeliveryConfirmationEmail(
+  p: TierConfirmationParams,
+): string {
+  return signatureConfirmationEmail({
+    ...p,
+    tierLabel: p.tierLabel || "Commercial",
+    serviceLabel: "Commercial Delivery",
+    includes:
+      p.includes && p.includes.length > 0
+        ? p.includes
+        : [
+            "Dedicated commercial driver and vehicle",
+            "Signed proof of delivery",
+            "$5M commercial liability insurance",
+            "Real-time tracking through your Yugo portal",
+          ],
+  });
 }
 
 export interface Estate30DayCheckinEmailParams {

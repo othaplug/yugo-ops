@@ -1900,24 +1900,30 @@ export default function TrackMoveClient({
                       ? "Bin rental"
                       : serviceType === "single_item"
                       ? "Delivery"
-                      : isOffice
-                        ? "Office Relocation"
-                        : isWhiteGlove
-                          ? "White Glove Service"
-                          : isSpecialty
-                            ? "Specialty Move"
-                            : getDisplayLabel(
-                                (
-                                  move.tier_selected ||
-                                  move.tier ||
-                                  move.service_tier ||
-                                  ""
-                                )
-                                  .toLowerCase()
-                                  .trim()
-                                  .replace(/\s+/g, "_"),
-                                "tier",
-                              ) || null;
+                      : serviceType === "b2b_delivery"
+                        ? "Commercial Delivery"
+                        : serviceType === "labour_only"
+                          ? "Labour Only"
+                          : serviceType === "event"
+                            ? "Event Logistics"
+                            : isOffice
+                              ? "Office Relocation"
+                              : isWhiteGlove
+                                ? "White Glove Service"
+                                : isSpecialty
+                                  ? "Specialty Move"
+                                  : getDisplayLabel(
+                                      (
+                                        move.tier_selected ||
+                                        move.tier ||
+                                        move.service_tier ||
+                                        ""
+                                      )
+                                        .toLowerCase()
+                                        .trim()
+                                        .replace(/\s+/g, "_"),
+                                      "tier",
+                                    ) || null;
                   if (!label) return null;
                   /** Inline kicker, same language as quote tier `· RECOMMENDED` (ResidentialLayout). */
                   const kickerColor = "#492A1D";
@@ -2052,13 +2058,13 @@ export default function TrackMoveClient({
             );
           })()}
 
-          {/* Tier scope briefing, tells crew what is and isn't included.
-              Single-item moves are non-tiered, so they never show a tier scope
-              card (it would mislabel them "Essential").
-              Office moves get their scope from the OfficeTrackHero + welcome
-              guide, not this residential-shaped ladder — rendering it produced
-              the "ESSENTIAL, CREW SCOPE" bug on Priority office bookings. */}
-          {!isNonMoveProductTrack && !isWhiteGlove && !isSingleItem && serviceType !== "office_move" && (() => {
+          {/* Tier scope briefing (Essential/Signature/Estate ladder). This
+              banner is shaped for RESIDENTIAL relocations only — the
+              tier ops model (assembly / wrap / placement) doesn't apply
+              to office / white-glove / delivery / event / specialty /
+              labour flows. Allowlist to residential; every other service
+              type gets its scope from its own dedicated surface. */}
+          {(serviceType === "local_move" || serviceType === "long_distance") && (() => {
             const rawTier = move.tier_selected || move.tier || move.service_tier || "";
             const tierKey = normalizeTierKey(rawTier);
             const ops = getTierOps(tierKey);
@@ -2630,13 +2636,12 @@ export default function TrackMoveClient({
                                   {shortAddress(stop.address)}
                                 </div>
                                 {/* Access line uses residential lift language
-                                    ("Elevator", "Stairs"). Office relocations
-                                    have building coordination (COI, freight
-                                    elevator, dock) handled by the project
-                                    manager, not the client — hide the line
-                                    entirely to avoid confusing residential
-                                    verbiage on commercial bookings. */}
-                                {serviceType !== "office_move" &&
+                                    ("Elevator", "Stairs"). Allowlist to
+                                    residential only — office / white-glove /
+                                    specialty / labour / b2b all have their
+                                    own access handling. */}
+                                {(serviceType === "local_move" ||
+                                  serviceType === "long_distance") &&
                                 formatAccessForDisplay(stop.access) ? (
                                   <div
                                     className="text-[11px] mt-0.5 opacity-60"
@@ -2663,7 +2668,8 @@ export default function TrackMoveClient({
                                   move.to_address || move.delivery_address,
                                 )}
                               </div>
-                              {serviceType !== "office_move" &&
+                              {(serviceType === "local_move" ||
+                                serviceType === "long_distance") &&
                                 (move as { to_access?: string | null })
                                   .to_access &&
                                 formatAccessForDisplay(
@@ -4066,7 +4072,8 @@ export default function TrackMoveClient({
                     >
                       {shortAddress(move.to_address || move.delivery_address)}
                     </div>
-                    {serviceType !== "office_move" &&
+                    {(serviceType === "local_move" ||
+                      serviceType === "long_distance") &&
                     formatAccessForDisplay(
                       (move as { from_access?: string | null }).from_access,
                     ) ? (
@@ -4118,7 +4125,9 @@ export default function TrackMoveClient({
                           >
                             {shortAddress(stop.address)}
                           </div>
-                          {formatAccessForDisplay(stop.access) ? (
+                          {(serviceType === "local_move" ||
+                            serviceType === "long_distance") &&
+                          formatAccessForDisplay(stop.access) ? (
                             <div
                               className="text-[11px] mt-0.5 opacity-60"
                               style={{ color: FOREST }}
@@ -4775,15 +4784,15 @@ export default function TrackMoveClient({
                 </div>
               )}
 
-              {/* Pack Like a Pro — moved to the bottom of the dashboard so
-                  the actual move details (date, addresses, crew, timeline)
-                  show above the fold. Collapsed by default; the client can
-                  expand if they actually want to shop for supplies.
-                  Office relocations are packed by our crew as part of the
-                  service, so no client-side supplies upsell. */}
+              {/* Pack Like a Pro — collapsed by default. Allowlist to
+                  residential relocations only: every other service type
+                  either has crew packing built in (office, white-glove,
+                  specialty), is a delivery (single_item, b2b), or is
+                  labour-only / event / bin-rental where supplies make no
+                  sense. */}
               {suppliesCatalog.length > 0 &&
-                !isNonMoveProductTrack &&
-                serviceType !== "office_move" && (
+                (serviceType === "local_move" ||
+                  serviceType === "long_distance") && (
                 <details className="mt-6 rounded-2xl border border-[#2C3E2D]/15 bg-[#2C3E2D]/[0.04] [&_summary::-webkit-details-marker]:hidden">
                   <summary
                     className="cursor-pointer list-none px-4 py-3 flex items-center justify-between gap-3 select-none"

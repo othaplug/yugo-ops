@@ -33,6 +33,10 @@ import {
   binRentalConfirmationEmail,
   singleItemConfirmationEmail,
   eventConfirmationEmail,
+  whiteGloveConfirmationEmail,
+  specialtyConfirmationEmail,
+  labourOnlyConfirmationEmail,
+  b2bDeliveryConfirmationEmail,
   statusUpdateEmailHtml,
   type TierConfirmationParams,
 } from "@/lib/email-templates";
@@ -741,9 +745,25 @@ export async function runPostPaymentActions(
           essentials: essentialConfirmationEmail,
           premier: signatureConfirmationEmail,
         };
+        // Service-type routing takes precedence over tier for services
+        // that ship their own tailored confirmation template. Office
+        // Priority is the highest-priority override; then white-glove,
+        // specialty, labour-only, b2b-delivery each get their dedicated
+        // green-premium wrapper so the client email matches the flow
+        // they booked. Everything else falls through to the tier-based
+        // residential ladder (essential / signature / estate / priority).
+        const svcRoute = String(quote.service_type ?? "").toLowerCase();
         const templateFn = isOfficePriority
           ? officeConfirmationEmail
-          : templateFns[tier] ?? signatureConfirmationEmail;
+          : svcRoute === "white_glove"
+            ? whiteGloveConfirmationEmail
+            : svcRoute === "specialty"
+              ? specialtyConfirmationEmail
+              : svcRoute === "labour_only"
+                ? labourOnlyConfirmationEmail
+                : svcRoute === "b2b_delivery"
+                  ? b2bDeliveryConfirmationEmail
+                  : templateFns[tier] ?? signatureConfirmationEmail;
 
         const estateDateLabel = quote.move_date
           ? new Date(quote.move_date + "T12:00:00").toLocaleDateString(
@@ -957,44 +977,92 @@ export async function runPostPaymentActions(
             ? `Move-day checklist:\n${baseUrl}/checklist/${checklistTokenForEmail}`
             : null;
 
-        // Office Priority: business-focused SMS mentioning the
-        // project manager (not just "coordinator"), the phased plan,
-        // and the shareable tracking link. Estate: white-glove
-        // concierge tone. Everyone else: standard.
+        // Office Priority: business-focused SMS mentioning the project
+        // manager and shareable welcome guide. Estate: concierge tone.
+        // Every other service type gets a tailored variant so the
+        // client SMS matches the flow they booked (delivery, event,
+        // white-glove, specialty, labour, bin-rental) instead of the
+        // generic "your move is booked" fallback.
+        const svc = String(quote.service_type ?? "").toLowerCase();
         const isOfficePrioritySms =
-          (selectedTier ?? "") === "priority" &&
-          quote.service_type === "office_move";
-        const smsBody = isOfficePrioritySms
-          ? [
-              `${first}, your ${companyDisplayName} office relocation is booked.`,
-              `Reference: ${input.moveCode}. Your project manager will reach out today to walk through the plan.`,
-              welcomePackageUrl
-                ? `Your Priority welcome guide (share with your team):\n${welcomePackageUrl}`
-                : null,
-              `Track your relocation (share with your team):\n${trackingUrl}`,
-              `Questions? Reply here or call (647) 370-4525.`,
-            ]
-              .filter((s): s is string => Boolean(s))
-              .join("\n\n")
-          : isEstateBooking
-            ? [
-                `${first}, welcome to ${companyDisplayName} Estate.`,
-                `It is our privilege to handle your move (ref ${input.moveCode}). Your dedicated coordinator will call you personally within 24 hours to begin tailoring every detail.`,
-                welcomePackageUrl
-                  ? `Your private Estate welcome package is ready, with your concierge contacts, your timeline, and everything to expect:\n${welcomePackageUrl}`
-                  : `Your private move portal:\n${trackingUrl}`,
-                ...(welcomePackageUrl ? [`Track your move anytime:\n${trackingUrl}`] : []),
-                `We are at your service. Reply here or call (647) 370-4525.`,
-              ].join("\n\n")
-            : [
-                `Hi ${first},`,
-                `You're booked with ${companyDisplayName}. Reference: ${input.moveCode}.`,
-                `Your coordinator will reach out within 24 hours.`,
-                isBinRental
-                  ? `Track your order:\n${trackingUrl}`
-                  : `Track your move:\n${trackingUrl}`,
-                ...(checklistLine ? [checklistLine] : []),
-              ].join("\n\n");
+          (selectedTier ?? "") === "priority" && svc === "office_move";
+        const trackLine = isBinRental
+          ? `Track your order:\n${trackingUrl}`
+          : svc === "single_item" ||
+              svc === "b2b_delivery" ||
+              svc === "b2b_oneoff"
+            ? `Track your delivery:\n${trackingUrl}`
+            : svc === "event"
+              ? `Track your event:\n${trackingUrl}`
+              : svc === "white_glove"
+                ? `Track your service:\n${trackingUrl}`
+                : `Track your move:\n${trackingUrl}`;
+
+        let smsBody: string;
+        if (isOfficePrioritySms) {
+          smsBody = [
+            `${first}, your ${companyDisplayName} office relocation is booked.`,
+            `Reference: ${input.moveCode}. Your project manager will reach out today to walk through the plan.`,
+            welcomePackageUrl
+              ? `Your Priority welcome guide (share with your team):\n${welcomePackageUrl}`
+              : null,
+            `Track your relocation (share with your team):\n${trackingUrl}`,
+            `Questions? Reply here or call (647) 370-4525.`,
+          ]
+            .filter((s): s is string => Boolean(s))
+            .join("\n\n");
+        } else if (isEstateBooking) {
+          smsBody = [
+            `${first}, welcome to ${companyDisplayName} Estate.`,
+            `It is our privilege to handle your move (ref ${input.moveCode}). Your dedicated coordinator will call you personally within 24 hours to begin tailoring every detail.`,
+            welcomePackageUrl
+              ? `Your private Estate welcome package is ready, with your concierge contacts, your timeline, and everything to expect:\n${welcomePackageUrl}`
+              : `Your private move portal:\n${trackingUrl}`,
+            ...(welcomePackageUrl ? [`Track your move anytime:\n${trackingUrl}`] : []),
+            `We are at your service. Reply here or call (647) 370-4525.`,
+          ].join("\n\n");
+        } else if (svc === "event") {
+          smsBody = [
+            `${first}, your event with ${companyDisplayName} is booked.`,
+            `Reference: ${input.moveCode}. Your coordinator will confirm delivery and return logistics ahead of the event.`,
+            trackLine,
+            `Questions? Reply here or call (647) 370-4525.`,
+          ].join("\n\n");
+        } else if (svc === "white_glove") {
+          smsBody = [
+            `${first}, your white glove service is booked.`,
+            `Reference: ${input.moveCode}. Your coordinator will reach out within 24 hours to walk through the plan.`,
+            trackLine,
+            `Questions? Reply here or call (647) 370-4525.`,
+          ].join("\n\n");
+        } else if (svc === "single_item" || svc === "b2b_delivery" || svc === "b2b_oneoff") {
+          smsBody = [
+            `${first}, your delivery is booked with ${companyDisplayName}.`,
+            `Reference: ${input.moveCode}. Your coordinator will confirm timing shortly.`,
+            trackLine,
+          ].join("\n\n");
+        } else if (svc === "specialty") {
+          smsBody = [
+            `${first}, your specialty transport is booked.`,
+            `Reference: ${input.moveCode}. Your coordinator will call you within 24 hours to align on the plan.`,
+            trackLine,
+          ].join("\n\n");
+        } else if (svc === "labour_only") {
+          smsBody = [
+            `Hi ${first},`,
+            `Your labour booking with ${companyDisplayName} is confirmed. Reference: ${input.moveCode}.`,
+            `Your coordinator will reach out shortly to confirm arrival and scope.`,
+            trackLine,
+          ].join("\n\n");
+        } else {
+          smsBody = [
+            `Hi ${first},`,
+            `You're booked with ${companyDisplayName}. Reference: ${input.moveCode}.`,
+            `Your coordinator will reach out within 24 hours.`,
+            trackLine,
+            ...(checklistLine ? [checklistLine] : []),
+          ].join("\n\n");
+        }
 
         await sendSMS(to, smsBody);
       },

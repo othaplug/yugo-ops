@@ -168,7 +168,8 @@
       "Bash(choosing 'Yugo. *)",
       "Bash(grep -n \"referral\\\\|perks\\\\|Perks\\\\|referralCode\\\\|Give \\\\$50\" src/app/track/move/\\\\[id\\\\]/TrackMoveClient.tsx)",
       "Bash(echo \"tsc exit: $?\")",
-      "Bash(mkdir -p src/app/office/welcome/\\\\[token\\\\])"
+      "Bash(mkdir -p src/app/office/welcome/\\\\[token\\\\])",
+      "Bash(curl -sf -o /dev/null \"http://127.0.0.1:3100/track/move/MV-30348?token=YSyHR_Lk7jjdb0gt9_HLeDLSWQs5GqDPcOv9VCx7s8w\")"
     ]
   }
 }

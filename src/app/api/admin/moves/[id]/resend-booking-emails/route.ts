@@ -31,6 +31,10 @@ import {
   singleItemConfirmationEmail,
   estateConfirmationEmail,
   officeConfirmationEmail,
+  whiteGloveConfirmationEmail,
+  specialtyConfirmationEmail,
+  labourOnlyConfirmationEmail,
+  b2bDeliveryConfirmationEmail,
   statusUpdateEmailHtml,
   type TierConfirmationParams,
 } from "@/lib/email-templates";
@@ -291,9 +295,18 @@ export async function POST(
       essentials: essentialConfirmationEmail,
       premier: signatureConfirmationEmail,
     };
+    const svcRoute = String(quote.service_type ?? "").toLowerCase();
     const templateFn = isOfficePriority
       ? officeConfirmationEmail
-      : templateFns[tier] ?? signatureConfirmationEmail;
+      : svcRoute === "white_glove"
+        ? whiteGloveConfirmationEmail
+        : svcRoute === "specialty"
+          ? specialtyConfirmationEmail
+          : svcRoute === "labour_only"
+            ? labourOnlyConfirmationEmail
+            : svcRoute === "b2b_delivery"
+              ? b2bDeliveryConfirmationEmail
+              : templateFns[tier] ?? signatureConfirmationEmail;
 
     const subjects: Record<string, string> = {
       essential: `Your Yugo move is confirmed, ${moveCode}`,
@@ -303,9 +316,17 @@ export async function POST(
       essentials: `Your Yugo move is confirmed, ${moveCode}`,
       premier: `Your Yugo Signature move is confirmed, ${moveCode}`,
     };
+    const subjectByService: Record<string, string> = {
+      white_glove: `Your Yugo white glove service is confirmed, ${moveCode}`,
+      specialty: `Your Yugo specialty transport is confirmed, ${moveCode}`,
+      labour_only: `Your Yugo labour booking is confirmed, ${moveCode}`,
+      b2b_delivery: `Your Yugo commercial delivery is confirmed, ${moveCode}`,
+    };
     const subject = isOfficePriority
       ? `Your Yugo Priority office relocation is booked, ${moveCode}`
-      : subjects[tier] ?? `Booking confirmed, ${moveCode}`;
+      : subjectByService[svcRoute] ??
+        subjects[tier] ??
+        `Booking confirmed, ${moveCode}`;
 
     await resend.emails.send({
       from: emailFrom,

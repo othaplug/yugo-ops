@@ -126,14 +126,30 @@ export async function GET(
   }
   const journeyStart = quoteAcceptedAt ?? (move.created_at as string | null);
   if (journeyStart) {
-    const isOffice = String(move.service_type ?? "").toLowerCase() === "office_move";
+    const svc = String(move.service_type ?? "").toLowerCase();
+    const detail =
+      svc === "office_move"
+        ? "Your relocation is booked."
+        : svc === "event"
+          ? "Your event is booked."
+          : svc === "single_item" ||
+              svc === "b2b_delivery" ||
+              svc === "b2b_oneoff"
+            ? "Your delivery is booked."
+            : svc === "white_glove"
+              ? "Your white glove service is booked."
+              : svc === "bin_rental"
+                ? "Your bin rental is booked."
+                : svc === "specialty"
+                  ? "Your specialty transport is booked."
+                  : svc === "labour_only"
+                    ? "Your labour booking is confirmed."
+                    : "Your move is booked.";
     events.push({
       id: `accept-${moveId}`,
       at: journeyStart,
       title: "Quote accepted",
-      detail: isOffice
-        ? "Your relocation is booked."
-        : "Your move is booked.",
+      detail,
       kind: "quote_accepted",
     });
   }
