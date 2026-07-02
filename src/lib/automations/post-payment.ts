@@ -194,13 +194,20 @@ export async function runPostPaymentActions(
 
   const selectedTier = move.tier_selected || quote.selected_tier;
   const tierLabel = TIER_LABELS[selectedTier ?? ""] ?? selectedTier ?? "";
-  const isEstateBooking = String(selectedTier ?? "").toLowerCase().trim() === "estate";
+  const tierLower = String(selectedTier ?? "").toLowerCase().trim();
+  const isEstateBooking = tierLower === "estate";
+  const isOfficePriorityBooking =
+    tierLower === "priority" && quote.service_type === "office_move";
 
-  // Estate welcome-package link — generated once here and shared by BOTH the
+  // Welcome-package link — generated once here and shared by BOTH the
   // confirmation email and the booking SMS (the SMS step can't see the email
   // step's locals, and its in-memory move row is stale after the token write).
+  //
+  // Estate  → /estate/welcome/{token}  (residential concierge guide)
+  // Office Priority → /office/welcome/{token}  (office-branded guide with
+  //   PM contact, Day 1/Day 2 plan, IT/dock/floor-plan reminders)
   let welcomePackageUrl: string | null = null;
-  if (isEstateBooking) {
+  if (isEstateBooking || isOfficePriorityBooking) {
     let wpTok = String(
       (move as { welcome_package_token?: string | null }).welcome_package_token ?? "",
     ).trim();
@@ -215,7 +222,10 @@ export async function runPostPaymentActions(
         wpTok = "";
       }
     }
-    if (wpTok) welcomePackageUrl = `${baseUrl}/estate/welcome/${wpTok}`;
+    if (wpTok) {
+      const kind = isOfficePriorityBooking ? "office" : "estate";
+      welcomePackageUrl = `${baseUrl}/${kind}/welcome/${wpTok}`;
+    }
   }
 
   const serviceLabel = SERVICE_LABELS[quote.service_type] ?? quote.service_type;
@@ -882,9 +892,14 @@ export async function runPostPaymentActions(
           ? [
               `${first}, your ${companyDisplayName} office relocation is booked.`,
               `Reference: ${input.moveCode}. Your project manager will reach out today to walk through the plan.`,
+              welcomePackageUrl
+                ? `Your Priority welcome guide (share with your team):\n${welcomePackageUrl}`
+                : null,
               `Track your relocation (share with your team):\n${trackingUrl}`,
               `Questions? Reply here or call (647) 370-4525.`,
-            ].join("\n\n")
+            ]
+              .filter((s): s is string => Boolean(s))
+              .join("\n\n")
           : isEstateBooking
             ? [
                 `${first}, welcome to ${companyDisplayName} Estate.`,

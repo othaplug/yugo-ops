@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
-import { moveNotificationEmail, estateConfirmationEmail } from "@/lib/email-templates";
+import {
+  moveNotificationEmail,
+  estateConfirmationEmail,
+  officeConfirmationEmail,
+} from "@/lib/email-templates";
 import { generateWelcomePackageToken } from "@/lib/welcome-package-token";
 import { signTrackToken } from "@/lib/track-token";
 import { requireAuth } from "@/lib/api-auth";
@@ -188,7 +192,10 @@ export async function POST(req: NextRequest) {
       .trim()
       .toLowerCase();
     const tierSelected =
-      tierRaw === "essential" || tierRaw === "signature" || tierRaw === "estate"
+      tierRaw === "essential" ||
+      tierRaw === "signature" ||
+      tierRaw === "estate" ||
+      tierRaw === "priority"
         ? tierRaw
         : "essential";
     const clientName = (body.client_name as string)?.trim() || "";
@@ -863,8 +870,14 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Generate welcome package token for estate moves (used in confirmation email + /estate/welcome page).
-      if (tierSelected === "estate") {
+      // Generate welcome package token for tiers that surface a welcome
+      // guide: Estate (residential concierge) and Office Priority (office
+      // concierge). Links resolve to /estate/welcome/{tok} or
+      // /office/welcome/{tok} respectively.
+      const wantsWelcomeToken =
+        tierSelected === "estate" ||
+        (tierSelected === "priority" && serviceType === "office_move");
+      if (wantsWelcomeToken) {
         const wpToken = generateWelcomePackageToken();
         await db.from("moves").update({ welcome_package_token: wpToken }).eq("id", moveId);
       }
@@ -959,6 +972,69 @@ export async function POST(req: NextRequest) {
             welcomePackageUrl,
           });
           subject = `Welcome to your Yugo Estate experience, ${estateDateLabel}`;
+        } else if (
+          tierSelected === "priority" &&
+          serviceType === "office_move"
+        ) {
+          // Office Priority: mirror Estate — fetch the freshly-written
+          // welcome_package_token and route to the office confirmation
+          // template with the /office/welcome/{tok} CTA.
+          const { data: officeRow } = await db
+            .from("moves")
+            .select(
+              "welcome_package_token, coordinator_name, coordinator_phone, coordinator_email",
+            )
+            .eq("id", moveId)
+            .single();
+          const wpToken =
+            (officeRow as { welcome_package_token?: string | null } | null)
+              ?.welcome_package_token ?? "";
+          const welcomePackageUrl = wpToken
+            ? `${baseUrl}/office/welcome/${wpToken}`
+            : null;
+          const TRUCK_DISPLAY: Record<string, string> = {
+            sprinter: "Extended Sprinter Van",
+            "16ft": "16ft Fully Equipped Truck",
+            "20ft": "20ft Dedicated Moving Truck",
+            "24ft": "24ft Full-Size Moving Truck",
+            "26ft": "26ft Maximum-Capacity Truck",
+          };
+          const truckKey = (body.truck_primary as string)?.trim() || "";
+          const truckDisplayName =
+            TRUCK_DISPLAY[truckKey] || truckKey || "Dedicated moving truck";
+          const crewSize = body.est_crew_size
+            ? Number(body.est_crew_size)
+            : 3;
+          html = officeConfirmationEmail({
+            clientName: clientName || emailTrimmed,
+            moveCode: jobIdDisplay,
+            moveDate: (body.scheduled_date as string)?.trim() || null,
+            timeWindow:
+              (body.arrival_window as string)?.trim() ||
+              "Morning (7 AM – 12 PM)",
+            fromAddress,
+            toAddress,
+            tierLabel: "Priority",
+            serviceLabel: "Office Relocation",
+            crewSize,
+            truckDisplayName,
+            totalWithTax: estimate,
+            depositPaid,
+            balanceRemaining: estimate - depositPaid,
+            trackingUrl: trackUrl,
+            includes: [],
+            coordinatorName:
+              (officeRow as { coordinator_name?: string | null } | null)
+                ?.coordinator_name ?? null,
+            coordinatorPhone:
+              (officeRow as { coordinator_phone?: string | null } | null)
+                ?.coordinator_phone ?? null,
+            coordinatorEmail:
+              (officeRow as { coordinator_email?: string | null } | null)
+                ?.coordinator_email ?? null,
+            welcomePackageUrl,
+          });
+          subject = `Your Yugo Priority office relocation is booked, ${jobIdDisplay}`;
         } else {
           html = moveNotificationEmail({
             move_id: moveId,

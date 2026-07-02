@@ -167,7 +167,8 @@
       "Bash(office and is ready to 'unload. *)",
       "Bash(choosing 'Yugo. *)",
       "Bash(grep -n \"referral\\\\|perks\\\\|Perks\\\\|referralCode\\\\|Give \\\\$50\" src/app/track/move/\\\\[id\\\\]/TrackMoveClient.tsx)",
-      "Bash(echo \"tsc exit: $?\")"
+      "Bash(echo \"tsc exit: $?\")",
+      "Bash(mkdir -p src/app/office/welcome/\\\\[token\\\\])"
     ]
   }
 }

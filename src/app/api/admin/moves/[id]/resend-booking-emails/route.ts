@@ -30,6 +30,7 @@ import {
   signatureConfirmationEmail,
   singleItemConfirmationEmail,
   estateConfirmationEmail,
+  officeConfirmationEmail,
   statusUpdateEmailHtml,
   type TierConfirmationParams,
 } from "@/lib/email-templates";
@@ -212,6 +213,45 @@ export async function POST(
       });
       results.push({ name: "booking_confirmation", ok: true });
     } else {
+    // Resolve welcome-package URL for tiers that get one (Estate residential
+    // + Office Priority). Reuses the token minted at booking; the resend is
+    // a re-render, not a re-mint. Mirrors post-payment.ts:200 logic so
+    // resends match the original confirmation.
+    const isEstateBooking = tier === "estate";
+    const isOfficePriority =
+      tier === "priority" && quote.service_type === "office_move";
+    let welcomePackageUrl: string | null = null;
+    if (isEstateBooking || isOfficePriority) {
+      const wpTok = String(
+        (move as { welcome_package_token?: string | null })
+          .welcome_package_token ?? "",
+      ).trim();
+      if (wpTok) {
+        const kind = isOfficePriority ? "office" : "estate";
+        welcomePackageUrl = `${baseUrl}/${kind}/welcome/${wpTok}`;
+      }
+    }
+
+    // Office Priority: pull day count + PM contact from quote factors so
+    // the office template renders the phased plan and PM signature block.
+    const qFactors = (quote.factors_applied ?? {}) as Record<string, unknown>;
+    const officeDayCount = (() => {
+      if (!isOfficePriority) return null;
+      const per = qFactors.office_per_tier_days as
+        | Record<string, number>
+        | undefined;
+      const n = per?.priority;
+      return typeof n === "number" && n > 0 ? n : null;
+    })();
+    const projectManagerName =
+      (typeof qFactors.project_manager_name === "string" &&
+        qFactors.project_manager_name.trim()) ||
+      null;
+    const projectManagerPhone =
+      (typeof qFactors.project_manager_phone === "string" &&
+        qFactors.project_manager_phone.trim()) ||
+      null;
+
     const confirmParams: TierConfirmationParams = {
       clientName,
       moveCode,
@@ -231,7 +271,10 @@ export async function POST(
       coordinatorName: (move.coordinator_name as string) || null,
       coordinatorPhone: (move.coordinator_phone as string) || null,
       coordinatorEmail: (move.coordinator_email as string) || null,
-      welcomePackageUrl: null,
+      welcomePackageUrl,
+      officeDayCount,
+      projectManagerName,
+      projectManagerPhone,
     };
 
     const templateFns: Record<
@@ -242,10 +285,15 @@ export async function POST(
       curated: essentialConfirmationEmail,
       signature: signatureConfirmationEmail,
       estate: estateConfirmationEmail,
+      // Residential Priority → Estate copy (matches post-payment.ts). Office
+      // Priority is routed via the isOfficePriority override below.
+      priority: estateConfirmationEmail,
       essentials: essentialConfirmationEmail,
       premier: signatureConfirmationEmail,
     };
-    const templateFn = templateFns[tier] ?? signatureConfirmationEmail;
+    const templateFn = isOfficePriority
+      ? officeConfirmationEmail
+      : templateFns[tier] ?? signatureConfirmationEmail;
 
     const subjects: Record<string, string> = {
       essential: `Your Yugo move is confirmed, ${moveCode}`,
@@ -255,7 +303,9 @@ export async function POST(
       essentials: `Your Yugo move is confirmed, ${moveCode}`,
       premier: `Your Yugo Signature move is confirmed, ${moveCode}`,
     };
-    const subject = subjects[tier] ?? `Booking confirmed, ${moveCode}`;
+    const subject = isOfficePriority
+      ? `Your Yugo Priority office relocation is booked, ${moveCode}`
+      : subjects[tier] ?? `Booking confirmed, ${moveCode}`;
 
     await resend.emails.send({
       from: emailFrom,

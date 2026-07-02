@@ -2845,6 +2845,7 @@ export function officeConfirmationEmail(p: TierConfirmationParams): string {
       : `${coordPhoneHtml}${coordEmailHtml}`;
 
   const wineTrackCta = `display:inline-block;background-color:${ESTATE_WINE_SAGE_CTA_BG};color:${ESTATE_WINE_SAGE_CTA_TX} !important;-webkit-text-fill-color:${ESTATE_WINE_SAGE_CTA_TX};padding:12px 28px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-decoration:none;border-radius:0;text-transform:uppercase;font-family:${PREMIUM_FONT};border:1px solid rgba(255,255,255,0.22);`;
+  const wineWelcomeGuideCtaOffice = `display:inline-block;background-color:transparent;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};padding:12px 28px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-decoration:none;border:1px solid rgba(249,237,228,0.55);text-transform:uppercase;font-family:${PREMIUM_FONT};`;
 
   const officeIncludes = [
     `Dedicated commercial crew of ${p.crewSize} — trained for office relocations`,
@@ -2930,6 +2931,20 @@ export function officeConfirmationEmail(p: TierConfirmationParams): string {
     <p style="font-size:15px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 24px;line-height:1.78;">
       Thank you for choosing Yugo for your office move. ${pmName} will be your dedicated project manager and will reach out within one business day to walk through the plan.
     </p>
+
+    ${
+      p.welcomePackageUrl
+        ? `
+    ${estateWineLabel("Your welcome guide")}
+    <p style="font-size:15px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 18px;line-height:1.78;">Sequence, building coordination, IT scope, and how to reach your project manager, all in one place. Shareable with your team.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 8px;background-color:${ESTATE_WINE_SURFACE_PAGE};">
+      <tr><td style="background-color:${ESTATE_WINE_SURFACE_PAGE};">
+        <a href="${p.welcomePackageUrl.replace(/&/g, "&amp;")}" style="${wineWelcomeGuideCtaOffice}">VIEW WELCOME GUIDE&nbsp;&nbsp;&#8250;</a>
+      </td></tr>
+    </table>
+    `
+        : ""
+    }
 
     ${estateWineDivider()}
 

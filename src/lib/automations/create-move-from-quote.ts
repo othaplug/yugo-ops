@@ -489,7 +489,12 @@ export async function createMoveFromQuote(
     square_card_id: input.squareCardId ?? null,
     square_payment_id: input.squarePaymentId ?? null,
     square_receipt_url: input.squareReceiptUrl ?? null,
-    ...(safeTier === "estate"
+    // Welcome-package token: minted for Estate (residential concierge) AND
+    // office_move Priority (office concierge). post-payment.ts also
+    // backfills the token if this row was created without one, so the
+    // welcome guide always resolves.
+    ...(safeTier === "estate" ||
+    (safeTier === "priority" && quote.service_type === "office_move")
       ? { welcome_package_token: generateWelcomePackageToken() }
       : {}),
   });
