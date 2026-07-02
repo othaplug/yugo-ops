@@ -176,7 +176,16 @@ export function estimateOfficeLabour(
     // day math (otherwise a job a hair over a day boundary tips to an extra day).
     const productiveWallClock = manHours / (tierCrew * CREW_EFFICIENCY);
     const wallClockHours = OVERHEAD_HOURS + productiveWallClock;
-    const days = Math.max(1, Math.ceil(productiveWallClock / MAX_HOURS_PER_DAY));
+    // Essential and Signature are single-day flows by default (client-owned
+    // packing + unpacking, so the Yugo-side work is just the move itself
+    // and can typically fit in one commercial after-hours window). Admin
+    // bumps to multi-day are handled downstream via
+    // factors.office_per_tier_days_override. Priority continues to derive
+    // day count from labour man-hours because Yugo owns the whole scope.
+    const days =
+      tier === "priority"
+        ? Math.max(1, Math.ceil(productiveWallClock / MAX_HOURS_PER_DAY))
+        : 1;
     perTier[tier] = {
       manHours: round1(manHours),
       wallClockHours: round1(wallClockHours),

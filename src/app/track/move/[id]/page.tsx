@@ -367,7 +367,12 @@ export default async function TrackMovePage({
       const perTier = factors.office_per_tier_days as
         | Record<string, number>
         | undefined;
+      // Honour the dev preview_tier override so ?preview_tier=essential
+      // maps to the essential day count, not the quote's original tier.
+      const overrideTier = (move as { tier_selected?: string | null })
+        .tier_selected;
       const tk = (
+        overrideTier ??
         (qRow?.selected_tier as string | null) ??
         (qRow?.recommended_tier as string | null) ??
         "priority"

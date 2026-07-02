@@ -4027,12 +4027,29 @@ export default function TrackMoveClient({
                   <OfficeReservationCard
                     status={statusVal || "confirmed"}
                     days={(() => {
+                      // Trim to the booked tier's day count so a Priority-
+                      // created project (2 rows in move_project_days) doesn't
+                      // over-render when Essential/Signature only need one.
+                      const cap =
+                        typeof officeDayCount === "number" && officeDayCount > 0
+                          ? officeDayCount
+                          : Infinity;
+                      // Per-tier fallback labels for Day 1 / Day 2 so a
+                      // Priority-seeded label ("Pack & IT prep") doesn't
+                      // survive when the effective tier is Essential or
+                      // Signature. Priority keeps the seeded label.
+                      const tierLabels: { day1: string; day2: string } =
+                        officeTierKey === "essential"
+                          ? { day1: "Site prep", day2: "Move day" }
+                          : officeTierKey === "signature"
+                            ? { day1: "IT prep & pack", day2: "Move day" }
+                            : { day1: "Pack & IT prep", day2: "Move & set up" };
                       if (!moveProjectForTrack) {
                         return move.scheduled_date
                           ? [
                               {
                                 date: String(move.scheduled_date).slice(0, 10),
-                                label: "Move day",
+                                label: tierLabels.day1,
                               },
                             ]
                           : [];
@@ -4040,10 +4057,17 @@ export default function TrackMoveClient({
                       const flat = (moveProjectForTrack.phases ?? [])
                         .flatMap((p) => (Array.isArray(p.days) ? p.days : []))
                         .filter((d) => d.date);
-                      return flat.map((d) => ({
-                        date: String(d.date).slice(0, 10),
-                        label: (d.label ?? "").trim() || "Move day",
-                      }));
+                      return flat
+                        .slice(0, cap)
+                        .map((d, idx) => ({
+                          date: String(d.date).slice(0, 10),
+                          label:
+                            officeTierKey === "priority"
+                              ? (d.label ?? "").trim() || tierLabels.day1
+                              : idx === 0
+                                ? tierLabels.day1
+                                : tierLabels.day2,
+                        }));
                     })()}
                     arrivalWindow={arrivalWindow}
                     fromAddress={move.from_address ?? null}
