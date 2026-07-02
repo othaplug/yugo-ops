@@ -580,8 +580,25 @@ export async function runPostPaymentActions(
         const tier = selectedTier ?? "signature";
         const truckKey =
           (move.truck_info as string) || (quote.truck_primary as string) || "";
-        const truckDisplayName =
-          TRUCK_DISPLAY[truckKey] || truckKey || "Dedicated moving truck";
+        // Office moves may reserve multiple trucks; format "2 × 16ft ..."
+        // when factors.office_trucks > 1. Shared helper keeps this in
+        // lockstep with OfficeTrackHero + admin previews.
+        let truckDisplayName: string;
+        if (quote.service_type === "office_move") {
+          const { formatOfficeFleetLabel } = await import(
+            "@/lib/office/fleet-label"
+          );
+          const trucksRaw = (quote.factors_applied as Record<string, unknown>)
+            ?.office_trucks;
+          const trucks =
+            typeof trucksRaw === "number"
+              ? trucksRaw
+              : Number(trucksRaw ?? 1) || 1;
+          truckDisplayName = formatOfficeFleetLabel(truckKey, trucks);
+        } else {
+          truckDisplayName =
+            TRUCK_DISPLAY[truckKey] || truckKey || "Dedicated moving truck";
+        }
 
         const tierData =
           tier && quote.tiers
@@ -617,6 +634,59 @@ export async function runPostPaymentActions(
             quoteFactors.project_manager_phone.trim()) ||
           null;
 
+        // Office day plan sourced from move_project_days so the email
+        // matches the track page timeline exactly. Without this the
+        // hardcoded "Day 2: Move day" copy in the template drifts from
+        // the DB (which stores "Move & set up" for Priority office).
+        let officeDayPlan:
+          | { label: string; title: string; body: string }[]
+          | undefined;
+        if (
+          quote.service_type === "office_move" &&
+          typeof officeDayCount === "number" &&
+          officeDayCount >= 2
+        ) {
+          const mpId = (move as { move_project_id?: string | null })
+            .move_project_id;
+          if (mpId) {
+            const { data: phases } = await supabase
+              .from("move_project_phases")
+              .select("id")
+              .eq("project_id", mpId);
+            const phaseIds = (phases ?? []).map(
+              (p) => (p as { id: string }).id,
+            );
+            if (phaseIds.length > 0) {
+              const { data: days } = await supabase
+                .from("move_project_days")
+                .select("day_number, day_type, label, description")
+                .in("phase_id", phaseIds)
+                .order("day_number");
+              const rows = (days ?? []) as Array<{
+                day_number: number;
+                day_type?: string | null;
+                label?: string | null;
+                description?: string | null;
+              }>;
+              if (rows.length > 0) {
+                officeDayPlan = rows.map((d) => ({
+                  label: `Day ${d.day_number}`,
+                  title: (d.label ?? "").trim() || "Move day",
+                  body:
+                    (d.description ?? "").trim() ||
+                    // Same defaults as the template fallback so an
+                    // unlabelled day still renders sensible copy.
+                    (d.day_type === "pack"
+                      ? "Our team walks both offices, photographs the IT setup, labels every workstation, installs floor and elevator protection, and packs every box."
+                      : d.day_type === "unpack"
+                        ? "Boxes unpacked and contents placed in your new space. Final walkthrough with your team, sign-off, and remaining materials removed."
+                        : `Full transport to the new office. IT and furniture placed per your floor plan. ${projectManagerName ?? (move.coordinator_name as string | null) ?? "Your project manager"} on-site running the day. Packing debris removed before we leave.`),
+                }));
+              }
+            }
+          }
+        }
+
         // welcomePackageUrl is computed once in shared scope above.
         const confirmParams: TierConfirmationParams = {
           clientName,
@@ -640,6 +710,7 @@ export async function runPostPaymentActions(
           welcomePackageUrl,
           addonLines: resolvedAddonLines.length > 0 ? resolvedAddonLines : undefined,
           officeDayCount,
+          officeDayPlan,
           // PM defaults to coordinator until a distinct PM is captured
           // via crew assignment; phone always falls back to the shared
           // office line so the client never sees a blank contact row.

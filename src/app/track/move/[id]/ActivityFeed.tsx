@@ -83,10 +83,13 @@ export default function ActivityFeed({
   token,
   /** Default 5 — recent events only when collapsed. Expand to see all. */
   defaultLimit = 5,
+  serviceType,
 }: {
   moveId: string;
   token: string;
   defaultLimit?: number;
+  /** When "office_move", the timeline label reads "Your relocation timeline". */
+  serviceType?: string | null;
 }) {
   const [events, setEvents] = useState<ClientActivityEvent[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -136,7 +139,9 @@ export default function ActivityFeed({
             Activity
           </span>
           <span className="text-[13px] font-semibold truncate">
-            Your move timeline
+            {serviceType === "office_move"
+              ? "Your relocation timeline"
+              : "Your move timeline"}
           </span>
         </div>
         <span

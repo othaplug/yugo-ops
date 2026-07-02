@@ -643,79 +643,118 @@ export default function OfficeWelcomeGuideView({
         }}
       >
         <div className="max-w-4xl mx-auto px-5 md:px-8 text-center space-y-10">
-          {(projectManagerName || projectManagerPhone) && (
-            <div className="space-y-3">
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.12em]"
-                style={{ color: ON_WINE.kicker }}
-              >
-                Your project manager
-              </p>
-              {projectManagerName ? (
-                <p
-                  className="font-hero text-lg"
-                  style={{ color: ON_WINE.primary }}
-                >
-                  {projectManagerName}
-                </p>
-              ) : null}
-              {projectManagerPhone ? (
-                <a
-                  href={`tel:${projectManagerPhone.replace(/\D/g, "")}`}
-                  className="inline-block font-semibold underline-offset-4 hover:underline text-[14px]"
-                  style={{ color: ON_WINE.primary }}
-                >
-                  {formatPhone(projectManagerPhone)}
-                </a>
-              ) : null}
-            </div>
-          )}
+          {(() => {
+            // Office Priority: PM defaults to coordinator until crew
+            // assignment. When PM name and coordinator name are the same
+            // person, render ONE consolidated block labeled "Your project
+            // manager" instead of two duplicate contact rows.
+            const pmName = projectManagerName?.trim() || null;
+            const coName = coordName?.trim() || null;
+            const samePerson =
+              !!pmName && !!coName &&
+              pmName.toLowerCase() === coName.toLowerCase();
+            const consolidatedPhone = projectManagerPhone || coordPhone || null;
+            const consolidatedEmail = coordEmail || null;
+            const showPmBlock = !!(pmName || projectManagerPhone);
+            const showSeparateCoordBlock =
+              !samePerson && !!(coName || coordPhone || coordEmail);
 
-          {(coordName || coordPhone || coordEmail) && (
-            <div className="space-y-3">
-              <p
-                className="text-[11px] font-semibold uppercase tracking-[0.12em]"
-                style={{ color: ON_WINE.kicker }}
-              >
-                Your coordinator
-              </p>
-              {coordName ? (
-                <p
-                  className="font-hero text-lg"
-                  style={{ color: ON_WINE.primary }}
-                >
-                  {coordName}
-                </p>
-              ) : null}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-center items-center gap-3 sm:gap-0 text-[14px]">
-                {coordPhone ? (
-                  <a
-                    href={`tel:${coordPhone.replace(/\D/g, "")}`}
-                    className="font-semibold underline-offset-4 hover:underline"
-                    style={{ color: ON_WINE.primary }}
-                  >
-                    {formatPhone(coordPhone)}
-                  </a>
-                ) : null}
-                {coordPhone && coordEmail ? (
-                  <span
-                    className="hidden sm:block w-px h-[1.1em] shrink-0 mx-5"
-                    style={{ backgroundColor: ON_WINE.hairline }}
-                    aria-hidden
-                  />
-                ) : null}
-                {coordEmail ? (
-                  <a
-                    href={`mailto:${encodeURIComponent(coordEmail)}`}
-                    className="font-semibold underline-offset-4 hover:underline break-all sm:max-w-none text-center sm:text-left"
-                    style={{ color: ON_WINE.primary }}
-                  >
-                    {coordEmail}
-                  </a>
-                ) : null}
-              </div>
-            </div>
-          )}
+            return (
+              <>
+                {showPmBlock && (
+                  <div className="space-y-3">
+                    <p
+                      className="text-[11px] font-semibold uppercase tracking-[0.12em]"
+                      style={{ color: ON_WINE.kicker }}
+                    >
+                      Your project manager
+                    </p>
+                    {pmName ? (
+                      <p
+                        className="font-hero text-lg"
+                        style={{ color: ON_WINE.primary }}
+                      >
+                        {pmName}
+                      </p>
+                    ) : null}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-center items-center gap-3 sm:gap-0 text-[14px]">
+                      {consolidatedPhone ? (
+                        <a
+                          href={`tel:${consolidatedPhone.replace(/\D/g, "")}`}
+                          className="font-semibold underline-offset-4 hover:underline"
+                          style={{ color: ON_WINE.primary }}
+                        >
+                          {formatPhone(consolidatedPhone)}
+                        </a>
+                      ) : null}
+                      {consolidatedPhone && samePerson && consolidatedEmail ? (
+                        <span
+                          className="hidden sm:block w-px h-[1.1em] shrink-0 mx-5"
+                          style={{ backgroundColor: ON_WINE.hairline }}
+                          aria-hidden
+                        />
+                      ) : null}
+                      {samePerson && consolidatedEmail ? (
+                        <a
+                          href={`mailto:${encodeURIComponent(consolidatedEmail)}`}
+                          className="font-semibold underline-offset-4 hover:underline break-all sm:max-w-none text-center sm:text-left"
+                          style={{ color: ON_WINE.primary }}
+                        >
+                          {consolidatedEmail}
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+
+                {showSeparateCoordBlock && (
+                  <div className="space-y-3">
+                    <p
+                      className="text-[11px] font-semibold uppercase tracking-[0.12em]"
+                      style={{ color: ON_WINE.kicker }}
+                    >
+                      Your coordinator
+                    </p>
+                    {coName ? (
+                      <p
+                        className="font-hero text-lg"
+                        style={{ color: ON_WINE.primary }}
+                      >
+                        {coName}
+                      </p>
+                    ) : null}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-center items-center gap-3 sm:gap-0 text-[14px]">
+                      {coordPhone ? (
+                        <a
+                          href={`tel:${coordPhone.replace(/\D/g, "")}`}
+                          className="font-semibold underline-offset-4 hover:underline"
+                          style={{ color: ON_WINE.primary }}
+                        >
+                          {formatPhone(coordPhone)}
+                        </a>
+                      ) : null}
+                      {coordPhone && coordEmail ? (
+                        <span
+                          className="hidden sm:block w-px h-[1.1em] shrink-0 mx-5"
+                          style={{ backgroundColor: ON_WINE.hairline }}
+                          aria-hidden
+                        />
+                      ) : null}
+                      {coordEmail ? (
+                        <a
+                          href={`mailto:${encodeURIComponent(coordEmail)}`}
+                          className="font-semibold underline-offset-4 hover:underline break-all sm:max-w-none text-center sm:text-left"
+                          style={{ color: ON_WINE.primary }}
+                        >
+                          {coordEmail}
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
 
           {hasScheduledMove ? (
             <div className="pt-2">
@@ -727,7 +766,7 @@ export default function OfficeWelcomeGuideView({
                   color: ON_WINE.primary,
                 }}
               >
-                Track your move
+                Track your relocation
                 <CaretRight size={16} weight="bold" aria-hidden />
               </Link>
             </div>

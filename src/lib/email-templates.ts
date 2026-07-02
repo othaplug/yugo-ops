@@ -1819,6 +1819,17 @@ export interface TierConfirmationParams {
    *  in the office confirmation email. */
   projectManagerName?: string | null;
   projectManagerPhone?: string | null;
+  /**
+   * Office moves only: per-day plan sourced from `move_project_days`
+   * so the email stays in lockstep with the track page timeline. When
+   * absent, the template falls back to hardcoded Day 1 / Day 2 / Day 3
+   * copy tied to `officeDayCount`.
+   */
+  officeDayPlan?: {
+    label: string;
+    title: string;
+    body: string;
+  }[];
 }
 
 function confirmDateDisplay(dateStr: string | null): string {
@@ -2808,7 +2819,12 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
 export function officeConfirmationEmail(p: TierConfirmationParams): string {
   const firstName = (p.clientName || "").split(" ")[0];
   const coordName = p.coordinatorName || "your coordinator";
-  const pmName = p.projectManagerName || coordName;
+  // PM defaults to real coordinator name; only when BOTH are absent do
+  // we render a generic team label so the PM line never ships blank.
+  const pmName =
+    p.projectManagerName ||
+    p.coordinatorName ||
+    "Your Yugo project team";
   const dayCount = Math.max(1, Math.floor(p.officeDayCount ?? 1));
 
   // Multi-day date range display
@@ -2871,30 +2887,35 @@ export function officeConfirmationEmail(p: TierConfirmationParams): string {
     )
     .join("");
 
-  // Day-by-day plan (only when > 1 day)
+  // Day-by-day plan (only when > 1 day). Prefer the passed-in plan
+  // sourced from move_project_days so the email matches the track-page
+  // timeline exactly; fall back to hardcoded copy only when the plan
+  // isn't threaded through (older bookings, admin-created moves).
   const dayPlanRows =
     dayCount >= 2
-      ? [
-          {
-            label: "Day 1",
-            title: "Site walkthrough, IT documentation, packing",
-            body: "Our team walks both offices, photographs the IT setup, labels every workstation, installs floor and elevator protection, and packs every box.",
-          },
-          {
-            label: "Day 2",
-            title: "Move day",
-            body: `Full transport to the new office. IT and furniture placed per your floor plan. ${pmName} on-site running the day. Packing debris removed before we leave.`,
-          },
-          ...(dayCount >= 3
-            ? [
-                {
-                  label: "Day 3",
-                  title: "Unpack and set up",
-                  body: "Boxes unpacked and contents placed in your new space. Final walkthrough with your team, sign-off, and remaining materials removed.",
-                },
-              ]
-            : []),
-        ]
+      ? (p.officeDayPlan && p.officeDayPlan.length > 0
+          ? p.officeDayPlan
+          : [
+              {
+                label: "Day 1",
+                title: "Site walkthrough, IT documentation, packing",
+                body: "Our team walks both offices, photographs the IT setup, labels every workstation, installs floor and elevator protection, and packs every box.",
+              },
+              {
+                label: "Day 2",
+                title: "Move day",
+                body: `Full transport to the new office. IT and furniture placed per your floor plan. ${pmName} on-site running the day. Packing debris removed before we leave.`,
+              },
+              ...(dayCount >= 3
+                ? [
+                    {
+                      label: "Day 3",
+                      title: "Unpack and set up",
+                      body: "Boxes unpacked and contents placed in your new space. Final walkthrough with your team, sign-off, and remaining materials removed.",
+                    },
+                  ]
+                : []),
+            ])
       : [];
 
   const eTableOuter = `1px solid ${ESTATE_WINE_SURFACE_BORDER}`;

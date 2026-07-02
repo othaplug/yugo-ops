@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { OfficeTrackHero } from "./OfficeTrackHero";
+import { formatOfficeFleetLabel } from "@/lib/office/fleet-label";
 import Script from "next/script";
 import { getMoveCode, formatJobId } from "@/lib/move-code";
 import TrackInventory from "./TrackInventory";
@@ -474,11 +475,14 @@ function CoordinatorRow({
   phone,
   forest,
   wine,
+  roleLabel = "Coordinator",
 }: {
   name: string | null;
   phone: string | null;
   forest: string;
   wine: string;
+  /** Role sub-label under the name. Office Priority passes "Project Manager". */
+  roleLabel?: string;
 }) {
   const dialPhone = phone || YUGO_PHONE;
   const displayPhone = phone || YUGO_PHONE;
@@ -510,7 +514,7 @@ function CoordinatorRow({
             {name}
           </span>
           <span className="text-[11px] opacity-65" style={{ color: forest }}>
-            Coordinator · {formatPhone(displayPhone)}
+            {roleLabel} · {formatPhone(displayPhone)}
           </span>
         </span>
       </a>
@@ -1387,14 +1391,17 @@ export default function TrackMoveClient({
             >
               Project schedule
             </p>
-            {activePhase ? (
+            {/* Suppress the phase eyebrow for office moves: DB seeds both
+                phases as phase_type=move which renders "Move day" — a
+                duplicate of the day title below the progress bar. */}
+            {activePhase && serviceType !== "office_move" ? (
               <p className="text-[11px] font-medium" style={{ color: FOREST }}>
                 {String(activePhase)}
               </p>
             ) : null}
           </div>
           <p className="text-[15px] font-semibold mt-2" style={{ color: WINE }}>
-            Coordinator plan · day {displayDay} of {total}
+            {serviceType === "office_move" ? "Project manager plan" : "Coordinator plan"} · day {displayDay} of {total}
           </p>
           <div
             className="h-1.5 rounded-full mt-2 overflow-hidden"
@@ -1491,6 +1498,7 @@ export default function TrackMoveClient({
     isLogisticsDeliveryTrack,
     isNonMoveProductTrack,
     move.scheduled_date,
+    serviceType,
   ]);
 
   const showLiveMovementMap = React.useMemo(() => {
@@ -1670,11 +1678,10 @@ export default function TrackMoveClient({
               projectManagerPhone={
                 officeProjectManagerPhone ?? "(647) 370-4525"
               }
-              fleetLabel={
-                officeTruckCount && officeTruckCount > 1
-                  ? `${officeTruckCount} × ${move.truck_primary ?? "16ft"}`
-                  : (move.truck_primary as string | null) ?? null
-              }
+              fleetLabel={formatOfficeFleetLabel(
+                (move.truck_primary as string | null) ?? null,
+                officeTruckCount ?? null,
+              )}
               crewSize={
                 typeof crewSize === "number" && crewSize > 0
                   ? crewSize
@@ -1702,7 +1709,9 @@ export default function TrackMoveClient({
                   ? `Thank you. See you on ${wgNoun} day.`
                   : isLogisticsDeliveryTrack
                     ? "Thank you. See you on delivery day."
-                    : "Thank you. See you on move day."}
+                    : serviceType === "office_move"
+                      ? "Thank you. Your project manager will be in touch to walk through the plan."
+                      : "Thank you. See you on move day."}
               </p>
               <button
                 type="button"
@@ -1764,7 +1773,9 @@ export default function TrackMoveClient({
                   className="text-[12px] opacity-70 mt-0.5"
                   style={{ color: FOREST }}
                 >
-                  Your crew has been notified to load the extra items.
+                  {serviceType === "office_move"
+                    ? "Your team has been notified to include the extra items."
+                    : "Your crew has been notified to load the extra items."}
                 </p>
               </div>
             </div>
@@ -2733,7 +2744,11 @@ export default function TrackMoveClient({
                                 Additional charge:{" "}
                                 {formatCurrency(totalBalance)} (taxes included).
                                 Add a card below to authorize the charge, or
-                                contact your coordinator.
+                                contact your{" "}
+                                {serviceType === "office_move"
+                                  ? "project manager"
+                                  : "coordinator"}
+                                .
                               </p>
                             )}
                           {balanceChargeError && isCompleted && (
@@ -2833,6 +2848,11 @@ export default function TrackMoveClient({
                             phone={coordinatorPhone}
                             forest={FOREST}
                             wine={WINE}
+                            roleLabel={
+                              serviceType === "office_move"
+                                ? "Project Manager"
+                                : "Coordinator"
+                            }
                           />
                         </div>
                       </div>
@@ -3739,7 +3759,7 @@ export default function TrackMoveClient({
               {/* Activity feed — chronological audit of everything that has
                   happened since the quote was accepted. Default-open so the
                   client doesn't have to dig for it; collapses to a chip. */}
-              <ActivityFeed moveId={move.id} token={token} />
+              <ActivityFeed moveId={move.id} token={token} serviceType={serviceType} />
 
               {binOrder && (
                 <BinRentalTrackingSection
@@ -4180,7 +4200,11 @@ export default function TrackMoveClient({
                       >
                         Additional charge: {formatCurrency(totalBalance)} (taxes
                         included). Add a card below to authorize the charge, or
-                        contact your coordinator.
+                        contact your{" "}
+                        {serviceType === "office_move"
+                          ? "project manager"
+                          : "coordinator"}
+                        .
                       </p>
                     )}
                   {balanceChargeError && (
@@ -4260,13 +4284,18 @@ export default function TrackMoveClient({
                 />
               </div>
 
-              {/* Coordinator */}
+              {/* Coordinator (Project Manager for office Priority) */}
               <div className="border-t border-[var(--brd)]/20 pt-4 mt-5">
                 <CoordinatorRow
                   name={coordinatorName}
                   phone={coordinatorPhone}
                   forest={FOREST}
                   wine={WINE}
+                  roleLabel={
+                    serviceType === "office_move"
+                      ? "Project Manager"
+                      : "Coordinator"
+                  }
                 />
               </div>
 

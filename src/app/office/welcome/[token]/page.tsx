@@ -43,11 +43,13 @@ export default async function OfficeWelcomePage({
   const st = String(move.status || "").toLowerCase();
   if (st === "cancelled") notFound();
 
-  // Pull PM + company from the linked quote's factors (source of truth for
-  // office-specific scalars — see project_event_architecture memory).
+  // Pull PM + company + officeDayCount from the linked quote's factors
+  // (source of truth for office-specific scalars — see
+  // project_event_architecture memory).
   let projectManagerName: string | null = null;
   let projectManagerPhone: string | null = null;
   let companyName: string | null = null;
+  let officeDayCount: number | null = null;
   const quoteId = (move as { quote_id?: string | null }).quote_id;
   if (quoteId) {
     const { data: quote } = await supabase
@@ -62,6 +64,11 @@ export default async function OfficeWelcomePage({
     if (typeof pmn === "string" && pmn.trim()) projectManagerName = pmn.trim();
     if (typeof pmp === "string" && pmp.trim()) projectManagerPhone = pmp.trim();
     if (typeof co === "string" && co.trim()) companyName = co.trim();
+    const perTier = factors.office_per_tier_days as
+      | Record<string, number>
+      | undefined;
+    const n = perTier?.priority;
+    if (typeof n === "number" && n > 0) officeDayCount = n;
   }
   // PM defaults to the coordinator until a distinct PM is captured
   // (post-book crew assignment can override). Phone always falls back to
@@ -78,9 +85,23 @@ export default async function OfficeWelcomePage({
     move_code: move.move_code ?? null,
   });
 
-  const moveDateLabel = move.scheduled_date
-    ? formatMoveDate(move.scheduled_date)
-    : null;
+  // Multi-day range for the hero subline. When officeDayCount > 1, show
+  // "Sat, Jul 11 – Sun, Jul 12" instead of just the start date so the
+  // welcome guide matches the confirmation email date-range treatment.
+  const moveDateLabel: string | null = (() => {
+    if (!move.scheduled_date) return null;
+    const start = formatMoveDate(move.scheduled_date);
+    if (!officeDayCount || officeDayCount <= 1) return start;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(move.scheduled_date);
+    if (!m) return start;
+    const end = new Date(
+      Number(m[1]),
+      Number(m[2]) - 1,
+      Number(m[3]) + (officeDayCount - 1),
+    );
+    const endIso = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
+    return `${start} – ${formatMoveDate(endIso)}`;
+  })();
 
   let moveProjectSchedule: {
     totalDays: number;
