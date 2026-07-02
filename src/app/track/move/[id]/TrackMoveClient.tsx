@@ -4057,6 +4057,7 @@ export default function TrackMoveClient({
                     }
                     projectManagerRole={officeLeadRoleLabel}
                     companyName={null}
+                    hideManagedBy={officeTierKey === "essential"}
                   />
                 )}
                 {scheduledDate &&

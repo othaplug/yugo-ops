@@ -126,7 +126,7 @@ export const OFFICE_MOVE_STATUS_FLOW: TrackingStatus[] = [
 /**
  * Split of {@link OFFICE_MOVE_STATUS_FLOW} into Day 1 and Day 2 for
  * the tracking page's phased view. Day 1 = prep + pack; Day 2 = move
- * + placement.
+ * + placement. Default shape is Priority (Yugo packs everything).
  */
 export const OFFICE_MOVE_DAY_1_STAGES: TrackingStatus[] = [
   "initial_walkthrough",
@@ -142,6 +142,48 @@ export const OFFICE_MOVE_DAY_2_STAGES: TrackingStatus[] = [
   "arrived_at_destination",
   "unloading",
   "setup",
+  "completed",
+];
+
+/**
+ * Tier-specific Day 1 / Day 2 stage lists for the office track hero.
+ *
+ * Essential — Yugo does NOT pack or unpack. Day 1 is site walkthrough
+ *   + IT documentation only (no packing stages). Day 2 skips "setup"
+ *   (client sets up their own space).
+ * Signature — Yugo packs IT ONLY. Day 1 keeps IT packing stages but
+ *   the general "packing" milestones are still client-owned so the
+ *   stages read as "IT packing" via the label map below. Day 2 skips
+ *   "setup" (client unpacks and sets up).
+ * Priority — full flow (default constants above).
+ */
+export const OFFICE_MOVE_DAY_1_STAGES_ESSENTIAL: TrackingStatus[] = [
+  "initial_walkthrough",
+  "it_documentation",
+];
+export const OFFICE_MOVE_DAY_2_STAGES_ESSENTIAL: TrackingStatus[] = [
+  "en_route_to_pickup",
+  "arrived_at_pickup",
+  "loading",
+  "en_route_to_destination",
+  "arrived_at_destination",
+  "unloading",
+  "completed",
+];
+
+export const OFFICE_MOVE_DAY_1_STAGES_SIGNATURE: TrackingStatus[] = [
+  "initial_walkthrough",
+  "it_documentation",
+  "packing_started",
+  "packing_complete",
+];
+export const OFFICE_MOVE_DAY_2_STAGES_SIGNATURE: TrackingStatus[] = [
+  "en_route_to_pickup",
+  "arrived_at_pickup",
+  "loading",
+  "en_route_to_destination",
+  "arrived_at_destination",
+  "unloading",
   "completed",
 ];
 

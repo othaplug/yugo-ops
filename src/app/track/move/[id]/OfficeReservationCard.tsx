@@ -51,6 +51,12 @@ export interface OfficeReservationCardProps {
   projectManagerName: string | null;
   projectManagerRole?: string;
   companyName?: string | null;
+  /**
+   * Suppress the "Managed by" footer. Essential is the most basic tier —
+   * no dedicated lead-person surface, so the reservation card ends at
+   * building coordination.
+   */
+  hideManagedBy?: boolean;
 }
 
 /** Format "Saturday, July 11, 2026" from YYYY-MM-DD. */
@@ -177,6 +183,7 @@ export default function OfficeReservationCard({
   projectManagerName,
   projectManagerRole = "Project Manager",
   companyName,
+  hideManagedBy = false,
 }: OfficeReservationCardProps) {
   const crewStart = crewStartFromWindow(arrivalWindow);
 
@@ -222,41 +229,50 @@ export default function OfficeReservationCard({
       </div>
 
       {/* Building coordination — placeholder until building_profiles data
-          is threaded through. Presented as PM-managed so the client sees
-          it's handled without over-promising specifics. */}
-      <p
-        className="text-[12px] mt-4 leading-relaxed"
-        style={{ color: CREAM_SUBTLE }}
-      >
-        Building coordination · Freight elevator, dock, and certificate of
-        insurance managed by your project manager.
-      </p>
+          is threaded through. Presented as coordinator-managed or PM-managed
+          depending on tier so the client sees it's handled without
+          over-promising specifics. Essential (hideManagedBy) doesn't
+          surface this line — the client owns building coordination there. */}
+      {!hideManagedBy && (
+        <p
+          className="text-[12px] mt-4 leading-relaxed"
+          style={{ color: CREAM_SUBTLE }}
+        >
+          Building coordination · Freight elevator, dock, and certificate of
+          insurance managed by your{" "}
+          {projectManagerRole.toLowerCase()}.
+        </p>
+      )}
 
-      <Divider />
-
-      {/* PM signature */}
-      <footer className="flex items-center justify-end gap-2">
-        <div className="text-right">
-          <p
-            className="text-[10px] font-bold uppercase tracking-[0.14em]"
-            style={{ color: CREAM_SUBTLE }}
-          >
-            Managed by
-          </p>
-          <p
-            className="text-[14px] font-semibold mt-0.5"
-            style={{ color: FOREST }}
-          >
-            {projectManagerName?.trim() || "Your Yugo project team"}
-          </p>
-          <p
-            className="text-[11px]"
-            style={{ color: CREAM_SUBTLE }}
-          >
-            {projectManagerRole}
-          </p>
-        </div>
-      </footer>
+      {/* PM signature — suppressed for Essential (most basic tier, no
+          dedicated lead-person surface). */}
+      {!hideManagedBy && (
+        <>
+          <Divider />
+          <footer className="flex items-center justify-end gap-2">
+            <div className="text-right">
+              <p
+                className="text-[10px] font-bold uppercase tracking-[0.14em]"
+                style={{ color: CREAM_SUBTLE }}
+              >
+                Managed by
+              </p>
+              <p
+                className="text-[14px] font-semibold mt-0.5"
+                style={{ color: FOREST }}
+              >
+                {projectManagerName?.trim() || "Your Yugo project team"}
+              </p>
+              <p
+                className="text-[11px]"
+                style={{ color: CREAM_SUBTLE }}
+              >
+                {projectManagerRole}
+              </p>
+            </div>
+          </footer>
+        </>
+      )}
     </OfficeCard>
   );
 }

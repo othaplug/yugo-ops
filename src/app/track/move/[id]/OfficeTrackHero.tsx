@@ -24,17 +24,41 @@ import { Buildings, Check, Circle } from "@phosphor-icons/react";
 import {
   OFFICE_MOVE_DAY_1_STAGES,
   OFFICE_MOVE_DAY_2_STAGES,
+  OFFICE_MOVE_DAY_1_STAGES_ESSENTIAL,
+  OFFICE_MOVE_DAY_2_STAGES_ESSENTIAL,
+  OFFICE_MOVE_DAY_1_STAGES_SIGNATURE,
+  OFFICE_MOVE_DAY_2_STAGES_SIGNATURE,
   TRACKING_STATUS_LABELS,
   type TrackingStatus,
 } from "@/lib/crew-tracking-status";
 import { OFFICE_MOVE_STATUS_FLOW } from "@/lib/crew-tracking-status";
 
+/**
+ * Priority — wine premium shell.
+ * Signature — deep green shell (parallels residential Signature quote page).
+ * Essential — cream shell that matches the rest of the track page.
+ * Tokens live inline so the whole hero renders from one palette.
+ */
 const WINE = "#2B0416";
 const CREAM = "#F9EDE4";
 const ROSE = "#E8C4D0";
 const MUTED = "rgba(249,237,228,0.75)";
 const BORDER = "rgba(249,237,228,0.22)";
 const SAGE = "#A3C4A6";
+
+// Signature green (from src/app/quote/[quoteId]/signature-quote-ui.ts)
+const SIG_BG = "#15261A";
+const SIG_CREAM = "#F4FAF5";
+const SIG_KICKER = "#D2EBD8";
+const SIG_MUTED = "rgba(244, 250, 245, 0.9)";
+const SIG_BORDER = "rgba(184, 212, 190, 0.34)";
+
+// Essential cream (matches OfficeCard tokens elsewhere on the page)
+const ESS_BG = "#FFFDF8";
+const ESS_INK = "#2C3E2D";
+const ESS_KICKER = "rgba(44, 62, 45, 0.55)";
+const ESS_MUTED = "rgba(44, 62, 45, 0.65)";
+const ESS_BORDER = "rgba(44, 62, 45, 0.10)";
 
 export interface OfficeTrackHeroProps {
   /** Current live stage (falls back to move.stage server-fetched value). */
@@ -64,14 +88,29 @@ export interface OfficeTrackHeroProps {
   officeTierKey?: "essential" | "signature" | "priority" | null;
 }
 
+/** Palette shape shared by all sub-components. Priority = wine tokens,
+ *  Signature = green tokens, Essential = cream tokens (see OfficeTrackHero). */
+interface HeroPalette {
+  bg: string;
+  ink: string;
+  kicker: string;
+  muted: string;
+  border: string;
+  checkFill: string;
+  checkInkOnFill: string;
+  shadow?: string;
+}
+
 function StageRow({
   stage,
   isDone,
   isCurrent,
+  palette,
 }: {
   stage: TrackingStatus;
   isDone: boolean;
   isCurrent: boolean;
+  palette: HeroPalette;
 }) {
   const label = TRACKING_STATUS_LABELS[stage] ?? stage;
   return (
@@ -79,25 +118,25 @@ function StageRow({
       <div
         className="shrink-0 flex items-center justify-center w-6 h-6 rounded-full"
         style={{
-          background: isDone ? SAGE : "transparent",
-          border: `1.5px solid ${isDone ? SAGE : isCurrent ? ROSE : BORDER}`,
+          background: isDone ? palette.checkFill : "transparent",
+          border: `1.5px solid ${isDone ? palette.checkFill : isCurrent ? palette.kicker : palette.border}`,
         }}
       >
         {isDone ? (
-          <Check size={14} weight="bold" color={WINE} />
+          <Check size={14} weight="bold" color={palette.checkInkOnFill} />
         ) : isCurrent ? (
-          <Circle size={8} weight="fill" color={ROSE} />
+          <Circle size={8} weight="fill" color={palette.kicker} />
         ) : null}
       </div>
       <div className="min-w-0 flex-1">
         <p
           className="text-[13px] font-medium leading-tight"
-          style={{ color: isDone || isCurrent ? CREAM : MUTED }}
+          style={{ color: isDone || isCurrent ? palette.ink : palette.muted }}
         >
           {label}
         </p>
         {isCurrent && (
-          <p className="text-[10px] mt-0.5 tracking-wider uppercase font-bold" style={{ color: ROSE }}>
+          <p className="text-[10px] mt-0.5 tracking-wider uppercase font-bold" style={{ color: palette.kicker }}>
             In progress now
           </p>
         )}
@@ -112,12 +151,17 @@ function DayColumn({
   stages,
   currentStage,
   completedStages,
+  palette,
+  columnBg,
 }: {
   dayLabel: string;
   dayTitle: string;
   stages: TrackingStatus[];
   currentStage: string | null;
   completedStages: Set<string>;
+  palette: HeroPalette;
+  /** Inner column tint; slightly lifted from the hero background. */
+  columnBg: string;
 }) {
   const currentIdx = currentStage
     ? stages.findIndex((s) => s === currentStage)
@@ -126,19 +170,19 @@ function DayColumn({
     <div
       className="rounded-lg p-4"
       style={{
-        background: "rgba(249,237,228,0.04)",
-        border: `1px solid ${BORDER}`,
+        background: columnBg,
+        border: `1px solid ${palette.border}`,
       }}
     >
       <p
         className="text-[10px] font-bold tracking-[0.14em] uppercase mb-1"
-        style={{ color: ROSE }}
+        style={{ color: palette.kicker }}
       >
         {dayLabel}
       </p>
       <p
         className="text-[15px] font-semibold mb-3"
-        style={{ color: CREAM }}
+        style={{ color: palette.ink }}
       >
         {dayTitle}
       </p>
@@ -149,6 +193,7 @@ function DayColumn({
             stage={stage}
             isDone={completedStages.has(stage) || (currentIdx > -1 && idx < currentIdx)}
             isCurrent={stage === currentStage}
+            palette={palette}
           />
         ))}
       </div>
@@ -170,6 +215,8 @@ export function OfficeTrackHero({
   officeTierKey = null,
 }: OfficeTrackHeroProps) {
   const isPriority = officeTierKey === "priority";
+  const isSignature = officeTierKey === "signature";
+  const isEssential = officeTierKey === "essential";
   // Essential + Signature don't include an on-site PM (per
   // office-tier-definitions.ts). The client sees a coordinator, not a
   // project manager, on the hero + labels + KV rows.
@@ -182,7 +229,7 @@ export function OfficeTrackHero({
   const leadRoleLabel = isPriority ? "Project Manager" : "Coordinator";
   const heroHeadline = isPriority
     ? "Your relocation is in motion."
-    : officeTierKey === "signature"
+    : isSignature
       ? "Your relocation is booked."
       : "Your relocation is confirmed.";
   const heroLeadVerb = isPriority ? "is running this project" : "is coordinating this move";
@@ -190,6 +237,63 @@ export function OfficeTrackHero({
   const pmName = leadName;
   const pmPhone = leadPhone;
   const days = Math.max(1, Math.floor(officeDayCount ?? 1));
+
+  // Per-tier Day 1 / Day 2 stages + labels. Essential = walkthrough +
+  // IT documentation only (no Yugo-side packing). Signature = walkthrough
+  // + IT documentation + IT packing (Yugo packs IT hardware only).
+  // Priority = full pack (default constants). Day 2 for Essential and
+  // Signature drops the "setup" stage — the client owns setup / unpack.
+  const day1Stages = isEssential
+    ? OFFICE_MOVE_DAY_1_STAGES_ESSENTIAL
+    : isSignature
+      ? OFFICE_MOVE_DAY_1_STAGES_SIGNATURE
+      : OFFICE_MOVE_DAY_1_STAGES;
+  const day2Stages = isEssential
+    ? OFFICE_MOVE_DAY_2_STAGES_ESSENTIAL
+    : isSignature
+      ? OFFICE_MOVE_DAY_2_STAGES_SIGNATURE
+      : OFFICE_MOVE_DAY_2_STAGES;
+  const day1Label = isEssential
+    ? "Site prep"
+    : isSignature
+      ? "IT prep & pack"
+      : "Prep & pack";
+  const day2Label = isPriority ? "Move & set up" : "Move day";
+
+  // Per-tier palette. Priority → wine premium; Signature → deep green
+  // (mirrors residential Signature quote page); Essential → cream that
+  // sits inside the same rhythm as the OfficeCard tokens below the hero.
+  const palette = isSignature
+    ? {
+        bg: SIG_BG,
+        ink: SIG_CREAM,
+        kicker: SIG_KICKER,
+        muted: SIG_MUTED,
+        border: SIG_BORDER,
+        checkFill: "#3A5C40",
+        checkInkOnFill: SIG_CREAM,
+      }
+    : isEssential
+      ? {
+          bg: ESS_BG,
+          ink: ESS_INK,
+          kicker: ESS_KICKER,
+          muted: ESS_MUTED,
+          border: ESS_BORDER,
+          checkFill: ESS_INK,
+          checkInkOnFill: ESS_BG,
+          shadow:
+            "0 1px 2px rgba(44, 62, 45, 0.04), 0 12px 32px rgba(44, 62, 45, 0.05)",
+        }
+      : {
+          bg: WINE,
+          ink: CREAM,
+          kicker: ROSE,
+          muted: MUTED,
+          border: BORDER,
+          checkFill: SAGE,
+          checkInkOnFill: WINE,
+        };
 
   // Determine which stages have already been completed based on the
   // current stage's position in the full flow.
@@ -231,29 +335,51 @@ export function OfficeTrackHero({
     return `${startFmt} - ${endFmt}`;
   })();
 
+  // Inner column tint (Day 1 / Day 2 blocks + Share banner). Slightly
+  // lifted vs the hero background. On light shells we go slightly darker
+  // than the shell; on dark shells we go slightly lighter.
+  const columnBg = isEssential
+    ? "rgba(44, 62, 45, 0.03)"
+    : isSignature
+      ? "rgba(244, 250, 245, 0.04)"
+      : "rgba(249, 237, 228, 0.04)";
+  const shareBannerBg = isEssential
+    ? "rgba(44, 62, 45, 0.04)"
+    : isSignature
+      ? "rgba(244, 250, 245, 0.06)"
+      : "rgba(249, 237, 228, 0.06)";
+
   return (
     <div
       className="mb-6 rounded-lg overflow-hidden"
-      style={{ background: WINE, color: CREAM }}
+      style={{
+        background: palette.bg,
+        color: palette.ink,
+        border: isEssential ? `1px solid ${palette.border}` : undefined,
+        boxShadow: palette.shadow,
+      }}
     >
       {/* Hero header */}
       <div className="px-5 py-6 md:px-8 md:py-8">
         <div className="flex items-center gap-2 mb-3">
-          <Buildings size={14} color={ROSE} weight="bold" />
+          <Buildings size={14} color={palette.kicker} weight="bold" />
           <span
             className="text-[10px] font-bold tracking-[0.16em] uppercase"
-            style={{ color: ROSE }}
+            style={{ color: palette.kicker }}
           >
             Office Relocation
           </span>
         </div>
         <h1
           className="text-[22px] md:text-[26px] font-bold leading-tight mb-2"
-          style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
+          style={{
+            fontFamily: "'Instrument Serif', Georgia, serif",
+            color: palette.ink,
+          }}
         >
           {heroHeadline}
         </h1>
-        <p className="text-[13px] leading-relaxed" style={{ color: MUTED }}>
+        <p className="text-[13px] leading-relaxed" style={{ color: palette.muted }}>
           {leadName} {heroLeadVerb}. Below is the live status of every
           step, split across {days === 1 ? "the move day" : `${days} days`}.
         </p>
@@ -263,11 +389,11 @@ export function OfficeTrackHero({
           <div>
             <p
               className="text-[9px] font-bold tracking-widest uppercase mb-1"
-              style={{ color: ROSE }}
+              style={{ color: palette.kicker }}
             >
               {days > 1 ? "Dates" : "Date"}
             </p>
-            <p className="text-[13px] font-semibold" style={{ color: CREAM }}>
+            <p className="text-[13px] font-semibold" style={{ color: palette.ink }}>
               {dateRange}
             </p>
           </div>
@@ -275,11 +401,11 @@ export function OfficeTrackHero({
             <div>
               <p
                 className="text-[9px] font-bold tracking-widest uppercase mb-1"
-                style={{ color: ROSE }}
+                style={{ color: palette.kicker }}
               >
                 Team
               </p>
-              <p className="text-[13px] font-semibold" style={{ color: CREAM }}>
+              <p className="text-[13px] font-semibold" style={{ color: palette.ink }}>
                 {crewSize} crew
               </p>
             </div>
@@ -288,11 +414,11 @@ export function OfficeTrackHero({
             <div>
               <p
                 className="text-[9px] font-bold tracking-widest uppercase mb-1"
-                style={{ color: ROSE }}
+                style={{ color: palette.kicker }}
               >
                 Fleet
               </p>
-              <p className="text-[13px] font-semibold" style={{ color: CREAM }}>
+              <p className="text-[13px] font-semibold" style={{ color: palette.ink }}>
                 {fleetLabel}
               </p>
             </div>
@@ -300,18 +426,18 @@ export function OfficeTrackHero({
           <div>
             <p
               className="text-[9px] font-bold tracking-widest uppercase mb-1"
-              style={{ color: ROSE }}
+              style={{ color: palette.kicker }}
             >
               {leadRoleLabel}
             </p>
-            <p className="text-[13px] font-semibold" style={{ color: CREAM }}>
+            <p className="text-[13px] font-semibold" style={{ color: palette.ink }}>
               {leadName}
             </p>
             {leadPhone && (
               <a
                 href={`tel:+1${leadPhone.replace(/\D/g, "")}`}
                 className="text-[11px] underline underline-offset-2"
-                style={{ color: ROSE }}
+                style={{ color: palette.kicker }}
               >
                 {leadPhone}
               </a>
@@ -323,12 +449,12 @@ export function OfficeTrackHero({
           <div
             className="mt-6 rounded p-3 text-[12px] leading-relaxed"
             style={{
-              background: "rgba(249,237,228,0.06)",
-              border: `1px solid ${BORDER}`,
-              color: MUTED,
+              background: shareBannerBg,
+              border: `1px solid ${palette.border}`,
+              color: palette.muted,
             }}
           >
-            <strong style={{ color: CREAM }}>Share this link</strong> with
+            <strong style={{ color: palette.ink }}>Share this link</strong> with
             anyone on your team who needs visibility — building management, IT
             lead, office manager. Everyone sees the same live plan.
           </div>
@@ -341,28 +467,32 @@ export function OfficeTrackHero({
       {days >= 2 && (
         <div
           className="border-t px-5 py-6 md:px-8 md:py-8"
-          style={{ borderColor: BORDER }}
+          style={{ borderColor: palette.border }}
         >
           <p
             className="text-[10px] font-bold tracking-[0.16em] uppercase mb-4"
-            style={{ color: ROSE }}
+            style={{ color: palette.kicker }}
           >
             Move plan
           </p>
           <div className="grid md:grid-cols-2 gap-4">
             <DayColumn
               dayLabel="Day 1"
-              dayTitle="Prep & pack"
-              stages={OFFICE_MOVE_DAY_1_STAGES}
+              dayTitle={day1Label}
+              stages={day1Stages}
               currentStage={currentStage}
               completedStages={completedStages}
+              palette={palette}
+              columnBg={columnBg}
             />
             <DayColumn
               dayLabel="Day 2"
-              dayTitle="Move & set up"
-              stages={OFFICE_MOVE_DAY_2_STAGES}
+              dayTitle={day2Label}
+              stages={day2Stages}
               currentStage={currentStage}
               completedStages={completedStages}
+              palette={palette}
+              columnBg={columnBg}
             />
           </div>
         </div>
