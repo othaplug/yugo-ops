@@ -1314,6 +1314,25 @@ export default function TrackMoveClient({
     String(move.tier_selected || move.service_tier || "")
       .toLowerCase()
       .trim() === "estate";
+
+  // Booked office tier drives the hero shell + coordinator-vs-PM copy
+  // across the office track page. Only Priority ships an on-site PM
+  // (see office-tier-definitions.ts); Essential + Signature use the
+  // cream language + "Coordinator" label everywhere.
+  const officeTierKey: "essential" | "signature" | "priority" | null = (() => {
+    if (serviceType !== "office_move") return null;
+    const raw = String(move.tier_selected || move.service_tier || "")
+      .toLowerCase()
+      .trim();
+    if (raw === "essential" || raw === "signature" || raw === "priority") {
+      return raw;
+    }
+    return null;
+  })();
+  const isOfficePriorityTier = officeTierKey === "priority";
+  const officeLeadRoleLabel = isOfficePriorityTier
+    ? "Project Manager"
+    : "Coordinator";
   const estateInventoryWalkthroughDisclaimer =
     isEstateTier && estateUsesWalkthroughScopedInventory(move.move_size);
   const estateDayPlan = isEstateTier
@@ -1695,6 +1714,7 @@ export default function TrackMoveClient({
                   : (move.crew_size as number | null) ?? null
               }
               showShareBanner={true}
+              officeTierKey={officeTierKey}
             />
           )}
           {showPaymentSuccess && (
@@ -2868,7 +2888,7 @@ export default function TrackMoveClient({
                             wine={WINE}
                             roleLabel={
                               serviceType === "office_move"
-                                ? "Project Manager"
+                                ? officeLeadRoleLabel
                                 : "Coordinator"
                             }
                           />
@@ -4031,8 +4051,11 @@ export default function TrackMoveClient({
                       move.to_address ?? move.delivery_address ?? null
                     }
                     projectManagerName={
-                      officeProjectManagerName ?? coordinatorName ?? null
+                      isOfficePriorityTier
+                        ? officeProjectManagerName ?? coordinatorName ?? null
+                        : coordinatorName ?? null
                     }
+                    projectManagerRole={officeLeadRoleLabel}
                     companyName={null}
                   />
                 )}
@@ -4406,7 +4429,7 @@ export default function TrackMoveClient({
                       phone={coordinatorPhone}
                       forest={FOREST}
                       wine={WINE}
-                      roleLabel="Project Manager"
+                      roleLabel={officeLeadRoleLabel}
                     />
                   </div>
                 </div>
@@ -4593,7 +4616,7 @@ export default function TrackMoveClient({
                                 className="text-[13px] leading-relaxed mt-1.5"
                                 style={{ color: FOREST }}
                               >
-                                Your project manager reviews every change before it lands on the plan.
+                                {`Your ${officeLeadRoleLabel.toLowerCase()} reviews every change before it lands on the plan.`}
                               </p>
                             </>
                           ) : (

@@ -55,6 +55,13 @@ export interface OfficeTrackHeroProps {
   crewSize?: number | null;
   /** Public share message shown near the top ("share with your team"). */
   showShareBanner?: boolean;
+  /**
+   * Booked office tier. Priority renders the wine premium shell + PM
+   * language; Essential and Signature render a cream shell with
+   * coordinator-first copy (they don't include an on-site PM per
+   * office-tier-definitions.ts).
+   */
+  officeTierKey?: "essential" | "signature" | "priority" | null;
 }
 
 function StageRow({
@@ -160,9 +167,28 @@ export function OfficeTrackHero({
   fleetLabel,
   crewSize,
   showShareBanner = true,
+  officeTierKey = null,
 }: OfficeTrackHeroProps) {
-  const pmName = projectManagerName || coordinatorName || "Your project manager";
-  const pmPhone = projectManagerPhone || coordinatorPhone || null;
+  const isPriority = officeTierKey === "priority";
+  // Essential + Signature don't include an on-site PM (per
+  // office-tier-definitions.ts). The client sees a coordinator, not a
+  // project manager, on the hero + labels + KV rows.
+  const leadName = isPriority
+    ? projectManagerName || coordinatorName || "Your project manager"
+    : coordinatorName || projectManagerName || "Your coordinator";
+  const leadPhone = isPriority
+    ? projectManagerPhone || coordinatorPhone || null
+    : coordinatorPhone || projectManagerPhone || null;
+  const leadRoleLabel = isPriority ? "Project Manager" : "Coordinator";
+  const heroHeadline = isPriority
+    ? "Your relocation is in motion."
+    : officeTierKey === "signature"
+      ? "Your relocation is booked."
+      : "Your relocation is confirmed.";
+  const heroLeadVerb = isPriority ? "is running this project" : "is coordinating this move";
+  // Retained for downstream template calls (day-plan body text).
+  const pmName = leadName;
+  const pmPhone = leadPhone;
   const days = Math.max(1, Math.floor(officeDayCount ?? 1));
 
   // Determine which stages have already been completed based on the
@@ -225,10 +251,10 @@ export function OfficeTrackHero({
           className="text-[22px] md:text-[26px] font-bold leading-tight mb-2"
           style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
         >
-          Your relocation is in motion.
+          {heroHeadline}
         </h1>
         <p className="text-[13px] leading-relaxed" style={{ color: MUTED }}>
-          {pmName} is running this project. Below is the live status of every
+          {leadName} {heroLeadVerb}. Below is the live status of every
           step, split across {days === 1 ? "the move day" : `${days} days`}.
         </p>
 
@@ -276,18 +302,18 @@ export function OfficeTrackHero({
               className="text-[9px] font-bold tracking-widest uppercase mb-1"
               style={{ color: ROSE }}
             >
-              Project Manager
+              {leadRoleLabel}
             </p>
             <p className="text-[13px] font-semibold" style={{ color: CREAM }}>
-              {pmName}
+              {leadName}
             </p>
-            {pmPhone && (
+            {leadPhone && (
               <a
-                href={`tel:+1${pmPhone.replace(/\D/g, "")}`}
+                href={`tel:+1${leadPhone.replace(/\D/g, "")}`}
                 className="text-[11px] underline underline-offset-2"
                 style={{ color: ROSE }}
               >
-                {pmPhone}
+                {leadPhone}
               </a>
             )}
           </div>

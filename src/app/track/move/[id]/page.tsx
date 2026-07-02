@@ -21,10 +21,15 @@ export default async function TrackMovePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ token?: string; from?: string; payment?: string }>;
+  searchParams: Promise<{
+    token?: string;
+    from?: string;
+    payment?: string;
+    preview_tier?: string;
+  }>;
 }) {
   const slug = decodeURIComponent((await params).id?.trim() || "");
-  const { token, from, payment } = await searchParams;
+  const { token, from, payment, preview_tier } = await searchParams;
   const supabase = createAdminClient();
 
   const byUuid = isMoveIdUuid(slug);
@@ -34,6 +39,20 @@ export default async function TrackMovePage({
 
   if (error || !move) notFound();
   if (!verifyTrackToken("move", move.id, token || "")) notFound();
+
+  // Dev-only tier override so a Priority booking can be previewed as
+  // Essential / Signature without creating sample rows or touching real
+  // customer data. Gated on NODE_ENV so it can never leak to prod even
+  // if the URL is shared.
+  if (
+    process.env.NODE_ENV !== "production" &&
+    typeof preview_tier === "string"
+  ) {
+    const t = preview_tier.trim().toLowerCase();
+    if (["essential", "signature", "priority"].includes(t)) {
+      (move as { tier_selected?: string | null }).tier_selected = t;
+    }
+  }
 
   // Tracking pages never expire, completed moves show the permanent perks hub.
   // Clients bookmarking this URL years later still see their perks + referral code.
