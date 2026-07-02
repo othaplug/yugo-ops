@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { verifyTrackToken } from "@/lib/track-token";
+import { verifyTrackToken, signTrackToken } from "@/lib/track-token";
 import { SquareClient, SquareEnvironment } from "square";
 import { squarePaymentErrorsToMessage, squareThrownErrorMessage } from "@/lib/square-payment-errors";
 import { recordMovePaymentLedgerEntry } from "@/lib/payments/record-move-payment";
+import { sendEmail } from "@/lib/email/send";
+import { getEmailBaseUrl } from "@/lib/email-base-url";
 
 export async function POST(
   req: NextRequest,
@@ -139,6 +141,24 @@ export async function POST(
       settlementMethod: "client",
       taxExempt: true,
     });
+
+    // Record of payment email (the tip has no dedicated confirmation otherwise).
+    if (move.client_email) {
+      const trackingUrl = `${getEmailBaseUrl()}/track/move/${move.move_code ?? moveId}?token=${signTrackToken("move", moveId)}`;
+      sendEmail({
+        to: move.client_email,
+        subject: `Payment received, ${move.move_code || "your move"}`,
+        template: "payment-record",
+        data: {
+          clientName: move.client_name || "",
+          moveCode: move.move_code || moveId,
+          chargeLabel: "Crew tip",
+          amountCharged: amountCents / 100,
+          receiptUrl: tipReceiptUrl,
+          trackingUrl,
+        },
+      }).catch(() => {});
+    }
 
     return NextResponse.json({
       success: true,

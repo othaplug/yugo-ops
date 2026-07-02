@@ -67,6 +67,7 @@ export async function POST(
           sourceId: move.square_card_id,
           amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
           customerId: move.square_customer_id || undefined,
+          buyerEmailAddress: move.client_email || undefined,
           referenceId: String(move.move_code || moveId),
           note: `Walkthrough change request, ${String(cr.id)}, extras approved`,
           idempotencyKey: squareIdem("crew-cr-approve", requestId),

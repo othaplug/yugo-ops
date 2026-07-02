@@ -89,6 +89,7 @@ export async function GET(req: NextRequest) {
         sourceId: org.square_card_id,
         amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
         customerId: org.square_customer_id || undefined,
+        buyerEmailAddress: (org.billing_email || org.email) || undefined,
         referenceId: stmt.statement_number,
         note: `Yugo statement ${stmt.statement_number}, ${org.name}`,
         idempotencyKey: squareIdem("stmt-auto", stmt.id, new Date().toISOString().split("T")[0]),

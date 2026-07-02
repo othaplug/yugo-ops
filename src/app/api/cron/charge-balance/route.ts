@@ -100,6 +100,7 @@ export async function GET(req: NextRequest) {
         sourceId: move.square_card_id,
         amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
         customerId: move.square_customer_id || undefined,
+        buyerEmailAddress: move.client_email || undefined,
         referenceId: move.move_code || move.id,
         note: "Balance + processing fee, auto-charge",
         idempotencyKey: `ba-${shortId}-${dateStr}`,

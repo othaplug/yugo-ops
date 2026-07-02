@@ -1296,6 +1296,58 @@ export function balanceAutoChargeReceiptEmail(
   `);
 }
 
+export interface PaymentRecordData {
+  clientName: string;
+  moveCode: string;
+  /** What the charge was for, e.g. "Crew tip", "Additional charge". */
+  chargeLabel: string;
+  amountCharged: number;
+  /** Square receipt link for this transaction, when available. */
+  receiptUrl?: string | null;
+  trackingUrl: string;
+}
+
+/**
+ * Generic per-charge record of payment. Used for charges that don't have their
+ * own dedicated email (tips, approved additional fees). Links to the official
+ * Square receipt for the transaction.
+ */
+export function paymentRecordEmail(d: PaymentRecordData): string {
+  const receiptCta = d.receiptUrl
+    ? ctaButton(d.receiptUrl, "View Square receipt")
+    : "";
+  return emailLayout(`
+    <div style="${SUCCESS_EYEBROW_UPPER}">Payment received</div>
+    <h1 style="${EQ_H1}">Thank you${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <p style="${EQ_LEAD}">
+      This confirms your payment for <strong style="color:${EMAIL_FOREST}">${d.chargeLabel}</strong> on move <strong style="color:${EMAIL_FOREST}">${d.moveCode}</strong>.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:20px;font-family:${PREMIUM_FONT}">
+      <tr>
+        <td style="padding:0;background-color:${EQ_CREME_HEAD};">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;width:100%;">
+            <tr>
+              <td style="${CONTRACT_HDR_SPLIT}">Description</td>
+              <td align="right" style="${CONTRACT_HDR_SPLIT}">Amount</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      ${emailNestedKvRow({
+        borderTop: `1px solid ${CONTRACT_DIVIDER_STRONG}`,
+        labelStyle: `${CONTRACT_TOTAL_LABEL};border-top:0;padding:10px 0 10px 14px`,
+        valueStyle: `padding:10px 14px 10px 10px;font-size:15px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0;font-family:${PREMIUM_FONT};text-align:right;vertical-align:middle`,
+        label: d.chargeLabel,
+        valueHtml: formatCurrencyEmail(d.amountCharged),
+      })}
+    </table>
+
+    ${receiptCta}
+    ${ctaButton(d.trackingUrl, "View move details")}
+  `);
+}
+
 export interface BalanceChargeFailedClientData {
   clientName: string;
   moveCode: string;

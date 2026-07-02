@@ -48,6 +48,8 @@ import {
   BalanceReminder48hrData,
   balanceAutoChargeReceiptEmail,
   BalanceAutoChargeReceiptData,
+  paymentRecordEmail,
+  PaymentRecordData,
   balanceChargeFailedClientEmail,
   BalanceChargeFailedClientData,
   balanceChargeFailedAdminEmail,
@@ -111,6 +113,7 @@ export type TemplateName =
   | "balance-reminder-72hr"
   | "balance-reminder-48hr"
   | "balance-auto-charge-receipt"
+  | "payment-record"
   | "balance-charge-failed-client"
   | "balance-charge-failed-admin"
   | "review-request-essentials"
@@ -166,6 +169,7 @@ type TemplateDataMap = {
   "balance-reminder-72hr": BalanceReminder72hrData;
   "balance-reminder-48hr": BalanceReminder48hrData;
   "balance-auto-charge-receipt": BalanceAutoChargeReceiptData;
+  "payment-record": PaymentRecordData;
   "balance-charge-failed-client": BalanceChargeFailedClientData;
   "balance-charge-failed-admin": BalanceChargeFailedAdminData;
   "review-request-essentials": ReviewRequestTierData;
@@ -278,6 +282,7 @@ function renderTemplate(template: string, data: unknown): string {
     "balance-reminder-72hr": balanceReminder72hrEmail,
     "balance-reminder-48hr": balanceReminder48hrEmail,
     "balance-auto-charge-receipt": balanceAutoChargeReceiptEmail,
+    "payment-record": paymentRecordEmail,
     "balance-charge-failed-client": balanceChargeFailedClientEmail,
     "balance-charge-failed-admin": balanceChargeFailedAdminEmail,
     "review-request-essential": reviewRequestCuratedEmail,
