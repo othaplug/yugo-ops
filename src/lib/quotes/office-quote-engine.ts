@@ -317,6 +317,10 @@ export function calcOfficeTiers(
     office_volume_score: labour.volumeScore,
     office_crew: labour.crew,
     office_trucks: labour.trucks,
+    /** Truck size ("16ft" small offices, "20ft" medium/large). Consumed
+     *  by the generate route to stamp moves.truck_primary so the fleet
+     *  display scales with volume instead of defaulting to 16ft. */
+    office_truck_size: labour.truckSize,
     office_unit_count: labour.unitCount,
     office_it_item_count: labour.itItemCount,
     office_move_labour_manhours: r2(moveLabourManHours),

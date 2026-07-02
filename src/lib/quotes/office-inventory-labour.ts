@@ -62,6 +62,18 @@ function trucksFromCrew(crew: number): number {
   return Math.min(5, Math.max(1, Math.round(crew / 2.5)));
 }
 
+/**
+ * Truck SIZE from total volumeScore. Small offices ship on 16ft; medium
+ * and large offices get 20ft (Yugo's biggest commercial box). Bigger
+ * volumes still cap the vehicle size at 20ft — the model adds MORE 20ft
+ * trucks via trucksFromCrew() rather than a single monster truck.
+ *
+ * MV-30348 (volume 306) landed as "large" → 2 × 20ft under this model.
+ */
+function truckSizeFromVolume(volumeScore: number): "16ft" | "20ft" {
+  return volumeScore >= 150 ? "20ft" : "16ft";
+}
+
 export interface OfficeInventoryLine {
   slug: string;
   quantity: number;
@@ -77,6 +89,8 @@ export interface OfficeLabourEstimate {
   volumeScore: number;
   crew: number;
   trucks: number;
+  /** Truck SIZE per unit ("16ft" small offices, "20ft" medium/large). */
+  truckSize: "16ft" | "20ft";
   /** Man-hour buckets (totals across the job). */
   handlingManHours: number;
   transportManHours: number;
@@ -142,6 +156,7 @@ export function estimateOfficeLabour(
   // Heavy two-person items present → never run a thin crew.
   if (twoPersonPresent) crew = Math.max(crew, 4);
   const trucks = trucksFromCrew(crew);
+  const truckSize = truckSizeFromVolume(volumeScore);
 
   const moveBase = handlingManHours + transportManHours; // billed on every tier
   const perTierManHours: Record<OfficeTierKey, number> = {
@@ -173,6 +188,7 @@ export function estimateOfficeLabour(
     volumeScore: round1(volumeScore),
     crew,
     trucks,
+    truckSize,
     handlingManHours: round1(handlingManHours),
     transportManHours: round1(transportManHours),
     itPackManHours: round1(itPackManHours),

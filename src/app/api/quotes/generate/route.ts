@@ -6158,7 +6158,11 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       truck_primary:
         svcType === "local_move" && residentialPricedTruck && residentialPricedTruck !== "none"
           ? residentialPricedTruck
-          : truckResult.primary?.vehicle_type ?? (labourTruckKey && TRUCK_DISPLAY[labourTruckKey] ? labourTruckKey : null),
+          : svcType === "office_move" &&
+              typeof (factors as Record<string, unknown>)?.office_truck_size ===
+                "string"
+            ? String((factors as Record<string, unknown>).office_truck_size)
+            : truckResult.primary?.vehicle_type ?? (labourTruckKey && TRUCK_DISPLAY[labourTruckKey] ? labourTruckKey : null),
       truck_secondary: truckResult.secondary?.vehicle_type ?? null,
       // Single-item is non-tiered — never stamp a residential tier on it (was
       // defaulting to 'signature', which then leaked into confirmation emails).
