@@ -1533,6 +1533,10 @@ export default function QuoteFormClient({
   // Office fields
   const [sqft, setSqft] = useState("");
   const [wsCount, setWsCount] = useState("");
+  // Company name — personalizes hero, welcome guide, and email copy
+  // ("Ataccama's Priority relocation" instead of "your Priority
+  // relocation"). Persists to factors.company_name.
+  const [companyName, setCompanyName] = useState("");
   const [hasIt, setHasIt] = useState(false);
   const [hasConf, setHasConf] = useState(false);
   const [hasReception, setHasReception] = useState(false);
@@ -3083,6 +3087,8 @@ export default function QuoteFormClient({
 
         // Office-move restoration
         if (nextService === "office_move") {
+          const co = cStr(fa.company_name);
+          if (co) setCompanyName(co);
           const sq = faNum("square_footage");
           if (sq != null && sq > 0) setSqft(String(sq));
           const ws = faNum("workstation_count");
@@ -4877,6 +4883,7 @@ export default function QuoteFormClient({
         base.crating_pieces = cratingItems;
       }
       if (serviceType === "office_move") {
+        base.company_name = companyName.trim() || undefined;
         base.square_footage = Number(sqft) || undefined;
         base.workstation_count = Number(wsCount) || undefined;
         base.office_desks_count = officeDesks.trim()
@@ -8728,6 +8735,19 @@ export default function QuoteFormClient({
 
               {serviceType === "office_move" && (
                 <div className="col-span-full space-y-3">
+                  {/* Company name — personalizes hero, welcome guide, email
+                      and SMS ("Ataccama's Priority relocation"). Persists to
+                      factors.company_name so booking → move-create carries it
+                      through. */}
+                  <Field label="Company name">
+                    <input
+                      type="text"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="e.g. Ataccama"
+                      className={fieldInput}
+                    />
+                  </Field>
                   {/* The inventory-driven OfficeInventoryInput is the single
                       office scope input. The legacy workstation-day
                       OfficeMoveScopeSection was removed — crew, trucks, days,

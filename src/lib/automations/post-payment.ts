@@ -640,8 +640,13 @@ export async function runPostPaymentActions(
           welcomePackageUrl,
           addonLines: resolvedAddonLines.length > 0 ? resolvedAddonLines : undefined,
           officeDayCount,
-          projectManagerName,
-          projectManagerPhone,
+          // PM defaults to coordinator until a distinct PM is captured
+          // via crew assignment; phone always falls back to the shared
+          // office line so the client never sees a blank contact row.
+          projectManagerName:
+            projectManagerName ??
+            ((move.coordinator_name as string) || null),
+          projectManagerPhone: projectManagerPhone ?? "(647) 370-4525",
         };
 
         // Priority + office_move now goes to a tailored office

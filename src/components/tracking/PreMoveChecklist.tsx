@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { QUOTE_EYEBROW_CLASS } from "@/app/quote/[quoteId]/quote-shared";
 import {
   PRE_MOVE_CHECKLIST,
+  PRE_MOVE_OFFICE_CHECKLIST,
   type ChecklistItem,
 } from "@/lib/pre-move-checklist";
 
@@ -17,8 +18,14 @@ interface Props {
   crewName?: string;
   arrivalWindow?: string;
   moveDateStr?: string;
-  /** Delivery / logistics jobs: swap “move” wording for prep copy. */
-  copyVariant?: "move" | "delivery";
+  /**
+   * "delivery" swaps "move" wording for prep copy on logistics jobs.
+   * "office" swaps the entire checklist to office-relocation prep
+   * (COI, freight elevator, IT power-down, floor plan, employees).
+   */
+  copyVariant?: "move" | "delivery" | "office";
+  /** Optional PM name for office variant crew-info line. */
+  projectManagerName?: string | null;
 }
 
 function CheckboxGlyph({
@@ -65,7 +72,9 @@ export default function PreMoveChecklist({
   arrivalWindow,
   moveDateStr,
   copyVariant = "move",
+  projectManagerName,
 }: Props) {
+  const isOffice = copyVariant === "office";
   const [checked, setChecked] = useState<Record<string, boolean>>(
     initialChecked || {},
   );
@@ -92,7 +101,8 @@ export default function PreMoveChecklist({
     [checked, moveId, token],
   );
 
-  const items = PRE_MOVE_CHECKLIST.map((item) => {
+  const source = isOffice ? PRE_MOVE_OFFICE_CHECKLIST : PRE_MOVE_CHECKLIST;
+  const items = source.map((item) => {
     let out = item;
     if (copyVariant === "delivery") {
       if (item.id === "appliances") {
@@ -114,6 +124,16 @@ export default function PreMoveChecklist({
         detail: [crewName, arrivalWindow].filter(Boolean).join(" · "),
       };
     }
+    // Office: pm_intro line inherits the same "who's running your job"
+    // treatment that crew_info gets on residential.
+    if (out.id === "pm_intro" && (projectManagerName || arrivalWindow)) {
+      return {
+        ...out,
+        detail: [projectManagerName, arrivalWindow]
+          .filter(Boolean)
+          .join(" · "),
+      };
+    }
     return out;
   });
 
@@ -129,7 +149,9 @@ export default function PreMoveChecklist({
       })
     : copyVariant === "delivery"
       ? "delivery day"
-      : "move day";
+      : isOffice
+        ? "move week"
+        : "move day";
 
   return (
     <div className="rounded-2xl border border-[var(--brd)]/40 overflow-hidden">
@@ -147,12 +169,18 @@ export default function PreMoveChecklist({
             className={`${QUOTE_EYEBROW_CLASS} mb-1`}
             style={{ color: "#2C3E2D" }}
           >
-            {copyVariant === "delivery" ? "Delivery Day Prep" : "Move Day Prep"}
+            {copyVariant === "delivery"
+              ? "Delivery Day Prep"
+              : isOffice
+                ? "Relocation Prep"
+                : "Move Day Prep"}
           </p>
           <h3 className="text-[17px] font-bold text-[var(--tx)]">
             {copyVariant === "delivery"
               ? "Get Ready for Your Delivery"
-              : "Get Ready for Your Move"}
+              : isOffice
+                ? "Get Ready for Move Week"
+                : "Get Ready for Your Move"}
           </h3>
           <p className="text-[12px] text-[var(--tx3)] mt-0.5">
             Complete before {moveDate}

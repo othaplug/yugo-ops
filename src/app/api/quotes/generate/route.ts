@@ -183,6 +183,10 @@ interface QuoteInput {
   assembly_override?: boolean | null;
   assembly_minutes?: number | null;
   // Office
+  /** Company name — personalizes hero, welcome guide, and email copy.
+   *  Persists to factors.company_name and (on booking) moves.company_name
+   *  via createMoveFromQuote. */
+  company_name?: string;
   square_footage?: number;
   workstation_count?: number;
   has_it_equipment?: boolean;
@@ -2498,6 +2502,9 @@ async function calcOffice(
       office_estimated_ops_cost: Math.round(estCost),
       office_estimated_margin_pct: marginPct,
       square_footage: input.square_footage ?? null,
+      company_name:
+        (typeof input.company_name === "string" && input.company_name.trim()) ||
+        null,
     },
   };
 }

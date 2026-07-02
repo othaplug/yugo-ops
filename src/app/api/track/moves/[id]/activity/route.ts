@@ -77,7 +77,7 @@ export async function GET(
     admin
       .from("moves")
       .select(
-        "id, status, quote_id, completed_at, payment_marked_paid_at, deposit_paid_at, balance_paid_at, created_at",
+        "id, status, quote_id, service_type, completed_at, payment_marked_paid_at, deposit_paid_at, balance_paid_at, created_at",
       )
       .eq("id", moveId)
       .maybeSingle(),
@@ -126,11 +126,14 @@ export async function GET(
   }
   const journeyStart = quoteAcceptedAt ?? (move.created_at as string | null);
   if (journeyStart) {
+    const isOffice = String(move.service_type ?? "").toLowerCase() === "office_move";
     events.push({
       id: `accept-${moveId}`,
       at: journeyStart,
       title: "Quote accepted",
-      detail: "Your move is booked.",
+      detail: isOffice
+        ? "Your relocation is booked."
+        : "Your move is booked.",
       kind: "quote_accepted",
     });
   }

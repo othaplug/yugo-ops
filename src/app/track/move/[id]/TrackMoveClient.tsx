@@ -1653,11 +1653,23 @@ export default function TrackMoveClient({
             <OfficeTrackHero
               currentStage={liveStage ?? move.stage ?? null}
               officeDayCount={officeDayCount}
-              moveDate={move.move_date ?? null}
+              // scheduled_date is the authoritative booking date once the
+              // move is created — move.move_date can be null on booked
+              // office moves and produced the "DATES: To be confirmed" bug.
+              moveDate={
+                (move as { scheduled_date?: string | null }).scheduled_date ??
+                move.move_date ??
+                null
+              }
               coordinatorName={coordinatorName}
               coordinatorPhone={coordinatorPhone}
-              projectManagerName={officeProjectManagerName}
-              projectManagerPhone={officeProjectManagerPhone}
+              // PM defaults to coordinator when no distinct PM has been
+              // captured yet (post-book crew assignment can override). The
+              // office line is always the shared support number.
+              projectManagerName={officeProjectManagerName ?? coordinatorName}
+              projectManagerPhone={
+                officeProjectManagerPhone ?? "(647) 370-4525"
+              }
               fleetLabel={
                 officeTruckCount && officeTruckCount > 1
                   ? `${officeTruckCount} × ${move.truck_primary ?? "16ft"}`
@@ -1838,7 +1850,12 @@ export default function TrackMoveClient({
             </div>
           )}
 
-          {/* Client header */}
+          {/* Client header — suppressed for office_move: OfficeTrackHero
+              (mounted at top of <main>) is the sole hero for office
+              relocations. Rendering both produced the "double hero" bug
+              (screenshot: OfficeTrackHero + "Good afternoon · COMMERCIAL
+              MOVE · CONFIRMED"). */}
+          {serviceType !== "office_move" && (
           <div className="flex items-center justify-between gap-3 mb-2">
             <div className="min-w-0">
               <h1
@@ -1873,7 +1890,7 @@ export default function TrackMoveClient({
                       : serviceType === "single_item"
                       ? "Delivery"
                       : isOffice
-                        ? "Commercial Move"
+                        ? "Office Relocation"
                         : isWhiteGlove
                           ? "White Glove Service"
                           : isSpecialty
@@ -1918,6 +1935,7 @@ export default function TrackMoveClient({
               {getStatusLabel(statusVal)}
             </span>
           </div>
+          )}
 
           {/* ── White Glove: premium, client-facing scope card (no crew/tier ops) ── */}
           {isWhiteGlove && (() => {
@@ -2025,8 +2043,11 @@ export default function TrackMoveClient({
 
           {/* Tier scope briefing, tells crew what is and isn't included.
               Single-item moves are non-tiered, so they never show a tier scope
-              card (it would mislabel them "Essential"). */}
-          {!isNonMoveProductTrack && !isWhiteGlove && !isSingleItem && (() => {
+              card (it would mislabel them "Essential").
+              Office moves get their scope from the OfficeTrackHero + welcome
+              guide, not this residential-shaped ladder — rendering it produced
+              the "ESSENTIAL, CREW SCOPE" bug on Priority office bookings. */}
+          {!isNonMoveProductTrack && !isWhiteGlove && !isSingleItem && serviceType !== "office_move" && (() => {
             const rawTier = move.tier_selected || move.tier || move.service_tier || "";
             const tierKey = normalizeTierKey(rawTier);
             const ops = getTierOps(tierKey);
@@ -2344,7 +2365,9 @@ export default function TrackMoveClient({
                         ? "days until delivery day"
                         : isNonMoveProductTrack
                           ? "days until move day (packing with bins)"
-                          : "days until move day"}
+                          : serviceType === "office_move"
+                            ? "days until your relocation"
+                            : "days until move day"}
                   </div>
                 </div>
               )}
@@ -2595,7 +2618,15 @@ export default function TrackMoveClient({
                                 >
                                   {shortAddress(stop.address)}
                                 </div>
-                                {formatAccessForDisplay(stop.access) ? (
+                                {/* Access line uses residential lift language
+                                    ("Elevator", "Stairs"). Office relocations
+                                    have building coordination (COI, freight
+                                    elevator, dock) handled by the project
+                                    manager, not the client — hide the line
+                                    entirely to avoid confusing residential
+                                    verbiage on commercial bookings. */}
+                                {serviceType !== "office_move" &&
+                                formatAccessForDisplay(stop.access) ? (
                                   <div
                                     className="text-[11px] mt-0.5 opacity-60"
                                     style={{ color: FOREST }}
@@ -2621,8 +2652,9 @@ export default function TrackMoveClient({
                                   move.to_address || move.delivery_address,
                                 )}
                               </div>
-                              {(move as { to_access?: string | null })
-                                .to_access &&
+                              {serviceType !== "office_move" &&
+                                (move as { to_access?: string | null })
+                                  .to_access &&
                                 formatAccessForDisplay(
                                   (move as { to_access?: string | null })
                                     .to_access,
@@ -4014,7 +4046,8 @@ export default function TrackMoveClient({
                     >
                       {shortAddress(move.to_address || move.delivery_address)}
                     </div>
-                    {formatAccessForDisplay(
+                    {serviceType !== "office_move" &&
+                    formatAccessForDisplay(
                       (move as { from_access?: string | null }).from_access,
                     ) ? (
                       <div
@@ -4292,8 +4325,18 @@ export default function TrackMoveClient({
                       }
                       arrivalWindow={arrivalWindow || undefined}
                       moveDateStr={move.scheduled_date || undefined}
+                      // Office bookings get a distinct commercial prep list
+                      // (COI, freight elevator, IT power-down, floor plan)
+                      // instead of the residential defrost/kids/jewelry list.
                       copyVariant={
-                        isLogisticsDeliveryTrack ? "delivery" : "move"
+                        serviceType === "office_move"
+                          ? "office"
+                          : isLogisticsDeliveryTrack
+                            ? "delivery"
+                            : "move"
+                      }
+                      projectManagerName={
+                        officeProjectManagerName ?? coordinatorName ?? null
                       }
                     />
                   </div>
@@ -4706,8 +4749,12 @@ export default function TrackMoveClient({
               {/* Pack Like a Pro — moved to the bottom of the dashboard so
                   the actual move details (date, addresses, crew, timeline)
                   show above the fold. Collapsed by default; the client can
-                  expand if they actually want to shop for supplies. */}
-              {suppliesCatalog.length > 0 && !isNonMoveProductTrack && (
+                  expand if they actually want to shop for supplies.
+                  Office relocations are packed by our crew as part of the
+                  service, so no client-side supplies upsell. */}
+              {suppliesCatalog.length > 0 &&
+                !isNonMoveProductTrack &&
+                serviceType !== "office_move" && (
                 <details className="mt-6 rounded-2xl border border-[#2C3E2D]/15 bg-[#2C3E2D]/[0.04] [&_summary::-webkit-details-marker]:hidden">
                   <summary
                     className="cursor-pointer list-none px-4 py-3 flex items-center justify-between gap-3 select-none"

@@ -63,6 +63,15 @@ export default async function OfficeWelcomePage({
     if (typeof pmp === "string" && pmp.trim()) projectManagerPhone = pmp.trim();
     if (typeof co === "string" && co.trim()) companyName = co.trim();
   }
+  // PM defaults to the coordinator until a distinct PM is captured
+  // (post-book crew assignment can override). Phone always falls back to
+  // the shared office line so the client never sees a blank contact row.
+  if (!projectManagerName) {
+    projectManagerName = move.coordinator_name?.trim() || null;
+  }
+  if (!projectManagerPhone) {
+    projectManagerPhone = "(647) 370-4525";
+  }
 
   const trackUrl = buildPublicMoveTrackUrl({
     id: move.id,
