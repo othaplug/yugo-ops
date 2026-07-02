@@ -47,10 +47,12 @@ type PmMove = {
   final_amount?: number | null;
   from_address?: string | null;
   to_address?: string | null;
+  reason_code?: string | null;
+  holding_unit?: string | null;
 };
 
 const MOVE_SELECT =
-  "id, move_code, client_name, tenant_name, scheduled_date, total_price, amount, estimate, final_amount, from_address, to_address";
+  "id, move_code, client_name, tenant_name, scheduled_date, total_price, amount, estimate, final_amount, from_address, to_address, reason_code, holding_unit";
 
 const PM_MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -75,6 +77,61 @@ function pmPeriodDateLabel(iso: string): string {
   const month = PM_MONTHS[Number(m[2]) - 1] ?? "";
   const day = Number(m[3]);
   return `${month} ${day}${pmOrdinalSuffix(day)}`;
+}
+
+/** "2026-05-03" -> "May 3, 2026" for a PM line-item date. */
+function pmMoveDateLabel(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ""));
+  if (!m) return String(iso || "");
+  const month = PM_MONTHS[Number(m[2]) - 1] ?? "";
+  return `${month} ${Number(m[3])}, ${m[1]}`;
+}
+
+/**
+ * PM invoice line-item description, e.g.
+ *   "MV-30205 - 1304 WL (was at holding unit 1294 WL Holding Unit moving in to
+ *    1304 WL) May 3, 2026"
+ *
+ * The resident-unit label and holding unit are taken from the address /
+ * holding_unit text as entered; direction comes from reason_code.
+ */
+function pmLineItemDescription(m: PmMove): string {
+  const code = (m.move_code || "PM Move").trim();
+  const from = String(m.from_address || "").trim();
+  const to = String(m.to_address || "").trim();
+  const holding = String(m.holding_unit || "").trim();
+  const reason = String(m.reason_code || "").toLowerCase();
+  const dateLabel = m.scheduled_date
+    ? pmMoveDateLabel(String(m.scheduled_date))
+    : "";
+  const dateSuffix = dateLabel ? ` ${dateLabel}` : "";
+
+  let unitLabel: string;
+  let narrative: string;
+  if (reason.includes("move_in")) {
+    // Tenant returns from the holding unit into their resident unit.
+    unitLabel = to || from;
+    const holdingLabel = holding || from;
+    narrative =
+      holdingLabel && unitLabel
+        ? `was at holding unit ${holdingLabel} moving in to ${unitLabel}`
+        : "";
+  } else if (reason.includes("move_out")) {
+    // Tenant moves out of their resident unit into holding.
+    unitLabel = from || to;
+    const holdingLabel = holding || to;
+    narrative =
+      unitLabel && holdingLabel
+        ? `was moving out from ${unitLabel} to ${holdingLabel}`
+        : "";
+  } else {
+    // Suite transfer / turnover / bundle / emergency: generic from -> to.
+    unitLabel = to || from;
+    narrative = from && to ? `moving from ${from} to ${to}` : "";
+  }
+
+  const paren = narrative ? ` (${narrative})` : "";
+  return `${code} - ${unitLabel}${paren}${dateSuffix}`.trim();
 }
 
 /**
@@ -332,17 +389,12 @@ export async function generateAndSendPmInvoice(
       }
 
       const lineItems = moves.map((m) => {
-        const tenant =
-          (m.tenant_name && String(m.tenant_name).trim()) ||
-          (m.client_name && String(m.client_name).trim()) ||
-          "PM Move";
-        const dateLabel = String(m.scheduled_date || "").slice(0, 10);
         const subtotalCents = Math.round(moveRevenue(m) * 100);
         return {
-          name: `${m.move_code || "PM Move"} — ${tenant}${dateLabel ? ` (${dateLabel})` : ""}`,
+          name: pmLineItemDescription(m).slice(0, 500),
           quantity: "1",
           basePriceMoney: { amount: BigInt(subtotalCents), currency },
-          note: m.to_address ? `To: ${String(m.to_address).slice(0, 200)}` : undefined,
+          note: undefined,
         };
       });
       const hstCents = Math.round(totalAmount * 0.13 * 100);
