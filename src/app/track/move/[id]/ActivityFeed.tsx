@@ -124,24 +124,39 @@ export default function ActivityFeed({
   const visible = showAll ? events : events.slice(0, defaultLimit);
   const hasMore = events.length > defaultLimit;
 
+  const isOffice = serviceType === "office_move";
   return (
     <details
-      className="mt-6 rounded-2xl border bg-white [&_summary::-webkit-details-marker]:hidden"
-      style={{ borderColor: `${FOREST}1F` }}
-      open
+      className={`${isOffice ? "mt-4" : "mt-6"} rounded-2xl border [&_summary::-webkit-details-marker]:hidden`}
+      style={{
+        borderColor: isOffice
+          ? "rgba(44, 62, 45, 0.10)"
+          : `${FOREST}1F`,
+        backgroundColor: isOffice ? "#FFFDF8" : "#FFFFFF",
+        boxShadow: isOffice
+          ? "0 1px 2px rgba(44, 62, 45, 0.04), 0 12px 32px rgba(44, 62, 45, 0.05)"
+          : undefined,
+      }}
+      {...(isOffice ? {} : { open: true })}
     >
       <summary
-        className="cursor-pointer list-none px-4 py-3 flex items-center justify-between gap-3 select-none border-b"
+        className={`cursor-pointer list-none px-5 py-4 flex items-center justify-between gap-3 select-none ${isOffice ? "" : "border-b"}`}
         style={{ color: FOREST, borderColor: `${FOREST}10` }}
       >
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className="text-[9px] font-bold uppercase tracking-[0.12em]" style={{ color: GOLD }}>
+          <span
+            className={`text-[10px] font-bold uppercase tracking-[0.14em]`}
+            style={{
+              color: isOffice ? "rgba(44, 62, 45, 0.55)" : GOLD,
+            }}
+          >
             Activity
           </span>
-          <span className="text-[13px] font-semibold truncate">
-            {serviceType === "office_move"
-              ? "Your relocation timeline"
-              : "Your move timeline"}
+          <span
+            className={`${isOffice ? "text-[14px] font-semibold" : "text-[13px] font-semibold"} truncate`}
+            style={{ color: isOffice ? FOREST : undefined }}
+          >
+            {isOffice ? "Your relocation timeline" : "Your move timeline"}
           </span>
         </div>
         <span

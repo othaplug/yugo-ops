@@ -4,6 +4,13 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { OfficeTrackHero } from "./OfficeTrackHero";
+import OfficeReservationCard from "./OfficeReservationCard";
+import {
+  OFFICE_TOKENS,
+  OfficeCard,
+  OfficeCardDivider,
+  OfficeCardHeader,
+} from "./office-card-primitives";
 import { formatOfficeFleetLabel } from "@/lib/office/fleet-label";
 import Script from "next/script";
 import { getMoveCode, formatJobId } from "@/lib/move-code";
@@ -1734,7 +1741,10 @@ export default function TrackMoveClient({
             </div>
           )}
 
-          {moveProjectTrackSection}
+          {/* Office: OfficeTrackHero already renders the Move Plan +
+              Day 1 / Day 2 timeline. Suppress the residential project-
+              schedule section so the page doesn't repeat itself. */}
+          {serviceType !== "office_move" && moveProjectTrackSection}
 
           {/* ── Move-Day Crew Change Request Banner ── */}
           {crewChangeRequest && crewCrApprovalState === "idle" && (
@@ -2231,8 +2241,10 @@ export default function TrackMoveClient({
             );
           })()}
 
-          {/* Countdown / hero, hidden for completed moves; perks hub renders instead */}
-          {!isCompleted && (
+          {/* Countdown / hero, hidden for completed moves; perks hub renders instead.
+              Office relocations already show the phased "9 days" story
+              inside OfficeTrackHero, so this big counter would repeat it. */}
+          {!isCompleted && serviceType !== "office_move" && (
             <div className="py-3 sm:py-5 mb-2">
               {isCompleted ? (
                 <div className="text-center">
@@ -3988,7 +4000,45 @@ export default function TrackMoveClient({
 
               {/* Move Details */}
               <div className="space-y-4">
-                {scheduledDate && !(binOrder && isNonMoveProductTrack) ? (
+                {/* Office Priority: replace the residential DATE/FROM/TO
+                    strip with the OfficeReservationCard (Day 1 / Day 2
+                    rhythm, stacked Current/New Office blocks, PM sig). */}
+                {serviceType === "office_move" && (
+                  <OfficeReservationCard
+                    status={statusVal || "confirmed"}
+                    days={(() => {
+                      if (!moveProjectForTrack) {
+                        return move.scheduled_date
+                          ? [
+                              {
+                                date: String(move.scheduled_date).slice(0, 10),
+                                label: "Move day",
+                              },
+                            ]
+                          : [];
+                      }
+                      const flat = (moveProjectForTrack.phases ?? [])
+                        .flatMap((p) => (Array.isArray(p.days) ? p.days : []))
+                        .filter((d) => d.date);
+                      return flat.map((d) => ({
+                        date: String(d.date).slice(0, 10),
+                        label: (d.label ?? "").trim() || "Move day",
+                      }));
+                    })()}
+                    arrivalWindow={arrivalWindow}
+                    fromAddress={move.from_address ?? null}
+                    toAddress={
+                      move.to_address ?? move.delivery_address ?? null
+                    }
+                    projectManagerName={
+                      officeProjectManagerName ?? coordinatorName ?? null
+                    }
+                    companyName={null}
+                  />
+                )}
+                {scheduledDate &&
+                !(binOrder && isNonMoveProductTrack) &&
+                serviceType !== "office_move" ? (
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div
@@ -4051,7 +4101,10 @@ export default function TrackMoveClient({
                 .addr-line { animation: drawLine 0.35s ease 0.2s both; transform-origin: top; }
                 .addr-to   { animation: slideInTo 0.45s cubic-bezier(0.22,1,0.36,1) 0.3s both; }
               `}</style>
-                {!(binOrder && isNonMoveProductTrack) &&
+                {/* Residential FROM/TO stack — office renders the same
+                    info inside the OfficeReservationCard above. */}
+                {serviceType !== "office_move" &&
+                  !(binOrder && isNonMoveProductTrack) &&
                   (singleSiteBinRental ? (
                   <div
                     className="rounded-xl border px-3 py-3"
@@ -4155,17 +4208,49 @@ export default function TrackMoveClient({
                   </div>
                 ))}
 
-                <div className="flex flex-col gap-3 pt-1">
+                <div
+                  className={`${serviceType === "office_move" ? "" : "flex flex-col gap-3 pt-1"}`}
+                  style={
+                    serviceType === "office_move"
+                      ? {
+                          backgroundColor: OFFICE_TOKENS.cream,
+                          border: `1px solid ${OFFICE_TOKENS.creamLine}`,
+                          borderRadius: 16,
+                          padding: 20,
+                          boxShadow:
+                            "0 1px 2px rgba(44, 62, 45, 0.04), 0 12px 32px rgba(44, 62, 45, 0.05)",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 12,
+                        }
+                      : undefined
+                  }
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div
-                        className="text-[11px] font-semibold uppercase tracking-[0.08em] opacity-50"
-                        style={{ color: FOREST }}
+                        className={
+                          serviceType === "office_move"
+                            ? "text-[10px] font-bold uppercase tracking-[0.14em]"
+                            : "text-[11px] font-semibold uppercase tracking-[0.08em] opacity-50"
+                        }
+                        style={{
+                          color:
+                            serviceType === "office_move"
+                              ? OFFICE_TOKENS.creamSubtle
+                              : FOREST,
+                        }}
                       >
-                        Balance Due
+                        {serviceType === "office_move"
+                          ? "Balance"
+                          : "Balance Due"}
                       </div>
                       <div
-                        className="font-hero text-[20px] font-bold mt-0.5"
+                        className={
+                          serviceType === "office_move"
+                            ? "font-hero text-[26px] leading-tight mt-1"
+                            : "font-hero text-[20px] font-bold mt-0.5"
+                        }
                         style={{
                           color: totalBalance > 0 ? WINE : FOREST,
                         }}
@@ -4174,10 +4259,18 @@ export default function TrackMoveClient({
                       </div>
                       {totalBalance > 0 ? (
                         <div
-                          className="text-[11px] opacity-50"
-                          style={{ color: FOREST }}
+                          className="text-[11px] mt-1"
+                          style={{
+                            color:
+                              serviceType === "office_move"
+                                ? OFFICE_TOKENS.creamSubtle
+                                : FOREST,
+                            opacity: serviceType === "office_move" ? 1 : 0.5,
+                          }}
                         >
-                          All taxes included
+                          {serviceType === "office_move"
+                            ? "Due 48 hours before your relocation · all taxes included"
+                            : "All taxes included"}
                         </div>
                       ) : (
                         <div
@@ -4276,37 +4369,75 @@ export default function TrackMoveClient({
                 </div>
               </div>
 
-              {/* Crew */}
-              <div className="border-t border-[var(--brd)]/20 pt-5 mt-6">
-                <TrackYourCrewSection
-                  crewAssigned={crewAssigned}
-                  revealNames={revealCrewNames}
-                  memberNames={crewMembers}
-                  roles={crewRoles}
-                  crewTeamName={
-                    revealCrewNames && crewMembers.length > 0
-                      ? (move.assigned_crew_name as string | null | undefined) ?? crew?.name ?? undefined
-                      : undefined
-                  }
-                  forest={FOREST}
-                  mode={isNonMoveProductTrack ? "bins" : "move"}
-                />
-              </div>
-
-              {/* Coordinator (Project Manager for office Priority) */}
-              <div className="border-t border-[var(--brd)]/20 pt-4 mt-5">
-                <CoordinatorRow
-                  name={coordinatorName}
-                  phone={coordinatorPhone}
-                  forest={FOREST}
-                  wine={WINE}
-                  roleLabel={
-                    serviceType === "office_move"
-                      ? "Project Manager"
-                      : "Coordinator"
-                  }
-                />
-              </div>
+              {/* Crew + Contact — for office, one cream card holding
+                  the Your Team section and the PM contact row. Residential
+                  keeps the compact stacked layout. */}
+              {serviceType === "office_move" ? (
+                <div
+                  className="mt-4"
+                  style={{
+                    backgroundColor: OFFICE_TOKENS.cream,
+                    border: `1px solid ${OFFICE_TOKENS.creamLine}`,
+                    borderRadius: 16,
+                    padding: 20,
+                    boxShadow:
+                      "0 1px 2px rgba(44, 62, 45, 0.04), 0 12px 32px rgba(44, 62, 45, 0.05)",
+                  }}
+                >
+                  <TrackYourCrewSection
+                    crewAssigned={crewAssigned}
+                    revealNames={revealCrewNames}
+                    memberNames={crewMembers}
+                    roles={crewRoles}
+                    crewTeamName={
+                      revealCrewNames && crewMembers.length > 0
+                        ? (move.assigned_crew_name as string | null | undefined) ?? crew?.name ?? undefined
+                        : undefined
+                    }
+                    forest={FOREST}
+                    mode={isNonMoveProductTrack ? "bins" : "move"}
+                  />
+                  <div
+                    className="mt-4 pt-4"
+                    style={{ borderTop: `1px solid ${OFFICE_TOKENS.creamLine}` }}
+                  >
+                    <CoordinatorRow
+                      name={coordinatorName}
+                      phone={coordinatorPhone}
+                      forest={FOREST}
+                      wine={WINE}
+                      roleLabel="Project Manager"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="border-t border-[var(--brd)]/20 pt-5 mt-6">
+                    <TrackYourCrewSection
+                      crewAssigned={crewAssigned}
+                      revealNames={revealCrewNames}
+                      memberNames={crewMembers}
+                      roles={crewRoles}
+                      crewTeamName={
+                        revealCrewNames && crewMembers.length > 0
+                          ? (move.assigned_crew_name as string | null | undefined) ?? crew?.name ?? undefined
+                          : undefined
+                      }
+                      forest={FOREST}
+                      mode={isNonMoveProductTrack ? "bins" : "move"}
+                    />
+                  </div>
+                  <div className="border-t border-[var(--brd)]/20 pt-4 mt-5">
+                    <CoordinatorRow
+                      name={coordinatorName}
+                      phone={coordinatorPhone}
+                      forest={FOREST}
+                      wine={WINE}
+                      roleLabel="Coordinator"
+                    />
+                  </div>
+                </>
+              )}
 
               {changeSubmitted && !isEstateTier && (
                 <div className="border-t border-[var(--brd)]/20 pt-4 mt-4">
@@ -4404,7 +4535,25 @@ export default function TrackMoveClient({
                   inventoryChangeFeatureOn &&
                   inventoryChangeItemWeights.length > 0) ||
                   !isEstateTier) && (
-                  <div className="pt-5 mt-3 space-y-3">
+                  <div
+                    className={
+                      serviceType === "office_move"
+                        ? "mt-4 space-y-3"
+                        : "pt-5 mt-3 space-y-3"
+                    }
+                    style={
+                      serviceType === "office_move"
+                        ? {
+                            backgroundColor: OFFICE_TOKENS.cream,
+                            border: `1px solid ${OFFICE_TOKENS.creamLine}`,
+                            borderRadius: 16,
+                            padding: 20,
+                            boxShadow:
+                              "0 1px 2px rgba(44, 62, 45, 0.04), 0 12px 32px rgba(44, 62, 45, 0.05)",
+                          }
+                        : undefined
+                    }
+                  >
                     {!isNonMoveProductTrack &&
                       inventoryChangeFeatureOn &&
                       inventoryChangeItemWeights.length > 0 && (
@@ -4432,6 +4581,21 @@ export default function TrackMoveClient({
                                 decided.
                               </p>
                             </div>
+                          ) : serviceType === "office_move" ? (
+                            <>
+                              <p
+                                className="text-[10px] font-bold uppercase tracking-[0.14em]"
+                                style={{ color: OFFICE_TOKENS.creamSubtle }}
+                              >
+                                Need to update your relocation?
+                              </p>
+                              <p
+                                className="text-[13px] leading-relaxed mt-1.5"
+                                style={{ color: FOREST }}
+                              >
+                                Your project manager reviews every change before it lands on the plan.
+                              </p>
+                            </>
                           ) : (
                             <>
                               <div
