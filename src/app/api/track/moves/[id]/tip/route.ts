@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { SquareClient, SquareEnvironment } from "square";
 import { squarePaymentErrorsToMessage, squareThrownErrorMessage } from "@/lib/square-payment-errors";
+import { recordMovePaymentLedgerEntry } from "@/lib/payments/record-move-payment";
 
 export async function POST(
   req: NextRequest,
@@ -54,7 +55,7 @@ export async function POST(
     const admin = createAdminClient();
     const { data: move, error: moveError } = await admin
       .from("moves")
-      .select("id, client_name, move_code, square_customer_id, square_card_id")
+      .select("id, client_name, client_email, move_code, square_customer_id, square_card_id")
       .eq("id", moveId)
       .single();
 
@@ -103,6 +104,7 @@ export async function POST(
       sourceId: cardId,
       amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
       customerId: customerId ?? undefined,
+      buyerEmailAddress: move.client_email || undefined,
       referenceId: moveId,
       note: `Tip – ${move.client_name || moveId}`,
       idempotencyKey,
@@ -122,6 +124,21 @@ export async function POST(
         { status: 500 }
       );
     }
+
+    // Ledger the tip so its Square receipt lands in the Files section. Tips are
+    // not HST-taxed, so record the full amount as pre-tax.
+    const tipReceiptUrl =
+      (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
+    await recordMovePaymentLedgerEntry(admin, {
+      moveId,
+      entryType: "tip",
+      label: "Crew tip",
+      amountInclusive: amountCents / 100,
+      squarePaymentId: paymentRes.payment.id,
+      squareReceiptUrl: tipReceiptUrl,
+      settlementMethod: "client",
+      taxExempt: true,
+    });
 
     return NextResponse.json({
       success: true,

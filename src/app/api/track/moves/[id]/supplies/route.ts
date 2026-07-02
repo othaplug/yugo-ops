@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { recordMovePaymentLedgerEntry } from "@/lib/payments/record-move-payment";
 import { verifyTrackToken } from "@/lib/track-token";
 import { squareClient } from "@/lib/square";
 import { getSquarePaymentConfig } from "@/lib/square-config";
@@ -175,11 +176,13 @@ export async function POST(
   }
 
   let squarePaymentId: string | undefined;
+  let suppliesReceiptUrl: string | null = null;
   try {
     const paymentRes = await squareClient.payments.create({
       sourceId: cardId,
       amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
       customerId: customerId ?? undefined,
+      buyerEmailAddress: move.client_email || undefined,
       referenceId: orderNumber,
       note: `Yugo supplies ${orderNumber} — ${move.client_name || moveId}`,
       idempotencyKey: `supplies-${orderNumber}`,
@@ -198,10 +201,23 @@ export async function POST(
         { status: 500 },
       );
     }
+    suppliesReceiptUrl =
+      (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
   } catch (err) {
     console.error("[supplies] payment failed:", err);
     return NextResponse.json({ error: squareThrownErrorMessage(err) }, { status: 500 });
   }
+
+  // Ledger the supplies charge so its Square receipt shows in the Files section.
+  await recordMovePaymentLedgerEntry(supabase, {
+    moveId,
+    entryType: "supplies",
+    label: "Moving supplies",
+    amountInclusive: amountCents / 100,
+    squarePaymentId,
+    squareReceiptUrl: suppliesReceiptUrl,
+    settlementMethod: "client",
+  });
 
   // ── Persist ──
   const { data: order, error: insertErr } = await supabase

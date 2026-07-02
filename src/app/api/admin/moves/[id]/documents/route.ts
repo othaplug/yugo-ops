@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
+import { buildLedgerReceiptDocs } from "@/lib/payments/ledger-receipt-docs";
 
 const DOC_TYPES = ["contract", "estimate", "invoice", "other"] as const;
 
@@ -89,10 +90,14 @@ export async function GET(
       }
     }
 
-    const allDocuments = [...autoDocs, ...withUrls];
     const squareReceiptUrl = (move as { square_receipt_url?: string | null } | null)?.square_receipt_url ?? null;
+    // Per-transaction Square receipts from the payment ledger, each labelled.
+    const receiptDocs = await buildLedgerReceiptDocs(admin, moveId, squareReceiptUrl);
+    const allDocuments = [...autoDocs, ...receiptDocs, ...withUrls];
 
-    return NextResponse.json({ documents: allDocuments, square_receipt_url: squareReceiptUrl });
+    // Receipts now come through `documents`; keep this null so the legacy
+    // single-receipt row in MoveFilesSection doesn't duplicate them.
+    return NextResponse.json({ documents: allDocuments, square_receipt_url: null });
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to fetch" },

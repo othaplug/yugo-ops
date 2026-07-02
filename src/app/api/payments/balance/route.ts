@@ -90,6 +90,7 @@ export async function POST(req: Request) {
       sourceId: paymentSourceId,
       amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
       customerId: move.square_customer_id || undefined,
+      buyerEmailAddress: move.client_email || undefined,
       referenceId: move.move_code || moveId,
       note: "Balance + processing fee, client payment",
       idempotencyKey: squareIdem("bal-pay", moveId),

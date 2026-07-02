@@ -65,6 +65,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       sourceId: move.square_card_id,
       amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
       customerId: move.square_customer_id || undefined,
+      buyerEmailAddress: move.client_email || undefined,
       referenceId: move.move_code || moveId,
       note: "Balance + processing fee, tracking page (card on file)",
       idempotencyKey: squareIdem("bal-track-card", moveId),

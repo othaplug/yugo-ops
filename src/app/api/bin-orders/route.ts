@@ -153,6 +153,7 @@ export async function POST(req: NextRequest) {
         sourceId: squareCardId ?? sourceId,
         amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
         customerId: squareCustomerId,
+        buyerEmailAddress: clientEmail || undefined,
         referenceId: orderNumber,
         note: `Yugo bin rental ${orderNumber}`,
         idempotencyKey: `bin-pay-${orderNumber}`,

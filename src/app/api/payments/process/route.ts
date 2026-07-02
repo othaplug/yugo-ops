@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createMoveFromQuote } from "@/lib/automations/create-move-from-quote";
 import { createDeliveryFromB2BQuote } from "@/lib/automations/create-delivery-from-b2b-quote";
 import { runPostPaymentActions, runPostPaymentActionsB2BDelivery } from "@/lib/automations/post-payment";
+import { recordMovePaymentLedgerEntry } from "@/lib/payments/record-move-payment";
 import {
   issueDeliveryTrackingTokens,
   sendB2BTrackingNotifications,
@@ -403,6 +404,7 @@ export async function POST(req: Request) {
           sourceId: paymentSourceId,
           amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
           customerId: squareCustomerId,
+          buyerEmailAddress: clientEmail || undefined,
           referenceId: quoteId,
           note:
             svc === "b2b_oneoff" || svc === "b2b_delivery"
@@ -636,6 +638,23 @@ export async function POST(req: Request) {
         });
         moveId = moveResult.moveId;
         moveCode = moveResult.moveCode;
+
+        // Record the deposit in the payment ledger so its Square receipt shows
+        // in the Files section alongside the later balance/adjustment receipts.
+        // (createMoveFromQuote only stamps moves.square_receipt_url, which the
+        // balance payment would otherwise overwrite.)
+        if (moveId && amount > 0) {
+          await recordMovePaymentLedgerEntry(supabase, {
+            moveId,
+            entryType: "deposit",
+            label: "Contract deposit",
+            amountInclusive: amount,
+            squarePaymentId: squarePaymentId ?? null,
+            squareReceiptUrl,
+            settlementMethod: "client",
+            dedupeByEntryType: true,
+          });
+        }
       }
 
       // ── 5. Update quote → accepted (only after successful move/delivery creation) ──

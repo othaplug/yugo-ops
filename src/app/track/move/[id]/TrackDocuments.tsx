@@ -218,12 +218,11 @@ export default function TrackDocuments({
               day: "numeric",
             })
           : doc.due_date || "";
-        const isPaid =
-          doc.status === "paid" || doc.title?.startsWith("Payment Receipt");
+        const isReceipt =
+          doc.type === "receipt" || doc.title?.startsWith("Payment Receipt");
+        const isPaid = doc.status === "paid" || isReceipt;
         const isSent =
-          doc.status === "sent" ||
-          (doc.status === "paid" &&
-            !doc.title?.startsWith("Payment Receipt"));
+          doc.status === "sent" || (doc.status === "paid" && !isReceipt);
         return (
           <div
             key={doc.id}

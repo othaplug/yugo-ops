@@ -102,6 +102,7 @@ export async function POST(
       sourceId,
       amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
       ...(squareCustomerId ? { customerId: squareCustomerId } : {}),
+      buyerEmailAddress: partnerEmail || undefined,
       referenceId: statement.statement_number,
       note: `Yugo statement ${statement.statement_number}`,
       idempotencyKey: `stmt-pay-${statement.id}`,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { generateMovePDFs } from "@/lib/documents/generateMovePDFs";
+import { buildLedgerReceiptDocs } from "@/lib/payments/ledger-receipt-docs";
 
 export async function GET(
   req: NextRequest,
@@ -92,12 +93,18 @@ export async function GET(
     if (receiptSigned.data?.signedUrl) {
       autoDocs.push({ id: "receipt-pdf", type: "document", title: `Payment Receipt, ${moveCode}.pdf`, view_url: `/api/track/moves/${moveId}/documents/receipt${tokenParam}`, external_url: null, created_at: new Date().toISOString() });
     }
-    const allDocuments = [...autoDocs, ...docsWithUrls];
-
+    // Per-transaction Square receipts from the payment ledger (deposit,
+    // balance, tips, supplies, adjustments) — each a labelled row linking to
+    // its own Square receipt. Falls back to the single moves.square_receipt_url
+    // for legacy moves that predate the ledger.
     const squareReceiptUrl = (move as { square_receipt_url?: string | null } | null)?.square_receipt_url ?? null;
+    const receiptDocs = await buildLedgerReceiptDocs(admin, moveId, squareReceiptUrl);
+    const allDocuments = [...autoDocs, ...receiptDocs, ...docsWithUrls];
 
     return NextResponse.json({
-      square_receipt_url: squareReceiptUrl,
+      // Receipts now come through `documents` (one per transaction); keep this
+      // null so the legacy single-receipt block doesn't duplicate them.
+      square_receipt_url: null,
       invoices: invoices.map((i) => ({
         id: i.id,
         type: "invoice",

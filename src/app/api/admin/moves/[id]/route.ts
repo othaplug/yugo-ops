@@ -312,6 +312,7 @@ export async function PATCH(
           sourceId: resolvedCardId,
           amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
           customerId: move.square_customer_id || undefined,
+          buyerEmailAddress: move.client_email || undefined,
           referenceId: move.move_code || id,
           note: `Balance payment, manual charge by admin`,
           idempotencyKey: `bal-m-${id}`,
