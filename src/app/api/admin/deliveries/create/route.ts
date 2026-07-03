@@ -263,8 +263,31 @@ export async function POST(req: NextRequest) {
     const crewIdForSnap = insertPayload.crew_id as string | null;
     if (crewIdForSnap) {
       const snap = await fetchCrewAssignmentSnapshot(admin, crewIdForSnap);
-      insertPayload.assigned_members = snap.assigned_members;
       insertPayload.assigned_crew_name = snap.assigned_crew_name;
+      // Explicit subset support (2026-06-30): mirror the PATCH endpoint
+      // ([id]/route.ts:110–124). If the admin form (now or in a future
+      // iteration) posts `assigned_members` with a hand-picked subset,
+      // filter it against the crew roster and use it directly. Falls
+      // back to the full-roster snapshot only when no subset is passed.
+      // Old behaviour unconditionally snapshotted the full roster on
+      // create — so a coordinator's chosen 2-of-5 subset became the
+      // whole 5-person crew the moment the delivery persisted, and the
+      // crew modal on the detail page had to re-do the work.
+      const rawMembers = (body as { assigned_members?: unknown }).assigned_members;
+      if (Array.isArray(rawMembers) && rawMembers.length > 0) {
+        const rosterSet = new Set(snap.assigned_members);
+        const picked = rawMembers
+          .filter(
+            (m): m is string =>
+              typeof m === "string" && m.trim().length > 0 && rosterSet.has(m.trim()),
+          )
+          .map((m) => m.trim());
+        const deduped = [...new Set(picked)];
+        insertPayload.assigned_members =
+          deduped.length > 0 ? deduped : snap.assigned_members;
+      } else {
+        insertPayload.assigned_members = snap.assigned_members;
+      }
     }
 
     const { data: created, error: dbError } = await admin

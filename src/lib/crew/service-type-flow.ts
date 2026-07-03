@@ -9,13 +9,30 @@ import { normalizeCrewServiceCategory } from "./crew-service-category";
 export { normalizeCrewServiceCategory } from "./crew-service-category";
 
 /**
- * B2B delivery: 5-step hands-free flow. At-pickup absorbs loading;
- * at-drop-off absorbs unloading. Photos still tagged per stage under each work
- * step.
+ * B2B delivery: 7-step flow with explicit inventory + loading checkpoints
+ * (revised 2026-06-30 after operator report). The prior 5-step "hands-
+ * free" design collapsed inventory + loading into `arrived_at_pickup`
+ * and unloading into `arrived_at_destination`, which meant:
+ *   - Crew had no auto-prompt to perform the inventory walkthrough at
+ *     the pickup — the step existed as a label in the TRACKING_STATUS
+ *     enum but wasn't wired into the B2B flow.
+ *   - After inventory the crew tapped "start loading" expecting a
+ *     progression, but the next step was `en_route_to_destination` and
+ *     the app re-prompted the same inventory checkpoint they had just
+ *     completed. The delivery status appeared stuck at
+ *     `arrived_at_pickup` even though crew was actively loading.
+ *
+ * Now: arrived_at_pickup → inventory_check → loading →
+ * en_route_to_destination. The inventory step gates loading (crew
+ * documents item conditions before physical handling starts) and the
+ * loading checkpoint gives a real "we're actively loading now" state
+ * that the client-side tracking + dispatch view can surface honestly.
  */
 export const DELIVERY_B2B_STATUS_FLOW: TrackingStatus[] = [
   "en_route_to_pickup",
   "arrived_at_pickup",
+  "inventory_check",
+  "loading",
   "en_route_to_destination",
   "arrived_at_destination",
   "completed",
