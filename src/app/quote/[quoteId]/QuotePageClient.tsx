@@ -410,6 +410,21 @@ export default function QuotePageClient({
    */
   const isWhiteGlove = quote.service_type === "white_glove";
   /**
+   * Single-item and specialty jobs are premium standalone hauls where a client
+   * might be shipping a $30k painting or a $50k antique. They get the same
+   * rich default coverage + rider ladder as White Glove (Standard Protection
+   * $5/lb up to $30k, plus $50k / $100k upgrade riders) so the Protection
+   * section actually reassures instead of showing a token $0.60/lb line.
+   */
+  const isPremiumStandaloneItem =
+    quote.service_type === "single_item" ||
+    quote.service_type === "specialty";
+  /**
+   * Surfaces that use the White-Glove-style protection presentation:
+   * Standard Protection default + $50k / $100k rider ladder.
+   */
+  const usesPremiumProtection = isWhiteGlove || isPremiumStandaloneItem;
+  /**
    * White Glove sub-type chosen by the coordinator at quote time and stored in
    * factors_applied.white_glove_kind. "delivery" = item transport (the default,
    * and what legacy quotes fall back to); "service" = a move, in-home setup, or
@@ -516,13 +531,17 @@ export default function QuotePageClient({
     b2bVerticalCodeNorm,
     b2bVerticalDisplayName,
   );
-  const valuationJourneyCopy: "move" | "delivery" | "service" =
+  const valuationJourneyCopy: "move" | "delivery" | "service" | "event" =
     quote.service_type === "white_glove"
       ? // White Glove can be a move OR a delivery, keep protection copy neutral.
         "service"
-      : isClientLogisticsDeliveryServiceType(quote.service_type)
-        ? "delivery"
-        : "move";
+      : quote.service_type === "event"
+        ? // Event logistics are weddings / galas / brand activations — "shipment"
+          // reads too cold for these.
+          "event"
+        : isClientLogisticsDeliveryServiceType(quote.service_type)
+          ? "delivery"
+          : "move";
 
   const showCargoInsuranceTrust = quoteShowsCargoInsuranceTrust(
     quote.service_type,
@@ -1199,7 +1218,7 @@ export default function QuotePageClient({
     [declarations],
   );
 
-  const wgRider = isWhiteGlove
+  const wgRider = usesPremiumProtection
     ? (WHITE_GLOVE_RIDERS.find((r) => r.id === wgRiderId) ?? null)
     : null;
 
@@ -1244,7 +1263,9 @@ export default function QuotePageClient({
   }, [isWhiteGlove, quote, allAddons]);
 
   const valuationCost =
-    (isWhiteGlove ? (wgRider?.price ?? 0) : (activeUpgrade?.price ?? 0)) +
+    (usesPremiumProtection
+      ? (wgRider?.price ?? 0)
+      : (activeUpgrade?.price ?? 0)) +
     declarationFeeTotal;
 
   /* ── Computed totals ── */
@@ -2583,8 +2604,19 @@ export default function QuotePageClient({
           )}
 
         {/* ═══ SECTION 3: VALUATION PROTECTION ═══ */}
-        {(residentialSectionAtLeast(3) || (!isResidential && isConfirmed)) &&
+        {/*
+          Non-residential surfaces used to hide Protection until the client
+          clicked Confirm — by then the buying moment had passed and the
+          Enhanced upgrade might as well have been invisible. Residential
+          shows it in-flow (step 3), non-residential now sees it on first
+          load alongside the price so it's part of the sales pitch.
+          bin_rental (no goods handled) and labour_only (client owns the
+          goods, Yugo only supplies muscle) never render it — a coverage
+          section on a "we don't touch your stuff" job reads misleading.
+        */}
+        {(residentialSectionAtLeast(3) || !isResidential) &&
           quote.service_type !== "bin_rental" &&
+          quote.service_type !== "labour_only" &&
           !booked && (
             <section ref={protectionRef} className="scroll-mt-6">
               {isResidential && currentStep >= 3 && (
@@ -2603,12 +2635,14 @@ export default function QuotePageClient({
                 valuationTiers={valuationTiers}
                 valuationUpgrades={valuationUpgrades}
                 upgradeSelected={
-                  isWhiteGlove
+                  usesPremiumProtection
                     ? wgRiderId != null || coordinatorInsurance != null
                     : valuationUpgradeSelected
                 }
                 onToggleUpgrade={() => setValuationUpgradeSelected((p) => !p)}
-                whiteGloveRiders={isWhiteGlove ? WHITE_GLOVE_RIDERS : null}
+                whiteGloveRiders={
+                  usesPremiumProtection ? WHITE_GLOVE_RIDERS : null
+                }
                 selectedRiderId={wgRiderId}
                 onSelectRider={setWgRiderId}
                 coordinatorInsurance={coordinatorInsurance}
@@ -5267,8 +5301,14 @@ function ValuationProtectionCard({
   declarations: HighValueDeclaration[];
   onAddDeclaration: (d: HighValueDeclaration) => void;
   onRemoveDeclaration: (idx: number) => void;
-  /** Delivery / logistics quotes use shipment wording instead of "move". */
-  journeyCopy?: "move" | "delivery" | "service";
+  /**
+   * Copy variant for the section:
+   *   move     — residential / office / long-distance / specialty / labour-anchor
+   *   delivery — b2b_oneoff / b2b_delivery / single_item (shipment wording)
+   *   service  — white_glove (delivery OR service kinds — neutral wording)
+   *   event    — event logistics (weddings, galas — "per event", warmer)
+   */
+  journeyCopy?: "move" | "delivery" | "service" | "event";
   premiumShellKind?: PremiumShellKind;
 }) {
   const wgMode = !!whiteGloveRiders && whiteGloveRiders.length > 0;
@@ -5409,7 +5449,9 @@ function ValuationProtectionCard({
                     ? "Included with your delivery"
                     : journeyCopy === "service"
                       ? "Included with your service"
-                      : "Included with your move"}
+                      : journeyCopy === "event"
+                        ? "Included with your event"
+                        : "Included with your move"}
             </div>
           </div>
           {isHighest && (
@@ -5508,7 +5550,9 @@ function ValuationProtectionCard({
                       ? "Per shipment"
                       : journeyCopy === "service"
                         ? "Per service"
-                        : "Per move"}
+                        : journeyCopy === "event"
+                          ? "Per event"
+                          : "Per move"}
                   </span>
                   <span
                     className="font-bold tabular-nums text-right"
@@ -5547,7 +5591,9 @@ function ValuationProtectionCard({
                         ? "Per shipment"
                         : journeyCopy === "service"
                           ? "Per service"
-                          : "Per move"}
+                          : journeyCopy === "event"
+                            ? "Per event"
+                            : "Per move"}
                   </span>
                   <span
                     className="font-bold tabular-nums text-right"
@@ -5844,7 +5890,9 @@ function ValuationProtectionCard({
                   ? "shipment"
                   : journeyCopy === "service"
                     ? "service"
-                    : "move"}{" "}
+                    : journeyCopy === "event"
+                      ? "event"
+                      : "move"}{" "}
                 value
               </p>
             )}
@@ -5903,12 +5951,16 @@ function ValuationProtectionCard({
                       ? "Added to delivery"
                       : journeyCopy === "service"
                         ? "Added to protection"
-                        : "Added to move"}
+                        : journeyCopy === "event"
+                          ? "Added to event"
+                          : "Added to move"}
                   </>
                 ) : journeyCopy === "delivery" ? (
                   "Add to delivery"
                 ) : journeyCopy === "service" ? (
                   "Add protection"
+                ) : journeyCopy === "event" ? (
+                  "Add to event"
                 ) : (
                   "Add to move"
                 )}
