@@ -24,12 +24,15 @@ interface Props {
   quote: Quote;
   onConfirm: () => void;
   confirmed: boolean;
+  /** Optional Your Protection card rendered above the price card. */
+  protectionSlot?: React.ReactNode;
 }
 
 export default function LongDistanceLayout({
   quote,
   onConfirm,
   confirmed,
+  protectionSlot,
 }: Props) {
   const factors = quote.factors_applied as Record<string, unknown> | null;
   const includes =
@@ -151,6 +154,9 @@ export default function LongDistanceLayout({
           </div>
         </div>
       </div>
+
+      {/* Protection slot renders here so coverage is next to the price. */}
+      {protectionSlot}
 
       {/* Price card */}
       <div

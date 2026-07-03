@@ -26,9 +26,11 @@ interface Props {
   quote: Quote;
   onConfirm: () => void;
   confirmed: boolean;
+  /** Optional Your Protection card rendered above Investment Summary. */
+  protectionSlot?: React.ReactNode;
 }
 
-export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) {
+export default function SpecialtyLayout({ quote, onConfirm, confirmed, protectionSlot }: Props) {
   const f = quote.factors_applied as Record<string, unknown> | null;
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
@@ -205,6 +207,9 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
           ))}
         </div>
       </div>
+
+      {/* Protection slot renders here so coverage is next to the price. */}
+      {protectionSlot}
 
       {/* Investment Summary */}
       <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: FOREST }}>

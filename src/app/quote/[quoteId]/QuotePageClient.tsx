@@ -1977,6 +1977,61 @@ export default function QuotePageClient({
     !showDeclineConfirmation &&
     (quote.status === "sent" || quote.status === "viewed");
 
+  /**
+   * For non-residential services whose layout embeds its own Investment
+   * Summary + confirm CTA, the "Your Protection" card renders INSIDE the
+   * layout (via protectionSlot) just above the price card so the client
+   * sees coverage next to the number, not below the CTA. Residential and
+   * services without an inline price card still fall through to outer
+   * Section 3.
+   */
+  const layoutOwnsProtection =
+    !isResidential &&
+    !booked &&
+    quote.service_type !== "bin_rental" &&
+    quote.service_type !== "labour_only" &&
+    (quote.service_type === "long_distance" ||
+      quote.service_type === "white_glove" ||
+      quote.service_type === "event" ||
+      quote.service_type === "single_item" ||
+      quote.service_type === "specialty");
+
+  const protectionCardNode = (
+    <ValuationProtectionCard
+      includedValuation={includedValuation}
+      currentPackage={currentPackage}
+      valuationTiers={valuationTiers}
+      valuationUpgrades={valuationUpgrades}
+      upgradeSelected={
+        usesPremiumProtection
+          ? wgRiderId != null || coordinatorInsurance != null
+          : valuationUpgradeSelected
+      }
+      onToggleUpgrade={() => setValuationUpgradeSelected((p) => !p)}
+      whiteGloveRiders={usesPremiumProtection ? WHITE_GLOVE_RIDERS : null}
+      selectedRiderId={wgRiderId}
+      onSelectRider={setWgRiderId}
+      coordinatorInsurance={coordinatorInsurance}
+      declarations={declarations}
+      onAddDeclaration={(d) => {
+        declarationsDirtyRef.current = true;
+        setDeclarations((prev) => [...prev, d]);
+      }}
+      onRemoveDeclaration={(idx) => {
+        declarationsDirtyRef.current = true;
+        setDeclarations((prev) => prev.filter((_, i) => i !== idx));
+      }}
+      journeyCopy={valuationJourneyCopy}
+      premiumShellKind={shellKind}
+    />
+  );
+
+  const protectionSlotForLayout = layoutOwnsProtection ? (
+    <section ref={protectionRef} className="scroll-mt-6 mb-8">
+      {protectionCardNode}
+    </section>
+  ) : null;
+
   /* ══════════════════════════════════════════════
      RENDER
      ══════════════════════════════════════════════ */
@@ -2218,6 +2273,7 @@ export default function QuotePageClient({
                 quote={quote}
                 onConfirm={handleConfirm}
                 confirmed={confirmed}
+                protectionSlot={protectionSlotForLayout}
               />
             </>
           ) : quote.service_type === "office_move" ? (
@@ -2294,6 +2350,7 @@ export default function QuotePageClient({
                 quote={quoteForDisplay}
                 onConfirm={handleConfirm}
                 confirmed={confirmed}
+                protectionSlot={protectionSlotForLayout}
               />
             </>
           ) : quote.service_type === "white_glove" ? (
@@ -2318,6 +2375,7 @@ export default function QuotePageClient({
                 confirmed={confirmed}
                 premiumShellKind={shellKind}
                 whiteGloveKind={wgKind}
+                protectionSlot={protectionSlotForLayout}
               />
               <div
                 className={`mt-10 pt-8 border-t max-w-3xl mx-auto w-full ${shellBorderTopClass}`}
@@ -2353,6 +2411,7 @@ export default function QuotePageClient({
                 quote={quoteForDisplay}
                 onConfirm={handleConfirm}
                 confirmed={confirmed}
+                protectionSlot={protectionSlotForLayout}
               />
             </>
           ) : quote.service_type === "b2b_oneoff" ||
@@ -2411,6 +2470,7 @@ export default function QuotePageClient({
                 quote={quoteForDisplay}
                 onConfirm={handleConfirm}
                 confirmed={confirmed}
+                protectionSlot={protectionSlotForLayout}
               />
             </>
           ) : quote.service_type === "labour_only" ? (
@@ -2614,7 +2674,14 @@ export default function QuotePageClient({
           goods, Yugo only supplies muscle) never render it — a coverage
           section on a "we don't touch your stuff" job reads misleading.
         */}
-        {(residentialSectionAtLeast(3) || !isResidential) &&
+        {/*
+          When layoutOwnsProtection is true (LD / WG / Event / Single Item /
+          Specialty), the ValuationProtectionCard renders inside the layout
+          just above the Investment Summary via protectionSlot. Skip the
+          outer section so the card doesn't render twice.
+        */}
+        {!layoutOwnsProtection &&
+          (residentialSectionAtLeast(3) || !isResidential) &&
           quote.service_type !== "bin_rental" &&
           quote.service_type !== "labour_only" &&
           !booked && (
@@ -2629,36 +2696,7 @@ export default function QuotePageClient({
                   ← Back
                 </button>
               )}
-              <ValuationProtectionCard
-                includedValuation={includedValuation}
-                currentPackage={currentPackage}
-                valuationTiers={valuationTiers}
-                valuationUpgrades={valuationUpgrades}
-                upgradeSelected={
-                  usesPremiumProtection
-                    ? wgRiderId != null || coordinatorInsurance != null
-                    : valuationUpgradeSelected
-                }
-                onToggleUpgrade={() => setValuationUpgradeSelected((p) => !p)}
-                whiteGloveRiders={
-                  usesPremiumProtection ? WHITE_GLOVE_RIDERS : null
-                }
-                selectedRiderId={wgRiderId}
-                onSelectRider={setWgRiderId}
-                coordinatorInsurance={coordinatorInsurance}
-                declarations={declarations}
-                onAddDeclaration={(d) => {
-                  // Fix #10: mark dirty so the effect persists the array
-                  declarationsDirtyRef.current = true;
-                  setDeclarations((prev) => [...prev, d]);
-                }}
-                onRemoveDeclaration={(idx) => {
-                  declarationsDirtyRef.current = true;
-                  setDeclarations((prev) => prev.filter((_, i) => i !== idx));
-                }}
-                journeyCopy={valuationJourneyCopy}
-                premiumShellKind={shellKind}
-              />
+              {protectionCardNode}
               {isResidential &&
                 currentStep <= 3 &&
                 furthestStepReached >= 3 && (

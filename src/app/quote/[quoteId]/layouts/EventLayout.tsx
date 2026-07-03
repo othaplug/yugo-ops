@@ -14,6 +14,8 @@ interface Props {
   quote: Quote;
   onConfirm: () => void;
   confirmed: boolean;
+  /** Optional Your Protection card rendered above Investment Summary. */
+  protectionSlot?: React.ReactNode;
 }
 
 function fmtDate(d: string | null | undefined): string {
@@ -61,7 +63,7 @@ function scaleToTotal(amounts: number[], target: number): number[] {
   });
 }
 
-export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
+export default function EventLayout({ quote, onConfirm, confirmed, protectionSlot }: Props) {
   const f = (quote.factors_applied ?? {}) as Record<string, unknown>;
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
@@ -323,27 +325,18 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
         </div>
       </div>
 
-      {/* Dates summary (single-event only; multi shows dates per leg above) */}
-      <div className="grid sm:grid-cols-2 gap-3">
-        {!isMulti && deliveryDate && (
-          <div className="flex items-start gap-2 p-3 rounded-xl" style={{ backgroundColor: `${WINE}06`, border: `1px solid ${WINE}15` }}>
-            <Calendar className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
-            <div>
-              <p className="text-[9px] font-bold tracking-[0.14em] uppercase" style={{ color: `${WINE}60` }}>Delivery Date</p>
-              <p className="text-[12px] font-semibold" style={{ color: WINE }}>{fmtDate(deliveryDate)}</p>
-            </div>
-          </div>
-        )}
-        {!isMulti && returnDate && (
-          <div className="flex items-start gap-2 p-3 rounded-xl" style={{ backgroundColor: `${FOREST}06`, border: `1px solid ${FOREST}15` }}>
-            <Calendar className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
-            <div>
-              <p className="text-[9px] font-bold tracking-[0.14em] uppercase" style={{ color: `${FOREST}60` }}>Return Date</p>
-              <p className="text-[12px] font-semibold" style={{ color: FOREST }}>{fmtDate(returnDate)}</p>
-            </div>
-          </div>
-        )}
-      </div>
+      {/*
+        Single-event Delivery Date pill above Investment Summary was
+        redundant: the same date already appears in the hero and in the
+        per-leg block for multi-event programs. Removed 2026-07-03 so the
+        page moves straight from event details into pricing.
+        Return Date pill goes with it — a one-off round-trip event that
+        actually returns keeps that context in the per-leg block below.
+      */}
+
+      {/* Protection slot renders here (above Investment Summary) so the
+          client sees coverage next to the price, not below the confirm CTA. */}
+      {protectionSlot}
 
       {/* Investment summary */}
       <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: FOREST }}>

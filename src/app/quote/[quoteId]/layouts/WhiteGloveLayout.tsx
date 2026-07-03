@@ -121,6 +121,8 @@ interface Props {
   premiumShellKind?: PremiumShellKind;
   /** "delivery" = item transport; "service" = move / in-home setup / project. */
   whiteGloveKind?: "delivery" | "service";
+  /** Optional Your Protection card rendered above the price / review card. */
+  protectionSlot?: React.ReactNode;
 }
 
 export default function WhiteGloveLayout({
@@ -129,6 +131,7 @@ export default function WhiteGloveLayout({
   confirmed,
   premiumShellKind = "none",
   whiteGloveKind = "delivery",
+  protectionSlot,
 }: Props) {
   const isService = whiteGloveKind === "service";
   /* ── Premium-shell palette (deep-green Signature) with cream fallback ── */
@@ -490,6 +493,10 @@ export default function WhiteGloveLayout({
             : "Before and after photos at pickup and delivery for your records."}
         </p>
       </div>
+
+      {/* Protection slot renders here (above the price card) so the client
+          reviews coverage next to the price, not below the confirm CTA. */}
+      {protectionSlot}
 
       {/* Price / review card */}
       <div
