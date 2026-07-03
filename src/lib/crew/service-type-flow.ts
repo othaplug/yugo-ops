@@ -9,30 +9,20 @@ import { normalizeCrewServiceCategory } from "./crew-service-category";
 export { normalizeCrewServiceCategory } from "./crew-service-category";
 
 /**
- * B2B delivery: 7-step flow with explicit inventory + loading checkpoints
- * (revised 2026-06-30 after operator report). The prior 5-step "hands-
- * free" design collapsed inventory + loading into `arrived_at_pickup`
- * and unloading into `arrived_at_destination`, which meant:
- *   - Crew had no auto-prompt to perform the inventory walkthrough at
- *     the pickup — the step existed as a label in the TRACKING_STATUS
- *     enum but wasn't wired into the B2B flow.
- *   - After inventory the crew tapped "start loading" expecting a
- *     progression, but the next step was `en_route_to_destination` and
- *     the app re-prompted the same inventory checkpoint they had just
- *     completed. The delivery status appeared stuck at
- *     `arrived_at_pickup` even though crew was actively loading.
+ * B2B delivery: 5-step hands-free flow. At-pickup absorbs the inventory
+ * walkthrough + loading (crew handles both under the arrived_at_pickup
+ * step, no separate checkpoints); at-drop-off absorbs unloading. Photos
+ * still tagged per stage under each work step.
  *
- * Now: arrived_at_pickup → inventory_check → loading →
- * en_route_to_destination. The inventory step gates loading (crew
- * documents item conditions before physical handling starts) and the
- * loading checkpoint gives a real "we're actively loading now" state
- * that the client-side tracking + dispatch view can surface honestly.
+ * Operator decision 2026-06-30 (reverted my earlier 7-step attempt):
+ * keep the hands-free design. If the crew app is looping the walkthrough
+ * modal, that's a persistence bug in the walkthrough_completed flag —
+ * not a signal the flow needs more steps. See TODO in the follow-up
+ * note re: extending `walkthrough_completed` column to `deliveries`.
  */
 export const DELIVERY_B2B_STATUS_FLOW: TrackingStatus[] = [
   "en_route_to_pickup",
   "arrived_at_pickup",
-  "inventory_check",
-  "loading",
   "en_route_to_destination",
   "arrived_at_destination",
   "completed",
