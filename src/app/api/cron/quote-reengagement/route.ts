@@ -38,7 +38,9 @@ export async function GET(req: NextRequest) {
 
   const { data: quotes } = await supabase
     .from("quotes")
-    .select("id, quote_id, custom_price, tiers, move_date, expires_at, contact_id")
+    .select(
+      "id, quote_id, custom_price, tiers, recommended_tier, move_date, expires_at, contact_id",
+    )
     .eq("status", "expired")
     .gte("expires_at", fourDaysAgo.toISOString())
     .lte("expires_at", threeDaysAgo.toISOString())
@@ -78,10 +80,48 @@ export async function GET(req: NextRequest) {
       const firstName = (contact?.name || "").split(" ")[0] || "there";
       const quoteSlug = quote.quote_id || quote.id;
       const quoteUrl = `${baseUrl}/quote/${encodeURIComponent(quoteSlug)}`;
-      const tiersArr = Array.isArray(quote.tiers) ? (quote.tiers as { price?: number }[]) : [];
-      const tierPrices = tiersArr.map((t) => Number(t?.price ?? 0)).filter((n) => n > 0);
-      const minTierPrice = tierPrices.length ? Math.min(...tierPrices) : 0;
-      const pricePreTax = Number(quote.custom_price ?? 0) || minTierPrice;
+      // Residential tiered quotes store `tiers` as an OBJECT MAP
+      // ({ essential: {...}, signature: {...}, estate: {...} }); older /
+      // legacy shapes stored it as an ARRAY. Handle both so a tiered
+      // quote (custom_price = null) doesn't render "$0" in the email.
+      const tiersRaw = quote.tiers as unknown;
+      const tierEntries: Array<{ key: string; price: number }> = Array.isArray(
+        tiersRaw,
+      )
+        ? (tiersRaw as Array<{ price?: number }>).map((t, i) => ({
+            key: String(i),
+            price: Number(t?.price ?? 0),
+          }))
+        : tiersRaw && typeof tiersRaw === "object"
+          ? Object.entries(tiersRaw as Record<string, { price?: number }>).map(
+              ([key, t]) => ({ key, price: Number(t?.price ?? 0) }),
+            )
+          : [];
+      const validTiers = tierEntries.filter((t) => t.price > 0);
+      // Prefer the coordinator's recommended tier so the anchor price
+      // matches what the client saw as "the pick" (Estate on YG-30313 was
+      // $7,800 — that's the price the reactivation email should hold).
+      // Fall back to the cheapest tier, then to a headline custom_price.
+      const recommendedTier =
+        typeof quote.recommended_tier === "string"
+          ? quote.recommended_tier.trim().toLowerCase()
+          : null;
+      const recommendedPrice = recommendedTier
+        ? validTiers.find((t) => t.key === recommendedTier)?.price ?? 0
+        : 0;
+      const minTierPrice = validTiers.length
+        ? Math.min(...validTiers.map((t) => t.price))
+        : 0;
+      const pricePreTax =
+        Number(quote.custom_price ?? 0) || recommendedPrice || minTierPrice;
+      // A $0 anchor is worse than no anchor — bail on this quote rather
+      // than send a "Book at Original Price · $0" email. This can only
+      // fire if a quote row lost both custom_price and tiers, which is a
+      // data-integrity issue to flag, not something to paper over.
+      if (pricePreTax <= 0) {
+        results.errors.push(`${quoteSlug}: no price found, skipped`);
+        continue;
+      }
       const html = buildReengagementEmail({
         firstName,
         quoteNumber: quoteSlug,
