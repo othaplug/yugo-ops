@@ -996,7 +996,13 @@ export default function QuoteDetailClient({
         "comparison_viewed",
       ].includes(String(e.type || ""));
     })
-    .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+    // Newest first (operator decision 2026-06-30) so recent activity
+    // shows at the top and the operator doesn't have to hit "View all"
+    // and scroll to the bottom to see what the client just did.
+    // Previously ascending (oldest → newest), which made sense on a
+    // fresh quote but became unusable on the 1000+ event trail we've
+    // been accumulating on active clients.
+    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
   return (
     <>
