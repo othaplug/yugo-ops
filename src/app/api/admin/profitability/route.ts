@@ -194,7 +194,18 @@ export async function GET(req: NextRequest) {
     if (trackingDeliveryIds.has(d.id)) return true;
     const status = (d.status || "").toLowerCase();
     if (cancelledStatuses.has(status)) return false;
-    const billed = Number(d.admin_adjusted_price ?? d.total_price ?? d.quoted_price ?? 0);
+    // Mirror the same pre-tax price ladder used for revenue below so a
+    // delivery priced via override_price / final_price isn't accidentally
+    // dropped from the profitability roll-up.
+    const billed = Number(
+      d.override_price ??
+        d.final_price ??
+        d.admin_adjusted_price ??
+        d.total_price ??
+        d.calculated_price ??
+        d.quoted_price ??
+        0,
+    );
     return performedDeliveryStatuses.has(status) && billed > 0;
   });
 
@@ -386,7 +397,29 @@ export async function GET(req: NextRequest) {
 
   const deliveryRows = completedDeliveries.map((d) => {
     const trackedHoursD = sessionHoursMap[d.id] ?? null;
-    const revenue = invoiceBilledByDelivery[d.id] ?? Number(d.admin_adjusted_price ?? d.total_price ?? d.quoted_price ?? 0);
+    // Revenue MUST be pre-tax — HST is remitted to CRA, not kept as
+    // revenue — otherwise every margin is inflated by ~13% and stops
+    // reflecting actual profitability.
+    //
+    // Ordering:
+    //   1. Delivery's stored pre-tax prices (operator-controlled, always
+    //      excluding HST by design): override_price > final_price >
+    //      admin_adjusted_price > total_price > calculated_price >
+    //      quoted_price.
+    //   2. Square invoice amount as a last resort. NB: Square stores
+    //      HST-inclusive totals, so this branch is a fallback for
+    //      deliveries with no on-row price. We prefer never to hit it —
+    //      that's why every price-carrying field wins first.
+    const preTax = Number(
+      d.override_price ??
+        d.final_price ??
+        d.admin_adjusted_price ??
+        d.total_price ??
+        d.calculated_price ??
+        d.quoted_price ??
+        0,
+    );
+    const revenue = preTax > 0 ? preTax : (invoiceBilledByDelivery[d.id] ?? 0);
     // Inject tracked hours so calculateDeliveryProfitability uses them
     const dDay = scheduledDayKey(d as { scheduled_date?: string | null });
     const dJobsOnSameDay = dDay ? (jobsOnScheduledDay[dDay] ?? 1) : 1;
