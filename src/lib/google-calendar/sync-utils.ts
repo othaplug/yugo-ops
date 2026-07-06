@@ -17,9 +17,17 @@ export function triggerMoveGCalSync(moveId: string): void {
     try {
       const db = createAdminClient();
       // Pull every field used by resolveMoveDisplayTimes() in the OPS+ internal calendar.
+      // PM fields (is_pm_move, pm_*, partner_property_id, contract_id) let the
+      // GCal event render as "PM Reno Move-In / Move-Out / Suite Transfer"
+      // with building + unit + reason instead of falling through to a bare
+      // "B2B Delivery" (which is what MV-30323 / MV-30324 shipped as before
+      // 2026-07-06). Tier / total_price / client contact make the event body
+      // actionable for the crew reading the invite.
       const { data: m } = await db
         .from("moves")
-        .select("id, move_code, move_size, est_hours, client_name, service_type, move_type, status, scheduled_date, scheduled_start, scheduled_end, scheduled_time, preferred_time, arrival_window, estimated_duration_minutes, from_address, to_address, crew_id, notes, gcal_event_id")
+        .select(
+          "id, move_code, move_size, est_hours, est_crew_size, client_name, client_phone, client_email, service_type, move_type, status, scheduled_date, scheduled_start, scheduled_end, scheduled_time, preferred_time, arrival_window, estimated_duration_minutes, from_address, to_address, crew_id, notes, gcal_event_id, is_pm_move, pm_move_kind, pm_reason_code, pm_building_code, pm_zone, pm_urgency, pm_packing_required, partner_property_id, contract_id, tier_selected, total_price",
+        )
         .eq("id", moveId)
         .single();
       if (!m) return;
@@ -42,11 +50,14 @@ export function triggerMoveGCalSync(moveId: string): void {
         baselineMap,
       );
 
+      const mm = m as Record<string, unknown>;
       const result = await syncJobToGCal({
         jobType: "move",
         jobId: moveId,
         jobCode: String(m.move_code || moveId),
         clientName: String(m.client_name || ""),
+        clientPhone: mm.client_phone ? String(mm.client_phone) : null,
+        clientEmail: mm.client_email ? String(mm.client_email) : null,
         serviceType: String(m.service_type || m.move_type || "residential"),
         status: String(m.status || "confirmed"),
         scheduledDate: m.scheduled_date ? String(m.scheduled_date).slice(0, 10) : null,
@@ -59,6 +70,24 @@ export function triggerMoveGCalSync(moveId: string): void {
         crewName,
         notes: m.notes ? String(m.notes) : null,
         existingEventId: (m as { gcal_event_id?: string | null }).gcal_event_id ?? null,
+        // PM context — used by sync-job to override the label + enrich body.
+        isPmMove: !!mm.is_pm_move || !!mm.contract_id,
+        pmReasonCode: mm.pm_reason_code ? String(mm.pm_reason_code) : null,
+        pmMoveKind: mm.pm_move_kind ? String(mm.pm_move_kind) : null,
+        pmBuildingCode: mm.pm_building_code ? String(mm.pm_building_code) : null,
+        pmZone: mm.pm_zone ? String(mm.pm_zone) : null,
+        pmUrgency: mm.pm_urgency ? String(mm.pm_urgency) : null,
+        pmPackingRequired:
+          typeof mm.pm_packing_required === "boolean" ? mm.pm_packing_required : null,
+        tierSelected: mm.tier_selected ? String(mm.tier_selected) : null,
+        totalPrice:
+          typeof mm.total_price === "number" && mm.total_price > 0
+            ? mm.total_price
+            : null,
+        crewSize:
+          typeof mm.est_crew_size === "number" && mm.est_crew_size > 0
+            ? mm.est_crew_size
+            : null,
       });
 
       if (result.eventId !== undefined) {

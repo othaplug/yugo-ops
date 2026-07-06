@@ -107,7 +107,9 @@ export async function POST(req: NextRequest) {
     db
       .from("moves")
       // Pull every field used by resolveMoveDisplayTimes() in the OPS+ internal calendar.
-      .select("id, move_code, move_size, est_hours, client_name, service_type, move_type, status, scheduled_date, scheduled_start, scheduled_end, scheduled_time, preferred_time, arrival_window, estimated_duration_minutes, from_address, to_address, crew_id, notes, gcal_event_id")
+      .select(
+        "id, move_code, move_size, est_hours, est_crew_size, client_name, client_phone, client_email, service_type, move_type, status, scheduled_date, scheduled_start, scheduled_end, scheduled_time, preferred_time, arrival_window, estimated_duration_minutes, from_address, to_address, crew_id, notes, gcal_event_id, is_pm_move, pm_move_kind, pm_reason_code, pm_building_code, pm_zone, pm_urgency, pm_packing_required, partner_property_id, contract_id, tier_selected, total_price",
+      )
       .in("status", BOOKABLE_MOVE_STATUSES),
     db
       .from("deliveries")
@@ -372,6 +374,8 @@ function buildMoveInput(
     jobId: String(m.id),
     jobCode: String(m.move_code || m.id),
     clientName: String(m.client_name || ""),
+    clientPhone: m.client_phone ? String(m.client_phone) : null,
+    clientEmail: m.client_email ? String(m.client_email) : null,
     serviceType: String(m.service_type || m.move_type || "residential"),
     status: String(m.status || ""),
     scheduledDate: m.scheduled_date ? String(m.scheduled_date).slice(0, 10) : null,
@@ -384,6 +388,25 @@ function buildMoveInput(
     crewName: crewMap && crewId ? (crewMap[crewId] ?? null) : null,
     notes: m.notes ? String(m.notes) : null,
     existingEventId: m.gcal_event_id ? String(m.gcal_event_id) : null,
+    // PM context — same routing as triggerMoveGCalSync so the batch
+    // re-sync produces the same "PM Reno Move-In" label + rich body.
+    isPmMove: !!m.is_pm_move || !!m.contract_id,
+    pmReasonCode: m.pm_reason_code ? String(m.pm_reason_code) : null,
+    pmMoveKind: m.pm_move_kind ? String(m.pm_move_kind) : null,
+    pmBuildingCode: m.pm_building_code ? String(m.pm_building_code) : null,
+    pmZone: m.pm_zone ? String(m.pm_zone) : null,
+    pmUrgency: m.pm_urgency ? String(m.pm_urgency) : null,
+    pmPackingRequired:
+      typeof m.pm_packing_required === "boolean" ? m.pm_packing_required : null,
+    tierSelected: m.tier_selected ? String(m.tier_selected) : null,
+    totalPrice:
+      typeof m.total_price === "number" && m.total_price > 0
+        ? m.total_price
+        : null,
+    crewSize:
+      typeof m.est_crew_size === "number" && m.est_crew_size > 0
+        ? m.est_crew_size
+        : null,
   };
 }
 
