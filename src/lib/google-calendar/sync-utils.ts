@@ -10,12 +10,29 @@ import {
   resolveMoveJobTimes,
 } from "./resolve-job-times";
 
+/**
+ * Awaitable GCal sync for a move row. Reads fresh from DB, updates
+ * gcal_event_id, returns the action ("created" | "updated" | ...). Used
+ * by the resync cron / admin backfill so the result is observable.
+ */
+export async function syncMoveGCalNow(
+  moveId: string,
+): Promise<"created" | "updated" | "deleted" | "skipped" | "error" | "not_configured" | "not_found"> {
+  if (!isGCalConfigured()) return "not_configured";
+  return await runMoveGCalSync(moveId);
+}
+
 /** Fire-and-forget GCal sync for a move row. Reads fresh from DB, updates gcal_event_id. */
 export function triggerMoveGCalSync(moveId: string): void {
   if (!isGCalConfigured()) return;
-  void (async () => {
-    try {
-      const db = createAdminClient();
+  void runMoveGCalSync(moveId).catch(() => {});
+}
+
+async function runMoveGCalSync(
+  moveId: string,
+): Promise<"created" | "updated" | "deleted" | "skipped" | "error" | "not_found"> {
+  try {
+    const db = createAdminClient();
       // Pull every field used by resolveMoveDisplayTimes() in the OPS+ internal calendar.
       // PM fields (is_pm_move, pm_*, partner_property_id, contract_id) let the
       // GCal event render as "PM Reno Move-In / Move-Out / Suite Transfer"
@@ -30,7 +47,7 @@ export function triggerMoveGCalSync(moveId: string): void {
         )
         .eq("id", moveId)
         .single();
-      if (!m) return;
+    if (!m) return "not_found";
 
       // Resolve crew name
       let crewName: string | null = null;
@@ -90,13 +107,13 @@ export function triggerMoveGCalSync(moveId: string): void {
             : null,
       });
 
-      if (result.eventId !== undefined) {
-        await db.from("moves").update({ gcal_event_id: result.eventId }).eq("id", moveId);
-      }
-    } catch {
-      // non-critical
+    if (result.eventId !== undefined) {
+      await db.from("moves").update({ gcal_event_id: result.eventId }).eq("id", moveId);
     }
-  })();
+    return result.action;
+  } catch {
+    return "error";
+  }
 }
 
 /** Awaitable GCal sync for a single delivery. Reads fresh from DB, updates gcal_event_id. */
