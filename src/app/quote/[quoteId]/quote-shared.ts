@@ -434,17 +434,24 @@ export function addDays(d: Date, n: number) {
   return r;
 }
 
-/** Tiered deposit for residential local moves, 10 / 15 / 25 % with minimums. */
+/**
+ * Tiered deposit for residential local moves.
+ * Policy (operator 2026-07-06 revert to established plan):
+ *   Essential 10 %, Signature 10 %, Estate 25 %.
+ *   Minimums $50 / $50 / $200 — the universal < $600 gate in
+ *   calculateDeposit() already collects full payment on tiny jobs, so
+ *   these floors only apply in the narrow band just above $600.
+ */
 export function calculateTieredDeposit(tier: string, total: number): number {
   switch (tier) {
     case "essential":
-      return Math.max(150, Math.round(total * 0.1));
+      return Math.max(50, Math.round(total * 0.10));
     case "signature":
-      return Math.max(250, Math.round(total * 0.15));
+      return Math.max(50, Math.round(total * 0.10));
     case "estate":
-      return Math.max(500, Math.round(total * 0.25));
+      return Math.max(200, Math.round(total * 0.25));
     default:
-      return Math.max(150, Math.round(total * 0.1));
+      return Math.max(50, Math.round(total * 0.10));
   }
 }
 
@@ -487,50 +494,56 @@ export function calculateDeposit(
   if (serviceType === "local_move" && tier) {
     return calculateTieredDeposit(tier, total);
   }
+  // ─────────────────────────────────────────────────────────────
+  // Established deposit policy (operator 2026-07-06 revert to plan):
+  //   White Glove / Specialty / Single Item / Event / Bin Rental
+  //     → full payment at booking
+  //   Residential Essential / Signature   → 10 %   (min $50)
+  //   Residential Estate                  → 25 %   (min $200)
+  //   Long Distance                       → 50 %
+  //   Office Relocation                   → 25 % (< $5k), 30 % (>= $5k)
+  //   B2B delivery / one-off              → full payment (invoice / Net 30
+  //                                          settle separately; the deposit
+  //                                          flow only reserves the slot)
+  //   Labour Only                         → 10 %   (min $50)
+  //   Fallback (unknown type)             → 10 %   (min $50)
+  // ─────────────────────────────────────────────────────────────
   switch (serviceType) {
     case "local_move":
-      if (total < 3000) return 150;
-      return Math.max(150, Math.round(total * 0.1));
+      // Reached only when tier is not supplied; tier-aware path above
+      // is the normal residential call.
+      return Math.max(50, Math.round(total * 0.10));
     case "long_distance":
-      return Math.round(total * 0.25);
+      return Math.round(total * 0.50);
     case "office_move":
-      return total < 5000 ? Math.round(total * 0.25) : Math.round(total * 0.3);
+      return total < 5000 ? Math.round(total * 0.25) : Math.round(total * 0.30);
     case "single_item":
-      // Small-value single-item jobs: full payment at booking (operator
-      // 2026-06-30 audit — we don't do $100 deposits anymore). If the
-      // universal < $600 → full rule at top hasn't fired, the job is
-      // still small enough that carrying a balance isn't worth the
-      // AR overhead.
-      return total;
+      return total; // full payment at booking
     case "white_glove":
-      // Full payment at booking (operator 2026-06-30). White-glove
-      // service is small-scope, high-margin, and doesn't warrant a
-      // deposit-then-balance flow — collect once, move on.
-      return total;
+      return total; // full payment at booking
     case "specialty":
       return total; // full payment at booking
     case "b2b_oneoff":
     case "b2b_delivery":
-      // $150 flat (up from $100). B2B partners typically settle via
-      // invoice / Net 30 anyway, so this "deposit" mostly applies to
-      // one-off unregistered bookings where we want a real amount to
-      // reserve the slot — $100 was low enough that partners walked
-      // when a scheduling conflict emerged.
-      return 150;
+      // Full payment at booking. Partners on invoice terms settle via
+      // Net 30 outside this flow; this branch fires for one-off
+      // unregistered bookings where we collect up front to reserve
+      // the slot.
+      return total;
     case "event":
       return total; // full payment at booking
     case "labour_only":
-      // Operator change 2026-06-11: labour-only bookings made 4+ days
-      // out require a flat $150 deposit (not 50%). Under-4-days short-
-      // notice case already handled by the universal rule above.
-      // Removes the old 50% rule which was generating $452 deposits
-      // on $904 jobs, too aggressive for a flat-rate hourly service.
-      return 150;
+      // 10 % with a $50 floor — matches the shape of every other
+      // deposit-carrying service and avoids arbitrary flats.
+      return Math.max(50, Math.round(total * 0.10));
     case "bin_rental":
       return total;
     default:
-      if (total < 3000) return 150;
-      return Math.round(total * 0.1);
+      // Unknown service: percentage-based fallback (10 %, min $50) so
+      // any new service that slips in without an explicit branch lands
+      // on a proportional deposit instead of a flat number that scales
+      // badly at the ends.
+      return Math.max(50, Math.round(total * 0.10));
   }
 }
 
