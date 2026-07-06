@@ -496,16 +496,27 @@ export function calculateDeposit(
     case "office_move":
       return total < 5000 ? Math.round(total * 0.25) : Math.round(total * 0.3);
     case "single_item":
-      return 100;
+      // Small-value single-item jobs: full payment at booking (operator
+      // 2026-06-30 audit — we don't do $100 deposits anymore). If the
+      // universal < $600 → full rule at top hasn't fired, the job is
+      // still small enough that carrying a balance isn't worth the
+      // AR overhead.
+      return total;
     case "white_glove":
-      if (total < 1000) return 100;
-      if (total < 3000) return 150;
-      return Math.round(total * 0.1);
+      // Full payment at booking (operator 2026-06-30). White-glove
+      // service is small-scope, high-margin, and doesn't warrant a
+      // deposit-then-balance flow — collect once, move on.
+      return total;
     case "specialty":
       return total; // full payment at booking
     case "b2b_oneoff":
     case "b2b_delivery":
-      return 100;
+      // $150 flat (up from $100). B2B partners typically settle via
+      // invoice / Net 30 anyway, so this "deposit" mostly applies to
+      // one-off unregistered bookings where we want a real amount to
+      // reserve the slot — $100 was low enough that partners walked
+      // when a scheduling conflict emerged.
+      return 150;
     case "event":
       return total; // full payment at booking
     case "labour_only":

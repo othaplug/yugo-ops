@@ -992,8 +992,12 @@ async function calculateDeposit(
     .single();
 
   if (!data) {
+    // Fallback when the deposit_rules table has no row for this
+    // (service_type, bracket) pair. Small jobs → full payment (no AR
+    // overhead worth the split); larger jobs → $150 flat (operator
+    // 2026-06-30 audit; used to be $100 which we no longer offer).
     if (amount < 500) return amount;
-    return 100;
+    return 150;
   }
 
   switch (data.deposit_type) {
@@ -1004,7 +1008,8 @@ async function calculateDeposit(
     case "percent":
       return Math.round(amount * data.deposit_value / 100);
     default:
-      return 100;
+      // Same $150 floor as the missing-row fallback (2026-06-30).
+      return 150;
   }
 }
 
@@ -3353,7 +3358,8 @@ async function calcB2bOneoff(
       price = roundTo(fullOv, rounding);
     }
     const tax = Math.round(price * taxRate);
-    const deposit = price < 300 ? price : 100;
+    // $150 flat deposit above $300 (up from $100, operator 2026-06-30).
+    const deposit = price < 300 ? price : 150;
 
     const truckKey = normalizeTruckType(dim.truck);
     const truckSurchargeDim = getTruckFeeSync(dim.truck, config);
@@ -3462,7 +3468,10 @@ async function calcB2bOneoff(
   const tax = Math.round(price * taxRate);
   const b2bTotal = price + tax;
   // Global rule: quotes under $550 (with tax) require full payment at booking.
-  const deposit = b2bTotal < 550 ? b2bTotal : 100;
+  // Otherwise B2B one-off / delivery: $150 flat (up from $100 — operator
+  // 2026-06-30 policy). $100 was low enough that partners walked when
+  // scheduling conflicts emerged; $150 hits the "real reservation" bar.
+  const deposit = b2bTotal < 550 ? b2bTotal : 150;
 
   const b2bFeatures = await fetchTierFeatures(sb, "b2b_delivery", "custom");
   const b2bIncludes = b2bFeatures.length > 0 ? b2bFeatures : [
