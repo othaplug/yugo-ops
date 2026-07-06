@@ -2377,22 +2377,38 @@ export default function QuotePageClient({
                 whiteGloveKind={wgKind}
                 protectionSlot={protectionSlotForLayout}
               />
-              <div
-                className={`mt-10 pt-8 border-t max-w-3xl mx-auto w-full ${shellBorderTopClass}`}
-              >
-                <p
-                  className={`${QUOTE_EYEBROW_CLASS} mb-3`}
-                  style={{ color: shellInk.muted }}
-                >
-                  Your inventory
-                </p>
-                <InventoryCollapsible
-                  quote={quoteForDisplay}
-                  selectedAddons={selectedAddons}
-                  omitOuterChrome
-                  premiumShellKind={shellKind}
-                />
-              </div>
+              {/*
+                Suppress the whole "Your inventory" wrapper on WG when the
+                quote has neither inventory items nor client-declared box
+                count — an empty "No room-by-room inventory listed" panel
+                on a premium White Glove quote reads like broken chrome,
+                not like premium restraint. The rest of the WG page carries
+                the scope story via ScopeCard / Includes, so nothing is lost.
+              */}
+              {(() => {
+                const items = (quote.inventory_items ?? []) as { quantity?: number }[];
+                const itemCount = items.reduce((s, i) => s + (i.quantity ?? 1), 0);
+                const boxCount = quote.client_box_count ?? 0;
+                if (itemCount === 0 && boxCount === 0) return null;
+                return (
+                  <div
+                    className={`mt-10 pt-8 border-t max-w-3xl mx-auto w-full ${shellBorderTopClass}`}
+                  >
+                    <p
+                      className={`${QUOTE_EYEBROW_CLASS} mb-3`}
+                      style={{ color: shellInk.muted }}
+                    >
+                      Your inventory
+                    </p>
+                    <InventoryCollapsible
+                      quote={quoteForDisplay}
+                      selectedAddons={selectedAddons}
+                      omitOuterChrome
+                      premiumShellKind={shellKind}
+                    />
+                  </div>
+                );
+              })()}
             </>
           ) : quote.service_type === "specialty" ? (
             <>

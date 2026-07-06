@@ -937,9 +937,39 @@ export default function EditQuoteClient({
     }
     // Operator overrides — pin crew / hours / truck when coordinator
     // sees the engine's auto-estimate is wrong. Empty string = auto.
+    //
+    // Crew override routing: the engine reads a different field per
+    // service (each labour engine has its own signature), so we can't
+    // just send `crew_size_override` everywhere or the value silently
+    // no-ops on WG / event / B2B. Route to the correct name:
+    //   local_move / long_distance / specialty / single_item /
+    //   labour_only  → crew_size_override
+    //   white_glove                                → white_glove_crew_override
+    //   event                                      → event_crew_override
+    //   b2b_oneoff / b2b_delivery                  → b2b_crew_override
+    //   office_move                                → office_crew_size_override
     const crewN = parseInt(crewOverride, 10);
     if (Number.isFinite(crewN) && crewN >= 1 && crewN <= 8) {
-      payload.crew_size_override = crewN;
+      switch (serviceType) {
+        case "white_glove":
+          payload.white_glove_crew_override = crewN;
+          break;
+        case "event":
+          payload.event_crew_override = crewN;
+          break;
+        case "b2b_oneoff":
+        case "b2b_delivery":
+          payload.b2b_crew_override = crewN;
+          break;
+        case "office_move":
+          // Office quotes read `office_crew_size` directly (not an
+          // `_override` suffix — the whole field IS the override).
+          payload.office_crew_size = crewN;
+          break;
+        default:
+          payload.crew_size_override = crewN;
+          break;
+      }
     }
     const hoursN = parseFloat(hoursOverride);
     if (Number.isFinite(hoursN) && hoursN >= 1 && hoursN <= 24) {
@@ -1943,9 +1973,13 @@ export default function EditQuoteClient({
             auto-pick is operationally wrong. Leave blank for auto.
             Wrapped in EditSection — collapsed by default since most
             edits trust the engine; opens when the operator needs to
-            force a value. */}
-        {(serviceType === "local_move" ||
-          serviceType === "long_distance") && (
+            force a value.
+            Shown for every service type that runs a crew (i.e. anything
+            except bin_rental). Truck-size override only renders for
+            move-style services (residential + WG + specialty +
+            long-distance + single_item + office); event / B2B / labour
+            derive vehicles elsewhere. */}
+        {serviceType !== "bin_rental" && (
           <EditSection
             eyebrow="Crew"
             title="Crew, hours & truck override"
@@ -1964,8 +1998,10 @@ export default function EditQuoteClient({
             <p className="text-[11px] text-[var(--tx3)] mt-2 mb-3 leading-snug">
               Leave blank for the engine&apos;s auto-pick. Set values
               when the auto-pick is wrong for the job (e.g. a light 1BR
-              with a 3rd-floor walk-up shouldn&apos;t need 3 movers).
-              The override is logged to{" "}
+              with a 3rd-floor walk-up shouldn&apos;t need 3 movers, or
+              a small White Glove haul only needs 2 people). Routed to
+              the correct engine per service (WG / event / B2B / office
+              each read their own field). The override is logged to{" "}
               <span className="font-medium text-[var(--tx2)]">
                 factors_applied.operator_overrides
               </span>{" "}
@@ -2012,28 +2048,39 @@ export default function EditQuoteClient({
                   className={inputClass}
                 />
               </div>
-              <div>
-                <label className={labelClass}>
-                  Truck size{" "}
-                  {livePreview?.labour?.truckSize ? (
-                    <span className="text-[var(--tx3)] font-normal">
-                      (engine: {livePreview.labour.truckSize})
-                    </span>
-                  ) : null}
-                </label>
-                <select
-                  value={truckOverride}
-                  onChange={(e) => setTruckOverride(e.target.value)}
-                  className={inputClass}
-                >
-                  <option value="">Auto</option>
-                  <option value="sprinter">Sprinter</option>
-                  <option value="16ft">16ft</option>
-                  <option value="20ft">20ft</option>
-                  <option value="24ft">24ft</option>
-                  <option value="26ft">26ft</option>
-                </select>
-              </div>
+              {/* Truck override only for services whose engine actually
+                  reads it. Event / B2B / labour_only derive vehicles from
+                  elsewhere (event legs / partner rate / N/A), and the
+                  truck_size_override field silently no-ops on those. */}
+              {(serviceType === "local_move" ||
+                serviceType === "long_distance" ||
+                serviceType === "white_glove" ||
+                serviceType === "single_item" ||
+                serviceType === "specialty" ||
+                serviceType === "office_move") && (
+                <div>
+                  <label className={labelClass}>
+                    Truck size{" "}
+                    {livePreview?.labour?.truckSize ? (
+                      <span className="text-[var(--tx3)] font-normal">
+                        (engine: {livePreview.labour.truckSize})
+                      </span>
+                    ) : null}
+                  </label>
+                  <select
+                    value={truckOverride}
+                    onChange={(e) => setTruckOverride(e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">Auto</option>
+                    <option value="sprinter">Sprinter</option>
+                    <option value="16ft">16ft</option>
+                    <option value="20ft">20ft</option>
+                    <option value="24ft">24ft</option>
+                    <option value="26ft">26ft</option>
+                  </select>
+                </div>
+              )}
             </div>
             {priorOverrides && (
               <p className="text-[10px] text-[var(--tx3)] mt-2 leading-snug">
