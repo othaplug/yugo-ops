@@ -7,6 +7,7 @@ import {
   TAX_RATE,
   fmtPrice,
   calculateDeposit,
+  isFullPaymentAtBookingService,
 } from "../quote-shared";
 import { toTitleCase } from "@/lib/format-text";
 import {
@@ -165,7 +166,16 @@ export default function WhiteGloveLayout({
     deposit,
     grandTotal: price + tax,
   });
-  const wgIsFullPayment = price < 500 || wgBookingDecision.requireFullPayment;
+  // White Glove is always full payment at booking (established policy —
+  // operator directive 2026-07-06 after Erika Biro paid $100 deposit
+  // and left a $657 balance uncollected). The 48h window rule is now
+  // a secondary trigger, not the only one. calculateDeposit() also
+  // returns `total` for WG, but we can't rely on that alone since the
+  // pre-tax deposit still trails the tax-inclusive grand total by 13 %.
+  const wgIsFullPayment =
+    isFullPaymentAtBookingService(quote.service_type) ||
+    price < 500 ||
+    wgBookingDecision.requireFullPayment;
   const declaredValue = f?.declared_value as number | undefined;
   const weightSurcharge =
     typeof f?.weight_surcharge === "number" && f.weight_surcharge > 0

@@ -26,6 +26,7 @@ import {
   isB2BInvoiceQuote,
   isB2BDeliveryQuoteServiceType,
 } from "@/lib/quotes/b2b-quote-copy";
+import { isFullPaymentAtBookingService } from "@/app/quote/[quoteId]/quote-shared";
 
 export async function POST(req: Request) {
   try {
@@ -111,16 +112,22 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── Server-side 48h booking-window enforcement ──
-    // If a quote is being booked inside the full-payment window, the client
-    // MUST pay the full grand total — not the deposit. We enforce this
-    // independently of the client so a stale form (or someone crafting a
-    // payment payload manually) can't bypass it. Bin rental and B2B
-    // invoice flows are exempt (they're full-pay or net-30 already).
+    // ── Server-side full-payment + 48h booking-window enforcement ──
+    // Two triggers, both enforced server-side so a stale client form or
+    // a manually-crafted payment payload can't bypass either:
+    //   1. Service is in FULL_PAYMENT_AT_BOOKING_SERVICES
+    //      (WG / single_item / specialty / event / b2b non-invoice /
+    //      bin_rental). These ALWAYS collect the full grand total,
+    //      regardless of how far out the move is.
+    //   2. Move date is inside the 48h window — residential/office/
+    //      long-distance quotes normally take a deposit but must
+    //      collect full at booking here because the balance auto-charge
+    //      cron looks at moves 2-3 days out.
+    //
+    // B2B invoice flows are exempt (net-30 settle outside this route).
     if (
-      svc !== "bin_rental" &&
       !isB2BInvoiceQuote(factors, svc) &&
-      quote.move_date
+      (quote.move_date || isFullPaymentAtBookingService(svc))
     ) {
       const taxRateForCheck = Number(factors?.tax_rate ?? 0.13);
       const customPrice = Number(quote.custom_price ?? 0);
@@ -132,13 +139,16 @@ export async function POST(req: Request) {
         customPrice > 0
           ? Math.round(customPrice * (1 + taxRateForCheck))
           : depositOnQuote;
-      const decision = decideBookingPayment({
-        moveDate: quote.move_date as string,
-        deposit: depositOnQuote,
-        grandTotal: grandTotalForCheck,
-        serverSide: true,
-      });
-      if (decision.requireFullPayment) {
+      const decision = quote.move_date
+        ? decideBookingPayment({
+            moveDate: quote.move_date as string,
+            deposit: depositOnQuote,
+            grandTotal: grandTotalForCheck,
+            serverSide: true,
+          })
+        : { requireFullPayment: false, hoursUntilMove: Infinity };
+      const fullPaymentByServicePolicy = isFullPaymentAtBookingService(svc);
+      if (decision.requireFullPayment || fullPaymentByServicePolicy) {
         // Require client to pay at least 98% of the grand total (allow 2%
         // tolerance for rounding / tax delta between client and server).
         const minRequired = Math.floor(grandTotalForCheck * 0.98);
@@ -150,12 +160,16 @@ export async function POST(req: Request) {
             submittedAmount: amount,
             grandTotal: grandTotalForCheck,
           });
+          const errMsg = fullPaymentByServicePolicy
+            ? `${svc.replace(/_/g, " ")} bookings collect the full amount at booking — no deposit split. Refresh the page and the form will switch to full payment automatically.`
+            : `Your move is in ${decision.hoursUntilMove} hours, so the full balance is collected at booking. Refresh the page — the form will switch to full payment automatically.`;
           return NextResponse.json(
             {
-              error: `Your move is in ${decision.hoursUntilMove} hours, so the full balance is collected at booking. Refresh the page — the form will switch to full payment automatically.`,
+              error: errMsg,
               code: "FULL_PAYMENT_REQUIRED",
               hours_until_move: decision.hoursUntilMove,
               grand_total: grandTotalForCheck,
+              reason: fullPaymentByServicePolicy ? "service_policy" : "inside_window",
             },
             { status: 400 },
           );

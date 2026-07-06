@@ -6,6 +6,7 @@ import {
   TAX_RATE,
   fmtPrice,
   calculateDeposit,
+  isFullPaymentAtBookingService,
 } from "../quote-shared";
 import {
   resolveSingleItemLines,
@@ -52,7 +53,14 @@ export default function SingleItemLayout({
     deposit,
     grandTotal: price + tax,
   });
-  const isFullPayment = price < 500 || bookingDecision.requireFullPayment;
+  // Single-item is always full payment at booking (established policy):
+  // small-scope logistics, no split-billing flow needed. The 48h window
+  // rule + < $500 rule remain as secondary triggers so a hypothetical
+  // policy revert doesn't silently break tiny tickets.
+  const isFullPayment =
+    isFullPaymentAtBookingService(quote.service_type) ||
+    price < 500 ||
+    bookingDecision.requireFullPayment;
 
   // Resolve the per-line array. Old quotes with scalar fields synthesize
   // a one-row array; new quotes pass through unchanged. Single source of

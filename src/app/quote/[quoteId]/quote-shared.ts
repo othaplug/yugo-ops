@@ -435,23 +435,49 @@ export function addDays(d: Date, n: number) {
 }
 
 /**
+ * Services that always collect full payment at booking, regardless of
+ * the 48h short-notice window. Small-scope / high-margin / logistics-
+ * anchored work where a deposit-then-balance flow adds AR overhead
+ * without operational benefit. Any layout / server-side check that
+ * decides "deposit vs full" MUST consult this set — the 48h window
+ * rule alone is not enough for these types.
+ */
+export const FULL_PAYMENT_AT_BOOKING_SERVICES = new Set<string>([
+  "white_glove",
+  "specialty",
+  "single_item",
+  "event",
+  "b2b_delivery",
+  "b2b_oneoff",
+  "bin_rental",
+]);
+
+export function isFullPaymentAtBookingService(
+  serviceType: string | null | undefined,
+): boolean {
+  return FULL_PAYMENT_AT_BOOKING_SERVICES.has(String(serviceType ?? ""));
+}
+
+/**
  * Tiered deposit for residential local moves.
  * Policy (operator 2026-07-06 revert to established plan):
  *   Essential 10 %, Signature 10 %, Estate 25 %.
- *   Minimums $50 / $50 / $200 — the universal < $600 gate in
- *   calculateDeposit() already collects full payment on tiny jobs, so
- *   these floors only apply in the narrow band just above $600.
+ *   Minimum $150 across every tier — operator directive: "MINIMUM IS
+ *   ALWAYS $150." The universal < $600 gate in calculateDeposit()
+ *   already collects full payment on tiny jobs, so this floor only
+ *   bites in the narrow band between $600 and ~$1,500 (where 10 %
+ *   crosses $150).
  */
 export function calculateTieredDeposit(tier: string, total: number): number {
   switch (tier) {
     case "essential":
-      return Math.max(50, Math.round(total * 0.10));
+      return Math.max(150, Math.round(total * 0.10));
     case "signature":
-      return Math.max(50, Math.round(total * 0.10));
+      return Math.max(150, Math.round(total * 0.10));
     case "estate":
-      return Math.max(200, Math.round(total * 0.25));
+      return Math.max(150, Math.round(total * 0.25));
     default:
-      return Math.max(50, Math.round(total * 0.10));
+      return Math.max(150, Math.round(total * 0.10));
   }
 }
 
@@ -512,7 +538,7 @@ export function calculateDeposit(
     case "local_move":
       // Reached only when tier is not supplied; tier-aware path above
       // is the normal residential call.
-      return Math.max(50, Math.round(total * 0.10));
+      return Math.max(150, Math.round(total * 0.10));
     case "long_distance":
       return Math.round(total * 0.50);
     case "office_move":
@@ -533,17 +559,20 @@ export function calculateDeposit(
     case "event":
       return total; // full payment at booking
     case "labour_only":
-      // 10 % with a $50 floor — matches the shape of every other
-      // deposit-carrying service and avoids arbitrary flats.
-      return Math.max(50, Math.round(total * 0.10));
+      // 10 % with a $150 floor (operator directive: minimum is always
+      // $150). The universal < $600 gate above already collects full
+      // payment on tiny jobs, so this floor only bites between $600
+      // and ~$1,500.
+      return Math.max(150, Math.round(total * 0.10));
     case "bin_rental":
       return total;
     default:
-      // Unknown service: percentage-based fallback (10 %, min $50) so
+      // Unknown service: percentage-based fallback (10 %, min $150) so
       // any new service that slips in without an explicit branch lands
       // on a proportional deposit instead of a flat number that scales
-      // badly at the ends.
-      return Math.max(50, Math.round(total * 0.10));
+      // badly at the ends. $150 minimum matches the operator directive
+      // ("MINIMUM IS ALWAYS $150").
+      return Math.max(150, Math.round(total * 0.10));
   }
 }
 

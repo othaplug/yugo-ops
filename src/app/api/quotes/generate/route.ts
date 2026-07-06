@@ -994,14 +994,10 @@ async function calculateDeposit(
   if (!data) {
     // Fallback when the deposit_rules table has no row for this
     // (service_type, bracket) pair. Small jobs → full payment (no AR
-    // overhead worth the split); larger jobs → 10% with a $50 floor.
-    // Percentage-based (was flat $150 in the 2026-06-30 audit) so a new
-    // service type slipping in without a DB row lands on a proportional
-    // deposit instead of a suspicious flat number that scales badly
-    // ($150 is over-collected on a $200 job and under-collected on a
-    // $10k one). Corrected to policy 2026-07-06.
+    // overhead worth the split); larger jobs → 10 % with a $150 floor
+    // (operator directive: "MINIMUM IS ALWAYS $150").
     if (amount < 500) return amount;
-    return Math.max(50, Math.round(amount * 0.10));
+    return Math.max(150, Math.round(amount * 0.10));
   }
 
   switch (data.deposit_type) {
@@ -1014,7 +1010,7 @@ async function calculateDeposit(
     default:
       // Same percentage fallback as the missing-row branch above so an
       // unknown deposit_type doesn't drop us onto an arbitrary flat.
-      return Math.max(50, Math.round(amount * 0.10));
+      return Math.max(150, Math.round(amount * 0.10));
   }
 }
 
@@ -5540,23 +5536,18 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         }
         if (newPrice < 600) return Math.round(newPrice);
         // Policy (operator 2026-07-06 revert to established plan):
-        //   Essential 10%, Signature 10%, Estate 25%.
-        //   Minimums $50 / $50 / $200 — the < 600 gate above already
-        //   collects full payment on tiny jobs, so these floors only
-        //   bite on the narrow band between $600 and the min-cross,
-        //   and we want low-value residentials to actually see a
-        //   deposit (not a rounded-up flat) so the arithmetic looks
-        //   right to the client.
+        //   Essential 10 %, Signature 10 %, Estate 25 %.
+        //   Minimum $150 across every tier — operator directive
+        //   ("MINIMUM IS ALWAYS $150"). The < 600 gate above already
+        //   collects full payment on tiny jobs; this floor only bites
+        //   in the narrow band between $600 and ~$1,500 where 10 %
+        //   crosses $150.
         const pct = cfgNum(
           config,
           `deposit_${tk}_pct`,
           tk === "essential" ? 10 : tk === "signature" ? 10 : 25,
         );
-        const min = cfgNum(
-          config,
-          `deposit_${tk}_min`,
-          tk === "essential" ? 50 : tk === "signature" ? 50 : 200,
-        );
+        const min = cfgNum(config, `deposit_${tk}_min`, 150);
         return Math.max(min, Math.round(newPrice * pct / 100));
       })();
       nextTiers[tk] = {
