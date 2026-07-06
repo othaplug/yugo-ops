@@ -1,11 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
-import Image from "next/image";
+import YugoLogo from "@/components/YugoLogo";
 
 const COOKIE_NAME = "yugo-tracking-terms-accepted";
-const COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // 1 year
+const COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
+
+const WINE = "#2B0416";
+const OFF_WHITE = "#F9EDE4";
+const CREAM_CARD = "#FFFDF8";
+const ROSE = "#66143D";
+const ROSE_TINT = "#E0B4C6";
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -18,6 +23,23 @@ function setCookie(name: string, value: string, maxAge: number) {
   document.cookie = `${name}=${encodeURIComponent(value)};path=/;max-age=${maxAge};SameSite=Lax`;
 }
 
+/**
+ * Tracking welcome — the "invitation." First surface a client sees on
+ * their tracking portal. Brand-aligned per Yugo brandbook 2026:
+ *
+ *   - Palette: Wine hero cap + Off-white card body. Rose eyebrows,
+ *     italic accent on "your". Gold banned as a CTA fill on this
+ *     surface (reads like a bookmaker); primary CTA is solid wine
+ *     with letter-spaced sans caps, secondary is a plain outline
+ *     under the CTA.
+ *   - Typography: Instrument Serif (font-hero) for the headline and
+ *     italic accents; Brown (default body) for paragraphs.
+ *   - Logo: real Yugo mark via <YugoLogo>, no placeholder Y.
+ *   - Copy: legalese folded into two short editorial sections; the
+ *     "TERMS OF USE / PRIVACY & DATA / TRACKING & LOCATION / CLAIMS
+ *     & LIABILITY" wall is not a welcome, it's a barrier. Move the
+ *     detail to /terms + /cookies (already linked).
+ */
 export default function TrackingAgreementModal() {
   const [show, setShow] = useState(false);
 
@@ -36,123 +58,203 @@ export default function TrackingAgreementModal() {
   return (
     <div
       className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center p-4 sm:p-5 modal-overlay"
+      style={{ backgroundColor: "rgba(43,4,22,0.55)" }}
     >
       <div
-        className="rounded-t-2xl sm:rounded-2xl w-full sm:max-w-[480px] shadow-2xl overflow-hidden"
-        style={{ backgroundColor: CREAM, maxHeight: "min(92dvh, 92vh)", overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        className="rounded-t-[2px] sm:rounded-[2px] w-full sm:max-w-[520px] overflow-hidden"
+        style={{
+          backgroundColor: CREAM_CARD,
+          maxHeight: "min(94dvh, 94vh)",
+          overflowY: "auto",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          border: "1px solid rgba(43,4,22,0.10)",
+        }}
       >
-        {/* Header */}
-        <div className="px-6 pt-8 pb-5 text-center" style={{ backgroundColor: WINE }}>
-          <div className="inline-flex items-center justify-center mb-4">
-            <Image
-              src="/yugo-symbol.png"
-              alt="Yugo"
-              width={48}
-              height={48}
-              style={{
-                // Recolour the black symbol to GOLD for the dark wine header
-                filter:
-                  "brightness(0) saturate(100%) invert(62%) sepia(55%) saturate(620%) hue-rotate(1deg) brightness(94%) contrast(90%)",
-              }}
-            />
+        <div
+          className="px-8 pt-12 pb-11 text-center relative"
+          style={{ backgroundColor: WINE, color: OFF_WHITE }}
+        >
+          <div className="flex justify-center mb-8">
+            <YugoLogo size={22} variant="cream" />
           </div>
-          <h2 className="font-hero text-[22px] font-semibold text-white mb-1">
-            Welcome to Yugo Tracking
+
+          <p
+            className="text-[10px] mb-5"
+            style={{ letterSpacing: "0.28em", color: "rgba(224,180,198,0.9)" }}
+          >
+            BY INVITATION
+          </p>
+
+          <h2
+            className="font-hero"
+            style={{
+              fontSize: 40,
+              letterSpacing: "-0.02em",
+              lineHeight: 1.05,
+              color: OFF_WHITE,
+              margin: 0,
+            }}
+          >
+            Welcome to{" "}
+            <span style={{ fontStyle: "italic", color: ROSE_TINT }}>your tracking.</span>
           </h2>
-          <p className="text-[12px] text-white/60">
-            Before you begin, please review and accept our terms
+
+          <p
+            className="mx-auto"
+            style={{
+              maxWidth: 340,
+              marginTop: 22,
+              fontSize: 13.5,
+              color: "rgba(249,237,228,0.7)",
+              fontWeight: 300,
+              letterSpacing: "0.005em",
+            }}
+          >
+            A private portal for the arc of your service. Please take a moment.
           </p>
         </div>
 
-        {/* Content */}
-        <div className="px-6 py-5">
-          <div
-            className="rounded-xl p-4 mb-4 text-[12px] leading-relaxed max-h-[220px] overflow-y-auto"
-            style={{
-              backgroundColor: "#FFFFFF",
-              border: "1px solid #E7E5E4",
-              color: FOREST,
-            }}
-          >
-            <h4 className="font-bold text-[11px] uppercase tracking-wider mb-2" style={{ color: GOLD }}>
-              Terms of Use
-            </h4>
-            <p className="mb-3">
-              By using this tracking portal, you agree to Yugo&apos;s Terms of Service and Privacy Policy.
-              This portal provides real-time updates about your move, including crew location,
-              inventory details, and move status.
+        <div className="px-8 pt-11 pb-8">
+          <div style={{ marginBottom: 32 }}>
+            <p
+              className="text-[10px] mb-4"
+              style={{ letterSpacing: "0.28em", color: ROSE }}
+            >
+              ON TERMS
             </p>
-
-            <h4 className="font-bold text-[11px] uppercase tracking-wider mb-2" style={{ color: GOLD }}>
-              Privacy &amp; Data
-            </h4>
-            <p className="mb-3">
-              We collect and process your personal information solely for the purpose of
-              providing moving services. Your data is protected and handled in accordance
-              with applicable privacy laws. We use cookies and local storage to remember
-              your preferences and maintain your session.
+            <p
+              className="font-hero italic"
+              style={{
+                fontSize: 19,
+                color: WINE,
+                margin: "0 0 12px",
+                lineHeight: 1.4,
+                letterSpacing: "-0.005em",
+              }}
+            >
+              A quiet promise, on both sides.
             </p>
-
-            <h4 className="font-bold text-[11px] uppercase tracking-wider mb-2" style={{ color: GOLD }}>
-              Tracking &amp; Location
-            </h4>
-            <p className="mb-3">
-              Live tracking data is provided for informational purposes. ETAs are estimates
-              and may vary based on traffic and other conditions. Location data is shared
-              only during active moves and is not stored permanently.
-            </p>
-
-            <h4 className="font-bold text-[11px] uppercase tracking-wider mb-2" style={{ color: GOLD }}>
-              Claims &amp; Liability
-            </h4>
-            <p>
-              Any claims for damages must be reported within 48 hours of move completion.
-              Yugo&apos;s liability is limited as outlined in your Service Agreement. For full
-              details, please review our complete terms.
+            <p
+              style={{
+                fontSize: 13.5,
+                color: "rgba(43,4,22,0.72)",
+                fontWeight: 300,
+                lineHeight: 1.75,
+                margin: 0,
+              }}
+            >
+              By continuing, you agree to Yugo&rsquo;s{" "}
+              <a href="/terms" target="_blank" rel="noopener noreferrer" style={linkStyle}>
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" style={linkStyle}>
+                Privacy Policy
+              </a>
+              . This portal offers you the crew&rsquo;s location, your inventory in view, and the state of the day, in real time.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 mb-5">
-            <a
-              href="/terms"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] font-medium underline underline-offset-2"
-              style={{ color: GOLD }}
+          <hr
+            className="border-0 h-px"
+            style={{ backgroundColor: "rgba(102,20,61,0.35)", margin: "0 0 32px" }}
+          />
+
+          <div style={{ marginBottom: 38 }}>
+            <p
+              className="text-[10px] mb-4"
+              style={{ letterSpacing: "0.28em", color: ROSE }}
             >
-              Full Terms of Use
-            </a>
-            <span className="text-[10px]" style={{ color: "#CCC" }}>&middot;</span>
-            <a
-              href="/cookies"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] font-medium underline underline-offset-2"
-              style={{ color: GOLD }}
+              ON WHAT WE HOLD
+            </p>
+            <p
+              className="font-hero italic"
+              style={{
+                fontSize: 19,
+                color: WINE,
+                margin: "0 0 12px",
+                lineHeight: 1.4,
+                letterSpacing: "-0.005em",
+              }}
             >
-              Cookie Policy
-            </a>
+              Only what serves you.
+            </p>
+            <p
+              style={{
+                fontSize: 13.5,
+                color: "rgba(43,4,22,0.72)",
+                fontWeight: 300,
+                lineHeight: 1.75,
+                margin: 0,
+              }}
+            >
+              Your details are processed to deliver the service, nothing more. Cookies remember your preferences and keep you signed in. You may review the{" "}
+              <a href="/terms" target="_blank" rel="noopener noreferrer" style={linkStyle}>
+                full terms
+              </a>{" "}
+              or the{" "}
+              <a href="/cookies" target="_blank" rel="noopener noreferrer" style={linkStyle}>
+                cookie policy
+              </a>{" "}
+              at any time.
+            </p>
           </div>
 
           <button
             type="button"
             onClick={handleAccept}
-            className="w-full py-3.5 rounded-xl text-[13px] font-bold transition-all hover:opacity-90 active:scale-[0.98]"
+            className="w-full transition-opacity hover:opacity-90 active:scale-[0.99]"
             style={{
-              backgroundColor: GOLD,
-              color: "#1A1A1A",
-              boxShadow: `0 4px 16px ${GOLD}40`,
+              backgroundColor: WINE,
+              color: OFF_WHITE,
+              border: "none",
+              padding: "18px 20px",
+              fontSize: 11,
+              letterSpacing: "0.28em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+              cursor: "pointer",
+              borderRadius: 2,
             }}
           >
-            I Accept &amp; Continue
+            Enter the portal
           </button>
 
-          <p className="text-center text-[10px] mt-3 leading-relaxed" style={{ color: "#AAA" }}>
-            By clicking &ldquo;I Accept &amp; Continue&rdquo;, you agree to our Terms of Use,
-            Privacy Policy, and Cookie Policy.
+          <p
+            className="text-center mt-5"
+            style={{
+              fontSize: 11,
+              color: "rgba(43,4,22,0.42)",
+              fontWeight: 300,
+              lineHeight: 1.65,
+              letterSpacing: "0.01em",
+              margin: "20px 0 0",
+            }}
+          >
+            Continuing acknowledges the Terms of Use, Privacy Policy, and Cookie Policy.
           </p>
+        </div>
+
+        <div className="text-center pb-8">
+          <div
+            className="inline-flex items-center gap-4"
+            style={{ color: "rgba(43,4,22,0.32)" }}
+          >
+            <span className="h-px w-6 block" style={{ backgroundColor: "currentColor" }} />
+            <span className="font-hero italic" style={{ fontSize: 12, letterSpacing: "0.04em" }}>
+              Yugo
+            </span>
+            <span className="h-px w-6 block" style={{ backgroundColor: "currentColor" }} />
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
+const linkStyle: React.CSSProperties = {
+  color: ROSE,
+  textDecoration: "none",
+  borderBottom: "0.5px solid rgba(102,20,61,0.35)",
+  paddingBottom: 1,
+};
