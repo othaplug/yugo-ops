@@ -10,6 +10,7 @@ import { assertChargeMatchesStored } from "@/lib/payments/charge-amount-guard";
 import { humanizePaymentProcessorMessage } from "@/lib/email/payment-error-message";
 import { moveMatchesBalanceReminder48hWindow } from "@/lib/quotes/estate-schedule";
 import { isCollectibleBalance } from "@/lib/money/balance-residual";
+import { isFullPaymentAtBookingService } from "@/app/quote/[quoteId]/quote-shared";
 
 const HS_BASE = "https://api.hubapi.com/crm/v3/objects";
 const HS_TASKS = `${HS_BASE}/tasks`;
@@ -40,7 +41,8 @@ export async function GET(req: NextRequest) {
 
   const results = { charged: 0, failed: 0, skipped: 0, errors: [] as string[] };
 
-  const { data: moves } = await supabase
+  // ── T-2 window: residential/office/long-distance moves 2-3 days out ──
+  const { data: windowMoves } = await supabase
     .from("moves")
     .select("*")
     .in("scheduled_date", [chargeDateStr, chargeDatePlusOneStr])
@@ -48,12 +50,54 @@ export async function GET(req: NextRequest) {
     .not("square_card_id", "is", null)
     .not("deposit_paid_at", "is", null);
 
-  if (!moves || moves.length === 0) {
+  // ── Defense-in-depth: full-payment services with ANY outstanding balance ──
+  // WG / single_item / specialty / event / b2b / bin_rental should have paid
+  // the full amount at booking. If any of them have balance > 0 with a card
+  // on file, a client-side or server-side bug leaked a deposit-only charge
+  // through (see MV-30356 / Erika Biro, 2026-07-06). Charge the balance
+  // immediately — don't wait for T-2 — so short-notice bookings don't sit
+  // uncollected. Payment gate in /api/payments/process now prevents new
+  // leaks; this is the safety net that catches anything already in flight.
+  const FULL_PAYMENT_SERVICES = [
+    "white_glove",
+    "specialty",
+    "single_item",
+    "event",
+    "b2b_delivery",
+    "b2b_oneoff",
+    "bin_rental",
+  ];
+  const { data: leakedMoves } = await supabase
+    .from("moves")
+    .select("*")
+    .in("service_type", FULL_PAYMENT_SERVICES)
+    .gt("balance_amount", 0)
+    .not("square_card_id", "is", null)
+    .not("deposit_paid_at", "is", null)
+    .is("balance_paid_at", null)
+    .neq("payment_marked_paid", true);
+
+  // Merge, dedupe by id (a full-pay move 2 days out would appear in both).
+  const seen = new Set<string>();
+  const moves = [
+    ...(leakedMoves ?? []),
+    ...(windowMoves ?? []),
+  ].filter((m) => {
+    if (seen.has(m.id)) return false;
+    seen.add(m.id);
+    return true;
+  });
+
+  if (moves.length === 0) {
     return NextResponse.json({ ok: true, ...results, message: "No moves to charge" });
   }
 
   for (const move of moves) {
+    // Skip the T-2 window check for full-payment services — they should
+    // have paid at booking, we're catching a leak, not honoring a schedule.
+    const isLeakedFullPay = isFullPaymentAtBookingService(move.service_type);
     if (
+      !isLeakedFullPay &&
       !moveMatchesBalanceReminder48hWindow({
         scheduledDate: move.scheduled_date,
         twoDaysOutIso: chargeDateStr,
