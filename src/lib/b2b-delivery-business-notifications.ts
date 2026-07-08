@@ -2,7 +2,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { sendEmail } from "@/lib/email/send";
 import { b2bOneOffDeliveredEmail, b2bOneOffEnRouteEmail } from "@/lib/email-templates";
-import { sendSMS } from "@/lib/sms/sendSMS";
 
 function isB2BOneOffRow(row: {
   booking_type?: string | null;
@@ -46,12 +45,14 @@ export async function maybeNotifyB2BOneOffOutForDelivery(
   });
 
   if (email) await sendEmail({ to: email, subject: subj, html }).catch(() => {});
-  if (phone) {
-    await sendSMS(
-      phone,
-      [`Your delivery to ${cust} is out for delivery with Yugo.`, `Track: ${trackUrl}`, `Questions? (647) 370-4525`].join("\n"),
-    ).catch(() => {});
-  }
+  // SMS path deliberately removed. The same checkpoint (`en_route_*`)
+  // also triggers sendPartnerDeliveryCheckpointSms, which sends a
+  // neutral "Your crew is on the way to you" line. When the business
+  // contact IS the customer (one-off flow, no org), the old copy
+  // ("Your delivery to <Jenny> is out for delivery") reads awkwardly
+  // third-person to Jenny herself — and produces a duplicate SMS
+  // alongside the checkpoint one. Keep the email; kill the SMS.
+  void phone;
   await admin
     .from("deliveries")
     .update({ b2b_business_notify_en_route_sent_at: new Date().toISOString() })
@@ -82,12 +83,11 @@ export async function maybeNotifyB2BOneOffDelivered(deliveryId: string): Promise
   const html = b2bOneOffDeliveredEmail({ customerName: cust, trackUrl });
 
   if (email) await sendEmail({ to: email, subject: subj, html }).catch(() => {});
-  if (phone) {
-    await sendSMS(
-      phone,
-      [`Delivered: your delivery to ${cust} is complete (Yugo).`, `POD & photos: ${trackUrl}`, `Questions? (647) 370-4525`].join("\n"),
-    ).catch(() => {});
-  }
+  // Delivered SMS path removed for the same reason as en_route above —
+  // the checkpoint SMS already covers this milestone without the
+  // third-person copy that mis-fires on one-off deliveries.
+  void phone;
+  void cust;
   await admin
     .from("deliveries")
     .update({ b2b_business_notify_delivered_sent_at: new Date().toISOString() })

@@ -278,6 +278,51 @@ export async function syncJobToGCal(input: GCalJobInput): Promise<GCalSyncResult
     return { eventId: updatedId, action: "updated" };
   }
 
+  // Defensive: before creating, search GCal for any existing event tagged
+  // with this jobId. Guards against a stale duplicate showing up on the
+  // crew calendar when `gcal_event_id` was lost from the DB (early sync
+  // race, manual row edit, or an older code path that forgot to persist
+  // it). Without this, DLV-30334 / -30352 / -30353 all rendered twice on
+  // TUE 30 — one event pointed at by the DB, and an orphan from a prior
+  // sync. Now the sync reconciles onto the orphan instead of piling on.
+  try {
+    const searchUrl =
+      `/calendars/${calId}/events?` +
+      `privateExtendedProperty=yugoJobId%3D${encodeURIComponent(input.jobId)}` +
+      `&maxResults=10&showDeleted=false`;
+    const search = await callGCal(searchUrl, "GET");
+    if (search.ok) {
+      const items = (
+        (search.data as { items?: { id?: string }[] })?.items ?? []
+      ).filter((it): it is { id: string } => typeof it.id === "string");
+      if (items.length > 0) {
+        const primary = items[0];
+        // Any additional events tagged for this jobId are orphaned dupes
+        // from a prior sync — delete them so the crew calendar doesn't
+        // render the same delivery twice. Best-effort; leftover extras
+        // are non-blocking (the update below still returns success).
+        for (const dupe of items.slice(1)) {
+          await callGCal(
+            `/calendars/${calId}/events/${dupe.id}`,
+            "DELETE",
+          ).catch(() => undefined);
+        }
+        const upd = await callGCal(
+          `/calendars/${calId}/events/${primary.id}`,
+          "PUT",
+          eventBody,
+        );
+        if (upd.ok) {
+          const updatedId =
+            (upd.data as { id?: string })?.id ?? primary.id;
+          return { eventId: updatedId, action: "updated" };
+        }
+      }
+    }
+  } catch {
+    // Search is best-effort; fall through to insert if it fails.
+  }
+
   const ins = await callGCal(`/calendars/${calId}/events`, "POST", eventBody);
   if (!ins.ok) return { eventId: null, action: "error", error: ins.error };
   const newId = (ins.data as { id?: string })?.id ?? null;

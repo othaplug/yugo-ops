@@ -108,10 +108,10 @@ function checkpointSmsLine(
         return `${crew} arrived at pickup.`;
       case "en_route_to_destination":
       case "en_route":
-        return `${crew} is on the way to the delivery address.`;
+        return `${crew} is on the way to you.`;
       case "arrived_at_destination":
       case "arrived":
-        return `${crew} arrived with your delivery.`;
+        return `${crew} just arrived with your delivery.`;
       case "completed":
         return `Your delivery is complete. Thanks for choosing Yugo.`;
       default:
@@ -199,16 +199,28 @@ export async function sendPartnerDeliveryCheckpointSms(opts: {
   const linePartner = checkpointSmsLine(status, "delivery");
   const lineClient = linePartner;
 
+  // Attach the tracking URL only on the FIRST outgoing checkpoint SMS
+  // for this delivery (the "job started" ping). Later checkpoints stay
+  // brief — repeating the same long URL every 20 minutes reads as spam
+  // and the customer already has the link saved from message #1.
+  const isFirstCheckpoint =
+    status === "en_route_to_pickup" || status === "en_route";
   const sent = new Set<string>();
   const sendIf = async (raw: string, url: string, line: string) => {
     const d = digitsOnly(raw);
     if (d.length < 10) return;
     if (sent.has(d)) return;
     sent.add(d);
-    const body = `${line}\n\nTrack: ${url}\n\nQuestions? (647) 370-4525`;
+    const body = isFirstCheckpoint
+      ? `${line}\n\nTrack: ${url}\n\nQuestions? (647) 370-4525`
+      : line;
     await sendSMS(raw, body).catch(() => {});
   };
 
+  // Cross-role de-dup: when the business contact IS the customer (one-off
+  // deliveries where the partner phone equals the recipient phone), we
+  // must not fire twice. `sendIf` already dedupes by phone, but we
+  // pre-seed it here explicitly for clarity.
   if (notifyPartner && partnerPhone) {
     await sendIf(partnerPhone, bizUrl, linePartner);
   }
@@ -280,13 +292,17 @@ export async function sendPartnerMoveCheckpointSms(opts: {
   const linePartner = checkpointSmsLine(status, "move");
   const lineClient = linePartner;
 
+  const isFirstCheckpoint =
+    status === "en_route_to_pickup" || status === "en_route";
   const sent = new Set<string>();
   const sendIf = async (raw: string, line: string) => {
     const d = digitsOnly(raw);
     if (d.length < 10) return;
     if (sent.has(d)) return;
     sent.add(d);
-    const body = `${line}\n\nTrack: ${trackUrl}\n\nQuestions? (647) 370-4525`;
+    const body = isFirstCheckpoint
+      ? `${line}\n\nTrack: ${trackUrl}\n\nQuestions? (647) 370-4525`
+      : line;
     await sendSMS(raw, body).catch(() => {});
   };
 

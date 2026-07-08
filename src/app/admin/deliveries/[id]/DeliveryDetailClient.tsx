@@ -65,17 +65,38 @@ const STATUS_FLOW = [
   "in-transit",
   "delivered",
 ] as const;
+/**
+ * Display map — used for rendering the badge from any legacy value that
+ * still lives in the DB. Two forms of the same status can coexist here
+ * (delivered ~ completed, in-transit ~ in_progress); the dropdown below
+ * only offers one canonical form per state.
+ */
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pending",
   pending_approval: "Awaiting Approval",
   scheduled: "Scheduled",
   confirmed: "Confirmed",
   "in-transit": "In Transit",
-  in_progress: "In Progress",
+  in_progress: "In Transit",
   delivered: "Completed",
   completed: "Completed",
   cancelled: "Cancelled",
 };
+
+/**
+ * Ordered canonical options for the status picker. One row per state —
+ * legacy synonyms (delivered, in-transit) are collapsed into the modern
+ * value so operators never see two "Completed" rows in the dropdown.
+ */
+const STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: "pending", label: "Pending" },
+  { value: "pending_approval", label: "Awaiting Approval" },
+  { value: "scheduled", label: "Scheduled" },
+  { value: "confirmed", label: "Confirmed" },
+  { value: "in_progress", label: "In Transit" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+];
 
 /** Status label colours: light = saturated (readable on cream); dark = lighter (readable on wine / glass). */
 const STATUS_COLORS: Record<string, { dot: string; bg: string; text: string }> =
@@ -1352,9 +1373,9 @@ export default function DeliveryDetailClient({
                     onChange={(e) => handleStatusChange(e.target.value)}
                     className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
                   >
-                    {Object.entries(STATUS_LABELS).map(([val, label]) => (
-                      <option key={val} value={val}>
-                        {label}
+                    {STATUS_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
                       </option>
                     ))}
                   </select>

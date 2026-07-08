@@ -513,9 +513,11 @@ export default function EditDeliveryModal({
                 className={selectCls}
               >
                 <option value="pending">Pending</option>
+                <option value="pending_approval">Awaiting Approval</option>
+                <option value="scheduled">Scheduled</option>
                 <option value="confirmed">Confirmed</option>
-                <option value="in-transit">In Transit</option>
-                <option value="delivered">Completed</option>
+                <option value="in_progress">In Transit</option>
+                <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
