@@ -821,13 +821,20 @@ export async function createMoveFromQuote(
     if (Array.isArray(wgItems) && wgItems.length > 0) {
       const inventoryRows = (wgItems as Array<Record<string, unknown>>)
         .filter((item) => item && typeof item.description === "string" && item.description.trim())
-        .map((item, idx) => ({
-          move_id: primary.id,
-          room: DELIVERY_ROOM_LABEL,
-          item_name: String(item.description).trim(),
-          box_number: null,
-          sort_order: idx,
-        }));
+        .map((item, idx) => {
+          const desc = String(item.description).trim();
+          const qty =
+            typeof item.quantity === "number" && Number.isFinite(item.quantity) && item.quantity > 1
+              ? Math.round(item.quantity)
+              : 1;
+          return {
+            move_id: primary.id,
+            room: DELIVERY_ROOM_LABEL,
+            item_name: qty > 1 ? `${desc} x${qty}` : desc,
+            box_number: null,
+            sort_order: idx,
+          };
+        });
       if (inventoryRows.length > 0) {
         await supabase.from("move_inventory").insert(inventoryRows).then(() => {});
       }
