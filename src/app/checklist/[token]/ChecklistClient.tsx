@@ -4,6 +4,7 @@ import { useMemo, useState, useCallback } from "react";
 import { Check } from "@phosphor-icons/react";
 import {
   CLIENT_MOVE_CHECKLIST,
+  CLIENT_OFFICE_CHECKLIST,
   filterChecklistItems,
   drawerItemText,
 } from "@/lib/client-move-checklist";
@@ -26,6 +27,7 @@ export default function ChecklistClient({
   hasElevatorHint,
   parkingLikely,
   tierLower,
+  isOfficeMove = false,
 }: {
   token: string;
   clientName: string;
@@ -33,18 +35,22 @@ export default function ChecklistClient({
   hasElevatorHint: boolean;
   parkingLikely: boolean;
   tierLower: string;
+  isOfficeMove?: boolean;
 }) {
   const [checked, setChecked] = useState<Record<string, boolean>>(initialChecked);
   const [saving, setSaving] = useState(false);
 
   const categories = useMemo(
     () =>
-      filterChecklistItems(CLIENT_MOVE_CHECKLIST, {
-        hasElevatorHint,
-        parkingReminderLikely: parkingLikely,
-        tierLower,
-      }),
-    [hasElevatorHint, parkingLikely, tierLower],
+      filterChecklistItems(
+        isOfficeMove ? CLIENT_OFFICE_CHECKLIST : CLIENT_MOVE_CHECKLIST,
+        {
+          hasElevatorHint,
+          parkingReminderLikely: parkingLikely,
+          tierLower,
+        },
+      ),
+    [hasElevatorHint, parkingLikely, tierLower, isOfficeMove],
   );
 
   const toggle = useCallback(
@@ -85,11 +91,12 @@ export default function ChecklistClient({
             style={{ backgroundColor: `${WINE}33` }}
           />
           <h1 className="font-hero text-[28px] leading-tight" style={{ color: INK }}>
-            Move-day checklist
+            {isOfficeMove ? "Office relocation checklist" : "Move-day checklist"}
           </h1>
           <p className="text-[13px] mt-2 leading-relaxed" style={{ color: MUTED }}>
-            Hi {first}, check items off as you go. We&apos;ll save your progress
-            on this device.
+            {isOfficeMove
+              ? `Hi ${first}, here is a phased view of what to prep before move week. Check items off as your team completes them.`
+              : `Hi ${first}, check items off as you go. We'll save your progress on this device.`}
           </p>
         </header>
 

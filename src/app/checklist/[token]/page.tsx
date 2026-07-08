@@ -26,7 +26,7 @@ export default async function ChecklistTokenPage({
   const { data: move, error: moveErr } = await sb
     .from("moves")
     .select(
-      "id, client_name, from_access, to_access, from_parking, to_parking, tier_selected, extended_checklist_progress",
+      "id, client_name, from_access, to_access, from_parking, to_parking, tier_selected, extended_checklist_progress, service_type",
     )
     .eq("checklist_token", t)
     .maybeSingle();
@@ -40,6 +40,9 @@ export default async function ChecklistTokenPage({
     .toLowerCase()
     .trim();
 
+  const isOfficeMove =
+    String(move.service_type || "").toLowerCase().trim() === "office_move";
+
   return (
     <ChecklistClient
       token={t}
@@ -48,6 +51,7 @@ export default async function ChecklistTokenPage({
       hasElevatorHint={accessMentionsElevator(move.from_access, move.to_access)}
       parkingLikely={parkingReminderLikelyNeeded(move)}
       tierLower={tierLower}
+      isOfficeMove={isOfficeMove}
     />
   );
 }

@@ -433,10 +433,16 @@ export async function GET(req: NextRequest) {
     if (!tok) continue;
     const checklistUrl = `${baseUrl}/checklist/${tok}`;
     const first = (m.client_name || "").trim().split(/\s+/)[0] || "there";
+    const isOfficeMove =
+      String(m.service_type ?? "").toLowerCase().trim() === "office_move";
     const html = statusUpdateEmailHtml({
-      eyebrow: "Prep",
-      headline: "Your move is in 3 days",
-      body: `Hi ${first},<br/><br/>Here is a quick checklist to help you prepare for move day. Check items off on your phone as you go.`,
+      eyebrow: isOfficeMove ? "Relocation prep" : "Prep",
+      headline: isOfficeMove
+        ? "Your office relocation is in 3 days"
+        : "Your move is in 3 days",
+      body: isOfficeMove
+        ? `Hi ${first},<br/><br/>Here is your office relocation checklist — phased across the two weeks leading up to move day. Cover COI, freight elevators, IT power-down, floor plan sign-off, and staff comms. Check items off as your team completes them.`
+        : `Hi ${first},<br/><br/>Here is a quick checklist to help you prepare for move day. Check items off on your phone as you go.`,
       ctaUrl: checklistUrl,
       ctaLabel: "VIEW CHECKLIST",
       includeFooter: true,
@@ -445,7 +451,9 @@ export async function GET(req: NextRequest) {
     try {
       const r = await sendEmail({
         to: m.client_email,
-        subject: "Your move is in 3 days: a quick prep checklist",
+        subject: isOfficeMove
+          ? "Your office relocation is in 3 days: prep checklist"
+          : "Your move is in 3 days: a quick prep checklist",
         html,
       });
       if (r.success) {
