@@ -11,6 +11,7 @@ import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment
 import { squareThrownErrorStructured } from "@/lib/square-payment-errors";
 import { assertChargeMatchesStored } from "@/lib/payments/charge-amount-guard";
 import { buildSquarePaymentNote } from "@/lib/square-payment-notes";
+import { fetchPaymentReceiptsForMove } from "@/lib/payments/receipts-for-move";
 
 /**
  * Process a voluntary balance payment from the client payment page.
@@ -130,11 +131,17 @@ export async function POST(req: Request) {
       icon: "dollar",
     });
 
-    // Send receipt email
+    // Send receipt email — include the full payment history (deposit +
+    // this balance + any tips / extras) so the customer sees both
+    // receipts and a grand total in one place.
     if (move.client_email) {
       const baseUrl = getEmailBaseUrl();
       const trackToken = signTrackToken("move", moveId);
       const trackingUrl = `${baseUrl}/track/move/${move.move_code ?? moveId}?token=${trackToken}`;
+      const { receipts, totalPaid } = await fetchPaymentReceiptsForMove(
+        supabase,
+        moveId,
+      );
 
       sendEmail({
         to: move.client_email,
@@ -148,6 +155,13 @@ export async function POST(req: Request) {
           transactionFee: 0,
           totalCharged: ccTotal,
           trackingUrl,
+          paymentHistory: receipts.map((r) => ({
+            label: r.label,
+            amount: r.amount,
+            paidAt: r.paidAt,
+            receiptUrl: r.receiptUrl,
+          })),
+          totalPaid,
         },
       }).catch(() => {});
     }

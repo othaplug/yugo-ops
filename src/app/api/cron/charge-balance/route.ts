@@ -12,6 +12,7 @@ import { moveMatchesBalanceReminder48hWindow } from "@/lib/quotes/estate-schedul
 import { isCollectibleBalance } from "@/lib/money/balance-residual";
 import { isFullPaymentAtBookingService } from "@/app/quote/[quoteId]/quote-shared";
 import { buildSquarePaymentNote } from "@/lib/square-payment-notes";
+import { fetchPaymentReceiptsForMove } from "@/lib/payments/receipts-for-move";
 
 const HS_BASE = "https://api.hubapi.com/crm/v3/objects";
 const HS_TASKS = `${HS_BASE}/tasks`;
@@ -182,10 +183,17 @@ export async function GET(req: NextRequest) {
         icon: "dollar",
       });
 
-      // Send receipt to client
+      // Send receipt to client — include the full payment history
+      // (deposit + this balance + any tips / extras) so the customer
+      // reconciles the total across one email instead of hunting for
+      // separate Square receipts in their inbox.
       if (move.client_email) {
         const trackToken = signTrackToken("move", move.id);
         const trackingUrl = `${baseUrl}/track/move/${move.move_code ?? move.id}?token=${trackToken}`;
+        const { receipts, totalPaid } = await fetchPaymentReceiptsForMove(
+          supabase,
+          move.id,
+        );
 
         await sendEmail({
           to: move.client_email,
@@ -199,6 +207,13 @@ export async function GET(req: NextRequest) {
             transactionFee: 0,
             totalCharged: balanceAmount,
             trackingUrl,
+            paymentHistory: receipts.map((r) => ({
+              label: r.label,
+              amount: r.amount,
+              paidAt: r.paidAt,
+              receiptUrl: r.receiptUrl,
+            })),
+            totalPaid,
           },
         }).catch(() => {});
       }

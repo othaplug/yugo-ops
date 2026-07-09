@@ -1255,6 +1255,103 @@ export interface BalanceAutoChargeReceiptData {
   transactionFee: number;
   totalCharged: number;
   trackingUrl: string;
+  /**
+   * Full payment history for this move (deposit + this balance + any tips /
+   * extras). Rendered as a "Your payment receipts" block so the customer
+   * sees BOTH the deposit receipt AND the balance receipt with a grand
+   * total — works around Square emitting one receipt per transaction.
+   */
+  paymentHistory?: {
+    label: string;
+    amount: number;
+    paidAt: string | null;
+    receiptUrl: string | null;
+  }[];
+  /** Grand total across all payments in paymentHistory (for the summary row). */
+  totalPaid?: number;
+}
+
+function formatReceiptDate(iso: string | null): string {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * "Your payment receipts" block — every completed payment on this move
+ * with a link to the Square receipt for each. Only rendered when there
+ * is more than one payment (otherwise it's redundant with the receipt
+ * table above). Works around Square emitting one receipt per charge:
+ * the deposit and the balance each get their own receipt URL, and the
+ * customer needs both to reconcile the full $757.10 they paid.
+ */
+function renderPaymentHistoryBlock(
+  history: BalanceAutoChargeReceiptData["paymentHistory"],
+  totalPaid: number | undefined,
+): string {
+  if (!Array.isArray(history) || history.length < 2) return "";
+
+  const rows = history
+    .map((entry) => {
+      const dateBit = entry.paidAt ? formatReceiptDate(entry.paidAt) : "";
+      const labelParts = [entry.label, dateBit].filter(Boolean);
+      const labelHtml = labelParts.join(" · ");
+      const receiptLink = entry.receiptUrl
+        ? `<a href="${entry.receiptUrl}" style="color:${EMAIL_FOREST};text-decoration:underline;font-family:${PREMIUM_FONT};font-size:13px;">View receipt</a>`
+        : `<span style="color:${PROMO_CREAM_MUTED};font-family:${PREMIUM_FONT};font-size:13px;">—</span>`;
+      return `
+        <tr>
+          <td style="padding:10px 14px;font-family:${PREMIUM_FONT};font-size:13px;color:${EMAIL_FOREST};border-top:1px solid ${CONTRACT_DIVIDER_STRONG};">
+            ${labelHtml}
+          </td>
+          <td align="right" style="padding:10px 14px;font-family:${PREMIUM_FONT};font-size:13px;font-weight:600;color:${EMAIL_FOREST};border-top:1px solid ${CONTRACT_DIVIDER_STRONG};white-space:nowrap;">
+            ${formatCurrencyEmail(entry.amount)}
+          </td>
+          <td align="right" style="padding:10px 14px;border-top:1px solid ${CONTRACT_DIVIDER_STRONG};white-space:nowrap;">
+            ${receiptLink}
+          </td>
+        </tr>`;
+    })
+    .join("");
+
+  const totalRow =
+    typeof totalPaid === "number"
+      ? `
+        <tr>
+          <td style="padding:12px 14px;font-family:${PREMIUM_FONT};font-size:13px;font-weight:700;color:${EMAIL_FOREST};border-top:2px solid ${CONTRACT_DIVIDER_STRONG};text-transform:uppercase;letter-spacing:0.06em;">
+            Total paid
+          </td>
+          <td align="right" style="padding:12px 14px;font-family:${PREMIUM_FONT};font-size:15px;font-weight:700;color:${EMAIL_FOREST};border-top:2px solid ${CONTRACT_DIVIDER_STRONG};white-space:nowrap;">
+            ${formatCurrencyEmail(totalPaid)}
+          </td>
+          <td style="border-top:2px solid ${CONTRACT_DIVIDER_STRONG};"></td>
+        </tr>`
+      : "";
+
+  return `
+    <div style="font-family:${PREMIUM_FONT};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:${PROMO_CREAM_MUTED};margin:0 0 8px;">
+      Your payment receipts
+    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:22px;font-family:${PREMIUM_FONT}">
+      <tr>
+        <td style="padding:0;background-color:${EQ_CREME_HEAD};" colspan="3">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;width:100%;">
+            <tr>
+              <td style="${CONTRACT_HDR_SPLIT}">Payment</td>
+              <td align="right" style="${CONTRACT_HDR_SPLIT}">Amount</td>
+              <td align="right" style="${CONTRACT_HDR_SPLIT}">Receipt</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      ${rows}
+      ${totalRow}
+    </table>
+  `;
 }
 
 export function balanceAutoChargeReceiptEmail(
@@ -1287,6 +1384,8 @@ export function balanceAutoChargeReceiptEmail(
         valueHtml: formatCurrencyEmail(d.totalCharged),
       })}
     </table>
+
+    ${renderPaymentHistoryBlock(d.paymentHistory, d.totalPaid)}
 
     <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.22);border-radius:0;padding:16px;margin-bottom:22px;text-align:center;font-family:${PREMIUM_FONT}">
       <div style="font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:#2D9F5A !important;-webkit-text-fill-color:#2D9F5A;letter-spacing:0px;text-transform:uppercase;">Your account is paid in full.</div>
