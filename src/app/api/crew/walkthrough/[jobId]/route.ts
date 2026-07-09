@@ -227,15 +227,34 @@ ${removed.length > 0 ? `<p><strong>Missing items:</strong><br>${missingLines.rep
         .eq("id", moveId)
         .single();
       if (moveData?.client_phone) {
-        const addedSummary = added
-          .map((a) => `${a.item_name} ×${a.quantity}`)
-          .join(", ");
         const hst = Math.round(autoDelta * 0.13 * 100) / 100;
         const total = Math.round((autoDelta + hst) * 100) / 100;
+        // Pricing-line variant selection (2026-07-06). The old copy
+        // hardcoded "$0" when total <= 0 — which fired every time the
+        // crew flagged custom / bespoke items whose price the
+        // coordinator hadn't set yet (is_custom=true → surcharge is 0).
+        // Client-side that reads as "please approve a $0 charge",
+        // which is confusing at best and untrustworthy at worst.
+        //
+        // Three cases now:
+        //   1. total > 0  → real number, real charge.
+        //   2. total = 0 AND pending custom items → coordinator
+        //      follows up with pricing. No dollar figure in the SMS.
+        //   3. total = 0 AND no pending items → net zero (e.g. adds
+        //      and removals wash) → just say the quote was updated.
+        const hasPendingCustomPricing = added.some((a) => a.is_custom);
+        let pricingLine: string;
+        if (total > 0) {
+          pricingLine = `Adjusted charge: $${total.toFixed(2)} (incl. HST).`;
+        } else if (hasPendingCustomPricing) {
+          pricingLine = `Your coordinator will contact you shortly with the adjusted pricing.`;
+        } else {
+          pricingLine = `Your quote has been updated — no additional charge.`;
+        }
         const clientSms = [
           `Hi ${moveData.client_name?.split(" ")[0] ?? "there"},`,
           `During your walkthrough, your crew identified a few items not included in your original quote. We want to keep you fully informed before proceeding.`,
-          `Adjusted charge: $${total > 0 ? total.toFixed(2) : "0"} (incl. HST).`,
+          pricingLine,
           `Review and approve at your convenience:\n${trackUrl}`,
         ].join("\n\n");
         await sendSMS(normalizePhone(moveData.client_phone), clientSms);
