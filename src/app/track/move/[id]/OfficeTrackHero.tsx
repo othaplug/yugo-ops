@@ -220,12 +220,16 @@ export function OfficeTrackHero({
   // Essential + Signature don't include an on-site PM (per
   // office-tier-definitions.ts). The client sees a coordinator, not a
   // project manager, on the hero + labels + KV rows.
+  // Priority: on-site Project Manager runs the show; NEVER fall back
+  // to the coordinator (they're distinct people with distinct roles
+  // — one books, one runs the day). Show a placeholder if PM isn't
+  // set yet rather than pretending Jon is both.
   const leadName = isPriority
-    ? projectManagerName || coordinatorName || "Your project manager"
-    : coordinatorName || projectManagerName || "Your coordinator";
+    ? projectManagerName || "Your project manager"
+    : coordinatorName || "Your coordinator";
   const leadPhone = isPriority
-    ? projectManagerPhone || coordinatorPhone || null
-    : coordinatorPhone || projectManagerPhone || null;
+    ? projectManagerPhone || null
+    : coordinatorPhone || null;
   const leadRoleLabel = isPriority ? "Project Manager" : "Coordinator";
   const heroHeadline = isPriority
     ? "Your relocation is in motion."
@@ -443,6 +447,39 @@ export function OfficeTrackHero({
               </a>
             )}
           </div>
+          {/* Priority: also surface the Coordinator as a distinct
+              secondary contact. Coordinator books and orchestrates,
+              PM runs the crew on site — two roles, two people. Only
+              shown when the coordinator is a different person than
+              the PM (so we don't render "Jon / Jon"). */}
+          {isPriority &&
+          coordinatorName?.trim() &&
+          coordinatorName.trim().toLowerCase() !==
+            (projectManagerName?.trim() || "").toLowerCase() ? (
+            <div>
+              <p
+                className="text-[9px] font-bold tracking-widest uppercase mb-1"
+                style={{ color: palette.kicker }}
+              >
+                Coordinator
+              </p>
+              <p
+                className="text-[13px] font-semibold"
+                style={{ color: palette.ink }}
+              >
+                {coordinatorName.trim()}
+              </p>
+              {coordinatorPhone ? (
+                <a
+                  href={`tel:+1${coordinatorPhone.replace(/\D/g, "")}`}
+                  className="text-[11px] underline underline-offset-2"
+                  style={{ color: palette.kicker }}
+                >
+                  {coordinatorPhone}
+                </a>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         {showShareBanner && (

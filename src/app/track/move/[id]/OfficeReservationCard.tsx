@@ -50,6 +50,15 @@ export interface OfficeReservationCardProps {
   toAddress: string | null;
   projectManagerName: string | null;
   projectManagerRole?: string;
+  /**
+   * Coordinator — the person who booked and orchestrates the move
+   * (distinct from the on-site Project Manager). On Priority they're
+   * two different people and BOTH show on the "Managed by" footer so
+   * the client knows who to call for scheduling (coordinator) vs who
+   * they'll meet on move day (PM). On Essential / Signature there is
+   * no on-site PM so this is the only lead surfaced.
+   */
+  coordinatorName?: string | null;
   companyName?: string | null;
   /**
    * Suppress the "Managed by" footer. Essential is the most basic tier —
@@ -182,6 +191,7 @@ export default function OfficeReservationCard({
   toAddress,
   projectManagerName,
   projectManagerRole = "Project Manager",
+  coordinatorName,
   companyName,
   hideManagedBy = false,
 }: OfficeReservationCardProps) {
@@ -244,32 +254,79 @@ export default function OfficeReservationCard({
         </p>
       )}
 
-      {/* PM signature — suppressed for Essential (most basic tier, no
-          dedicated lead-person surface). */}
+      {/* Managed by — suppressed for Essential (most basic tier, no
+          dedicated lead-person surface). On Priority both the on-site
+          Project Manager AND the Coordinator show as two distinct
+          people (one runs the day, one owns the booking); on
+          Signature only the Coordinator shows. Fallbacks are never
+          used — an empty slot renders nothing rather than pretending
+          the same person fills both roles. */}
       {!hideManagedBy && (
         <>
           <Divider />
-          <footer className="flex items-center justify-end gap-2">
-            <div className="text-right">
-              <p
-                className="text-[10px] font-bold uppercase tracking-[0.14em]"
-                style={{ color: CREAM_SUBTLE }}
-              >
-                Managed by
-              </p>
-              <p
-                className="text-[14px] font-semibold mt-0.5"
-                style={{ color: FOREST }}
-              >
-                {projectManagerName?.trim() || "Your Yugo project team"}
-              </p>
-              <p
-                className="text-[11px]"
-                style={{ color: CREAM_SUBTLE }}
-              >
-                {projectManagerRole}
-              </p>
-            </div>
+          <footer className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-end sm:gap-8">
+            {projectManagerName?.trim() ? (
+              <div className="text-right">
+                <p
+                  className="text-[10px] font-bold uppercase tracking-[0.14em]"
+                  style={{ color: CREAM_SUBTLE }}
+                >
+                  On-site lead
+                </p>
+                <p
+                  className="text-[14px] font-semibold mt-0.5"
+                  style={{ color: FOREST }}
+                >
+                  {projectManagerName.trim()}
+                </p>
+                <p
+                  className="text-[11px]"
+                  style={{ color: CREAM_SUBTLE }}
+                >
+                  {projectManagerRole}
+                </p>
+              </div>
+            ) : null}
+            {coordinatorName?.trim() &&
+            coordinatorName.trim().toLowerCase() !==
+              (projectManagerName?.trim() || "").toLowerCase() ? (
+              <div className="text-right">
+                <p
+                  className="text-[10px] font-bold uppercase tracking-[0.14em]"
+                  style={{ color: CREAM_SUBTLE }}
+                >
+                  Coordinated by
+                </p>
+                <p
+                  className="text-[14px] font-semibold mt-0.5"
+                  style={{ color: FOREST }}
+                >
+                  {coordinatorName.trim()}
+                </p>
+                <p
+                  className="text-[11px]"
+                  style={{ color: CREAM_SUBTLE }}
+                >
+                  Move Coordinator
+                </p>
+              </div>
+            ) : null}
+            {!projectManagerName?.trim() && !coordinatorName?.trim() ? (
+              <div className="text-right">
+                <p
+                  className="text-[10px] font-bold uppercase tracking-[0.14em]"
+                  style={{ color: CREAM_SUBTLE }}
+                >
+                  Managed by
+                </p>
+                <p
+                  className="text-[14px] font-semibold mt-0.5"
+                  style={{ color: FOREST }}
+                >
+                  Your Yugo project team
+                </p>
+              </div>
+            ) : null}
           </footer>
         </>
       )}

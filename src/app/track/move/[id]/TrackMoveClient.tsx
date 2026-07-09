@@ -1092,9 +1092,32 @@ export default function TrackMoveClient({
   const sqCardRef = useRef<SquareCard | null>(null);
   const sqInitRef = useRef(false);
 
-  const crewMembers = Array.isArray(move.assigned_members)
+  const rawCrewMembers = Array.isArray(move.assigned_members)
     ? move.assigned_members
     : (crew?.members ?? []);
+  // On office moves the Project Manager IS the crew lead (the one who
+  // runs the crew on the day and logs into the crew app). Reorder the
+  // roster so the PM sits at position 0 — that way the positional
+  // crewRoles array below assigns them "Lead" automatically, instead
+  // of the roster's first name (usually the alphabetical first entry)
+  // getting the Lead label even when someone else is actually running
+  // the day.
+  const officePmForRoster =
+    String(move.service_type || "").toLowerCase() === "office_move"
+      ? (officeProjectManagerName || "").trim()
+      : "";
+  const crewMembers: string[] = officePmForRoster
+    ? [
+        ...rawCrewMembers.filter(
+          (m: string) =>
+            String(m).trim().toLowerCase() === officePmForRoster.toLowerCase(),
+        ),
+        ...rawCrewMembers.filter(
+          (m: string) =>
+            String(m).trim().toLowerCase() !== officePmForRoster.toLowerCase(),
+        ),
+      ]
+    : rawCrewMembers;
   const crewRoles = ["Lead", "Specialist", "Specialist", "Driver"];
 
   const handleSubmitChange = async () => {
@@ -1697,13 +1720,14 @@ export default function TrackMoveClient({
               }
               coordinatorName={coordinatorName}
               coordinatorPhone={coordinatorPhone}
-              // PM defaults to coordinator when no distinct PM has been
-              // captured yet (post-book crew assignment can override). The
-              // office line is always the shared support number.
-              projectManagerName={officeProjectManagerName ?? coordinatorName}
-              projectManagerPhone={
-                officeProjectManagerPhone ?? "(647) 370-4525"
-              }
+              // Project Manager and Coordinator are two DISTINCT roles
+              // (PM runs the crew on the day, Coordinator books and
+              // orchestrates). Never fall back PM to coordinator — an
+              // unset PM renders as "Your project manager" so the client
+              // knows one hasn't been named yet, instead of thinking Jon
+              // fills both slots.
+              projectManagerName={officeProjectManagerName ?? null}
+              projectManagerPhone={officeProjectManagerPhone ?? null}
               fleetLabel={formatOfficeFleetLabel(
                 (move.truck_primary as string | null) ?? null,
                 officeTruckCount ?? null,
@@ -4074,12 +4098,19 @@ export default function TrackMoveClient({
                     toAddress={
                       move.to_address ?? move.delivery_address ?? null
                     }
+                    // Priority = crew-lead / on-site PM (separate person
+                    // from the coordinator). Never fall this back to the
+                    // coordinator — those are two distinct roles: the
+                    // coordinator books and orchestrates, the PM runs
+                    // the crew on the day. Falling back conflated them
+                    // and made "Jon" appear on both slots.
                     projectManagerName={
                       isOfficePriorityTier
-                        ? officeProjectManagerName ?? coordinatorName ?? null
-                        : coordinatorName ?? null
+                        ? officeProjectManagerName ?? null
+                        : null
                     }
                     projectManagerRole={officeLeadRoleLabel}
+                    coordinatorName={coordinatorName ?? null}
                     companyName={null}
                     hideManagedBy={officeTierKey === "essential"}
                   />
@@ -4552,9 +4583,7 @@ export default function TrackMoveClient({
                             ? "delivery"
                             : "move"
                       }
-                      projectManagerName={
-                        officeProjectManagerName ?? coordinatorName ?? null
-                      }
+                      projectManagerName={officeProjectManagerName ?? null}
                     />
                   </div>
                 )}
