@@ -977,6 +977,8 @@ export async function createMoveFromQuote(
         scheduledDateIso: scheduledIso,
         estimatedDays: officeDayCount,
         dayBreakdown: officeDayBreakdown,
+        serviceType: "office_move",
+        tierSelected: tierKey,
       });
     }
   }

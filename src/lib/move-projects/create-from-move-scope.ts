@@ -4,7 +4,7 @@ import type {
   PackingRoomsPayload,
   MoveProjectSchedulePayload,
 } from "@/lib/move-projects/planner-payload";
-import { labelForDayType, MOVE_DAY_STAGE_FLOW } from "@/lib/move-projects/day-types";
+import { labelForDayType, MOVE_DAY_STAGE_FLOW, resolveDayStageFlow } from "@/lib/move-projects/day-types";
 
 type BreakdownRow = { day?: number; type?: string; rate?: number };
 
@@ -87,6 +87,16 @@ export async function attachMultiDayMoveProjectFromScope(
     estimatedDays: number;
     dayBreakdown: unknown;
     plannedSchedule?: MoveProjectSchedulePayload | null;
+    /** Service type (office_move, local_move, etc). Drives project_type
+     *  + per-day stage flow so office moves get office-specific
+     *  checkpoints instead of the residential departed_hq / arrived_pickup
+     *  set. */
+    serviceType?: string | null;
+    /** Selected tier (priority, signature, essential). Used with
+     *  serviceType=office_move to pick the right Day 1 / Day 2 stage
+     *  list (Essential skips packing, Signature keeps IT pack, Priority
+     *  runs the full flow). */
+    tierSelected?: string | null;
   },
 ): Promise<string | null> {
   const daysNeeded = Math.max(1, Math.min(14, Math.round(args.estimatedDays)));
@@ -140,7 +150,16 @@ export async function attachMultiDayMoveProjectFromScope(
       contact_id: args.contactId ?? null,
       partner_id: null,
       project_name: projectName,
-      project_type: "residential_standard",
+      project_type: (() => {
+        const st = String(args.serviceType || "").toLowerCase().trim();
+        if (st === "office_move") {
+          const tier = String(args.tierSelected || "priority").toLowerCase().trim();
+          if (tier === "essential") return "office_essential";
+          if (tier === "signature") return "office_signature";
+          return "office_priority";
+        }
+        return "residential_standard";
+      })(),
       multi_home_move_type: null,
       office_profile: {},
       start_date: start,
@@ -196,8 +215,12 @@ export async function attachMultiDayMoveProjectFromScope(
     const planRow = planForDayRow(planned ?? null, rowDayOrdinal, i);
     const dayType = resolvedDayTypes[i]!;
 
-    const label = labelForDayType(dayType);
-    const flow = MOVE_DAY_STAGE_FLOW[dayType] ?? MOVE_DAY_STAGE_FLOW.move;
+    const flow = resolveDayStageFlow({
+      serviceType: args.serviceType ?? null,
+      tier: args.tierSelected ?? null,
+      dayType,
+    });
+    const label = flow.label || labelForDayType(dayType);
     const dateIso = dateIsoForIndex(i, planRow?.date ?? null);
 
     const { data: phaseRow, error: phErr } = await db

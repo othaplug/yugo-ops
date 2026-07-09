@@ -39,6 +39,133 @@ export const MOVE_DAY_STAGE_FLOW: Record<
   },
 };
 
+/**
+ * Office-move day stages. Uses the TrackingStatus keys the crew flow
+ * already recognises (initial_walkthrough / it_documentation /
+ * packing_started / packing_complete / en_route_to_pickup / loading /
+ * setup / completed) so a crew opening the job sees office-appropriate
+ * check-ins on Day 1 (walkthrough + IT + pack) and Day 2 (move + setup),
+ * not residential "departed_hq / arrived_pickup" copy that reads as
+ * moving-truck-speak on a commercial job. Tier variants trim the flow
+ * per contract: Essential drops all packing (client packs), Signature
+ * keeps IT packing, Priority runs the full 12-step flow.
+ */
+type OfficeTierKey = "priority" | "signature" | "essential";
+
+export const OFFICE_MOVE_DAY_STAGES: Record<
+  OfficeTierKey,
+  Record<string, { label: string; stages: string[]; requiresPoD: boolean }>
+> = {
+  priority: {
+    pack: {
+      label: "Pack & IT prep",
+      stages: [
+        "initial_walkthrough",
+        "it_documentation",
+        "packing_started",
+        "packing_complete",
+      ],
+      requiresPoD: false,
+    },
+    move: {
+      label: "Move & set up",
+      stages: [
+        "en_route_to_pickup",
+        "arrived_at_pickup",
+        "loading",
+        "en_route_to_destination",
+        "arrived_at_destination",
+        "unloading",
+        "setup",
+        "completed",
+      ],
+      requiresPoD: true,
+    },
+    unpack: {
+      label: "Unpack & set up",
+      stages: ["setup", "completed"],
+      requiresPoD: false,
+    },
+  },
+  signature: {
+    pack: {
+      label: "IT prep & pack",
+      stages: [
+        "initial_walkthrough",
+        "it_documentation",
+        "packing_started",
+        "packing_complete",
+      ],
+      requiresPoD: false,
+    },
+    move: {
+      label: "Move day",
+      stages: [
+        "en_route_to_pickup",
+        "arrived_at_pickup",
+        "loading",
+        "en_route_to_destination",
+        "arrived_at_destination",
+        "unloading",
+        "completed",
+      ],
+      requiresPoD: true,
+    },
+    unpack: {
+      label: "Client unpack",
+      stages: ["completed"],
+      requiresPoD: false,
+    },
+  },
+  essential: {
+    pack: {
+      label: "Site prep",
+      stages: ["initial_walkthrough", "it_documentation"],
+      requiresPoD: false,
+    },
+    move: {
+      label: "Move day",
+      stages: [
+        "en_route_to_pickup",
+        "arrived_at_pickup",
+        "loading",
+        "en_route_to_destination",
+        "arrived_at_destination",
+        "unloading",
+        "completed",
+      ],
+      requiresPoD: true,
+    },
+    unpack: {
+      label: "Client unpack",
+      stages: ["completed"],
+      requiresPoD: false,
+    },
+  },
+};
+
+/**
+ * Pick the right per-day stage set. Office moves route by tier; every
+ * other service falls through to the residential MOVE_DAY_STAGE_FLOW.
+ * Callers pass whatever they have; missing/unknown values collapse to
+ * sane defaults so nothing crashes if a project row is mid-migration.
+ */
+export function resolveDayStageFlow(opts: {
+  serviceType?: string | null;
+  tier?: string | null;
+  dayType: string;
+}): { label: string; stages: string[]; requiresPoD: boolean } {
+  const st = String(opts.serviceType || "").toLowerCase().trim();
+  if (st === "office_move") {
+    const tierKey = (String(opts.tier || "priority").toLowerCase().trim() ||
+      "priority") as OfficeTierKey;
+    const table =
+      OFFICE_MOVE_DAY_STAGES[tierKey] ?? OFFICE_MOVE_DAY_STAGES.priority;
+    return table[opts.dayType] ?? table.move;
+  }
+  return MOVE_DAY_STAGE_FLOW[opts.dayType] ?? MOVE_DAY_STAGE_FLOW.move;
+}
+
 export function labelForDayType(dayType: string): string {
   return MOVE_DAY_STAGE_FLOW[dayType]?.label ?? "Move day";
 }
