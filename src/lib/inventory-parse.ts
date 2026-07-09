@@ -27,9 +27,56 @@ export function parseItemNameAndQty(itemName: string): { baseName: string; qty: 
   return { baseName: s, qty: 1 };
 }
 
+/**
+ * Split a comma-separated item list, respecting delimiters that live
+ * INSIDE parentheses / brackets / quotes. Without this guard, an item
+ * like `Artwork — framed (large, Over 48")` was split at the comma
+ * inside the parenthetical and displayed as two separate rows
+ * ("Artwork — framed (large" and `Over 48")`).
+ */
+function splitTopLevelCommas(s: string): string[] {
+  const out: string[] = [];
+  let buf = "";
+  let paren = 0;
+  let bracket = 0;
+  let brace = 0;
+  let inDouble = false;
+  let inSingle = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (!inSingle && !inDouble) {
+      if (c === "(") paren++;
+      else if (c === ")") paren = Math.max(0, paren - 1);
+      else if (c === "[") bracket++;
+      else if (c === "]") bracket = Math.max(0, bracket - 1);
+      else if (c === "{") brace++;
+      else if (c === "}") brace = Math.max(0, brace - 1);
+    }
+    if (c === '"' && !inSingle) inDouble = !inDouble;
+    else if (c === "'" && !inDouble) inSingle = !inSingle;
+    if (
+      c === "," &&
+      paren === 0 &&
+      bracket === 0 &&
+      brace === 0 &&
+      !inDouble &&
+      !inSingle
+    ) {
+      out.push(buf);
+      buf = "";
+      continue;
+    }
+    buf += c;
+  }
+  if (buf.length > 0) out.push(buf);
+  return out;
+}
+
 /** Expand "Table x1, Couch x2" into rows for display */
 export function expandItemRow(itemName: string): { label: string; qty: number }[] {
-  const parts = itemName.split(",").map((p) => p.trim()).filter(Boolean);
+  const parts = splitTopLevelCommas(itemName)
+    .map((p) => p.trim())
+    .filter(Boolean);
   if (parts.length === 0) {
     const { baseName, qty } = parseItemNameAndQty(itemName);
     return [{ label: baseName || itemName, qty }];
