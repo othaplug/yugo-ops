@@ -13,6 +13,7 @@ import { isCollectibleBalance } from "@/lib/money/balance-residual";
 import { isFullPaymentAtBookingService } from "@/app/quote/[quoteId]/quote-shared";
 import { buildSquarePaymentNote } from "@/lib/square-payment-notes";
 import { fetchPaymentReceiptsForMove } from "@/lib/payments/receipts-for-move";
+import { readSquareReceiptUrl } from "@/lib/square/payment-response";
 
 const HS_BASE = "https://api.hubapi.com/crm/v3/objects";
 const HS_TASKS = `${HS_BASE}/tasks`;
@@ -163,7 +164,7 @@ export async function GET(req: NextRequest) {
         throw new Error("Payment was not completed, no payment ID returned");
       }
 
-      const receiptUrl = (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
+      const receiptUrl = readSquareReceiptUrl(paymentRes.payment);
       await finalizeBalancePaymentSettlement({
         admin: supabase,
         moveId: move.id,

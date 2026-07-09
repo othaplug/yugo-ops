@@ -9,6 +9,7 @@ import { assertChargeMatchesStored } from "@/lib/payments/charge-amount-guard";
 import { rateLimit } from "@/lib/rate-limit";
 import { squareThrownErrorStructured } from "@/lib/square-payment-errors";
 import { buildSquarePaymentNote } from "@/lib/square-payment-notes";
+import { readSquareReceiptUrl } from "@/lib/square/payment-response";
 
 /**
  * Charge the move's saved Square card for the current balance (e.g. post–inventory-change adjustment).
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Payment was not completed" }, { status: 500 });
     }
 
-    const receiptUrl = (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
+    const receiptUrl = readSquareReceiptUrl(paymentRes.payment);
 
     await finalizeBalancePaymentSettlement({
       admin,

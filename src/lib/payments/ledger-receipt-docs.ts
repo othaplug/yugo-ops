@@ -33,32 +33,34 @@ export async function buildLedgerReceiptDocs(
   moveId: string,
   fallbackReceiptUrl: string | null,
 ): Promise<LedgerReceiptDoc[]> {
+  // Return every ledger entry — including rows that have no Square receipt
+  // URL yet — so the customer sees a full payment record and doesn't
+  // wonder where their deposit went. Rows without a URL still render as
+  // "Deposit receipt ($X.XX)" with no Download button (guarded in the UI
+  // by `{url && ...}`), which is a better signal than an empty Files tab.
   const { data: rows } = await admin
     .from("move_payment_ledger")
     .select(
       "id, entry_type, label, pre_tax_amount, hst_amount, square_receipt_url, paid_at",
     )
     .eq("move_id", moveId)
-    .not("square_receipt_url", "is", null)
     .order("paid_at", { ascending: true });
 
-  const docs: LedgerReceiptDoc[] = (rows ?? [])
-    .filter((r) => !!r.square_receipt_url)
-    .map((r) => {
-      const amount =
-        (Number(r.pre_tax_amount) || 0) + (Number(r.hst_amount) || 0);
-      const base = RECEIPT_LABEL[String(r.entry_type)] ?? "Payment receipt";
-      const amt = amount > 0 ? ` ($${amount.toFixed(2)})` : "";
-      const url = r.square_receipt_url as string;
-      return {
-        id: `ledger-${r.id}`,
-        type: "receipt" as const,
-        title: `${base}${amt}`,
-        view_url: url,
-        external_url: url,
-        created_at: (r.paid_at as string) ?? new Date().toISOString(),
-      };
-    });
+  const docs: LedgerReceiptDoc[] = (rows ?? []).map((r) => {
+    const amount =
+      (Number(r.pre_tax_amount) || 0) + (Number(r.hst_amount) || 0);
+    const base = RECEIPT_LABEL[String(r.entry_type)] ?? "Payment receipt";
+    const amt = amount > 0 ? ` ($${amount.toFixed(2)})` : "";
+    const url = (r.square_receipt_url as string | null) ?? null;
+    return {
+      id: `ledger-${r.id}`,
+      type: "receipt" as const,
+      title: `${base}${amt}`,
+      view_url: url,
+      external_url: url,
+      created_at: (r.paid_at as string) ?? new Date().toISOString(),
+    };
+  });
 
   if (docs.length === 0 && fallbackReceiptUrl) {
     docs.push({

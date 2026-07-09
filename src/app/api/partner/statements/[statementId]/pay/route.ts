@@ -5,6 +5,7 @@ import { squareClient } from "@/lib/square";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { squareThrownErrorMessage, squarePaymentErrorsToMessage } from "@/lib/square-payment-errors";
 import { rateLimit } from "@/lib/rate-limit";
+import { readSquareReceiptUrl } from "@/lib/square/payment-response";
 
 export async function POST(
   req: NextRequest,
@@ -110,8 +111,7 @@ export async function POST(
     });
 
     squarePaymentId = paymentRes.payment?.id;
-    squareReceiptUrl =
-      (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
+    squareReceiptUrl = readSquareReceiptUrl(paymentRes.payment);
 
     if (!squarePaymentId) {
       return NextResponse.json({ error: "Payment was not completed" }, { status: 500 });

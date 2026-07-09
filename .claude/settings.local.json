@@ -169,7 +169,16 @@
       "Bash(grep -n \"referral\\\\|perks\\\\|Perks\\\\|referralCode\\\\|Give \\\\$50\" src/app/track/move/\\\\[id\\\\]/TrackMoveClient.tsx)",
       "Bash(echo \"tsc exit: $?\")",
       "Bash(mkdir -p src/app/office/welcome/\\\\[token\\\\])",
-      "Bash(curl -sf -o /dev/null \"http://127.0.0.1:3100/track/move/MV-30348?token=YSyHR_Lk7jjdb0gt9_HLeDLSWQs5GqDPcOv9VCx7s8w\")"
+      "Bash(curl -sf -o /dev/null \"http://127.0.0.1:3100/track/move/MV-30348?token=YSyHR_Lk7jjdb0gt9_HLeDLSWQs5GqDPcOv9VCx7s8w\")",
+      "Bash(curl -sf -o /dev/null \"http://127.0.0.1:3100/track/move/MV-30348?token=YSyHR_Lk7jjdb0gt9_HLeDLSWQs5GqDPcOv9VCx7s8w&preview_tier=essential\")",
+      "Bash(echo \"tsc: $?\")",
+      "Bash(echo \"commit: $?\")",
+      "Bash(grep -n \"^\\\\s*return \\(\\\\|return \\(\\\\s*$\" \"src/app/quote/[quoteId]/QuotePageClient.tsx\")",
+      "Bash(grep -nE \"^\\\\s*return \\\\\\(\\\\s*$|^\\\\s*return \\\\\\(<|^\\\\s*return <\" \"src/app/quote/[quoteId]/QuotePageClient.tsx\")",
+      "Bash(node /private/tmp/claude-501/-Users-kog-Developer-yugo-ops/a936700a-724f-4cf0-84da-198d81fbd67c/scratchpad/charge-erika-balance.mjs)",
+      "mcp__visualize__read_me",
+      "Bash(brew install *)",
+      "Bash(pdftoppm -v)"
     ]
   }
 }

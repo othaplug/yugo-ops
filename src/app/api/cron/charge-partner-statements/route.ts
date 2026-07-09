@@ -4,6 +4,7 @@ import { squareClient } from "@/lib/square";
 import { squareIdem } from "@/lib/square-idempotency";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { sendEmail } from "@/lib/email/send";
+import { readSquareReceiptUrl } from "@/lib/square/payment-response";
 
 /**
  * Vercel Cron: runs daily at 10 AM EST (15:00 UTC).
@@ -99,7 +100,7 @@ export async function GET(req: NextRequest) {
       const paymentId = paymentRes.payment?.id;
       if (!paymentId) throw new Error("No payment ID returned");
 
-      const receiptUrl = (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
+      const receiptUrl = readSquareReceiptUrl(paymentRes.payment);
       const newPaidAmount = Number(stmt.paid_amount || 0) + balanceOwing;
 
       await supabase

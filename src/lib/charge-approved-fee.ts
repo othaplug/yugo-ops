@@ -3,6 +3,7 @@ import { squareClient } from "@/lib/square";
 import { squareIdem } from "@/lib/square-idempotency";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { splitOntarioTaxInclusive } from "@/lib/format-currency";
+import { readSquareReceiptUrl } from "@/lib/square/payment-response";
 import {
   squarePaymentErrorsToMessage,
   squareThrownErrorMessage,
@@ -76,7 +77,7 @@ export async function chargeApprovedFeeOnCard(opts: {
       return { charged: false, reason: squarePaymentErrorsToMessage(res.errors) };
     }
     paymentId = res.payment?.id;
-    receiptUrl = (res.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
+    receiptUrl = readSquareReceiptUrl(res.payment);
   } catch (e) {
     return { charged: false, reason: squareThrownErrorMessage(e) };
   }

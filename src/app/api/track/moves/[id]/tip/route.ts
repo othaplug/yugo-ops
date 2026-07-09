@@ -4,6 +4,7 @@ import { verifyTrackToken, signTrackToken } from "@/lib/track-token";
 import { SquareClient, SquareEnvironment } from "square";
 import { squarePaymentErrorsToMessage, squareThrownErrorMessage } from "@/lib/square-payment-errors";
 import { recordMovePaymentLedgerEntry } from "@/lib/payments/record-move-payment";
+import { readSquareReceiptUrl } from "@/lib/square/payment-response";
 import { sendEmail } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 
@@ -129,8 +130,7 @@ export async function POST(
 
     // Ledger the tip so its Square receipt lands in the Files section. Tips are
     // not HST-taxed, so record the full amount as pre-tax.
-    const tipReceiptUrl =
-      (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
+    const tipReceiptUrl = readSquareReceiptUrl(paymentRes.payment);
     await recordMovePaymentLedgerEntry(admin, {
       moveId,
       entryType: "tip",

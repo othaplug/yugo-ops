@@ -12,6 +12,7 @@ import { squareThrownErrorStructured } from "@/lib/square-payment-errors";
 import { assertChargeMatchesStored } from "@/lib/payments/charge-amount-guard";
 import { buildSquarePaymentNote } from "@/lib/square-payment-notes";
 import { fetchPaymentReceiptsForMove } from "@/lib/payments/receipts-for-move";
+import { readSquareReceiptUrl } from "@/lib/square/payment-response";
 
 /**
  * Process a voluntary balance payment from the client payment page.
@@ -109,7 +110,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Payment was not completed" }, { status: 500 });
     }
 
-    const receiptUrl = (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
+    const receiptUrl = readSquareReceiptUrl(paymentRes.payment);
 
     await finalizeBalancePaymentSettlement({
       admin: supabase,

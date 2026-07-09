@@ -12,6 +12,7 @@ import { sendSMS } from "@/lib/sms/sendSMS";
 import { sendEmail } from "@/lib/email/send";
 import { internalAdminAlertEmail } from "@/lib/email-templates";
 import { rateLimit } from "@/lib/rate-limit";
+import { readSquareReceiptUrl } from "@/lib/square/payment-response";
 
 export const dynamic = "force-dynamic";
 
@@ -201,8 +202,7 @@ export async function POST(
         { status: 500 },
       );
     }
-    suppliesReceiptUrl =
-      (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
+    suppliesReceiptUrl = readSquareReceiptUrl(paymentRes.payment);
   } catch (err) {
     console.error("[supplies] payment failed:", err);
     return NextResponse.json({ error: squareThrownErrorMessage(err) }, { status: 500 });

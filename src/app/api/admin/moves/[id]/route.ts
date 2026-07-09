@@ -9,6 +9,7 @@ import { sendEmail } from "@/lib/email/send";
 import { signTrackToken } from "@/lib/track-token";
 import { getMoveCode, formatJobId } from "@/lib/move-code";
 import { buildSquarePaymentNote } from "@/lib/square-payment-notes";
+import { readSquareReceiptUrl } from "@/lib/square/payment-response";
 import {
   depositPreTaxFromMove,
   finalizeBalancePaymentSettlement,
@@ -339,7 +340,7 @@ export async function PATCH(
             .eq("id", id);
         }
 
-        const receiptUrl = (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
+        const receiptUrl = readSquareReceiptUrl(paymentRes.payment);
 
         await finalizeBalancePaymentSettlement({
           admin,

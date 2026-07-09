@@ -22,6 +22,7 @@ import { notifyAdmins } from "@/lib/notifications/dispatch";
 import { buildPaymentFailedClientEmailHtml } from "@/lib/email/payment-failed-client-email";
 import { sendEmail } from "@/lib/email/send";
 import { buildSquarePaymentNote } from "@/lib/square-payment-notes";
+import { readSquareReceiptUrl } from "@/lib/square/payment-response";
 import {
   expectedB2BCardGrandTotalCad,
   isB2BInvoiceQuote,
@@ -303,8 +304,7 @@ export async function POST(req: Request) {
           (status === "COMPLETED" || status === "APPROVED");
         if (validForThisQuote) {
           squarePaymentId = priorPaymentIdRaw;
-          squareReceiptUrl =
-            (verifyRes.payment as { receipt_url?: string | null } | undefined)?.receipt_url ?? null;
+          squareReceiptUrl = readSquareReceiptUrl(verifyRes.payment);
         } else {
           // Stale payment id pointing at a DIFFERENT quote (or a payment
           // that isn't completed) — scrub it so downstream code doesn't
@@ -436,7 +436,7 @@ export async function POST(req: Request) {
           locationId,
         });
         squarePaymentId = paymentRes.payment?.id;
-        squareReceiptUrl = (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
+        squareReceiptUrl = readSquareReceiptUrl(paymentRes.payment);
 
         if (!squarePaymentId) {
           return NextResponse.json({ error: "Payment was not completed" }, { status: 500 });
