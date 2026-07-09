@@ -10,6 +10,7 @@ import { getSquarePaymentConfig } from "@/lib/square-config";
 import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment";
 import { squareThrownErrorStructured } from "@/lib/square-payment-errors";
 import { assertChargeMatchesStored } from "@/lib/payments/charge-amount-guard";
+import { buildSquarePaymentNote } from "@/lib/square-payment-notes";
 
 /**
  * Process a voluntary balance payment from the client payment page.
@@ -92,7 +93,12 @@ export async function POST(req: Request) {
       customerId: move.square_customer_id || undefined,
       buyerEmailAddress: move.client_email || undefined,
       referenceId: move.move_code || moveId,
-      note: "Balance + processing fee, client payment",
+      note: buildSquarePaymentNote({
+        kind: "balance",
+        code: move.move_code,
+        serviceType: (move as { service_type?: string | null }).service_type,
+        scheduledDate: (move as { scheduled_date?: string | null }).scheduled_date,
+      }),
       idempotencyKey: squareIdem("bal-pay", moveId),
       locationId,
     });

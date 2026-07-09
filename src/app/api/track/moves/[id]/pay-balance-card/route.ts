@@ -8,6 +8,7 @@ import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment
 import { assertChargeMatchesStored } from "@/lib/payments/charge-amount-guard";
 import { rateLimit } from "@/lib/rate-limit";
 import { squareThrownErrorStructured } from "@/lib/square-payment-errors";
+import { buildSquarePaymentNote } from "@/lib/square-payment-notes";
 
 /**
  * Charge the move's saved Square card for the current balance (e.g. post–inventory-change adjustment).
@@ -67,7 +68,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       customerId: move.square_customer_id || undefined,
       buyerEmailAddress: move.client_email || undefined,
       referenceId: move.move_code || moveId,
-      note: "Balance + processing fee, tracking page (card on file)",
+      note: buildSquarePaymentNote({
+        kind: "balance",
+        code: move.move_code,
+        serviceType: (move as { service_type?: string | null }).service_type,
+        scheduledDate: (move as { scheduled_date?: string | null }).scheduled_date,
+      }),
       idempotencyKey: squareIdem("bal-track-card", moveId),
       locationId,
     });

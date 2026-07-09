@@ -8,6 +8,7 @@ import { logAudit } from "@/lib/audit";
 import { sendEmail } from "@/lib/email/send";
 import { signTrackToken } from "@/lib/track-token";
 import { getMoveCode, formatJobId } from "@/lib/move-code";
+import { buildSquarePaymentNote } from "@/lib/square-payment-notes";
 import {
   depositPreTaxFromMove,
   finalizeBalancePaymentSettlement,
@@ -314,7 +315,12 @@ export async function PATCH(
           customerId: move.square_customer_id || undefined,
           buyerEmailAddress: move.client_email || undefined,
           referenceId: move.move_code || id,
-          note: `Balance payment, manual charge by admin`,
+          note: buildSquarePaymentNote({
+            kind: "balance_manual",
+            code: move.move_code,
+            serviceType: (move as { service_type?: string | null }).service_type,
+            scheduledDate: (move as { scheduled_date?: string | null }).scheduled_date,
+          }),
           idempotencyKey: `bal-m-${id}`,
           locationId,
         });

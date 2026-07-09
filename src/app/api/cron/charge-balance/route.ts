@@ -11,6 +11,7 @@ import { humanizePaymentProcessorMessage } from "@/lib/email/payment-error-messa
 import { moveMatchesBalanceReminder48hWindow } from "@/lib/quotes/estate-schedule";
 import { isCollectibleBalance } from "@/lib/money/balance-residual";
 import { isFullPaymentAtBookingService } from "@/app/quote/[quoteId]/quote-shared";
+import { buildSquarePaymentNote } from "@/lib/square-payment-notes";
 
 const HS_BASE = "https://api.hubapi.com/crm/v3/objects";
 const HS_TASKS = `${HS_BASE}/tasks`;
@@ -146,7 +147,12 @@ export async function GET(req: NextRequest) {
         customerId: move.square_customer_id || undefined,
         buyerEmailAddress: move.client_email || undefined,
         referenceId: move.move_code || move.id,
-        note: "Balance + processing fee, auto-charge",
+        note: buildSquarePaymentNote({
+          kind: "balance_auto",
+          code: move.move_code,
+          serviceType: (move as { service_type?: string | null }).service_type,
+          scheduledDate: (move as { scheduled_date?: string | null }).scheduled_date,
+        }),
         idempotencyKey: `ba-${shortId}-${dateStr}`,
         locationId,
       });

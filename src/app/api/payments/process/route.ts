@@ -21,6 +21,7 @@ import { logActivity } from "@/lib/activity";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
 import { buildPaymentFailedClientEmailHtml } from "@/lib/email/payment-failed-client-email";
 import { sendEmail } from "@/lib/email/send";
+import { buildSquarePaymentNote } from "@/lib/square-payment-notes";
 import {
   expectedB2BCardGrandTotalCad,
   isB2BInvoiceQuote,
@@ -420,12 +421,17 @@ export async function POST(req: Request) {
           customerId: squareCustomerId,
           buyerEmailAddress: clientEmail || undefined,
           referenceId: quoteId,
-          note:
-            svc === "b2b_oneoff" || svc === "b2b_delivery"
-              ? `YUGO B2B delivery payment ${quoteId}`
-              : _noteIsFullPayment
-                ? `YUGO full payment ${quoteId}`
-                : `YUGO deposit ${quoteId}`,
+          note: buildSquarePaymentNote({
+            kind:
+              svc === "b2b_oneoff" || svc === "b2b_delivery"
+                ? "full_payment"
+                : _noteIsFullPayment
+                  ? "full_payment"
+                  : "deposit",
+            code: (quote as { quote_number?: string | null }).quote_number || quoteId,
+            serviceType: svc,
+            scheduledDate: (quote as { move_date?: string | null }).move_date,
+          }),
           idempotencyKey: payIdempotencyKey,
           locationId,
         });
