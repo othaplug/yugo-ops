@@ -5501,7 +5501,13 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       }
       const t = tiers[tk];
       if (!t) continue;
-      const newPrice = Math.round(ovPrice);
+      // Gross up the operator-typed price so the displayed amount already
+      // covers CC processing cost — same treatment the engine tiers and the
+      // global `quote_price_override` get (grossUpForProcessing at ~L5697/
+      // L5709). Without this, a per-tier override silently underbid the
+      // card-processor cut: an operator typing "620" produced a $620 tier
+      // that netted Yugo ~$602 after Square's 2.9% + $0.30.
+      const newPrice = grossUpForProcessing(ovPrice, config);
       // Per-tier deposit must respect the tier-aware policy floor
       // (10/15/25% with $150/$250/$500 minimums), not the generic
       // service-level deposit_rules row. The deposit_rules table
@@ -5606,7 +5612,10 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       }
       const t = officeTiers[tk];
       if (!t) continue;
-      const newPrice = Math.round(ovPrice);
+      // Gross up for CC processing recovery, matching the residential
+      // per-tier block + the global override. An operator-typed office
+      // override was otherwise netting Yugo less than the entered figure.
+      const newPrice = grossUpForProcessing(ovPrice, config);
       nextOfficeTiers[tk] = {
         ...t,
         price: newPrice,
