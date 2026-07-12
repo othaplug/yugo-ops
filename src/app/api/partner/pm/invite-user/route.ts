@@ -17,6 +17,37 @@ function tempPassword(): string {
   return `${base.slice(0, 10)}Aa1`;
 }
 
+// Roles a partner may assign to a teammate they invite. The field is stored on
+// the invitee's user_metadata; keeping it to an allowlist stops a partner from
+// writing an arbitrary/elevated role string into an auth account.
+const ALLOWED_PARTNER_ROLES = new Set([
+  "property_manager",
+  "manager",
+  "viewer",
+  "billing",
+]);
+
+// Look an auth user up by email across all pages. listUsers() only returns the
+// first page (default 50), so a naive check silently misses existing accounts
+// past the first page — then createUser fails and, worse, an existing user in
+// another org could be handled inconsistently. Cap the scan defensively.
+async function findAuthUserByEmail(
+  admin: ReturnType<typeof createAdminClient>,
+  email: string,
+) {
+  const target = email.toLowerCase();
+  const perPage = 200;
+  for (let page = 1; page <= 50; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error) throw error;
+    const users = data?.users ?? [];
+    const hit = users.find((u) => u.email?.toLowerCase() === target);
+    if (hit) return hit;
+    if (users.length < perPage) break;
+  }
+  return null;
+}
+
 /** PM partner self-service: invite a teammate to the same org portal (same flow as admin invite). */
 export async function POST(req: NextRequest) {
   const { orgIds, error } = await requirePartner();
@@ -32,7 +63,8 @@ export async function POST(req: NextRequest) {
 
   const emailRaw = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const nameTrimmed = typeof body.name === "string" ? body.name.trim() : "";
-  const role = typeof body.role === "string" ? body.role.trim() : "property_manager";
+  const roleRaw = typeof body.role === "string" ? body.role.trim() : "";
+  const role = ALLOWED_PARTNER_ROLES.has(roleRaw) ? roleRaw : "property_manager";
 
   if (!emailRaw || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) {
     return NextResponse.json({ error: "Valid email is required" }, { status: 400 });
@@ -55,8 +87,13 @@ export async function POST(req: NextRequest) {
   };
   const typeLabel = typeLabels[String(org.type)] || String(org.type || "Partner");
 
-  const { data: { users } } = await admin.auth.admin.listUsers();
-  const existing = users?.find((u) => u.email?.toLowerCase() === emailRaw);
+  let existing;
+  try {
+    existing = await findAuthUserByEmail(admin, emailRaw);
+  } catch (err) {
+    console.error("[pm invite] user lookup failed", err);
+    return NextResponse.json({ error: "Could not verify the email. Try again." }, { status: 500 });
+  }
 
   const loginUrl = `${getEmailBaseUrl()}/partner/login?welcome=1`;
   const resend = getResend();
@@ -65,6 +102,21 @@ export async function POST(req: NextRequest) {
   const roleMeta = { partner_portal_role: role };
 
   if (existing) {
+    // Never let a partner graft a Yugo staff/operator account into their org or
+    // touch its metadata. Any platform_users row means this is an internal
+    // account — refuse without leaking whether the address exists.
+    const { data: staffRow } = await admin
+      .from("platform_users")
+      .select("user_id")
+      .eq("user_id", existing.id)
+      .maybeSingle();
+    if (staffRow) {
+      return NextResponse.json(
+        { error: "That email can't be added here. Contact your Yugo representative." },
+        { status: 400 },
+      );
+    }
+
     const { data: existingLink } = await admin
       .from("partner_users")
       .select("user_id")
@@ -75,9 +127,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "This user already has portal access for your organization." }, { status: 400 });
     }
     await admin.from("partner_users").upsert({ user_id: existing.id, org_id: orgId }, { onConflict: "user_id,org_id" });
-    await admin.auth.admin.updateUserById(existing.id, {
-      user_metadata: { ...(existing.user_metadata as object), ...roleMeta },
-    });
+    // Only stamp the portal role if the account doesn't already have one, so we
+    // never silently change an existing partner user's role. Preserve the rest
+    // of their metadata.
+    const existingMeta = (existing.user_metadata ?? {}) as Record<string, unknown>;
+    if (!existingMeta.partner_portal_role) {
+      await admin.auth.admin.updateUserById(existing.id, {
+        user_metadata: { ...existingMeta, ...roleMeta },
+      });
+    }
 
     const { error: sendError } = await resend.emails.send({
       from: emailFrom,
