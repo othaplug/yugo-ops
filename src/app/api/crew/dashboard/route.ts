@@ -96,6 +96,38 @@ export async function GET(req: NextRequest) {
   const moves = movesRes.data || [];
   const deliveries = deliveriesRes.data || [];
 
+  // Multi-day office/project moves keep a single scheduled_date on the move row
+  // (day 1), but the crew works the job on every move_project_days date. Without
+  // this, the job drops off the dashboard on day 2+. Pull the move_ids that have
+  // a project day dated today and merge in any that the scheduled_date query
+  // didn't already return (crew-scoped). projectDayTodaySet also lets the
+  // stale-completion filter below treat these like a "today" job.
+  const projectDayTodaySet = new Set<string>();
+  {
+    const { data: todayProjectDays } = await supabase
+      .from("move_project_days")
+      .select("move_id")
+      .eq("date", today);
+    for (const r of todayProjectDays || []) {
+      const id = (r as { move_id?: string | null }).move_id;
+      if (typeof id === "string" && id) projectDayTodaySet.add(id);
+    }
+    const haveIds = new Set(moves.map((m) => m.id));
+    const missingIds = [...projectDayTodaySet].filter((id) => !haveIds.has(id));
+    if (missingIds.length > 0) {
+      const { data: extraMoves, error: extraErr } = await supabase
+        .from("moves")
+        .select(moveSelect)
+        .eq("crew_id", payload.teamId)
+        .in("id", missingIds);
+      if (extraErr) {
+        console.error("[crew/dashboard] project-day move fetch failed:", extraErr);
+      } else if (extraMoves) {
+        moves.push(...extraMoves);
+      }
+    }
+  }
+
   const quoteIds = [
     ...new Set(
       moves
@@ -246,7 +278,7 @@ export async function GET(req: NextRequest) {
     const completionForStaleCheck = isMoveClosedForStaleListFilter(effectiveStatus, completedAtFromRow)
       ? completedAtFromRow ?? sessionSnap?.completed_at ?? null
       : null;
-    if (schedYmd === today && completionForStaleCheck) {
+    if ((schedYmd === today || projectDayTodaySet.has(m.id)) && completionForStaleCheck) {
       const doneMs = Date.parse(completionForStaleCheck);
       if (!Number.isNaN(doneMs) && ymdPartsInTimeZone(doneMs, tz) < today) {
         continue;
