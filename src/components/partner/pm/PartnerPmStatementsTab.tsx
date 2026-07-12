@@ -113,12 +113,21 @@ type MonthlyRow = {
 
 const MOVE_DONE = new Set(["delivered", "completed", "paid"]);
 
+// A move is "due" (should be finished) once its scheduled date is today or
+// earlier. Completion rate is measured against due moves only, so
+// future-scheduled work doesn't drag the metric down.
+function isDueMove(scheduledDate: string | null, todayKey: string): boolean {
+  if (!scheduledDate) return false;
+  return scheduledDate.slice(0, 10) <= todayKey;
+}
+
 function buildMonthlyData(
   allDeliveries: DashboardData["allDeliveries"],
-  invoices: DashboardData["invoices"],
+  partnerInvoices: PartnerInvoice[],
   monthsBack: number,
 ): MonthlyRow[] {
   const now = new Date();
+  const todayKey = now.toISOString().slice(0, 10);
   const monthNames = [
     "Jan",
     "Feb",
@@ -144,17 +153,22 @@ function buildMonthlyData(
     const completed = monthDels.filter((del) =>
       MOVE_DONE.has((del.status || "").toLowerCase()),
     );
+    const dueDels = monthDels.filter((del) => isDueMove(del.scheduled_date, todayKey));
     const rate =
-      monthDels.length > 0
-        ? Math.round((completed.length / monthDels.length) * 100)
+      dueDels.length > 0
+        ? Math.round((completed.length / dueDels.length) * 100)
         : 100;
-    const monthRevenue = invoices
-      .filter(
-        (inv) =>
-          (inv.status || "").toLowerCase() === "paid" &&
-          (inv.created_at || "").slice(0, 7) === mKey,
-      )
-      .reduce((s, inv) => s + Number(inv.amount || 0), 0);
+    // Revenue = amount invoiced for that month's billing cycle (billed, not
+    // only paid) so completed-and-invoiced work shows even before payment
+    // clears. Partner invoices are per-cycle; bucket by period end.
+    const monthRevenue = partnerInvoices
+      .filter((inv) => {
+        const st = (inv.status || "").toLowerCase();
+        if (st === "draft" || st === "void") return false;
+        const bucket = (inv.period_end || inv.created_at || "").slice(0, 7);
+        return bucket === mKey;
+      })
+      .reduce((s, inv) => s + Number(inv.total_amount || 0), 0);
     rows.push({
       yearMonth: mKey,
       month: monthNames[d.getMonth()],
@@ -261,14 +275,16 @@ function PartnerPmStatementsInner({
   setPeriodMonths: (v: string) => void;
 }) {
 
+  const partnerInvoices = data.partnerInvoices ?? [];
+
   const monthlyData = useMemo(
     () =>
       buildMonthlyData(
         data.allDeliveries,
-        data.invoices,
+        partnerInvoices,
         Number(periodMonths) || 6,
       ),
-    [data.allDeliveries, data.invoices, periodMonths],
+    [data.allDeliveries, partnerInvoices, periodMonths],
   );
 
   const monthsWithData = useMemo(
@@ -321,7 +337,7 @@ function PartnerPmStatementsInner({
       },
       {
         id: "onTime",
-        header: "On-Time",
+        header: "Completion",
         accessor: (r) => r.onTimeRate,
         sortable: true,
         align: "right",
@@ -377,7 +393,7 @@ function PartnerPmStatementsInner({
       "Month",
       "Moves",
       "Completed",
-      "On-Time",
+      "Completion",
       "Damage",
       "Revenue",
       "Score",
@@ -401,14 +417,30 @@ function PartnerPmStatementsInner({
   const totalCompleted = data.allDeliveries.filter((d) =>
     MOVE_DONE.has((d.status || "").toLowerCase()),
   ).length;
+  // Completion rate over moves that are actually due (scheduled today or
+  // earlier); future-scheduled moves are excluded so they don't understate it.
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const dueDeliveries = data.allDeliveries.filter((d) =>
+    isDueMove(d.scheduled_date, todayKey),
+  ).length;
   const overallOnTime =
-    totalDeliveries > 0
-      ? ((totalCompleted / totalDeliveries) * 100).toFixed(1)
+    dueDeliveries > 0
+      ? ((totalCompleted / dueDeliveries) * 100).toFixed(1)
       : "100";
-  const totalPaid = data.invoices
-    .filter((i) => i.status === "paid")
-    .reduce((s, i) => s + Number(i.amount), 0);
-  const totalRevenue = data.invoices.reduce((s, i) => s + Number(i.amount), 0);
+  // Billing numbers derive from partner_invoices (the PM Square billing
+  // system): billed = every issued invoice, paid = those Square marked paid.
+  // billed = paid + outstanding, so the three summary figures reconcile.
+  const issuedInvoices = partnerInvoices.filter((i) => {
+    const st = (i.status || "").toLowerCase();
+    return st !== "draft" && st !== "void";
+  });
+  const totalPaid = issuedInvoices
+    .filter((i) => (i.status || "").toLowerCase() === "paid")
+    .reduce((s, i) => s + Number(i.total_amount || 0), 0);
+  const totalRevenue = issuedInvoices.reduce(
+    (s, i) => s + Number(i.total_amount || 0),
+    0,
+  );
 
   const periodLabel =
     periodMonths === "24"
@@ -423,7 +455,7 @@ function PartnerPmStatementsInner({
         "Month",
         "Moves",
         "Completed",
-        "On-Time %",
+        "Completion %",
         "Damage Claims",
         "Revenue",
         "Score",
@@ -443,7 +475,7 @@ function PartnerPmStatementsInner({
     rows.push([]);
     rows.push(["Summary"]);
     rows.push(["Total moves", String(totalDeliveries)]);
-    rows.push(["On-Time Rate", `${overallOnTime}%`]);
+    rows.push(["Completion Rate", `${overallOnTime}%`]);
     rows.push(["Total Revenue", String(totalRevenue)]);
     rows.push(["Total Paid", String(totalPaid)]);
     rows.push(["Outstanding", String(data.outstandingAmount)]);
@@ -468,7 +500,6 @@ function PartnerPmStatementsInner({
     0,
   );
 
-  const partnerInvoices = data.partnerInvoices ?? [];
   const unpaidPartnerInvs = partnerInvoices.filter(
     (i) => !["paid", "draft", "void"].includes(i.status),
   );
@@ -715,8 +746,8 @@ function PartnerPmStatementsInner({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 md:divide-x divide-[#2C3E2D]/10">
           <SLACircle
             value={`${overallOnTime}%`}
-            label="On-Time Rate"
-            sublabel="Industry avg: 82%"
+            label="Completion Rate"
+            sublabel={`${totalCompleted} of ${dueDeliveries} due moves`}
             className="md:pr-6"
           />
           <SLACircle
@@ -802,7 +833,7 @@ function PartnerPmStatementsInner({
         </div>
         <div className="divide-y divide-[#2C3E2D]/10">
           <ComparisonCard
-            label="On-time completion"
+            label="Move completion"
             yugoValue={`${overallOnTime}%`}
             industryValue="82%"
           />
