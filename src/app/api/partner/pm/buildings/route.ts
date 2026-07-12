@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
+import { getTodayString, getMonthStartString } from "@/lib/business-timezone";
 
 /** Full building list with move stats and recent moves for PM portal. */
 export async function GET() {
@@ -9,11 +10,9 @@ export async function GET() {
   const orgId = orgIds[0]!;
   const admin = createAdminClient();
 
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
-  const startStr = startOfMonth.toISOString().slice(0, 10);
-  const todayStr = new Date().toISOString().slice(0, 10);
+  // Toronto business calendar — UTC dates rolled month/today over early each evening.
+  const startStr = getMonthStartString();
+  const todayStr = getTodayString();
 
   const { data: properties } = await admin
     .from("partner_properties")

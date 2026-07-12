@@ -122,7 +122,7 @@ export default function PartnerLiveMapTab({ orgId, variant = "default" }: Partne
   return (
     <div>
       <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-        <h3 className={titleClass}>Live Delivery Tracking</h3>
+        <h3 className={titleClass}>{isPm ? "Live Move Tracking" : "Live Delivery Tracking"}</h3>
         <div className="flex items-center gap-2 shrink-0">
           {hasAny && (
             <span className="flex items-center gap-1.5 text-[11px] text-[#2D9F5A] font-medium">

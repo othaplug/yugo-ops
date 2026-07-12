@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
 import { partnerMoveTrackingUrl } from "@/lib/partner/pm-track-url";
+import { getTodayString, getMonthStartString, addCalendarDaysYmd } from "@/lib/business-timezone";
+
+// Moves that don't represent real, billable activity — excluded from spend and
+// completion math so cancelled or not-yet-approved bookings don't inflate them.
+const NON_BILLABLE_STATUSES = new Set(["cancelled", "canceled", "pending_approval", "rejected", "declined"]);
 
 function propertyAccessIncomplete(p: {
   move_hours?: string | null;
@@ -32,14 +37,11 @@ export async function GET() {
   const orgId = orgIds[0]!;
   const admin = createAdminClient();
 
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
-  const startStr = startOfMonth.toISOString().slice(0, 10);
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const weekEnd = new Date();
-  weekEnd.setDate(weekEnd.getDate() + 7);
-  const weekEndStr = weekEnd.toISOString().slice(0, 10);
+  // Toronto business calendar — using UTC here rolled the "month" and "today"
+  // boundaries over several hours early each evening.
+  const startStr = getMonthStartString();
+  const todayStr = getTodayString();
+  const weekEndStr = addCalendarDaysYmd(todayStr, 7);
 
   const [
     { data: org },
@@ -131,7 +133,12 @@ export async function GET() {
   const totalUnits = props.reduce((s, p) => s + (Number(p.total_units) || 0), 0);
   const monthRows = movesMonth ?? [];
   const completed = monthRows.filter((m) => ["completed", "paid", "delivered"].includes(String(m.status || "").toLowerCase())).length;
-  const revenue = monthRows.reduce((s, m) => s + (Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate) || 0), 0);
+  // Spend excludes cancelled and not-yet-approved bookings — otherwise a
+  // cancelled move or a pending request would show as money spent.
+  const billableMonthRows = monthRows.filter(
+    (m) => !NON_BILLABLE_STATUSES.has(String(m.status || "").toLowerCase()),
+  );
+  const revenue = billableMonthRows.reduce((s, m) => s + (Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate) || 0), 0);
 
   const propById = new Map(props.map((p) => [p.id, p]));
 

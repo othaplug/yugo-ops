@@ -516,15 +516,19 @@ export function PartnerPmOverview({
 export function PartnerPmBuildingsTab({ setTab }: { setTab: (t: PmTabId) => void }) {
   const { toast } = useToast();
   const [rows, setRows] = useState<BuildingRow[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const load = useCallback(async () => {
+    setLoadFailed(false);
     try {
       const res = await fetch("/api/partner/pm/buildings");
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Failed to load");
       setRows(d.buildings ?? []);
     } catch (e) {
+      // Don't leave the tab stuck on "Loading…" forever — surface a retry.
+      setLoadFailed(true);
       toast(e instanceof Error ? e.message : "Failed to load", "x");
     }
   }, [toast]);
@@ -533,7 +537,19 @@ export function PartnerPmBuildingsTab({ setTab }: { setTab: (t: PmTabId) => void
     load();
   }, [load]);
 
-  if (!rows) return <p className={pmBodyMuted}>Loading…</p>;
+  if (!rows) {
+    if (loadFailed) {
+      return (
+        <div className="flex flex-wrap items-center gap-3 py-8">
+          <p className={pmBodyMuted}>Couldn&apos;t load buildings.</p>
+          <button type="button" onClick={load} className={pmLink}>
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return <p className={pmBodyMuted}>Loading…</p>;
+  }
 
   return (
     <div>
@@ -646,12 +662,29 @@ export function PartnerPmBuildingsTab({ setTab }: { setTab: (t: PmTabId) => void
                         return { t, c, hasNum, n };
                       }).filter((x) => x.hasNum);
                       if (entries.length === 0) {
+                        const typeList = (b.unit_types ?? [])
+                          .map((t) => formatBuildingUnitTypeLabel(t))
+                          .filter(Boolean);
                         return (
-                          <p className={pmBodyMuted}>
-                            {b.total_units != null
-                              ? `${b.total_units} total units (breakdown not configured)`
-                              : "Unit mix not configured"}
-                          </p>
+                          <div className="space-y-1">
+                            {typeList.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {typeList.map((label) => (
+                                  <span
+                                    key={label}
+                                    className="px-2 py-0.5 rounded-sm text-[11px] text-[#5A6B5E] bg-[#2C3E2D]/[0.06]"
+                                  >
+                                    {label}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <p className={pmBodyMuted}>
+                              {b.total_units != null
+                                ? `${b.total_units} total units`
+                                : "Unit mix not configured"}
+                            </p>
+                          </div>
                         );
                       }
                       return (
@@ -1300,6 +1333,7 @@ const PM_PROJECT_TYPE_OPTIONS: { value: string; title: string; desc: string }[] 
 export function PartnerPmProjectsTab({ setTab }: { setTab: (t: PmTabId) => void }) {
   const { toast } = useToast();
   const [projects, setProjects] = useState<EnrichedProject[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [buildings, setBuildings] = useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = useState(false);
@@ -1314,12 +1348,14 @@ export function PartnerPmProjectsTab({ setTab }: { setTab: (t: PmTabId) => void 
   const [unitRows, setUnitRows] = useState<{ unit_number: string; unit_type: string; outbound_date: string; return_date: string }[]>([]);
 
   const load = useCallback(async () => {
+    setLoadFailed(false);
     try {
       const res = await fetch("/api/partner/pm/projects");
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Failed to load");
       setProjects(d.projects ?? []);
     } catch (e) {
+      setLoadFailed(true);
       toast(e instanceof Error ? e.message : "Failed to load", "x");
     }
   }, [toast]);
@@ -1368,7 +1404,19 @@ export function PartnerPmProjectsTab({ setTab }: { setTab: (t: PmTabId) => void 
     }
   };
 
-  if (!projects) return <p className={pmBodyMuted}>Loading…</p>;
+  if (!projects) {
+    if (loadFailed) {
+      return (
+        <div className="flex flex-wrap items-center gap-3 py-8">
+          <p className={pmBodyMuted}>Couldn&apos;t load projects.</p>
+          <button type="button" onClick={load} className={pmLink}>
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return <p className={pmBodyMuted}>Loading…</p>;
+  }
 
   return (
     <div>

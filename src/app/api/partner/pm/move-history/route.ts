@@ -3,32 +3,31 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
 import { partnerMoveTrackingUrl } from "@/lib/partner/pm-track-url";
 import { inferMoveOnTimeFromCompletion } from "@/lib/partner/pm-move-on-time";
+import { getTodayString } from "@/lib/business-timezone";
+
+// Build a yyyy-mm-dd string directly from calendar parts (no UTC round-trip),
+// so range boundaries land on the intended Toronto calendar day. Month is
+// 1-indexed here; JS Date days<1 / months>12 normalize as usual.
+function ymd(y: number, m1: number, d: number): string {
+  const dt = new Date(Date.UTC(y, m1 - 1, d));
+  return dt.toISOString().slice(0, 10);
+}
 
 function startDateForRange(range: string): string | null {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const d = now.getDate();
+  // Derive "now" from the Toronto business day, not the server's UTC clock.
+  const [y, m, d] = getTodayString().split("-").map(Number) as [number, number, number];
   if (range === "all") return null;
-  if (range === "this_month") {
-    return new Date(y, m, 1).toISOString().slice(0, 10);
-  }
-  if (range === "last_month") {
-    return new Date(y, m - 1, 1).toISOString().slice(0, 10);
-  }
-  if (range === "last_3_months") {
-    return new Date(y, m - 3, d).toISOString().slice(0, 10);
-  }
-  if (range === "this_year") {
-    return `${y}-01-01`;
-  }
-  return new Date(y, m, 1).toISOString().slice(0, 10);
+  if (range === "this_month") return ymd(y, m, 1);
+  if (range === "last_month") return ymd(y, m - 1, 1);
+  if (range === "last_3_months") return ymd(y, m - 3, d);
+  if (range === "this_year") return `${y}-01-01`;
+  return ymd(y, m, 1);
 }
 
 function endDateForLastMonth(): string | null {
-  const now = new Date();
-  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-  return lastMonthEnd.toISOString().slice(0, 10);
+  const [y, m] = getTodayString().split("-").map(Number) as [number, number, number];
+  // Day 0 of the current month = last day of the previous month.
+  return ymd(y, m, 0);
 }
 
 /** Filterable move history with POD links for PM partners. */

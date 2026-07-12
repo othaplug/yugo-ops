@@ -82,6 +82,18 @@ function num(v: unknown): number {
   return 0;
 }
 
+// Like num() but returns null when the value is absent/unparseable, so callers
+// can tell a configured 0 (e.g. a contract that waives the weekend surcharge)
+// apart from "not set" — `num() || default` wrongly overrode an explicit 0.
+function numOrNull(v: unknown): number | null {
+  if (typeof v === "number" && !Number.isNaN(v)) return v;
+  if (typeof v === "string" && v.trim() !== "") {
+    const n = parseFloat(v);
+    if (!Number.isNaN(n)) return n;
+  }
+  return null;
+}
+
 export async function fetchRateMatrixRow(
   admin: SupabaseClient,
   contractId: string,
@@ -182,9 +194,9 @@ export function applyPmSurchargesAndUrgency(
   opts: { weekend: boolean; afterHours: boolean; holiday: boolean; urgency: "standard" | "priority" | "emergency" }
 ): number {
   const card = legacyCard && typeof legacyCard === "object" ? (legacyCard as ContractRateCard) : {};
-  const weekend = row?.weekend_surcharge ?? (num(card.weekend_surcharge) || 150);
-  const afterPrem = row?.after_hours_premium ?? (num(card.after_hours_premium) || 0.2);
-  const holidaySur = row?.holiday_surcharge ?? (num(card.holiday_surcharge) || 200);
+  const weekend = row?.weekend_surcharge ?? numOrNull(card.weekend_surcharge) ?? 150;
+  const afterPrem = row?.after_hours_premium ?? numOrNull(card.after_hours_premium) ?? 0.2;
+  const holidaySur = row?.holiday_surcharge ?? numOrNull(card.holiday_surcharge) ?? 200;
 
   let total = base;
   if (opts.weekend) total += weekend;
