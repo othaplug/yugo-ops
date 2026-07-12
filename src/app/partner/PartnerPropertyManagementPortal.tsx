@@ -751,6 +751,7 @@ function PmBookForm({
   const [unitType, setUnitType] = useState("2br");
   const [reasonCode, setReasonCode] = useState("");
   const [reasons, setReasons] = useState<MoveReason[]>([]);
+  const [reasonsError, setReasonsError] = useState(false);
   const [addons, setAddons] = useState<ContractAddon[]>([]);
   const [projects, setProjects] = useState<PmProjectRow[]>([]);
   const [pmProjectId, setPmProjectId] = useState("");
@@ -780,6 +781,7 @@ function PmBookForm({
   );
   const [saving, setSaving] = useState(false);
   const [pmStep, setPmStep] = useState(1);
+  const todayStr = todayYmdLocal();
   const fieldInput = "field-input-compact w-full min-w-0 bg-transparent";
   const fieldTextareaUnderline =
     "field-input-compact field-input-compact--multiline-underline w-full min-w-0 bg-transparent";
@@ -846,31 +848,49 @@ function PmBookForm({
 
   const effectiveWeekend = dateIsWeekend || weekendOverride;
 
+  // Total of the add-ons the PM has ticked, priced from the contract catalog.
+  // The server re-prices these authoritatively on book; here we mirror them so
+  // the live estimate reflects what will actually be billed.
+  const selectedAddonTotal = useMemo(
+    () =>
+      addons
+        .filter((a) => selectedAddons[a.addon_code])
+        .reduce((sum, a) => sum + (Number(a.price) || 0), 0),
+    [addons, selectedAddons],
+  );
+
+  const [optionsReloadKey, setOptionsReloadKey] = useState(0);
   useEffect(() => {
     if (!contract?.id) return;
     let cancelled = false;
-    Promise.all([
+    // Load each option set independently — a failure of the (non-essential)
+    // add-ons or projects endpoint must not wipe out move reasons and dead-end
+    // the whole booking form. Only reasons are required to proceed; surface a
+    // retry if that one fails.
+    setReasonsError(false);
+    Promise.allSettled([
       fetch(
         `/api/partner/pm/move-reasons?contract_id=${encodeURIComponent(contract.id)}`,
-      ).then((r) => r.json()),
+      ).then((r) => (r.ok ? r.json() : Promise.reject(new Error("reasons")))),
       fetch(
         `/api/partner/pm/addons?contract_id=${encodeURIComponent(contract.id)}`,
-      ).then((r) => r.json()),
-      fetch("/api/partner/pm/projects").then((r) => r.json()),
-    ])
-      .then(([r1, r2, r3]) => {
-        if (cancelled) return;
-        setReasons(r1.reasons ?? []);
-        setAddons(r2.addons ?? []);
-        setProjects(r3.projects ?? []);
-      })
-      .catch(() => {
-        if (!cancelled) toast("Could not load booking options", "x");
-      });
+      ).then((r) => (r.ok ? r.json() : { addons: [] })),
+      fetch("/api/partner/pm/projects").then((r) => (r.ok ? r.json() : { projects: [] })),
+    ]).then(([r1, r2, r3]) => {
+      if (cancelled) return;
+      if (r1.status === "fulfilled") {
+        setReasons(r1.value.reasons ?? []);
+      } else {
+        setReasonsError(true);
+        toast("Could not load move types — tap retry", "x");
+      }
+      setAddons(r2.status === "fulfilled" ? (r2.value.addons ?? []) : []);
+      setProjects(r3.status === "fulfilled" ? (r3.value.projects ?? []) : []);
+    });
     return () => {
       cancelled = true;
     };
-  }, [contract?.id, toast]);
+  }, [contract?.id, toast, optionsReloadKey]);
 
   const selectedReason =
     reasons.find((r) => r.reason_code === reasonCode) ?? null;
@@ -909,10 +929,15 @@ function PmBookForm({
       );
     else if (d === "custom" && reasonJustChanged) setToAddress("");
 
-    if (selectedReason.urgency_default === "emergency") setUrgency("emergency");
-    else if (selectedReason.urgency_default === "priority")
-      setUrgency("priority");
-    else setUrgency("standard");
+    // Only snap urgency to the reason's default when the reason itself changes,
+    // never on unrelated edits (unit number, addresses) — otherwise a user who
+    // bumps a job to Priority loses it the moment they touch another field.
+    if (reasonJustChanged) {
+      if (selectedReason.urgency_default === "emergency") setUrgency("emergency");
+      else if (selectedReason.urgency_default === "priority")
+        setUrgency("priority");
+      else setUrgency("standard");
+    }
   }, [selectedReason, prop, unitNumber, suiteFrom, suiteTo]);
 
   const runPreview = useCallback(() => {
@@ -1052,6 +1077,14 @@ function PmBookForm({
       toast("Return service date is required for this job type.", "x");
       return;
     }
+    if (scheduledDate && scheduledDate < todayStr) {
+      toast("Move date can't be in the past.", "x");
+      return;
+    }
+    if (needsReturn && returnDate && returnDate < scheduledDate) {
+      toast("Return date can't be before the move date.", "x");
+      return;
+    }
     setSaving(true);
     try {
       const addon_selections = addons
@@ -1129,7 +1162,7 @@ function PmBookForm({
                 Your rate
               </p>
               <p className="text-[22px] font-hero text-[#1a1f1b] mt-1">
-                {formatCurrency(pricing.subtotal)}
+                {formatCurrency(pricing.subtotal + selectedAddonTotal)}
               </p>
               <p className="text-[11px] text-[var(--tx3)] mt-1 leading-relaxed">
                 {PM_UNIT_TYPE_LABELS[unitType] ?? unitType}
@@ -1143,9 +1176,17 @@ function PmBookForm({
                 {pricing.weekend ? " · Weekend surcharges apply" : ""}
               </p>
               <p className="text-[11px] text-[#1a1f1b]">
-                Base {formatCurrency(pricing.base_price)} → Total{" "}
+                Base {formatCurrency(pricing.base_price)} → Move{" "}
                 {formatCurrency(pricing.subtotal)}
               </p>
+              {selectedAddonTotal > 0 && (
+                <p className="text-[11px] text-[#1a1f1b]">
+                  Add-ons +{formatCurrency(selectedAddonTotal)} → Total{" "}
+                  <span className="font-semibold">
+                    {formatCurrency(pricing.subtotal + selectedAddonTotal)}
+                  </span>
+                </p>
+              )}
             </div>
             <p className="text-[10px] text-[var(--tx3)] max-w-[9rem] text-right leading-snug">
               Your contract rate — refines with dates and options below
@@ -1307,7 +1348,22 @@ function PmBookForm({
       <div>
         <PmScheduleSectionLabel>Move type</PmScheduleSectionLabel>
         {visibleReasons.length === 0 ? (
-          <p className="text-[12px] text-[var(--tx3)]">Loading move types…</p>
+          reasonsError ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-[12px] text-red-700">
+                Couldn&apos;t load move types.
+              </p>
+              <button
+                type="button"
+                onClick={() => setOptionsReloadKey((k) => k + 1)}
+                className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#5C1A33] border border-[#5C1A33]/25 px-3 py-1.5 rounded-sm hover:bg-[#5C1A33]/5"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <p className="text-[12px] text-[var(--tx3)]">Loading move types…</p>
+          )
         ) : (
           <div className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1490,6 +1546,7 @@ function PmBookForm({
         <input
           type="date"
           value={scheduledDate}
+          min={todayStr}
           onChange={(e) => setScheduledDate(e.target.value)}
           className={fieldInput}
           required
@@ -1502,6 +1559,7 @@ function PmBookForm({
           <input
             type="date"
             value={returnDate}
+            min={scheduledDate || todayStr}
             onChange={(e) => setReturnDate(e.target.value)}
             className={fieldInput}
             required

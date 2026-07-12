@@ -178,7 +178,8 @@
       "Bash(node /private/tmp/claude-501/-Users-kog-Developer-yugo-ops/a936700a-724f-4cf0-84da-198d81fbd67c/scratchpad/charge-erika-balance.mjs)",
       "mcp__visualize__read_me",
       "Bash(brew install *)",
-      "Bash(pdftoppm -v)"
+      "Bash(pdftoppm -v)",
+      "Bash(perl -0pi -e 's/scheduledDate < todayYmdLocal\\\\\\)/scheduledDate < todayStr\\)/; s/min=\\\\{todayYmdLocal\\\\}/min={todayStr}/; s/min=\\\\{scheduledDate \\\\|\\\\| todayYmdLocal\\\\}/min={scheduledDate || todayStr}/' src/app/partner/PartnerPropertyManagementPortal.tsx)"
     ]
   }
 }

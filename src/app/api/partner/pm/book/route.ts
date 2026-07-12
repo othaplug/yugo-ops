@@ -18,6 +18,7 @@ import {
   zoneForAddresses,
 } from "@/lib/partners/pm-book-helpers";
 import { hubspotPortfolioMoveDealAfterInsert } from "@/lib/hubspot/hubspot-portfolio-move-after-insert";
+import { getTodayString } from "@/lib/business-timezone";
 
 type Urgency = "standard" | "priority" | "emergency";
 
@@ -73,6 +74,16 @@ export async function POST(req: NextRequest) {
 
   if (!vacantNoTenant && !tenantName) {
     return NextResponse.json({ error: "Tenant name is required unless the unit is vacant" }, { status: 400 });
+  }
+
+  // Reject dates in the past (Toronto business day) — the client date input has
+  // no min, so a stale/edited value could otherwise book a move for yesterday.
+  const today = getTodayString();
+  if (scheduledDate < today) {
+    return NextResponse.json({ error: "Move date can't be in the past" }, { status: 400 });
+  }
+  if (returnScheduledDate && returnScheduledDate < scheduledDate) {
+    return NextResponse.json({ error: "Return date can't be before the move date" }, { status: 400 });
   }
 
   const displayTenant = vacantNoTenant ? "Vacant unit" : tenantName;
@@ -145,6 +156,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Pricing error" }, { status: 400 });
   }
 
+  // Price selected add-ons from the contract catalog (server-side), never from
+  // client-supplied amounts, then fold them into the subtotal so they're
+  // actually billed — previously they were only echoed into internal_notes.
+  const pricedAddons: { code: string; label: string; price: number }[] = [];
+  const selectedAddonCodes = addonSelections
+    .map((a) => (a && typeof a === "object" ? String((a as Record<string, unknown>).addon_code || "") : ""))
+    .filter(Boolean);
+  if (selectedAddonCodes.length) {
+    const { data: catalog } = await admin
+      .from("pm_contract_addons")
+      .select("addon_code, label, price")
+      .eq("contract_id", contractId)
+      .eq("active", true)
+      .in("addon_code", selectedAddonCodes);
+    for (const code of selectedAddonCodes) {
+      const match = (catalog ?? []).find((c) => c.addon_code === code);
+      if (!match) continue;
+      const price = Number(match.price) || 0;
+      pricedAddons.push({ code, label: String(match.label || code), price });
+      subtotal += price;
+    }
+  }
+
   const requiresReturn = !!(reasonRow.requires_return_move || reasonRow.is_round_trip);
   const returnReason = pairedReturnReason(reasonCode);
   if (requiresReturn && !returnScheduledDate) {
@@ -164,15 +198,9 @@ export async function POST(req: NextRequest) {
     unitFloor ? `Floor: ${unitFloor}` : "",
     instructions ? `Instructions: ${instructions}` : "",
   ];
-  if (addonSelections.length) {
-    const lines = addonSelections
-      .map((a: unknown) => {
-        if (!a || typeof a !== "object") return "";
-        const o = a as Record<string, unknown>;
-        return `${o.label || o.addon_code || "Add-on"}: $${o.price ?? "—"}`;
-      })
-      .filter(Boolean);
-    if (lines.length) notesParts.push(`Add-ons:\n${lines.join("\n")}`);
+  if (pricedAddons.length) {
+    const lines = pricedAddons.map((a) => `${a.label}: $${a.price.toFixed(2)}`);
+    notesParts.push(`Add-ons:\n${lines.join("\n")}`);
   }
 
   const insertPayload = {
@@ -310,6 +338,10 @@ export async function POST(req: NextRequest) {
   const yugoContactsTenant =
     tenantCommsMode === "yugo" || (tenantCommsMode !== "partner" && contractPrefYugo);
 
+  // Did the tenant actually receive the tracking link? If Yugo was meant to
+  // reach the tenant but couldn't (vacant, missing/invalid phone, or send
+  // failed), we must still hand the link to the PM below so it isn't dropped.
+  let tenantTrackingDelivered = false;
   if (yugoContactsTenant && tenantPhone && !vacantNoTenant) {
     const digits = tenantPhone.replace(/\D/g, "");
     if (digits.length >= 10) {
@@ -321,15 +353,14 @@ export async function POST(req: NextRequest) {
       ].join("\n");
       try {
         await sendSMS(digits.length === 11 && digits.startsWith("1") ? `+${digits}` : `+1${digits.slice(-10)}`, msg);
+        tenantTrackingDelivered = true;
       } catch {
-        /* non-fatal */
+        /* non-fatal — PM fallback email below picks up the link */
       }
     }
   }
 
-  const pmShouldGetTrackingEmail =
-    !!userId &&
-    (tenantCommsMode === "partner" || !yugoContactsTenant || vacantNoTenant);
+  const pmShouldGetTrackingEmail = !!userId && !tenantTrackingDelivered;
   if (pmShouldGetTrackingEmail && userId) {
     const { data: authUser } = await admin.auth.admin.getUserById(userId);
     const pmEmail = authUser?.user?.email?.trim();
