@@ -227,6 +227,40 @@ export async function POST(req: NextRequest) {
   if (updateErr)
     return NextResponse.json({ error: updateErr.message }, { status: 500 });
 
+  // Office relocations: the crew advances the day through THIS tracker
+  // (the residential project-day stepper is read-only for office). Mirror
+  // the checkpoint onto the matching move_project_days row so the admin
+  // project view + calendar stay current — the day whose `stages` contains
+  // this status gets current_stage set, and its status advances to
+  // in_progress (or completed when it's that day's final stage).
+  if (
+    session.job_type === "move" &&
+    String(moveServiceType ?? "") === "office_move"
+  ) {
+    (async () => {
+      const { data: days } = await admin
+        .from("move_project_days")
+        .select("id, stages, status")
+        .eq("move_id", session.job_id);
+      for (const d of days || []) {
+        const stages = Array.isArray(d.stages)
+          ? (d.stages as unknown[]).filter(
+              (s): s is string => typeof s === "string",
+            )
+          : [];
+        if (!stages.includes(status)) continue;
+        const isLastStageOfDay = stages[stages.length - 1] === status;
+        const dayStatus = isLastStageOfDay ? "completed" : "in_progress";
+        await admin
+          .from("move_project_days")
+          .update({ current_stage: status, status: dayStatus })
+          .eq("id", d.id);
+      }
+    })().catch((e) =>
+      console.error("[checkpoint] office project-day sync:", e),
+    );
+  }
+
   if (session.job_type === "move" && status === "arrived_at_pickup") {
     persistMoveArrivalOnTimeIfNeeded(admin, session.job_id, now).catch((e) =>
       console.error("[checkpoint] move arrival punctuality:", e),

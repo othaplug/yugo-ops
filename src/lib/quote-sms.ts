@@ -201,6 +201,11 @@ export async function sendMoveReminderSms(params: {
   crewSize?: number | null;
   trackingUrl: string;
   reminderType: "72hr" | "24hr" | "confirmation";
+  /** Office relocations get relocation-framed, PM-led copy instead of the
+   *  residential "Your Yugo move is tomorrow / crew of N" line. */
+  isOfficeMove?: boolean;
+  projectManagerName?: string | null;
+  officeDayCount?: number | null;
 }): Promise<{ ok: boolean; skipped?: string }> {
   const smsEnabled = (await getConfig("sms_enabled", "true")).toLowerCase() === "true";
   const premoveEnabled = (await getConfig("sms_premove_enabled", "true")).toLowerCase() === "true";
@@ -220,19 +225,53 @@ export async function sendMoveReminderSms(params: {
     ? buildSmsTrackUrl(params.moveCode)
     : params.trackingUrl;
 
+  const office = !!params.isOfficeMove;
+  const pm = (params.projectManagerName || "").trim();
+
   let body: string;
   if (params.reminderType === "confirmation") {
-    body = [
-      greet,
-      `Your move with Yugo is confirmed for ${fmtDate}. We are looking forward to taking great care of you.`,
-      `Track your move details:\n${smsUrl}`,
-    ].join("\n\n");
+    body = office
+      ? [
+          greet,
+          `Your Yugo office relocation is confirmed for ${fmtDate}. We are looking forward to handling this for your team.`,
+          `Track your relocation:\n${smsUrl}`,
+        ].join("\n\n")
+      : [
+          greet,
+          `Your move with Yugo is confirmed for ${fmtDate}. We are looking forward to taking great care of you.`,
+          `Track your move details:\n${smsUrl}`,
+        ].join("\n\n");
   } else if (params.reminderType === "72hr") {
     const timeLine = params.scheduledTime ? `\n\nStart time: ${params.scheduledTime}.` : "";
+    body = office
+      ? [
+          greet,
+          `Your Yugo office relocation is in 3 days, starting ${fmtDate}.${timeLine}`,
+          `Questions before the day? Reply here or call (647) 370-4525. We are happy to help.`,
+        ].join("\n\n")
+      : [
+          greet,
+          `Your move with Yugo is in 3 days, on ${fmtDate}.${timeLine}`,
+          `Questions before the big day? Reply here or call (647) 370-4525. We are happy to help.`,
+        ].join("\n\n");
+  } else if (office) {
+    // T-24h office relocation reminder: relocation framing, name the on-site
+    // Project Manager, and note the phased plan for multi-day projects.
+    const days = params.officeDayCount ?? null;
+    const teamCount = params.crewSize ? `a team of ${params.crewSize}` : "your relocation team";
+    const pmClause = pm
+      ? `Your project manager, ${pm}, and ${teamCount} will be on site`
+      : `${teamCount.charAt(0).toUpperCase()}${teamCount.slice(1)} will be on site`;
+    const arrive = params.scheduledTime ? ` at ${params.scheduledTime}` : "";
+    const dayLine =
+      days && days > 1
+        ? `This is day 1 of your ${days}-day relocation. ${pmClause}${arrive}.`
+        : `${pmClause}${arrive}.`;
     body = [
       greet,
-      `Your move with Yugo is in 3 days, on ${fmtDate}.${timeLine}`,
-      `Questions before the big day? Reply here or call (647) 370-4525. We are happy to help.`,
+      `Your Yugo office relocation begins tomorrow. Everything is set for a smooth start.`,
+      dayLine,
+      `Track your relocation live:\n${smsUrl}`,
     ].join("\n\n");
   } else {
     const crewLine = `Your crew of ${params.crewSize ?? "2–3"} will be arriving${params.scheduledTime ? ` at ${params.scheduledTime}` : ""}.`;

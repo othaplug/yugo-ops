@@ -167,6 +167,7 @@ export async function GET(req: NextRequest) {
               scheduledTime: move.scheduled_time ?? null,
               trackingUrl,
               reminderType: "72hr",
+              isOfficeMove,
             }).catch(() => {});
           }
         } else {
@@ -627,6 +628,18 @@ export async function GET(req: NextRequest) {
 
           // SMS day-before reminder
           if (move.client_phone) {
+            // Office relocations get relocation-framed, PM-led copy — the
+            // residential "Your Yugo move is tomorrow / crew of N" line reads
+            // wrong for a phased commercial project.
+            let officeDayCount24: number | null = null;
+            if (isOfficeMove24) {
+              const { count } = await supabase
+                .from("move_project_days")
+                .select("id", { count: "exact", head: true })
+                .eq("move_id", move.id);
+              officeDayCount24 =
+                typeof count === "number" && count > 0 ? count : null;
+            }
             sendMoveReminderSms({
               phone: move.client_phone,
               moveCode: move.move_code || move.id,
@@ -636,6 +649,9 @@ export async function GET(req: NextRequest) {
               crewSize: crewSize ?? null,
               trackingUrl,
               reminderType: "24hr",
+              isOfficeMove: isOfficeMove24,
+              projectManagerName: pmName24 ?? coordinatorName ?? null,
+              officeDayCount: officeDayCount24,
             }).catch(() => {});
           }
         } else {

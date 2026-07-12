@@ -42,7 +42,8 @@ export async function POST(
       `id, move_code, client_name, client_email, client_phone,
        scheduled_date, scheduled_time, from_address, to_address,
        crew_size, est_crew_size, assigned_members,
-       truck_info, arrival_window, tier_selected, status`,
+       truck_info, arrival_window, tier_selected, status,
+       service_type, quote_id, coordinator_name`,
     );
   const { data: move, error: moveErr } = isUuid
     ? await moveQuery.eq("id", moveSlug).maybeSingle()
@@ -88,17 +89,70 @@ export async function POST(
   const isEstate =
     String(move.tier_selected || "").toLowerCase().trim() === "estate";
 
+  // Office relocations get the office email + relocation-framed, PM-led SMS
+  // copy (matches the automated cron so manual + automatic stay identical).
+  // PM name / phone / IT lead / floor plan come from the originating quote.
+  const isOfficeMove = String(move.service_type ?? "") === "office_move";
+  let officePmName: string | null = null;
+  let officePmPhone: string | null = null;
+  let officeItLead: string | null = null;
+  let officeFloorPlan: string | null = null;
+  let officeDayCount: number | null = null;
+  if (isOfficeMove) {
+    if (move.quote_id) {
+      const { data: oq } = await db
+        .from("quotes")
+        .select("factors_applied")
+        .eq("id", move.quote_id)
+        .maybeSingle();
+      const fa = (oq?.factors_applied ?? {}) as Record<string, unknown>;
+      officePmName =
+        (typeof fa.project_manager_name === "string" && fa.project_manager_name.trim()) || null;
+      officePmPhone =
+        (typeof fa.project_manager_phone === "string" && fa.project_manager_phone.trim()) || null;
+      officeItLead =
+        (typeof fa.it_lead_contact === "string" && fa.it_lead_contact.trim()) || null;
+      officeFloorPlan =
+        (typeof fa.floor_plan_url === "string" && fa.floor_plan_url.trim()) || null;
+    }
+    if (!officePmName && move.coordinator_name) officePmName = String(move.coordinator_name);
+    const { count } = await db
+      .from("move_project_days")
+      .select("id", { count: "exact", head: true })
+      .eq("move_id", move.id);
+    officeDayCount = typeof count === "number" && count > 0 ? count : null;
+  }
+
   let emailOk = false;
   let emailError: string | null = null;
   if (move.client_email) {
     try {
       const r = await sendEmail({
         to: move.client_email,
-        subject: isEstate
-          ? `Your Estate crew is confirmed for tomorrow - ${move.move_code || "Details"}`
-          : `Your crew is confirmed for tomorrow - ${move.move_code || "Details"}`,
-        template: "pre-move-24hr",
-        data: {
+        subject: isOfficeMove
+          ? `Your relocation team is confirmed for tomorrow - ${move.move_code || "Details"}`
+          : isEstate
+            ? `Your Estate crew is confirmed for tomorrow - ${move.move_code || "Details"}`
+            : `Your crew is confirmed for tomorrow - ${move.move_code || "Details"}`,
+        template: isOfficeMove ? "pre-move-24hr-office" : "pre-move-24hr",
+        data: isOfficeMove
+          ? {
+              clientName: move.client_name || "",
+              moveCode: move.move_code || move.id,
+              moveDate: move.scheduled_date,
+              fromAddress: move.from_address || "",
+              toAddress: move.to_address || "",
+              crewMembers: assignedNames,
+              crewSize,
+              truckInfo: move.truck_info || null,
+              arrivalWindow: move.arrival_window || move.scheduled_time || null,
+              projectManagerName: officePmName ?? coordinatorName,
+              projectManagerPhone: officePmPhone ?? coordinatorPhone,
+              itLeadContact: officeItLead,
+              floorPlanUrl: officeFloorPlan,
+              trackingUrl,
+            }
+          : {
           clientName: move.client_name || "",
           moveCode: move.move_code || move.id,
           moveDate: move.scheduled_date,
@@ -133,6 +187,9 @@ export async function POST(
         crewSize: crewSize ?? null,
         trackingUrl,
         reminderType: "24hr",
+        isOfficeMove,
+        projectManagerName: officePmName,
+        officeDayCount,
       });
       smsOk = true;
     } catch (err) {

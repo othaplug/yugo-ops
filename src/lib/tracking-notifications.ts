@@ -21,6 +21,7 @@ import { deliveryContactEmail } from "@/lib/calendar/delivery-contact";
 import { getFeatureConfig } from "@/lib/platform-settings";
 import { sendClientTrackingCheckpointSms } from "@/lib/notifications/client-tracking-sms";
 import type { TrackingStatus } from "@/lib/tracking-status-types";
+import { getStatusLabel } from "@/lib/crew-tracking-status";
 
 export type { TrackingStatus } from "@/lib/tracking-status-types";
 
@@ -355,7 +356,7 @@ export async function notifyOnCheckpoint(
             ? `${teamName} en route to destination ${toAddress || "-"}`
             : status === "arrived_at_destination" || status === "arrived"
               ? `${teamName} arrived at ${toAddress || "-"}`
-              : `${teamName} ${status}`;
+              : `${teamName} — ${getStatusLabel(status)}`;
 
   if (cfg.notifyAdmin) {
     try {
@@ -399,6 +400,7 @@ export async function notifyOnCheckpoint(
 
   let estateMove = false;
   let officeMove = false;
+  let officeProjectManagerName: string | null = null;
   let eventMove = false;
   let eventPhase: string | null = null;
   let movePartnerEligible = false;
@@ -429,7 +431,7 @@ export async function notifyOnCheckpoint(
     const { data: move } = await admin
       .from("moves")
       .select(
-        "id, client_email, move_code, from_address, to_address, client_name, tier_selected, organization_id, client_phone, is_pm_move, service_type, event_phase",
+        "id, client_email, move_code, from_address, to_address, client_name, tier_selected, organization_id, client_phone, is_pm_move, service_type, event_phase, quote_id",
       )
       .eq("id", jobId)
       .single();
@@ -450,6 +452,24 @@ export async function notifyOnCheckpoint(
         String(
           (move as { service_type?: string | null }).service_type ?? "",
         ) === "office_move";
+      // Office checkpoint SMS names the on-site Project Manager (distinct
+      // from the coordinator). PM lives in the originating quote's
+      // factors_applied.project_manager_name.
+      if (officeMove) {
+        const oqid = (move as { quote_id?: string | null }).quote_id;
+        if (oqid) {
+          const { data: oq } = await admin
+            .from("quotes")
+            .select("factors_applied")
+            .eq("id", oqid)
+            .maybeSingle();
+          const fa = (oq?.factors_applied ?? {}) as Record<string, unknown>;
+          const pmn = fa.project_manager_name;
+          if (typeof pmn === "string" && pmn.trim()) {
+            officeProjectManagerName = pmn.trim();
+          }
+        }
+      }
       eventMove =
         String(
           (move as { service_type?: string | null }).service_type ?? "",
@@ -751,6 +771,8 @@ export async function notifyOnCheckpoint(
         estateMove: estateMove && jobType === "move",
         eventMove: eventMove && jobType === "move",
         eventPhase,
+        officeMove: officeMove && jobType === "move",
+        projectManagerName: officeProjectManagerName,
         jobUuid: jobId,
       }).catch(() => {});
     }

@@ -1052,6 +1052,18 @@ export default function CrewJobPage({
       return st === "b2b_delivery" || st === "b2b_oneoff";
     })();
 
+  // Office relocations run the full Day 1 + Day 2 sequence through the main
+  // status tracker (OFFICE_MOVE_STATUS_FLOW), which is what fires the client
+  // SMS/email and sets moves.stage. The residential "Multi-day move" project-
+  // day card carries its OWN tappable stage stepper that writes to a
+  // different field and does NOT notify the client — so for office we render
+  // the day card as an informational banner only and let the main tracker be
+  // the single source of truth. (Residential multi-day still uses the card's
+  // stepper because its main tracker only covers one day.)
+  const isOfficeJob =
+    jobType === "move" &&
+    String(job?.serviceType || "").toLowerCase() === "office_move";
+
   if (loading) {
     return (
       <PageContent className="crew-job-premium w-full min-w-0 max-w-[520px] mx-auto">
@@ -1336,8 +1348,8 @@ export default function CrewJobPage({
         {jobType === "move" && job.moveProjectDay ? (
           <div className="mb-4 rounded-xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] px-4 py-3 shadow-[var(--yu3-shadow-sm)]">
             <p className="yu3-t-eyebrow text-[10px] text-[var(--yu3-wine)]/85 mb-1 [font-family:var(--font-body)] leading-none">
-              Multi-day move · Day {job.moveProjectDay.dayNumber} of{" "}
-              {job.moveProjectDay.totalDays}
+              {isOfficeJob ? "Office relocation" : "Multi-day move"} · Day{" "}
+              {job.moveProjectDay.dayNumber} of {job.moveProjectDay.totalDays}
             </p>
             <p className="text-[14px] font-semibold text-[var(--yu3-ink-strong)] [font-family:var(--font-body)]">
               {job.moveProjectDay.dayLabel || job.moveProjectDay.projectName}
@@ -1356,7 +1368,13 @@ export default function CrewJobPage({
                 Proof of delivery required when this day is completed.
               </p>
             ) : null}
-            {job.moveProjectDay.stages.length > 0 && !isCompleted ? (
+            {isOfficeJob ? (
+              <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-2 leading-snug [font-family:var(--font-body)]">
+                Advance the day using the live status tracker below — it keeps
+                the client and dispatch updated at each step.
+              </p>
+            ) : null}
+            {!isOfficeJob && job.moveProjectDay.stages.length > 0 && !isCompleted ? (
               <div className="mt-3 pt-3 border-t border-[var(--yu3-line-subtle)]">
                 <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] mb-2 [font-family:var(--font-body)] leading-none">
                   Day stages
@@ -1398,7 +1416,7 @@ export default function CrewJobPage({
                 </div>
               </div>
             ) : null}
-            {(() => {
+            {!isOfficeJob && (() => {
               const ds = (job.moveProjectDay?.status || "").toLowerCase();
               const projectDayDone = ds === "completed" || ds === "complete";
               if (projectDayDone) {
