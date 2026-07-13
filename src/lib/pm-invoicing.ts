@@ -47,12 +47,15 @@ type PmMove = {
   final_amount?: number | null;
   from_address?: string | null;
   to_address?: string | null;
-  reason_code?: string | null;
+  pm_reason_code?: string | null;
   holding_unit?: string | null;
 };
 
+// NOTE: the PM move reason column is `pm_reason_code` — `reason_code` does not
+// exist on `moves` and selecting it errored the whole invoice build (500),
+// which is why completed PM moves silently never got invoiced.
 const MOVE_SELECT =
-  "id, move_code, client_name, tenant_name, scheduled_date, total_price, amount, estimate, final_amount, from_address, to_address, reason_code, holding_unit";
+  "id, move_code, client_name, tenant_name, scheduled_date, total_price, amount, estimate, final_amount, from_address, to_address, pm_reason_code, holding_unit";
 
 const PM_MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -100,7 +103,7 @@ function pmLineItemDescription(m: PmMove): string {
   const from = String(m.from_address || "").trim();
   const to = String(m.to_address || "").trim();
   const holding = String(m.holding_unit || "").trim();
-  const reason = String(m.reason_code || "").toLowerCase();
+  const reason = String(m.pm_reason_code || "").toLowerCase();
   const dateLabel = m.scheduled_date
     ? pmMoveDateLabel(String(m.scheduled_date))
     : "";
@@ -436,13 +439,26 @@ export async function generateAndSendPmInvoice(
       const sqInv = invoiceRes.invoice;
       if (!sqInv?.id) throw new Error("Square invoice creation returned no id");
 
-      await squareClient.invoices.publish({
+      const publishRes = await squareClient.invoices.publish({
         invoiceId: sqInv.id,
         version: sqInv.version ?? 0,
         idempotencyKey: idem("publish"),
       });
 
-      const squareUrl = (sqInv as { publicUrl?: string }).publicUrl ?? null;
+      // The public pay-URL only exists AFTER publish — the create response
+      // (`sqInv`) is a draft with no publicUrl, so reading it there always
+      // stored null and left the portal "Pay invoice" button dead. Prefer the
+      // published invoice; fall back to a direct fetch if still missing.
+      let squareUrl =
+        (publishRes.invoice as { publicUrl?: string } | undefined)?.publicUrl ?? null;
+      if (!squareUrl) {
+        try {
+          const got = await squareClient.invoices.get({ invoiceId: sqInv.id });
+          squareUrl = (got.invoice as { publicUrl?: string } | undefined)?.publicUrl ?? null;
+        } catch (e) {
+          console.error("[pm-invoicing] fetch invoice publicUrl fallback:", e);
+        }
+      }
       await sb
         .from("partner_invoices")
         .update({
