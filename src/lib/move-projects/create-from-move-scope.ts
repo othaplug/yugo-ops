@@ -97,10 +97,30 @@ export async function attachMultiDayMoveProjectFromScope(
      *  list (Essential skips packing, Signature keeps IT pack, Priority
      *  runs the full flow). */
     tierSelected?: string | null;
+    /** Actual crew size on the move — used as the per-day crew fallback so days
+     *  reflect the real team, not a hardcoded default (was always 4). */
+    moveCrewSize?: number | null;
+    /** Primary/secondary truck sizes on the move — days inherit the real fleet
+     *  (size label + truck_count) instead of a hardcoded single 26ft. */
+    truckPrimary?: string | null;
+    truckSecondary?: string | null;
   },
 ): Promise<string | null> {
   const daysNeeded = Math.max(1, Math.min(14, Math.round(args.estimatedDays)));
   if (daysNeeded <= 1) return null;
+
+  // Real crew + fleet from the move, used as per-day fallbacks so the project
+  // days mirror what was actually booked (crew size, number of trucks) instead
+  // of hardcoded defaults.
+  const moveCrewFallback =
+    typeof args.moveCrewSize === "number" && Number.isFinite(args.moveCrewSize) && args.moveCrewSize > 0
+      ? Math.max(1, Math.min(20, Math.round(args.moveCrewSize)))
+      : null;
+  const fleet = [args.truckPrimary, args.truckSecondary]
+    .map((t) => String(t || "").trim())
+    .filter((t) => t.length > 0);
+  const fleetLabel = fleet.length > 0 ? fleet.join(" + ").slice(0, 48) : null;
+  const fleetCount = Math.max(1, fleet.length);
 
   const breakdown = normalizeBreakdown(args.dayBreakdown);
   const rows =
@@ -246,11 +266,17 @@ export async function attachMultiDayMoveProjectFromScope(
       continue;
     }
 
-    const crewDefault = isCargoServiceDay(dayType) ? 4 : 3;
+    // Crew fallback: the move's real crew, then a service-shaped default.
+    const crewDefault = moveCrewFallback ?? (isCargoServiceDay(dayType) ? 4 : 3);
     const hoursDefault = isCargoServiceDay(dayType) ? 10 : 8;
 
-    let truckDefault: string | null = null;
-    if (isCargoServiceDay(dayType)) truckDefault = "26ft";
+    // Truck fallback: inherit the move's actual fleet (size label + count) on
+    // cargo days; non-cargo (pack/unpack) days carry no truck unless the plan
+    // specifies one.
+    const truckDefault: string | null = isCargoServiceDay(dayType)
+      ? fleetLabel ?? "26ft"
+      : null;
+    const truckCountDefault = isCargoServiceDay(dayType) ? fleetCount : 1;
 
     const crewSize =
       typeof planRow?.crew_size === "number" && Number.isFinite(planRow.crew_size)
@@ -263,9 +289,11 @@ export async function attachMultiDayMoveProjectFromScope(
         : hoursDefault;
 
     let truckNormalized: string | null = truckDefault;
+    let truckCount = truckCountDefault;
     if (typeof planRow?.truck === "string") {
       const tr = planRow.truck.trim();
       truckNormalized = tr.length === 0 ? null : tr.slice(0, 48);
+      truckCount = tr.length === 0 ? 1 : truckCount;
     }
 
     const crewAssigned =
@@ -310,7 +338,7 @@ export async function attachMultiDayMoveProjectFromScope(
       crew_size: crewSize,
       crew_ids: null,
       truck_type: truckNormalized,
-      truck_count: 1,
+      truck_count: truckCount,
       estimated_hours: estimatedHours,
       origin_address: args.fromAddress,
       destination_address: destinationAddressRow,

@@ -134,6 +134,8 @@ export default function MoveResidentialProjectPanel(props: {
           const idVal = typeof d.id === "string" ? d.id : `row-${idx}`;
           const st = String(d.status || "").toLowerCase();
           const done = st === "completed" || st === "complete";
+          const inProgress = st === "in_progress" || st === "active";
+          const truckCount = Number((d as { truck_count?: number | null }).truck_count) || 1;
           const dateStr =
             typeof d.date === "string" && d.date.length >= 10 ? d.date.slice(0, 10) : null;
           return (
@@ -157,12 +159,19 @@ export default function MoveResidentialProjectPanel(props: {
                 <span>
                   {done ? (
                     <span className="text-[var(--yu3-success)] font-semibold">Complete</span>
+                  ) : inProgress ? (
+                    <span className="font-semibold text-[var(--yu3-info,#2563eb)]">In progress</span>
                   ) : (
                     <span className="font-medium text-[var(--yu3-warning)]">Scheduled</span>
                   )}
                 </span>
                 {d.crew_size != null ? <span>Crew ×{Math.max(1, Number(d.crew_size) || 0)}</span> : null}
-                {d.truck_type ? <span>{String(d.truck_type)}</span> : null}
+                {d.truck_type ? (
+                  <span>
+                    {truckCount > 1 ? `${truckCount} trucks · ` : ""}
+                    {String(d.truck_type)}
+                  </span>
+                ) : null}
               </div>
               {(d.origin_address || d.destination_address) && (
                 <p className="text-[10px] text-[var(--yu3-ink-muted)] mt-1 leading-snug break-words">

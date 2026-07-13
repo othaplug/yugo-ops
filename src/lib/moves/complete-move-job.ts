@@ -149,6 +149,36 @@ export const ensureJobCompleted = async (
     } catch (e) {
       console.error("[complete-move-job] cancel mid-move SMS:", e);
     }
+
+    // Multi-day projects (office + estate): the final day is often closed via
+    // client sign-off, which does NOT emit the day's terminal 'completed'
+    // checkpoint — so move_project_days rows stay stuck at in_progress even
+    // though the move is done (admin card showed day 2 as "Scheduled"). On
+    // completion, mark every still-open project day complete. No-op for
+    // single-day moves (no rows).
+    try {
+      const { data: openDays } = await admin
+        .from("move_project_days")
+        .select("id, stages, completed_at")
+        .eq("move_id", jobId)
+        .neq("status", "completed");
+      for (const d of openDays || []) {
+        const stages = Array.isArray(d.stages)
+          ? (d.stages as unknown[]).filter((s): s is string => typeof s === "string")
+          : [];
+        const lastStage = stages.length > 0 ? stages[stages.length - 1] : null;
+        await admin
+          .from("move_project_days")
+          .update({
+            status: "completed",
+            completed_at: (d.completed_at as string | null) || completedAt,
+            ...(lastStage ? { current_stage: lastStage } : {}),
+          })
+          .eq("id", d.id);
+      }
+    } catch (e) {
+      console.error("[complete-move-job] close project days:", e);
+    }
   }
 
   return { wasAlreadyComplete, ok: true };

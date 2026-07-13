@@ -763,6 +763,11 @@ export async function POST(req: NextRequest) {
           estimatedDays: scopedEstimatedDays,
           dayBreakdown: scopedDayBreakdown,
           plannedSchedule,
+          serviceType,
+          tierSelected,
+          moveCrewSize: body.est_crew_size ? Number(body.est_crew_size) : null,
+          truckPrimary: truckPrimary ?? null,
+          truckSecondary: (body.truck_secondary as string)?.trim() || null,
         });
       }
 

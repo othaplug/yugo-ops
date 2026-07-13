@@ -930,6 +930,12 @@ export async function createMoveFromQuote(
         scheduledDateIso: scheduledIso,
         estimatedDays,
         dayBreakdown: dayBreakdown ?? [],
+        moveCrewSize:
+          (primary as { est_crew_size?: number | null }).est_crew_size ??
+          (primary as { crew_size?: number | null }).crew_size ??
+          null,
+        truckPrimary: (primary as { truck_primary?: string | null }).truck_primary ?? null,
+        truckSecondary: (primary as { truck_secondary?: string | null }).truck_secondary ?? null,
       });
     }
   } else if (officeMultiDayQuote) {
@@ -979,6 +985,12 @@ export async function createMoveFromQuote(
         dayBreakdown: officeDayBreakdown,
         serviceType: "office_move",
         tierSelected: tierKey,
+        moveCrewSize:
+          (primary as { est_crew_size?: number | null }).est_crew_size ??
+          (primary as { crew_size?: number | null }).crew_size ??
+          null,
+        truckPrimary: (primary as { truck_primary?: string | null }).truck_primary ?? null,
+        truckSecondary: (primary as { truck_secondary?: string | null }).truck_secondary ?? null,
       });
     }
   }
