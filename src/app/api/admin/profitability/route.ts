@@ -9,6 +9,8 @@ import {
   movePaysCardProcessingFee,
   deliveryPaysCardProcessingFee,
 } from "@/lib/finance/calculateProfit";
+import { sessionJobDurationMinutes } from "@/lib/crew/session-job-duration-minutes";
+import { getAppTimezone } from "@/lib/business-timezone";
 
 /**
  * Profitability = cost/profit analysis, NOT revenue.
@@ -23,6 +25,7 @@ export async function GET(req: NextRequest) {
   const from = req.nextUrl.searchParams.get("from");
   const to = req.nextUrl.searchParams.get("to");
   const singleMoveId = req.nextUrl.searchParams.get("move_id");
+  const tz = getAppTimezone();
 
   // Single-move short-circuit: bypass the date-range queries and recompute on
   // demand using the latest tracking session for this move. Drives the move
@@ -32,7 +35,7 @@ export async function GET(req: NextRequest) {
     const sb = createAdminClient();
     const [{ data: move }, { data: sessions }, { data: configRows }, { data: ovRow }] = await Promise.all([
       sb.from("moves").select("*").eq("id", singleMoveId).maybeSingle(),
-      sb.from("tracking_sessions").select("started_at, completed_at, updated_at, status")
+      sb.from("tracking_sessions").select("started_at, completed_at, updated_at, status, checkpoints")
         .eq("job_id", singleMoveId).eq("job_type", "move").eq("status", "completed")
         .order("updated_at", { ascending: false }).limit(1),
       sb.from("platform_config").select("key, value"),
@@ -43,13 +46,10 @@ export async function GET(req: NextRequest) {
     for (const r of configRows ?? []) cfg[r.key] = r.value;
     let trackedHours: number | null = null;
     if (sessions && sessions[0]) {
-      const s = sessions[0] as { started_at?: string | null; completed_at?: string | null; updated_at?: string | null };
-      const startRaw = s.started_at;
-      const endRaw = s.completed_at || s.updated_at;
-      if (startRaw && endRaw) {
-        const h = Math.round(((new Date(endRaw).getTime() - new Date(startRaw).getTime()) / 3_600_000) * 100) / 100;
-        if (h > 0) trackedHours = h;
-      }
+      // Per-business-day worked hours so a multi-day office session excludes the
+      // overnight gap between days (matches the moves list).
+      const h = Math.round((sessionJobDurationMinutes(sessions[0], tz) / 60) * 100) / 100;
+      if (h > 0) trackedHours = h;
     }
     const m = move as Record<string, unknown> & { id: string };
     const moveCostInput = {
@@ -124,12 +124,13 @@ export async function GET(req: NextRequest) {
   const toDate = to.slice(0, 10);
 
   // Completed tracking sessions in range — source of truth aligned with Crew Analytics
+  const sessionSelect = "job_id, job_type, status, started_at, completed_at, updated_at, checkpoints";
   const [sessionsByCompleted, sessionsByStarted] = await Promise.all([
-    sb.from("tracking_sessions").select("job_id, job_type, started_at, completed_at").eq("status", "completed")
+    sb.from("tracking_sessions").select(sessionSelect).eq("status", "completed")
       .not("completed_at", "is", null)
       .gte("completed_at", `${fromDate}T00:00:00Z`)
       .lte("completed_at", `${toDate}T23:59:59.999Z`),
-    sb.from("tracking_sessions").select("job_id, job_type, started_at, completed_at").eq("status", "completed")
+    sb.from("tracking_sessions").select(sessionSelect).eq("status", "completed")
       .is("completed_at", null)
       .gte("started_at", `${fromDate}T00:00:00Z`)
       .lte("started_at", `${toDate}T23:59:59.999Z`),
@@ -138,13 +139,14 @@ export async function GET(req: NextRequest) {
   const sessionMoveIds = [...new Set(allSessions.filter((s) => s.job_type === "move").map((s) => s.job_id))];
   const sessionDeliveryIds = [...new Set(allSessions.filter((s) => s.job_type === "delivery").map((s) => s.job_id))];
 
-  // Build a map of job_id → tracked hours from live session data (most recent completed session per job)
+  // Build a map of job_id → tracked hours from live session data. Uses
+  // sessionJobDurationMinutes, which sums per-business-day work spans so a
+  // multi-day office/project session doesn't count the overnight gap between
+  // days (that inflated MV-30348 to 36.9h vs the real ~26h worked).
   const sessionHoursMap: Record<string, number> = {};
   for (const s of allSessions) {
     if (!s.job_id || !s.started_at) continue;
-    const start = new Date(s.started_at as string).getTime();
-    const end = s.completed_at ? new Date(s.completed_at as string).getTime() : Date.now();
-    const hours = Math.round(((end - start) / 3_600_000) * 100) / 100;
+    const hours = Math.round((sessionJobDurationMinutes(s, tz) / 60) * 100) / 100;
     if (hours > 0) sessionHoursMap[s.job_id] = hours;
   }
 

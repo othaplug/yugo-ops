@@ -179,7 +179,8 @@
       "mcp__visualize__read_me",
       "Bash(brew install *)",
       "Bash(pdftoppm -v)",
-      "Bash(perl -0pi -e 's/scheduledDate < todayYmdLocal\\\\\\)/scheduledDate < todayStr\\)/; s/min=\\\\{todayYmdLocal\\\\}/min={todayStr}/; s/min=\\\\{scheduledDate \\\\|\\\\| todayYmdLocal\\\\}/min={scheduledDate || todayStr}/' src/app/partner/PartnerPropertyManagementPortal.tsx)"
+      "Bash(perl -0pi -e 's/scheduledDate < todayYmdLocal\\\\\\)/scheduledDate < todayStr\\)/; s/min=\\\\{todayYmdLocal\\\\}/min={todayStr}/; s/min=\\\\{scheduledDate \\\\|\\\\| todayYmdLocal\\\\}/min={scheduledDate || todayStr}/' src/app/partner/PartnerPropertyManagementPortal.tsx)",
+      "Bash(grep -rn \"sessionJobDurationMinutes\" src --include=\"*.ts\" --include=\"*.tsx\" | grep -v \"session-job-duration-minutes.ts\"; echo \"=== tracking-duration route ===\"; sed -n '1,60p' src/app/api/admin/moves/[id]/tracking-duration/route.ts | grep -n \"session\\\\|duration\\\\|hours\\\\|checkpoint\\\\|started_at\\\\|completed_at\" | head)"
     ]
   }
 }
