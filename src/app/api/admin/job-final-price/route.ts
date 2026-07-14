@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canEditFinalJobPrice } from "@/lib/admin-can-edit-final-price";
+import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
 import { isMoveStatusCompleted } from "@/lib/move-status";
 import { safePatchDeal } from "@/lib/hubspot/safe-deal-write";
 
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
     const { data: delivery, error: dErr } = await db
       .from("deliveries")
       .select(
-        "id, status, total_price, admin_adjusted_price, override_price, quoted_price, delivery_number, hubspot_deal_id",
+        "id, status, final_price, calculated_price, total_price, admin_adjusted_price, override_price, quoted_price, delivery_number, hubspot_deal_id",
       )
       .eq("id", jobId)
       .single();
@@ -101,18 +102,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Reflect what effectiveDeliveryPrice() reads when picking "current
-    // price" for the UI. If override_price was set pre-completion (e.g.
-    // operator dropped a $2,100 calc to $980), it ranks above
-    // admin_adjusted_price — so we must read AND write the same field
-    // hierarchy or the modal's "Current price" lies on the next open.
-    const original = Number(
-      delivery.override_price ??
-        delivery.admin_adjusted_price ??
-        delivery.total_price ??
-        delivery.quoted_price ??
-        0,
-    );
+    // Use the exact same precedence the UI displays with, so the modal's
+    // "Current price" always matches what's shown on the delivery. (This is why
+    // an adjusted price could look unchanged: the display ranked the generated
+    // final_price above admin_adjusted_price — now fixed in the helper.)
+    const original = effectiveDeliveryPrice(delivery);
 
     // No-op guard: a same-value save just creates noise in the audit
     // trail ("$X to $X. Actual") and confuses the next reader.

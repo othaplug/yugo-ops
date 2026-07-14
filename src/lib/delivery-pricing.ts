@@ -20,14 +20,21 @@ export function effectiveDeliveryPrice(d: {
     const x = typeof v === "number" ? v : Number(v);
     return Number.isFinite(x) ? x : 0;
   };
+  // admin_adjusted_price is the operator's explicit price (set by the pre-
+  // completion edit AND the post-completion "Adjust final price" modal). It
+  // MUST outrank final_price — final_price is a GENERATED column
+  // (COALESCE(override_price, calculated_price, …)) that does not include
+  // admin_adjusted_price, so an admin adjustment never flows into it. Ranking
+  // final_price first let the stale generated value win and the adjustment
+  // never showed (e.g. DLV-30352 adjusted $420 → $390 kept displaying $420).
+  const ap = n(d.admin_adjusted_price);
+  if (ap > 0) return ap;
   const fp = n(d.final_price);
   if (fp > 0) return fp;
   const op = n(d.override_price);
   if (op > 0) return op;
   const cp = n(d.calculated_price);
   if (cp > 0) return cp;
-  const ap = n(d.admin_adjusted_price);
-  if (ap > 0) return ap;
   const tp = n(d.total_price);
   if (tp > 0) return tp;
   return n(d.quoted_price);

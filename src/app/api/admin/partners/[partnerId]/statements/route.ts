@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
+import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
 
 export async function GET(
   req: NextRequest,
@@ -65,7 +66,9 @@ export async function POST(
 
   const { data: deliveries } = await supabase
     .from("deliveries")
-    .select("id, delivery_number, completed_at, total_price, final_price")
+    .select(
+      "id, delivery_number, completed_at, total_price, final_price, calculated_price, override_price, admin_adjusted_price, quoted_price",
+    )
     .eq("partner_id", partnerId)
     .eq("status", "completed")
     .gte("completed_at", period_start + "T00:00:00Z")
@@ -77,7 +80,7 @@ export async function POST(
   }
 
   const subtotal = deliveries.reduce(
-    (s, d) => s + (Number(d.final_price ?? d.total_price) || 0),
+    (s, d) => s + effectiveDeliveryPrice(d),
     0,
   );
   const hst = Math.round(subtotal * 0.13 * 100) / 100;
@@ -103,7 +106,7 @@ export async function POST(
         id: d.id,
         number: d.delivery_number,
         date: d.completed_at,
-        price: d.final_price ?? d.total_price,
+        price: effectiveDeliveryPrice(d),
         description: null,
       })),
       delivery_count: deliveries.length,

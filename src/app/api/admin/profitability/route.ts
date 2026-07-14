@@ -11,6 +11,7 @@ import {
 } from "@/lib/finance/calculateProfit";
 import { sessionJobDurationMinutes } from "@/lib/crew/session-job-duration-minutes";
 import { getAppTimezone } from "@/lib/business-timezone";
+import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
 
 /**
  * Profitability = cost/profit analysis, NOT revenue.
@@ -199,15 +200,7 @@ export async function GET(req: NextRequest) {
     // Mirror the same pre-tax price ladder used for revenue below so a
     // delivery priced via override_price / final_price isn't accidentally
     // dropped from the profitability roll-up.
-    const billed = Number(
-      d.override_price ??
-        d.final_price ??
-        d.admin_adjusted_price ??
-        d.total_price ??
-        d.calculated_price ??
-        d.quoted_price ??
-        0,
-    );
+    const billed = effectiveDeliveryPrice(d);
     return performedDeliveryStatuses.has(status) && billed > 0;
   });
 
@@ -412,15 +405,7 @@ export async function GET(req: NextRequest) {
     //      HST-inclusive totals, so this branch is a fallback for
     //      deliveries with no on-row price. We prefer never to hit it —
     //      that's why every price-carrying field wins first.
-    const preTax = Number(
-      d.override_price ??
-        d.final_price ??
-        d.admin_adjusted_price ??
-        d.total_price ??
-        d.calculated_price ??
-        d.quoted_price ??
-        0,
-    );
+    const preTax = effectiveDeliveryPrice(d);
     const revenue = preTax > 0 ? preTax : (invoiceBilledByDelivery[d.id] ?? 0);
     // Inject tracked hours so calculateDeliveryProfitability uses them
     const dDay = scheduledDayKey(d as { scheduled_date?: string | null });
