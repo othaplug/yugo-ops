@@ -60,6 +60,7 @@ import {
 } from "@/lib/date-format";
 import { ProfitabilityBreakdownHint } from "@/components/admin/AdminContextHints";
 import PostCompletionPriceEdit from "../../components/PostCompletionPriceEdit";
+import AdditionalChargeButton from "../../components/AdditionalChargeButton";
 import MoveWaiversSection, { type MoveWaiverRow } from "./MoveWaiversSection";
 import MoveResidentialProjectPanel from "./MoveResidentialProjectPanel";
 import CrewJobTimer from "@/app/crew/components/CrewJobTimer";
@@ -2641,10 +2642,33 @@ export default function MoveDetailClient({
                 Math.round((collectedAmount / contractBarTarget) * 100),
               )
             : 0;
-        const footerRecordedAfterTax = fullyPaid
+        // Card-settled `adjustment` rows are additional charges that WERE
+        // actually collected (extra-item auto-charge / "Charge extra"). They sit
+        // outside the contract (so they're excluded from the contract bar
+        // above), but they ARE real money taken and must show in the recorded
+        // total — otherwise a charged extra silently vanishes from the tally.
+        const collectedAdjustmentsAfterTax = paymentLedger
+          .filter(
+            (row) =>
+              row.entry_type === "adjustment" &&
+              row.settlement_method === "card",
+          )
+          .reduce(
+            (s, row) => s + Number(row.pre_tax_amount) + Number(row.hst_amount),
+            0,
+          );
+        const baseRecordedAfterTax = fullyPaid
           ? quoteTotal
           : (totalPaidNum ??
             (ledgerSumAfterTax > 0 ? ledgerSumAfterTax : null));
+        const footerRecordedAfterTax =
+          baseRecordedAfterTax == null
+            ? collectedAdjustmentsAfterTax > 0
+              ? Math.round(collectedAdjustmentsAfterTax * 100) / 100
+              : null
+            : Math.round(
+                (baseRecordedAfterTax + collectedAdjustmentsAfterTax) * 100,
+              ) / 100;
         const depositRowsTotalAfterTax = paymentLedger
           .filter((r) => r.entry_type === "deposit")
           .reduce(
@@ -2702,6 +2726,13 @@ export default function MoveDetailClient({
                 Payments
               </span>
               <div className="flex items-center gap-1.5 flex-wrap justify-end min-w-0">
+                {canEditPostCompletionPrice && !portfolioPmBilling ? (
+                  <AdditionalChargeButton
+                    moveId={move.id}
+                    hasCardOnFile={!!(move.square_card_id || move.square_customer_id)}
+                    canCharge={canEditPostCompletionPrice}
+                  />
+                ) : null}
                 {isCompleted && canEditPostCompletionPrice ? (
                   <PostCompletionPriceEdit
                     jobType="move"
@@ -2873,11 +2904,16 @@ export default function MoveDetailClient({
                                 (override)
                               </span>
                             )}
-                          {row.entry_type === "adjustment" && (
-                            <span className="text-[9px] font-semibold text-[var(--gold)] ml-1.5 uppercase tracking-wide">
-                              Added to balance · not collected
-                            </span>
-                          )}
+                          {row.entry_type === "adjustment" &&
+                            (row.settlement_method === "card" ? (
+                              <span className="text-[9px] font-semibold text-[var(--yu3-success,#15803d)] ml-1.5 uppercase tracking-wide">
+                                Additional charge · collected
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-semibold text-[var(--gold)] ml-1.5 uppercase tracking-wide">
+                                Added to balance · not collected
+                              </span>
+                            ))}
                           {contextLine && (
                             <div className="text-[9px] text-[var(--yu3-ink-muted)]/90 mt-1 leading-snug max-w-[min(100%,280px)]">
                               {contextLine}

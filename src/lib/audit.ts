@@ -21,6 +21,7 @@ type AuditAction =
   | "mfa_enrolled"
   | "mfa_verified"
   | "scope_charge_added"
+  | "additional_charge_collected"
   | "crew_reassigned_in_progress"
   | "crew_members_changed_in_progress"
   // R1: inbound shipment lifecycle from quote-side actions
