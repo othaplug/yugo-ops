@@ -4272,6 +4272,7 @@ export default function MoveDetailClient({
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function MoveProfitCard({ move }: { move: any }) {
   const [costs, setCosts] = useState<{
+    revenue: number;
     labour: number;
     fuel: number;
     truck: number;
@@ -4299,6 +4300,7 @@ function MoveProfitCard({ move }: { move: any }) {
         const match = (data.rows ?? [])[0];
         if (match && match.id === move.id) {
           setCosts({
+            revenue: match.revenue,
             labour: match.labour,
             fuel: match.fuel,
             truck: match.truck,
@@ -4318,15 +4320,13 @@ function MoveProfitCard({ move }: { move: any }) {
 
   if (!costs) return null;
 
-  // Mirror the same priority used for the contract pill at the top of
-  // the file (estimate const) so Revenue and Contract can't drift
-  // again: final_amount → total_price → amount → estimate.
-  const revenue =
-    move.final_amount ??
-    move.total_price ??
-    move.amount ??
-    move.estimate ??
-    0;
+  // Revenue MUST be the exact figure the profitability route used for the
+  // gross-profit math (pre-tax: final_amount → total_price → estimate → amount),
+  // not a locally re-derived value. The old local priority put `amount` (which
+  // stores the tax-INCLUSIVE total on some moves) ahead of `estimate`, so the
+  // card showed a tax-inclusive Revenue that didn't reconcile with the GP shown
+  // right below it (and disagreed with the moves list).
+  const revenue = costs.revenue;
   const marginColor =
     costs.grossMargin >= target
       ? "text-emerald-400"

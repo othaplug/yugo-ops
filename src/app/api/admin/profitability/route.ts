@@ -13,6 +13,17 @@ import { sessionJobDurationMinutes } from "@/lib/crew/session-job-duration-minut
 import { getAppTimezone } from "@/lib/business-timezone";
 import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
 
+// Statuses that count toward "jobs sharing this calendar day" — used to divide
+// per-day truck + overhead. Must be identical in the single-move and range
+// branches so the Money tab and the moves list never disagree.
+const SHARE_DAY_STATUSES = new Set([
+  "completed",
+  "in_progress",
+  "delivered",
+  "done",
+  "paid",
+]);
+
 /**
  * Profitability = cost/profit analysis, NOT revenue.
  * Tracks: labour (actual/est hours × crew), truck, fuel (distance-based), supplies.
@@ -45,6 +56,21 @@ export async function GET(req: NextRequest) {
     if (!move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
     const cfg: Record<string, string> = {};
     for (const r of configRows ?? []) cfg[r.key] = r.value;
+
+    // Match the moves-list computation exactly: truck cost is divided across
+    // the jobs sharing that calendar day, and overhead burn spreads the same
+    // way. Without these the Money tab over-counted truck cost vs the list.
+    const moveDay = String((move as { scheduled_date?: string | null }).scheduled_date || "").slice(0, 10);
+    let jobsOnSameDay = 1;
+    if (moveDay) {
+      const shareStatuses = [...SHARE_DAY_STATUSES];
+      const [{ count: mCount }, { count: dCount }] = await Promise.all([
+        sb.from("moves").select("id", { count: "exact", head: true }).eq("scheduled_date", moveDay).in("status", shareStatuses),
+        sb.from("deliveries").select("id", { count: "exact", head: true }).eq("scheduled_date", moveDay).in("status", shareStatuses),
+      ]);
+      jobsOnSameDay = Math.max(1, (mCount ?? 0) + (dCount ?? 0));
+    }
+    const dailyBurnForRows = getDailyOverheadBurn(cfg);
     let trackedHours: number | null = null;
     if (sessions && sessions[0]) {
       // Per-business-day worked hours so a multi-day office session excludes the
@@ -71,7 +97,10 @@ export async function GET(req: NextRequest) {
       actual_truck_cost: (m as { actual_truck_cost?: number | null }).actual_truck_cost ?? null,
       actual_supplies_cost: (m as { actual_supplies_cost?: number | null }).actual_supplies_cost ?? null,
     };
-    let costs = calculateMoveProfitability(moveCostInput, cfg, 1);
+    let costs = calculateMoveProfitability(moveCostInput, cfg, 1, {
+      jobsOnSameDay,
+      dailyOverheadBurn: dailyBurnForRows,
+    });
     const ov = ovRow as { labour?: number | null; fuel?: number | null; truck?: number | null; supplies?: number | null; processing?: number | null } | null;
     if (ov) {
       const labour = ov.labour != null ? ov.labour : costs.labour;
@@ -230,13 +259,6 @@ export async function GET(req: NextRequest) {
   const config: Record<string, string> = {};
   for (const r of configRows ?? []) config[r.key] = r.value;
 
-  const SHARE_DAY_STATUSES = new Set([
-    "completed",
-    "in_progress",
-    "delivered",
-    "done",
-    "paid",
-  ]);
 
   const scheduledDayKey = (row: { scheduled_date?: string | null }): string | null => {
     const raw = row.scheduled_date;
