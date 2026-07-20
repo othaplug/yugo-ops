@@ -1014,6 +1014,38 @@ async function calculateDeposit(
   }
 }
 
+/**
+ * Event deposit — mirrors the Estate tier posture (operator directive
+ * 2026-07: B2B events take a deposit + balance like Estate / Priority, NOT
+ * full payment at booking). 25% with a $500 floor (config
+ * deposit_estate_pct / deposit_estate_min), capped at the price so a tiny
+ * event never asks for more than the total. Honors the universal short-notice
+ * rule: booked <4 days out pays in full, since the 48h balance window can't be
+ * met.
+ */
+function eventDeposit(
+  amount: number,
+  config: Map<string, string>,
+  moveDate?: string | null,
+): number {
+  const amt = Math.round(amount);
+  if (amt <= 0) return 0;
+  if (moveDate) {
+    const target = new Date(`${String(moveDate).trim().slice(0, 10)}T00:00:00`);
+    if (!Number.isNaN(target.getTime())) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const daysOut = Math.floor(
+        (target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
+      );
+      if (daysOut < 4) return amt;
+    }
+  }
+  const pct = cfgNum(config, "deposit_estate_pct", 25);
+  const min = cfgNum(config, "deposit_estate_min", 500);
+  return Math.min(amt, Math.max(min, Math.round((amt * pct) / 100)));
+}
+
 // ═══════════════════════════════════════════════
 // Add-on calculation (Step 6.5)
 // ═══════════════════════════════════════════════
@@ -3863,7 +3895,7 @@ async function calcEvent(
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
   const total = price + tax;
-  const deposit = price; // full payment at booking for event
+  const deposit = eventDeposit(price, config, input.move_date);
 
   const eventIncludes = buildEventIncludesList(input);
 
@@ -4035,7 +4067,7 @@ async function calcMultiEvent(
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
   const total = price + tax;
-  const deposit = price; // full payment at booking for event
+  const deposit = eventDeposit(price, config, input.move_date);
 
   const eventDistanceSummary = distLabels
     .map((d, idx) =>
@@ -5201,7 +5233,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     const newTax = Math.round(newPrice * taxR);
     const newDeposit =
       svcType === "event"
-        ? newPrice // full payment at booking for event
+        ? eventDeposit(newPrice, config, input.move_date)
         : custom_price.deposit;
     custom_price = {
       ...custom_price,
@@ -5231,7 +5263,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         price: grossedEvOvr,
         tax: Math.round(grossedEvOvr * taxR),
         total: grossedEvOvr + Math.round(grossedEvOvr * taxR),
-        deposit: grossedEvOvr, // full payment at booking for event
+        deposit: eventDeposit(grossedEvOvr, config, input.move_date),
       };
     }
   }

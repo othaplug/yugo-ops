@@ -5567,6 +5567,20 @@ export default function QuoteFormClient({
             );
             return;
           }
+          // A return leg cannot happen before its delivery. Nothing used to stop
+          // this (a Jul-24 return on a Sep-20 delivery priced normally).
+          if (
+            !leg.event_same_day &&
+            leg.event_return_date?.trim() &&
+            leg.move_date &&
+            leg.event_return_date.trim().slice(0, 10) < leg.move_date.slice(0, 10)
+          ) {
+            toast(
+              `Event ${i + 1}: return date can't be before the delivery date`,
+              "alertTriangle",
+            );
+            return;
+          }
         }
       } else {
         if (
@@ -5582,6 +5596,18 @@ export default function QuoteFormClient({
         }
         if (!eventSameDay && !eventReturnDate) {
           toast("Please fill Return date (or check Same Day)", "alertTriangle");
+          return;
+        }
+        if (
+          !eventSameDay &&
+          eventReturnDate &&
+          moveDate &&
+          eventReturnDate.slice(0, 10) < moveDate.slice(0, 10)
+        ) {
+          toast(
+            "Return date can't be before the delivery date",
+            "alertTriangle",
+          );
           return;
         }
       }
@@ -13301,6 +13327,35 @@ export default function QuoteFormClient({
                 serviceType === "office_move"
                   ? Math.max(1, Number(factorsObj.office_trucks ?? 1) || 1)
                   : 1;
+              // The shared truck allocator keys off move_size (defaults to
+              // "2br" → 16ft) and ignores the operator's selected event truck,
+              // so the card used to read "16ft Box Truck" for a job set to 26ft.
+              // For events, show the truck(s) actually chosen on the form.
+              const truckSizeLabel = (v: string): string => {
+                const s = String(v || "").toLowerCase();
+                if (s === "sprinter") return "Sprinter Van";
+                if (s === "none" || s === "") return "On-site · no truck";
+                return `${v} Box Truck`;
+              };
+              let eventFleetLabel: string | null = null;
+              if (serviceType === "event") {
+                if (eventMulti && eventLegs.length > 0) {
+                  const counts = new Map<string, number>();
+                  for (const leg of eventLegs) {
+                    const t = leg.event_same_location_onsite
+                      ? "none"
+                      : leg.event_leg_truck_type || "sprinter";
+                    counts.set(t, (counts.get(t) ?? 0) + 1);
+                  }
+                  eventFleetLabel = [...counts.entries()]
+                    .map(([t, n]) => `${n > 1 ? `${n} × ` : ""}${truckSizeLabel(t)}`)
+                    .join(" + ");
+                } else {
+                  eventFleetLabel = truckSizeLabel(
+                    eventSameLocationSingle ? "none" : eventTruckType,
+                  );
+                }
+              }
               return (
               <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-[11px]">
                 <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
@@ -13310,8 +13365,8 @@ export default function QuoteFormClient({
                   <Truck className="w-3.5 h-3.5 text-[var(--gold)]" />
                   <div>
                     <span className="text-[var(--tx)] font-medium">
-                      {officeTruckCount > 1 ? `${officeTruckCount} × ` : ""}
-                      {quoteResult.truck.primary.display_name}
+                      {eventFleetLabel ??
+                        `${officeTruckCount > 1 ? `${officeTruckCount} × ` : ""}${quoteResult.truck.primary.display_name}`}
                     </span>
                     {/* Null-safed 2026-06-27 (YG-30322 event quote crash):
                         event-shape truck.primary doesn't carry cargo_cubic_ft,
