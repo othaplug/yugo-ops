@@ -74,7 +74,9 @@ export async function POST(
 
   const { data: move, error: moveErr } = await db
     .from("moves")
-    .select("id, move_code, client_name, square_customer_id, square_card_id")
+    .select(
+      "id, move_code, client_name, square_customer_id, square_card_id, estimate, amount, total_price, final_amount, total_paid",
+    )
     .eq("id", moveId)
     .single();
   if (moveErr || !move) {
@@ -115,6 +117,48 @@ export async function POST(
       { error: result.reason || "The card could not be charged." },
       { status: 402 },
     );
+  }
+
+  // Roll the collected extra into the move's recognised total so every surface
+  // reflects it. `estimate` is the one reliable PRE-TAX base — the moves list
+  // (final_amount ?? total_price ?? estimate), the profitability revenue, and
+  // contractTaxFromMove() all resolve to it — so bumping it flows the charge
+  // through to the contract headline, the list amount, and margin. Without this
+  // the charge collected fine but every total still read the old contract.
+  const oldEstimate = Number(move.estimate) || 0;
+  const totalsPatch: Record<string, number> = {};
+  if (oldEstimate > 0) totalsPatch.estimate = Math.round((oldEstimate + preTax) * 100) / 100;
+
+  // `amount` is stored inconsistently (tax-inclusive on most rows, pre-tax on
+  // some). Match whichever convention this row already uses instead of assuming.
+  const oldAmount = Number(move.amount) || 0;
+  if (oldAmount > 0 && oldEstimate > 0) {
+    const looksInclusive = Math.abs(oldAmount - oldEstimate * (1 + HST_RATE)) < 1;
+    totalsPatch.amount =
+      Math.round((oldAmount + (looksInclusive ? inclusive : preTax)) * 100) / 100;
+  }
+
+  // final_amount / total_price hold the TAX-INCLUSIVE total when a price was
+  // manually edited, and they outrank `estimate` in every reader — bump them
+  // too or the new total would be invisible on manually-priced moves.
+  for (const field of ["final_amount", "total_price"] as const) {
+    const cur = Number(move[field]) || 0;
+    if (cur > 0) totalsPatch[field] = Math.round((cur + inclusive) * 100) / 100;
+  }
+
+  // total_paid tracks cash collected (tax-inclusive).
+  if (move.total_paid != null) {
+    totalsPatch.total_paid =
+      Math.round(((Number(move.total_paid) || 0) + inclusive) * 100) / 100;
+  }
+
+  if (Object.keys(totalsPatch).length > 0) {
+    const { error: bumpErr } = await db.from("moves").update(totalsPatch).eq("id", moveId);
+    if (bumpErr) {
+      // The money is already collected and ledgered — never fail the request
+      // here, just surface it so the total can be reconciled.
+      console.error("[additional-charge] move total bump failed:", bumpErr.message);
+    }
   }
 
   await logAudit({

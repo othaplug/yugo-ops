@@ -2609,8 +2609,18 @@ export default function MoveDetailClient({
         // they are NOT collected money, so they must never count toward
         // collected / recorded payments (the bug where a $60 scope charge read
         // as "$68 collected").
+        // Collected = money actually received. `adjustment` rows are excluded
+        // UNLESS they were settled on the card: an admin scope charge
+        // (settlement_method 'admin') only increases what's owed and must never
+        // read as collected, but a "Charge extra" / extra-item auto-charge WAS
+        // taken and is rolled into the move total, so it counts here too —
+        // otherwise the bar shows the job underpaid right after collecting.
         const ledgerSumAfterTax = paymentLedger
-          .filter((row) => row.entry_type !== "adjustment")
+          .filter(
+            (row) =>
+              row.entry_type !== "adjustment" ||
+              row.settlement_method === "card",
+          )
           .reduce(
             (s, row) => s + Number(row.pre_tax_amount) + Number(row.hst_amount),
             0,
@@ -2642,33 +2652,12 @@ export default function MoveDetailClient({
                 Math.round((collectedAmount / contractBarTarget) * 100),
               )
             : 0;
-        // Card-settled `adjustment` rows are additional charges that WERE
-        // actually collected (extra-item auto-charge / "Charge extra"). They sit
-        // outside the contract (so they're excluded from the contract bar
-        // above), but they ARE real money taken and must show in the recorded
-        // total — otherwise a charged extra silently vanishes from the tally.
-        const collectedAdjustmentsAfterTax = paymentLedger
-          .filter(
-            (row) =>
-              row.entry_type === "adjustment" &&
-              row.settlement_method === "card",
-          )
-          .reduce(
-            (s, row) => s + Number(row.pre_tax_amount) + Number(row.hst_amount),
-            0,
-          );
-        const baseRecordedAfterTax = fullyPaid
+        // `ledgerSumAfterTax` already includes card-settled extras, so this is
+        // simply the recorded total — no separate add-on (that would double-count).
+        const footerRecordedAfterTax = fullyPaid
           ? quoteTotal
           : (totalPaidNum ??
             (ledgerSumAfterTax > 0 ? ledgerSumAfterTax : null));
-        const footerRecordedAfterTax =
-          baseRecordedAfterTax == null
-            ? collectedAdjustmentsAfterTax > 0
-              ? Math.round(collectedAdjustmentsAfterTax * 100) / 100
-              : null
-            : Math.round(
-                (baseRecordedAfterTax + collectedAdjustmentsAfterTax) * 100,
-              ) / 100;
         const depositRowsTotalAfterTax = paymentLedger
           .filter((r) => r.entry_type === "deposit")
           .reduce(
