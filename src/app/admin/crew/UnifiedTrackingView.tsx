@@ -217,6 +217,24 @@ function crewMemberLine(
   return (teamName || "Crew").replace(/^Team\s+/i, "");
 }
 
+/**
+ * Map-pin label: the team plus its crew size ("Team A · 5 crew").
+ *
+ * The pin used to render `crewMemberLine()` — every assigned member's name
+ * comma-joined — which turned a normal 5-person crew into
+ * "John, Gary, Che, Belah, Connor" sitting across the map. The pin only needs to
+ * identify WHICH crew is there; the individual names belong in the hover title
+ * and the crew detail panel, both of which still show the full list.
+ */
+function crewTeamLabel(
+  members: string[] | undefined | null,
+  teamName: string,
+): string {
+  const base = (teamName || "Crew").replace(/^Team\s+/i, "").trim() || "Crew";
+  const count = (members ?? []).map((m) => m.trim()).filter(Boolean).length;
+  return count > 0 ? `${base} · ${count} crew` : base;
+}
+
 /** Two-letter avatar from the first member when possible, else from the team name. */
 function crewAvatarInitials(
   members: string[] | undefined | null,
@@ -666,7 +684,7 @@ const GodEyeMap = dynamic(
                             className="text-[11px] font-bold tracking-[0.06em]"
                             style={{ color: crewLabelText }}
                           >
-                            {crewMemberLine(c.members, c.name)}
+                            {crewTeamLabel(c.members, c.name)}
                           </span>
                         </div>
                         <span
@@ -827,14 +845,17 @@ function CrewPopup({
               {crewAvatarInitials(crew.members, crew.name)}
             </div>
             <div>
+              {/* Title identifies the crew; the individual names read as the
+                  subtitle (they used to be the title, which made every heading a
+                  five-name run-on while the subtitle only said "5 movers"). */}
               <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)]">
-                {crewMemberLine(crew.members, crew.name)}
+                {crewTeamLabel(crew.members, crew.name)}
               </h3>
-              <span className="text-[10px] text-[var(--tx3)]">
-                {crew.members && crew.members.length > 0
-                  ? `${crew.members.length} mover${crew.members.length !== 1 ? "s" : ""}`
-                  : (crew.name || "Crew").replace(/^Team\s+/i, "")}
-              </span>
+              {crew.members && crew.members.length > 0 ? (
+                <span className="text-[10px] text-[var(--tx3)]">
+                  {crewMemberLine(crew.members, crew.name)}
+                </span>
+              ) : null}
             </div>
           </div>
           <button
@@ -1628,7 +1649,7 @@ export default function UnifiedTrackingView({
                                   </div>
                                   <div className="min-w-0">
                                     <div className="text-[12px] font-bold text-[var(--tx)] truncate">
-                                      {crewMemberLine(
+                                      {crewTeamLabel(
                                         crewForSession?.members,
                                         s.teamName,
                                       )}
@@ -1758,7 +1779,7 @@ export default function UnifiedTrackingView({
                             </div>
                             {crew && (
                               <span className="text-[9px] font-medium text-[var(--accent-text)] shrink-0 max-w-[120px] truncate">
-                                {crewMemberLine(crew.members, crew.name)}
+                                {crewTeamLabel(crew.members, crew.name)}
                               </span>
                             )}
                           </Link>
@@ -1790,7 +1811,7 @@ export default function UnifiedTrackingView({
                             </div>
                             {crew && (
                               <span className="text-[9px] font-medium text-[var(--accent-text)] shrink-0 max-w-[120px] truncate">
-                                {crewMemberLine(crew.members, crew.name)}
+                                {crewTeamLabel(crew.members, crew.name)}
                               </span>
                             )}
                           </Link>
@@ -1876,7 +1897,7 @@ export default function UnifiedTrackingView({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-[12px] font-bold text-[var(--tx)] truncate">
-                            {crewMemberLine(c.members, c.name)}
+                            {crewTeamLabel(c.members, c.name)}
                           </span>
                           {hasActiveSession && (
                             <span className="dt-badge tracking-[0.04em] text-[var(--accent-text)]">
