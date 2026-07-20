@@ -5975,8 +5975,15 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     async function depositAfterOverride(preTax: number): Promise<number> {
       const tot = Math.round(preTax * (1 + taxOvr));
       if (daysOutForDep < 4) return tot;
-      if (svcType === "event" || svcType === "specialty") {
-        return tot; // full payment at booking
+      if (svcType === "event") {
+        // Events take the threshold deposit (25% above $1.5k, else full),
+        // same as the non-override path — NOT full payment. This line used
+        // to force events to `tot` (full), so any event with a coordinator
+        // price override silently reverted to full payment at booking.
+        return eventDeposit(preTax, config, moveDateForDep);
+      }
+      if (svcType === "specialty") {
+        return tot; // specialty is full payment at booking
       }
       if (svcType === "labour_only") {
         // Flat $150 deposit when booked 4+ days out (operator change
