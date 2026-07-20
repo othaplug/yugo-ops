@@ -14927,12 +14927,20 @@ function EventPriceDisplay({
           Full payment at booking · No balance due
         </div>
       ) : (
-        <div
-          className={`flex items-center justify-between text-[11px] ${card.muted}`}
-        >
-          <span>Deposit due now</span>
-          <span className={ink.deposit}>{fmtPrice(t.deposit)}</span>
-        </div>
+        <>
+          <div
+            className={`flex items-center justify-between text-[11px] ${card.muted}`}
+          >
+            <span>Deposit due now</span>
+            <span className={ink.deposit}>{fmtPrice(t.deposit)}</span>
+          </div>
+          <div
+            className={`flex items-center justify-between text-[10px] ${card.muted}`}
+          >
+            <span>Balance · 48h before event</span>
+            <span>{fmtPrice(Math.max(0, t.total - t.deposit))}</span>
+          </div>
+        </>
       )}
     </>
   );
@@ -15129,78 +15137,72 @@ function EventPriceDisplay({
             {crewOv ? " · Crew overridden" : null}
           </p>
         )}
-        {typeof labourLine === "number" && labourLine > 0 && (
-          <div className="flex justify-between gap-2">
-            <span className={card.muted}>
-              Delivery labour (crew × hours × rate)
-            </span>
-            <span
-              className={`font-medium tabular-nums shrink-0 ${card.body}`}
-            >
-              {fmtPrice(labourLine)}
-            </span>
-          </div>
-        )}
-        {typeof distSur === "number" && distSur > 0 && (
-          <div className="flex justify-between gap-2">
-            <span className={card.muted}>Distance (over free km)</span>
-            <span
-              className={`font-medium tabular-nums shrink-0 ${card.body}`}
-            >
-              {fmtPrice(distSur)}
-            </span>
-          </div>
-        )}
-        {typeof wrapSur === "number" && wrapSur > 0 && (
-          <div className="flex justify-between gap-2">
-            <span className={card.muted}>
-              Wrapping / handling surcharge
-            </span>
-            <span
-              className={`font-medium tabular-nums shrink-0 ${card.body}`}
-            >
-              {fmtPrice(wrapSur)}
-            </span>
-          </div>
-        )}
-        {deliveryCharge !== undefined && (
-          <div className="flex justify-between">
-            <span className={card.muted}>
-              Delivery day total ({deliveryDate ?? "TBD"})
-              {eventCrew && eventHours ? (
-                <span className="ml-1 opacity-75">
-                  {eventCrew}-person crew, {eventHours}hr
+        {/* Simple day-based split: the two service days always sum to the
+            subtotal (setup shown separately). For a same-work round trip the
+            two days are equal; when the return is discounted they split
+            proportionally. No engine-internal labour/percent lines — those
+            live in the collapsible Price Breakdown below. */}
+        {(() => {
+          const setup = setupFee ?? 0;
+          const dayBudget = Math.max(0, (t.price ?? 0) - setup);
+          const hasRet = returnCharge !== undefined && !!returnDate;
+          const disc =
+            typeof returnDiscount === "number" && returnDiscount > 0
+              ? returnDiscount
+              : 0;
+          const rows: React.ReactNode[] = [];
+          if (hasRet && disc > 0) {
+            const day1 = Math.round(dayBudget / (1 + disc));
+            const day2 = dayBudget - day1;
+            const sameWork = Math.abs(disc - 1) < 0.001;
+            rows.push(
+              <div key="d1" className="flex justify-between gap-2">
+                <span className={card.muted}>
+                  Day 1 · Delivery{" "}
+                  <span className="opacity-60">{deliveryDate ?? "TBD"}</span>
                 </span>
-              ) : null}
-            </span>
-            <span className={`font-medium ${card.body}`}>
-              {fmtPrice(deliveryCharge)}
-            </span>
-          </div>
-        )}
-        {(setupFee ?? 0) > 0 && (
-          <div className="flex justify-between">
-            <span className={card.muted}>Setup service</span>
-            <span className={`font-medium ${card.body}`}>
-              {fmtPrice(setupFee!)}
-            </span>
-          </div>
-        )}
-        {returnCharge !== undefined && (
-          <div className="flex justify-between">
-            <span className={card.muted}>
-              Return ({returnDate ?? "TBD"})
-              {returnDiscount !== undefined ? (
-                <span className="ml-1 opacity-75">
-                  {Math.round(returnDiscount * 100)}% of delivery
+                <span className={`font-medium tabular-nums shrink-0 ${card.body}`}>
+                  {fmtPrice(day1)}
                 </span>
-              ) : null}
-            </span>
-            <span className={`font-medium ${card.body}`}>
-              {fmtPrice(returnCharge)}
-            </span>
-          </div>
-        )}
+              </div>,
+              <div key="d2" className="flex justify-between gap-2">
+                <span className={card.muted}>
+                  Day 2 · Return &amp; teardown{" "}
+                  <span className="opacity-60">{returnDate ?? "TBD"}</span>
+                  {sameWork ? (
+                    <span className="ml-1 opacity-60">(same scope)</span>
+                  ) : null}
+                </span>
+                <span className={`font-medium tabular-nums shrink-0 ${card.body}`}>
+                  {fmtPrice(day2)}
+                </span>
+              </div>,
+            );
+          } else {
+            rows.push(
+              <div key="d0" className="flex justify-between gap-2">
+                <span className={card.muted}>
+                  Event day{" "}
+                  <span className="opacity-60">{deliveryDate ?? "TBD"}</span>
+                </span>
+                <span className={`font-medium tabular-nums shrink-0 ${card.body}`}>
+                  {fmtPrice(dayBudget)}
+                </span>
+              </div>,
+            );
+          }
+          if (setup > 0) {
+            rows.push(
+              <div key="setup" className="flex justify-between gap-2">
+                <span className={card.muted}>Setup service</span>
+                <span className={`font-medium tabular-nums shrink-0 ${card.body}`}>
+                  {fmtPrice(setup)}
+                </span>
+              </div>,
+            );
+          }
+          return <>{rows}</>;
+        })()}
       </div>
       {overrideApplied && typeof systemPreTax === "number" ? (
         <div className={`${overrideCallout} ${card.muted}`}>
