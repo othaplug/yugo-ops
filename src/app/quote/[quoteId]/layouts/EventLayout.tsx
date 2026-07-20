@@ -1,13 +1,20 @@
-import { Fragment } from "react";
-import { MapPin, Calendar, Check, Users, Truck, Star, ArrowRight } from "@phosphor-icons/react";
 import {
   type Quote,
   WINE,
   FOREST,
+  FOREST_BODY,
+  FOREST_MUTED,
   TAX_RATE,
   fmtPrice,
   calculateDeposit,
 } from "../quote-shared";
+import { decideBookingPayment } from "@/lib/quotes/booking-payment-window";
+import {
+  premiumShellInk,
+  premiumShellRuleRgba,
+  type PremiumShellKind,
+} from "../quote-premium-shell";
+import { SIGNATURE_CTA } from "../signature-quote-ui";
 import { formatPlatformDisplay } from "@/lib/date-format";
 
 interface Props {
@@ -16,14 +23,8 @@ interface Props {
   confirmed: boolean;
   /** Optional Your Protection card rendered above Investment Summary. */
   protectionSlot?: React.ReactNode;
-}
-
-function fmtDate(d: string | null | undefined): string {
-  if (!d) return "TBD";
-  return formatPlatformDisplay(new Date(d + "T00:00:00"), {
-    month: "long",
-    day: "numeric",
-  }, "TBD");
+  /** Premium shell (deep-green Signature) or "none" for the cream fallback. */
+  premiumShellKind?: PremiumShellKind;
 }
 
 function fmtShort(d: string | null | undefined): string {
@@ -63,24 +64,60 @@ function scaleToTotal(amounts: number[], target: number): number[] {
   });
 }
 
-export default function EventLayout({ quote, onConfirm, confirmed, protectionSlot }: Props) {
+export default function EventLayout({
+  quote,
+  onConfirm,
+  confirmed,
+  protectionSlot,
+  premiumShellKind = "none",
+}: Props) {
+  /* ── Premium-shell palette (deep-green Signature) with cream fallback,
+        mirroring WhiteGloveLayout so events read as the same premium flow. ── */
+  const premium = premiumShellKind !== "none";
+  const ink = premiumShellInk(premiumShellKind);
+  const C = {
+    heading: ink?.primary ?? WINE,
+    body: ink?.body ?? FOREST_BODY,
+    strong: ink?.primary ?? FOREST,
+    muted: ink?.muted ?? FOREST_MUTED,
+    kicker: ink?.kicker ?? `${FOREST}70`,
+    secondary: ink?.secondary ?? `${FOREST}75`,
+    rule: premiumShellRuleRgba(premiumShellKind),
+    panelBorder: ink?.borderSubtle ?? "#E2DDD5",
+    panelBg: premium ? "rgba(244, 250, 245, 0.05)" : "rgba(255,255,255,0.9)",
+    chipBg: premium ? "rgba(244, 250, 245, 0.08)" : `${FOREST}12`,
+    chipText: ink?.primary ?? FOREST,
+    priceColor: ink?.primary ?? WINE,
+    ctaFill: premium ? SIGNATURE_CTA : FOREST,
+  };
+
   const f = (quote.factors_applied ?? {}) as Record<string, unknown>;
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
+  const grandTotal = price + tax;
   const serverDeposit = quote.deposit_amount != null ? Number(quote.deposit_amount) : null;
   const deposit =
     serverDeposit != null && serverDeposit > 0 ? serverDeposit : calculateDeposit("event", price);
 
+  // Deposit-vs-full copy that reflects the real amount, not a hardcoded line.
+  const bookingDecision = decideBookingPayment({
+    moveDate: quote.move_date,
+    deposit,
+    grandTotal,
+  });
+  const dueToday = Math.min(grandTotal, Math.max(0, bookingDecision.amountToCharge));
+  const balanceDue = Math.max(0, grandTotal - dueToday);
+  const paidInFull = balanceDue < 2;
+
   const eventName = (f.event_name as string) ?? null;
   const deliveryDate = (f.delivery_date as string) ?? quote.move_date ?? null;
   const returnDate = (f.return_date as string) ?? null;
-  const deliveryCharge = (f.delivery_charge as number) ?? 0;
   const setupFee = (f.setup_fee as number) ?? 0;
   const returnCharge = (f.return_charge as number) ?? 0;
   const crewSize = (f.event_crew as number) ?? (f.crew_size as number) ?? quote.est_crew_size ?? 2;
-  const deliveryHours = (f.event_hours as number) ?? (f.delivery_hours as number) ?? null;
-  const returnHours = (f.return_hours as number) ?? null;
   const truckSize = quote.truck_primary ?? null;
+  const arrivalWindow = (f.event_arrival_window as string) ?? null;
+  const hardCutoff = (f.event_hard_cutoff as string) ?? null;
 
   const hasSetup = setupFee > 0;
   const hasReturn = returnCharge > 0;
@@ -124,200 +161,183 @@ export default function EventLayout({ quote, onConfirm, confirmed, protectionSlo
     }
   }
 
+  const chip = (label: string, filled = false) => (
+    <span
+      className="text-[9px] font-bold tracking-[0.14em] uppercase px-2.5 py-1 rounded-full"
+      style={
+        filled
+          ? { backgroundColor: C.chipBg, color: C.chipText }
+          : { border: `1px solid ${C.rule}`, color: C.secondary }
+      }
+    >
+      {label}
+    </span>
+  );
+
+  // Origin → venue, typographic (no icons) to match the premium layouts.
+  const routeRow = (from: string | null | undefined, to: string | null | undefined) => (
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+      <div className="min-w-0">
+        <p className="text-[9px] font-bold tracking-[0.16em] uppercase" style={{ color: C.kicker }}>
+          Origin
+        </p>
+        <p className="text-[12px] font-medium mt-0.5 truncate" style={{ color: C.strong }}>
+          {from || "TBD"}
+        </p>
+      </div>
+      <span className="text-[13px]" style={{ color: C.secondary }} aria-hidden>
+        &rarr;
+      </span>
+      <div className="min-w-0 text-right">
+        <p className="text-[9px] font-bold tracking-[0.16em] uppercase" style={{ color: C.kicker }}>
+          Venue
+        </p>
+        <p className="text-[12px] font-medium mt-0.5 truncate" style={{ color: C.strong }}>
+          {to || "TBD"}
+        </p>
+      </div>
+    </div>
+  );
+
   return (
     <section className="mb-10 space-y-8">
-      {/* Event header */}
+      {/* ── Event header ── */}
       <div>
-        <div className="flex items-start gap-4 mb-5">
-          <Star className="w-6 h-6 shrink-0 mt-1" style={{ color: WINE }} aria-hidden />
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              {eventName && (
-                <span
-                  className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
-                  style={{ backgroundColor: `${FOREST}15`, color: FOREST }}
-                >
-                  {eventName}
-                </span>
-              )}
-              {showOnSiteBadge && (
-                <span
-                  className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full border"
-                  style={{ borderColor: `${FOREST}40`, color: FOREST }}
-                >
-                  On-site Event
-                </span>
-              )}
-            </div>
-            <h2 className="font-hero text-[26px] mt-2" style={{ color: WINE }}>
-              Event Logistics
-            </h2>
-            {isMulti && (
-              <p className="text-[11px] mt-1.5 font-medium" style={{ color: `${FOREST}80` }}>
-                {eventLegs.length} round trips included in this quote
-              </p>
-            )}
-          </div>
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          {eventName && chip(eventName, true)}
+          {showOnSiteBadge && chip("On-site event")}
         </div>
+        <h2 className="font-hero text-[26px] md:text-[30px]" style={{ color: C.heading }}>
+          Event Logistics
+        </h2>
+        {isMulti && (
+          <p className="text-[11px] mt-1.5 font-medium" style={{ color: C.secondary }}>
+            {eventLegs.length} round trips included in this quote
+          </p>
+        )}
 
         {/* Route(s) */}
-        <div className="pt-4 border-t border-[var(--brd)]/30 space-y-4">
+        <div className="mt-5 pt-5 space-y-4" style={{ borderTop: `1px solid ${C.rule}` }}>
           {isMulti ? (
             eventLegs.map((leg, idx) => (
-              <div key={idx} className="rounded-xl border p-3" style={{ borderColor: `${FOREST}30` }}>
-                <p className="text-[9px] font-bold tracking-[0.14em] uppercase mb-2 flex flex-wrap items-center gap-2" style={{ color: WINE }}>
-                  <span>{leg.label || `Event ${idx + 1}`}</span>
-                  {leg.is_on_site ? (
-                    <span className="normal-case font-semibold text-[10px] px-2 py-0.5 rounded-full border" style={{ borderColor: `${FOREST}35`, color: FOREST }}>
-                      On-site Event
-                    </span>
-                  ) : null}
+              <div
+                key={idx}
+                className="rounded-xl p-4"
+                style={{ border: `1px solid ${C.panelBorder}`, backgroundColor: C.panelBg }}
+              >
+                <p className="mb-3 flex flex-wrap items-center gap-2">
+                  <span
+                    className="text-[9px] font-bold tracking-[0.16em] uppercase"
+                    style={{ color: C.kicker }}
+                  >
+                    {leg.label || `Event ${idx + 1}`}
+                  </span>
+                  {leg.is_on_site ? chip("On-site event") : null}
                 </p>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Origin</p>
-                    <p className="text-[11px] font-medium" style={{ color: FOREST }}>{leg.from_address}</p>
-                  </div>
-                  <ArrowRight className="w-4 h-4 shrink-0" style={{ color: FOREST }} />
-                  <div className="flex-1 min-w-0 text-right">
-                    <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Venue</p>
-                    <p className="text-[11px] font-medium" style={{ color: FOREST }}>{leg.to_address}</p>
-                  </div>
-                </div>
-                <p className="text-[10px] mt-2" style={{ color: `${FOREST}65` }}>
-                  Deliver {fmtShort(leg.delivery_date)} · Return {fmtShort(leg.return_date)}
+                {routeRow(leg.from_address, leg.is_on_site ? leg.from_address : leg.to_address)}
+                <p className="text-[10px] mt-3" style={{ color: C.muted }}>
+                  Deliver {fmtShort(leg.delivery_date)} &middot; Return {fmtShort(leg.return_date)}
                   {leg.same_day ? " (same day)" : ""}
                 </p>
               </div>
             ))
           ) : (
-            <div className="flex items-center gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: WINE }} />
-                  <div>
-                    <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Origin</p>
-                    <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.from_address}</p>
-                  </div>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 shrink-0" style={{ color: FOREST }} />
-              <div className="flex-1 min-w-0 text-right">
-                <div className="flex items-start gap-2 justify-end">
-                  <div>
-                    <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Venue</p>
-                    <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.to_address}</p>
-                  </div>
-                  <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: FOREST }} />
-                </div>
-              </div>
-            </div>
+            routeRow(quote.from_address, quote.to_address)
           )}
         </div>
       </div>
 
-      {/* Phase breakdown */}
-      <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: `${FOREST}40` }}>
-        <div className="px-5 py-3.5 border-b" style={{ backgroundColor: `${FOREST}08`, borderColor: `${FOREST}25` }}>
-          <h2 className="admin-section-h2" style={{ color: WINE }}>
+      {/* ── Service Breakdown ── */}
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{ border: `1px solid ${C.panelBorder}`, backgroundColor: C.panelBg }}
+      >
+        <div className="px-5 py-3.5" style={{ borderBottom: `1px solid ${C.rule}` }}>
+          <h3
+            className="text-[11px] font-bold tracking-[0.16em] uppercase"
+            style={{ color: C.heading }}
+          >
             Service Breakdown
-          </h2>
+          </h3>
         </div>
-        <div className="divide-y" style={{ borderColor: "#E2DDD5" }}>
+        <div>
           {isMulti ? (
             <>
-              {eventLegs.map((leg, idx) => {
-                const displayAmt = multiLegDisplayAmounts[idx] ?? (leg.delivery_charge ?? 0) + (leg.return_charge ?? 0);
-                const returnAmt = leg.return_charge ?? 0;
-                const isSameDay = !!leg.same_day;
-
-                return (
-                  <div key={idx} className="px-5 py-4 space-y-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: WINE }}>
-                      {leg.label || `Event ${idx + 1}`}
+              {eventLegs.map((leg, idx) => (
+                <div key={idx} className="px-5 py-4" style={{ borderTop: idx > 0 ? `1px solid ${C.rule}` : undefined }}>
+                  <p
+                    className="text-[10px] font-bold tracking-[0.14em] uppercase mb-2"
+                    style={{ color: C.kicker }}
+                  >
+                    {leg.label || `Event ${idx + 1}`}
+                  </p>
+                  <div className="pl-3 space-y-1" style={{ borderLeft: `2px solid ${C.rule}` }}>
+                    <p className="text-[11px]" style={{ color: C.body }}>
+                      <span className="font-semibold uppercase tracking-wide">Delivery</span>
+                      <span className="ml-2" style={{ color: C.muted }}>{fmtShort(leg.delivery_date)}</span>
+                      {(leg.event_crew ?? 0) > 0 && (
+                        <span className="ml-2" style={{ color: C.muted }}>{leg.event_crew}-person crew</span>
+                      )}
                     </p>
-                    <div className="flex items-start gap-4 pl-2 border-l-2" style={{ borderColor: `${WINE}40` }}>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-[10px] font-semibold uppercase" style={{ color: WINE }}>Delivery</span>
-                        <span className="text-[10px] ml-2" style={{ color: `${FOREST}70` }}>{fmtShort(leg.delivery_date)}</span>
-                        <div className="text-[10px] mt-0.5" style={{ color: `${FOREST}60` }}>
-                          {(leg.event_crew ?? 0) > 0 && `${leg.event_crew}-person crew`}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4 pl-2 border-l-2" style={{ borderColor: `${FOREST}40` }}>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-[10px] font-semibold uppercase" style={{ color: FOREST }}>Return</span>
-                        <span className="text-[10px] ml-2" style={{ color: `${FOREST}70` }}>{fmtShort(leg.return_date)}</span>
-                      </div>
-                    </div>
+                    <p className="text-[11px]" style={{ color: C.body }}>
+                      <span className="font-semibold uppercase tracking-wide">Return</span>
+                      <span className="ml-2" style={{ color: C.muted }}>{fmtShort(leg.return_date)}</span>
+                    </p>
                   </div>
-                );
-              })}
+                </div>
+              ))}
               {hasSetup && (
-                <div className="px-5 py-4">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: FOREST }}>S</div>
-                        <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: FOREST }}>Setup (program)</span>
-                      </div>
-                      <div className="pl-7 text-[10px]" style={{ color: `${FOREST}60` }}>
-                        {(f.setup_label as string) ?? "On-site setup service"}
-                      </div>
-                    </div>
-                  </div>
+                <div className="px-5 py-4" style={{ borderTop: `1px solid ${C.rule}` }}>
+                  <p className="text-[11px] font-bold tracking-[0.14em] uppercase" style={{ color: C.strong }}>
+                    Setup (program)
+                  </p>
+                  <p className="text-[10px] mt-1" style={{ color: C.muted }}>
+                    {(f.setup_label as string) ?? "On-site setup service"}
+                  </p>
                 </div>
               )}
             </>
           ) : (
             <>
               <div className="px-5 py-4">
-                <div className="flex items-start gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: WINE }}>1</div>
-                      <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: WINE }}>Delivery</span>
-                      <span className="text-[10px] font-medium" style={{ color: `${FOREST}70` }}>{fmtShort(deliveryDate)}</span>
-                    </div>
-                    <div className="pl-7 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px]" style={{ color: `${FOREST}60` }}>
-                      {crewSize > 0 && <span className="flex items-center gap-1"><Users className="w-3 h-3" />{crewSize} movers</span>}
-                      {truckSize && <span className="flex items-center gap-1"><Truck className="w-3 h-3" />{truckSize} truck</span>}
-                    </div>
-                  </div>
-                </div>
+                <p className="flex flex-wrap items-baseline gap-x-2">
+                  <span className="text-[11px] font-bold tracking-[0.14em] uppercase" style={{ color: C.strong }}>
+                    Delivery
+                  </span>
+                  <span className="text-[10px] font-medium" style={{ color: C.muted }}>{fmtShort(deliveryDate)}</span>
+                </p>
+                <p className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px]" style={{ color: C.body }}>
+                  {crewSize > 0 && <span>{crewSize}-person crew</span>}
+                  {truckSize && <span>&middot; {truckSize}</span>}
+                  {arrivalWindow && <span>&middot; Load-in {arrivalWindow}</span>}
+                  {hardCutoff && <span>&middot; Off-site by {hardCutoff}</span>}
+                </p>
               </div>
 
               {hasSetup && (
-                <div className="px-5 py-4">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: FOREST }}>S</div>
-                        <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: FOREST }}>Setup at Venue</span>
-                      </div>
-                      <div className="pl-7 text-[10px]" style={{ color: `${FOREST}60` }}>
-                        {(f.setup_label as string) ?? "On-site setup service"}
-                      </div>
-                    </div>
-                  </div>
+                <div className="px-5 py-4" style={{ borderTop: `1px solid ${C.rule}` }}>
+                  <p className="text-[11px] font-bold tracking-[0.14em] uppercase" style={{ color: C.strong }}>
+                    Setup at venue
+                  </p>
+                  <p className="text-[10px] mt-1" style={{ color: C.muted }}>
+                    {(f.setup_label as string) ?? "On-site setup service"}
+                  </p>
                 </div>
               )}
 
               {hasReturn && (
-                <div className="px-5 py-4">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: FOREST }}>2</div>
-                        <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: FOREST }}>Return (Teardown)</span>
-                        {returnDate && <span className="text-[10px] font-medium" style={{ color: `${FOREST}70` }}>{fmtShort(returnDate)}</span>}
-                      </div>
-                      <div className="pl-7 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px]" style={{ color: `${FOREST}60` }}>
-                        <span>Same crew, no re-briefing needed</span>
-                      </div>
-                    </div>
-                  </div>
+                <div className="px-5 py-4" style={{ borderColor: C.rule }}>
+                  <p className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="text-[11px] font-bold tracking-[0.14em] uppercase" style={{ color: C.strong }}>
+                      Return (teardown)
+                    </span>
+                    {returnDate && (
+                      <span className="text-[10px] font-medium" style={{ color: C.muted }}>{fmtShort(returnDate)}</span>
+                    )}
+                  </p>
+                  <p className="text-[10px] mt-1" style={{ color: C.muted }}>
+                    Same crew, no re-briefing needed
+                  </p>
                 </div>
               )}
             </>
@@ -325,83 +345,67 @@ export default function EventLayout({ quote, onConfirm, confirmed, protectionSlo
         </div>
       </div>
 
-      {/*
-        Single-event Delivery Date pill above Investment Summary was
-        redundant: the same date already appears in the hero and in the
-        per-leg block for multi-event programs. Removed 2026-07-03 so the
-        page moves straight from event details into pricing.
-        Return Date pill goes with it — a one-off round-trip event that
-        actually returns keeps that context in the per-leg block below.
-      */}
-
       {/* Protection slot renders here (above Investment Summary) so the
           client sees coverage next to the price, not below the confirm CTA. */}
       {protectionSlot}
 
-      {/* Investment summary */}
-      <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: FOREST }}>
-        <div className="px-5 py-4 border-b" style={{ backgroundColor: `${FOREST}08`, borderColor: "#E2DDD5" }}>
-          <h2 className="font-heading text-[13px] font-bold tracking-wider uppercase" style={{ color: WINE }}>
+      {/* ── Investment Summary ── */}
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{ border: `1.5px solid ${premium ? C.rule : FOREST}`, backgroundColor: C.panelBg }}
+      >
+        <div className="px-5 py-4" style={{ borderBottom: `1px solid ${C.rule}` }}>
+          <h3
+            className="text-[11px] font-bold tracking-[0.16em] uppercase"
+            style={{ color: C.heading }}
+          >
             Investment Summary
-          </h2>
+          </h3>
         </div>
         <div className="p-5 md:p-6">
-          {/* Line items — multi-event programs only.
-              Single-event Delivery / Setup / Return lines were
-              removed 2026-06-11 per operator: a one-off event quote
-              read as "Delivery $550 / Return $350" with the rest of
-              the price unexplained, which confused clients more
-              than it helped. Multi-event programs keep the per-leg
-              breakdown because each leg IS a distinct sub-event the
-              client booked. Setup/return for single events are
-              rolled into the headline price below. */}
           {isMulti && multiLegDisplayAmounts.length > 1 ? (
-            <table className="w-full text-[12px] mb-4">
+            <table className="w-full text-[12px] mb-5">
               <tbody>
                 {eventLegs.map((leg, idx) => {
                   const displayAmt = multiLegDisplayAmounts[idx] ?? 0;
                   return displayAmt > 0 ? (
-                    <tr key={idx} className={idx > 0 ? "border-t" : undefined} style={idx > 0 ? { borderColor: "#E2DDD5" } : undefined}>
-                      <td className="py-2" style={{ color: `${FOREST}80` }}>
+                    <tr key={idx} style={idx > 0 ? { borderTop: `1px solid ${C.rule}` } : undefined}>
+                      <td className="py-2" style={{ color: C.body }}>
                         {leg.label || `Event ${idx + 1}`}, Delivery ({fmtShort(leg.delivery_date)})
                         {leg.same_day ? <span className="ml-1 text-[10px] italic">+ same-day return</span> : null}
                       </td>
-                      <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(displayAmt)}</td>
+                      <td className="py-2 text-right font-medium" style={{ color: C.strong }}>{fmtPrice(displayAmt)}</td>
                     </tr>
                   ) : null;
                 })}
                 {hasSetup && (
-                  <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
-                    <td className="py-2" style={{ color: `${FOREST}80` }}>Setup (program)</td>
-                    <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(setupFee)}</td>
+                  <tr style={{ borderTop: `1px solid ${C.rule}` }}>
+                    <td className="py-2" style={{ color: C.body }}>Setup (program)</td>
+                    <td className="py-2 text-right font-medium" style={{ color: C.strong }}>{fmtPrice(setupFee)}</td>
                   </tr>
                 )}
               </tbody>
             </table>
           ) : null}
-          <div className="pt-4 text-center">
-            <p className="text-[36px] md:text-[44px] [font-family:var(--font-body)]" style={{ color: WINE }}>
+          <div className="pt-2 text-center">
+            <p className="text-[36px] md:text-[44px] [font-family:var(--font-body)]" style={{ color: C.priceColor }}>
               {fmtPrice(price)}
             </p>
-            <p className="text-[12px] mt-1 mb-5" style={{ color: `${FOREST}70` }}>
-              +{fmtPrice(tax)} HST &middot; Total {fmtPrice(price + tax)}
+            <p className="text-[12px] mt-1 mb-5" style={{ color: C.secondary }}>
+              +{fmtPrice(tax)} HST &middot; Total {fmtPrice(grandTotal)}
             </p>
             <button
               type="button"
               onClick={onConfirm}
-              className={`w-full max-w-xs mx-auto py-3.5 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90 ${confirmed ? "opacity-80" : ""}`}
-              style={{ backgroundColor: FOREST }}
+              className={`w-full max-w-xs mx-auto py-3.5 rounded-none border-0 text-[10px] font-bold tracking-[0.14em] uppercase text-white transition-opacity hover:opacity-90 ${confirmed ? "opacity-80" : ""}`}
+              style={{ backgroundColor: C.ctaFill }}
             >
-              {confirmed ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Check className="w-4 h-4" /> Confirmed
-                </span>
-              ) : (
-                `Confirm & Book — ${fmtPrice(price + tax)}`
-              )}
+              {confirmed ? "Confirmed" : `Confirm & Book — ${fmtPrice(dueToday)}`}
             </button>
-            <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
-              Full payment at booking &middot; No balance due
+            <p className="text-[10px] mt-2.5" style={{ color: C.muted }}>
+              {paidInFull
+                ? "Paid in full at booking · No balance due"
+                : `${fmtPrice(dueToday)} deposit today · ${fmtPrice(balanceDue)} balance before your event`}
             </p>
           </div>
         </div>

@@ -709,7 +709,7 @@ export default function QuotePageClient({
   const residentialSolidCtaClass =
     "w-full max-w-md py-3.5 rounded-none border-0 text-[10px] font-bold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90";
   /** Estate (wine) or Signature (green), colour shell only; Estate-only copy uses `isEstateFlow`. */
-  const shellKind: PremiumShellKind = isWhiteGlove
+  const shellKind: PremiumShellKind = isWhiteGlove || isEvent
     ? "signature"
     : premiumShellKind(isResidential || isOfficeTiered, selectedTier);
   const premiumShell = shellKind !== "none";
@@ -2480,6 +2480,7 @@ export default function QuotePageClient({
                 truckSecondary={quote.truck_secondary}
                 crewSize={flooredCrewSize}
                 variant="event"
+                premiumShellKind={shellKind}
                 eventFeatures={eventFeatures}
                 showEventSetupFeature={
                   Number(
@@ -2494,6 +2495,7 @@ export default function QuotePageClient({
                 onConfirm={handleConfirm}
                 confirmed={confirmed}
                 protectionSlot={protectionSlotForLayout}
+                premiumShellKind={shellKind}
               />
             </>
           ) : quote.service_type === "labour_only" ? (
@@ -3027,7 +3029,7 @@ export default function QuotePageClient({
                     isEstateFlow ||
                     (isOfficeTiered && selectedTier === "priority")
                       ? "wine"
-                      : isSignatureFlow || isWhiteGlove ||
+                      : isSignatureFlow || isWhiteGlove || isEvent ||
                           (isOfficeTiered && selectedTier === "signature")
                         ? "signature"
                         : undefined
