@@ -1171,6 +1171,45 @@ function roundTo(amount: number, nearest: number): number {
   return Math.round(amount / nearest) * nearest;
 }
 
+const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+const DAY_LABELS: Record<string, string> = {
+  sun: "Sunday",
+  mon: "Monday",
+  tue: "Tuesday",
+  wed: "Wednesday",
+  thu: "Thursday",
+  fri: "Friday",
+  sat: "Saturday",
+};
+/** Short day key (sun..sat) for a YYYY-MM-DD string, timezone-independent. */
+function dayKeyFromYmd(ymd: string | null | undefined): string | null {
+  const m = String(ymd ?? "").trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  if (!y || !mo || !d) return null;
+  return DAY_KEYS[new Date(Date.UTC(y, mo - 1, d)).getUTCDay()] ?? null;
+}
+/**
+ * Date-driven day-of-week surcharge for events. Weekend / peak-day pricing is a
+ * business policy, not a hard-coded number — so the amounts live in config
+ * (`event_day_of_week_surcharge`, a JSON day->flat-fee map, default empty). This
+ * lets the machine answer "Sunday vs Monday" by repricing per date, with the
+ * business setting its own differentials. Default {} = no change to any quote.
+ */
+function eventDaySurcharge(
+  moveDate: string | null | undefined,
+  config: Map<string, string>,
+): { fee: number; dayKey: string | null; dayLabel: string | null } {
+  const dayKey = dayKeyFromYmd(moveDate);
+  if (!dayKey) return { fee: 0, dayKey: null, dayLabel: null };
+  const map = parseJsonConfig<Record<string, number>>(config, "event_day_of_week_surcharge", {});
+  const raw = Number(map[dayKey] ?? 0);
+  const fee = Number.isFinite(raw) && raw > 0 ? Math.round(raw) : 0;
+  return { fee, dayKey, dayLabel: DAY_LABELS[dayKey] ?? null };
+}
+
 // ═══════════════════════════════════════════════
 // Tier includes — loaded from DB with hardcoded fallback
 // ═══════════════════════════════════════════════
@@ -3785,6 +3824,8 @@ async function computeEventLegPrice(
     equipment?: EventEquipmentInput;
     /** Early / after-hours load window (before 7AM / after 8PM) — flat premium. */
     afterHours?: boolean;
+    /** This leg's service date (YYYY-MM-DD) — drives the day-of-week surcharge. */
+    moveDate?: string;
     fromParking: string;
     toParking: string;
     fromLongCarry: boolean;
@@ -3881,6 +3922,10 @@ async function computeEventLegPrice(
     ? cfgNum(input.config, "event_after_hours_fee", 150)
     : 0;
 
+  // Date-driven day-of-week premium (e.g. Sunday) — config-driven, default off.
+  const daySur = eventDaySurcharge(input.moveDate, input.config);
+  const dayOfWeekFee = daySur.fee;
+
   const [oa, va] = await Promise.all([
     getAccessSurcharge(sb, input.fromAccess),
     getAccessSurcharge(sb, input.toAccess),
@@ -3888,7 +3933,7 @@ async function computeEventLegPrice(
 
   const rounding = cfgNum(input.config, "rounding_nearest", 50);
   const rawDelivery =
-    deliveryLabour + truckSur + equipmentSurcharge + afterHoursFee + distanceSurcharge + wrapSur + parkingSur + oa + va + longSur;
+    deliveryLabour + truckSur + equipmentSurcharge + afterHoursFee + dayOfWeekFee + distanceSurcharge + wrapSur + parkingSur + oa + va + longSur;
   let deliveryCharge = roundTo(Math.round(rawDelivery), rounding);
 
   const returnDiscount = Math.min(1, Math.max(0, input.returnDiscount));
@@ -3932,6 +3977,9 @@ async function computeEventLegPrice(
     palletJack: wantsPalletJack,
     afterHoursFee,
     afterHours: !!input.afterHours,
+    dayOfWeekFee,
+    dayKey: daySur.dayKey,
+    dayLabel: daySur.dayLabel,
   };
 }
 
@@ -3973,6 +4021,7 @@ async function calcEvent(
     truckCount: onSite ? 1 : input.event_truck_count,
     equipment: input.event_equipment,
     afterHours: !!input.event_after_hours,
+    moveDate: input.move_date,
     fromParking,
     toParking,
     fromLongCarry: !!input.from_long_carry,
@@ -4072,6 +4121,8 @@ async function calcEvent(
       event_hard_cutoff: input.event_hard_cutoff?.trim() || null,
       event_after_hours: core.afterHours,
       event_after_hours_surcharge: core.afterHoursFee,
+      event_day_of_week: core.dayLabel,
+      event_day_of_week_surcharge: core.dayOfWeekFee,
     },
     labour: {
       ...core.labour,
@@ -4132,6 +4183,7 @@ async function calcMultiEvent(
       truckCount: onSite ? 1 : (leg.event_leg_truck_count ?? input.event_truck_count),
       equipment: leg.event_equipment ?? input.event_equipment,
       afterHours: leg.event_leg_after_hours ?? !!input.event_after_hours,
+      moveDate: leg.move_date,
       fromParking,
       toParking,
       fromLongCarry: !!fromLc,
@@ -4185,6 +4237,8 @@ async function calcMultiEvent(
       event_leg_hard_cutoff: leg.event_leg_hard_cutoff?.trim() || null,
       event_leg_after_hours: core.afterHours,
       event_leg_after_hours_surcharge: core.afterHoursFee,
+      event_leg_day_of_week: core.dayLabel,
+      event_leg_day_of_week_surcharge: core.dayOfWeekFee,
     });
   }
 
@@ -4267,6 +4321,10 @@ async function calcMultiEvent(
       event_after_hours: legBreakdown.some((l) => !!(l as { event_leg_after_hours?: boolean }).event_leg_after_hours),
       event_after_hours_surcharge: legBreakdown.reduce(
         (s, l) => s + ((l as { event_leg_after_hours_surcharge?: number }).event_leg_after_hours_surcharge ?? 0),
+        0,
+      ),
+      event_day_of_week_surcharge: legBreakdown.reduce(
+        (s, l) => s + ((l as { event_leg_day_of_week_surcharge?: number }).event_leg_day_of_week_surcharge ?? 0),
         0,
       ),
       truck_breakdown_line: formatTruckBreakdownLine(defaultTruck, config),
