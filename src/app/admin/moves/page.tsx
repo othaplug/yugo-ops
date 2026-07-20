@@ -1,7 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { pickLatestTrackingSession, resolveAdminMoveListDisplayStatus } from "@/lib/move-status";
 import AllMovesV3Client from "./AllMovesV3Client";
-import { calcEstimatedCost, calcEstimatedMarginPct } from "@/lib/pricing/engine";
 import { calculateMoveProfitability } from "@/lib/finance/calculateProfit";
 
 export const metadata = { title: "Moves" };
@@ -144,65 +143,67 @@ export default async function AllMovesPage() {
       m.status,
       latestSessionByMoveId[m.id]?.status ?? null,
     );
-    // `paid` is a payment flag, NOT an operational stage — a move can be
-    // paid in advance and still be scheduled for a future date. Only treat
-    // a move as completed for actual-cost recalculation when it has truly
-    // been executed. See lib/move-status.ts → getStatusLabel: "paid" is
-    // intentionally surfaced as "Scheduled" to operators.
-    const isCompleted = ["completed", "delivered"].includes(String(display_status || "").toLowerCase());
-
+    // Always recompute from the shared calculateMoveProfitability
+    // (2026-07-06 fix — MV-30348 pill showed stale 55 % vs 69.7 %
+    // on the profitability page and move detail panel for the same
+    // move). Root cause: previous logic only recomputed when
+    // display_status was "completed" or "delivered". "paid" moves
+    // (payment flag, not lifecycle) fell through to
+    // `est_margin_percent` while `margin_percent` kept whatever was
+    // stamped in the DB — often stale by months. Pill rendered the
+    // stale DB value.
+    //
+    // calculateMoveProfitability handles both completed and non-
+    // completed cases: with actual_labour_cost snapshot it uses
+    // real numbers; without, it derives from est_hours × crew ×
+    // loaded rate. Same function the profitability route uses, so
+    // all three surfaces (list, profitability page, move detail
+    // panel) agree by construction.
+    //
+    // NB: jobsOnSameDay isn't passed here (single-job path). If a
+    // move shared its day with another, its truck cost on the
+    // profitability page is divided by that count → higher margin
+    // there vs here. Follow-up refinement: compute jobsOnSameDay
+    // per row like /api/admin/profitability does. Not blocking the
+    // current fix — for solo-day moves (majority) numbers match
+    // exactly.
     const effectivePrice = Number(m.final_amount ?? m.total_price ?? m.estimate ?? 0);
 
-    let margin_percent: number | null = m.margin_percent ?? null;
+    let margin_percent: number | null = null;
     let est_margin_percent: number | null = m.est_margin_percent ?? null;
 
     if (effectivePrice > 0) {
-      if (isCompleted) {
-        // Recalculate from actual data so the list always matches the profitability panel.
-        // Prefer live tracked hours; fall back to stored actual_hours, then est_hours.
-        const trackedHours = sessionHoursMap[m.id] ?? null;
-        const costs = calculateMoveProfitability(
-          {
-            estimate: effectivePrice,
-            actual_hours: trackedHours ?? null,
-            est_hours: m.est_hours ?? null,
-            est_crew_size: m.est_crew_size ?? null,
-            estimated_duration_minutes: m.estimated_duration_minutes ?? null,
-            distance_km: m.distance_km ?? null,
-            truck_primary: m.truck_primary ?? null,
-            truck_secondary: m.truck_secondary ?? null,
-            move_size: m.move_size ?? null,
-            service_type: m.service_type ?? null,
-            balance_method: m.balance_method ?? null,
-            deposit_method: m.deposit_method ?? null,
-            actual_labour_cost: m.actual_labour_cost ?? null,
-            actual_fuel_cost: m.actual_fuel_cost ?? null,
-            actual_truck_cost: m.actual_truck_cost ?? null,
-            actual_supplies_cost: m.actual_supplies_cost ?? null,
-          },
-          config,
-          1,
-        );
-        margin_percent = costs.grossMargin;
-        if (est_margin_percent == null) est_margin_percent = margin_percent;
-      } else if (est_margin_percent == null) {
-        // Non-completed moves: use lightweight estimate from config defaults for the preview badge
-        const cost = calcEstimatedCost(
-          {
-            actualEstimatedHours: Number(m.est_hours ?? 4) || 4,
-            crew: Number(m.est_crew_size ?? 2) || 2,
-            recommendedTruck: m.truck_primary ?? "sprinter",
-            distanceKm: Number(m.distance_km ?? 20) || 20,
-            tier: String(m.tier_selected || "essential"),
-            moveSize: m.move_size ?? "2br",
-          },
-          config,
-        );
-        est_margin_percent = calcEstimatedMarginPct(effectivePrice, cost);
-      }
+      const trackedHours = sessionHoursMap[m.id] ?? null;
+      const costs = calculateMoveProfitability(
+        {
+          estimate: effectivePrice,
+          actual_hours: trackedHours ?? null,
+          est_hours: m.est_hours ?? null,
+          est_crew_size: m.est_crew_size ?? null,
+          estimated_duration_minutes: m.estimated_duration_minutes ?? null,
+          distance_km: m.distance_km ?? null,
+          truck_primary: m.truck_primary ?? null,
+          truck_secondary: m.truck_secondary ?? null,
+          move_size: m.move_size ?? null,
+          service_type: m.service_type ?? null,
+          balance_method: m.balance_method ?? null,
+          deposit_method: m.deposit_method ?? null,
+          actual_labour_cost: m.actual_labour_cost ?? null,
+          actual_fuel_cost: m.actual_fuel_cost ?? null,
+          actual_truck_cost: m.actual_truck_cost ?? null,
+          actual_supplies_cost: m.actual_supplies_cost ?? null,
+        },
+        config,
+        1,
+      );
+      margin_percent = costs.grossMargin;
+      if (est_margin_percent == null) est_margin_percent = margin_percent;
     }
 
-    const pctForFlag = isCompleted ? margin_percent : est_margin_percent;
+    // margin_percent is now always freshly computed above (no stale DB
+    // fallback), so prefer it for the flag. Falls back to est_ only if
+    // effectivePrice was 0 (no revenue → no margin computed).
+    const pctForFlag = margin_percent ?? est_margin_percent;
     const margin_flag = pctForFlag != null ? threeBandMarginFlag(Number(pctForFlag)) : (m.margin_flag ?? null);
 
     return {
