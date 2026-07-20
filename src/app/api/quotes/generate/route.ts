@@ -5232,6 +5232,23 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       const res = await calcSingleItem(sb, input, config, distInfo, addonResult);
       custom_price = res.custom_price;
       factors = res.factors;
+      // Surface the estimated crew/hours/truck onto the quote row (like
+      // white_glove does) — otherwise est_crew_size / est_hours / truck_primary
+      // persist null and the booked move carries no crew, hours, or truck,
+      // degrading dispatch and duration/margin estimates.
+      const sf = res.factors as {
+        single_item_crew_estimated?: number;
+        single_item_hours_estimated?: number;
+        truck_recommended?: string;
+      };
+      displayCrew = sf.single_item_crew_estimated ?? 2;
+      displayHours = sf.single_item_hours_estimated ?? null;
+      labour = {
+        crewSize: displayCrew,
+        estimatedHours: displayHours ?? 0,
+        hoursRange: displayHours ? `${displayHours}hr` : "",
+        truckSize: sf.truck_recommended ?? "sprinter",
+      };
       break;
     }
     case "white_glove": {
