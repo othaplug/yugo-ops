@@ -61,18 +61,14 @@ export async function createBinOrderFromBinRentalQuote(opts: {
   const bundleLine = lines.find((l) => l.key === "bundle" || l.key === "custom_bins");
   const bundlePrice = bundleLine ? Number(bundleLine.amount) || 0 : subtotalPreTax - deliverySur;
 
-  const { count } = await supabase
-    .from("bin_orders")
-    .select("id", { count: "exact", head: true });
-  const seq = (count ?? 0) + 1;
-  const orderNumber = `BIN-${String(seq).padStart(4, "0")}`;
-
   const delivery = (quote.to_address || "").trim();
   const pickupAddr = (quote.from_address || "").trim() || delivery;
 
-  const { data: row, error } = await supabase
-    .from("bin_orders")
-    .insert({
+  // order_number is derived from a live row count, so two concurrent bookings
+  // would compute the same BIN-#### and one insert would fail on the unique
+  // constraint. Retry on a unique violation (23505), re-reading the count each
+  // pass so the second booking simply takes the next number.
+  const buildOrderPayload = (orderNumber: string) => ({
       order_number: orderNumber,
       client_name: clientName,
       client_email: clientEmail,
@@ -103,12 +99,34 @@ export async function createBinOrderFromBinRentalQuote(opts: {
       paid_total_cents: Math.round(totalPaid * 100),
       move_id: moveId,
       source: "admin",
-    })
-    .select("id, order_number")
-    .single();
+  });
 
-  if (error || !row) {
-    console.error("[createBinOrderFromBinRentalQuote] insert failed:", error);
+  let row: { id: string; order_number: string } | null = null;
+  let lastError: { code?: string; message?: string } | null = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { count } = await supabase
+      .from("bin_orders")
+      .select("id", { count: "exact", head: true });
+    const seq = (count ?? 0) + 1 + attempt;
+    const orderNumber = `BIN-${String(seq).padStart(4, "0")}`;
+
+    const { data, error } = await supabase
+      .from("bin_orders")
+      .insert(buildOrderPayload(orderNumber))
+      .select("id, order_number")
+      .single();
+
+    if (data && !error) {
+      row = data;
+      break;
+    }
+    lastError = error;
+    // 23505 = unique_violation: another booking took this number; retry.
+    if (error?.code !== "23505") break;
+  }
+
+  if (!row) {
+    console.error("[createBinOrderFromBinRentalQuote] insert failed:", lastError);
     return null;
   }
 
