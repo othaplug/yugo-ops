@@ -446,7 +446,11 @@ export const FULL_PAYMENT_AT_BOOKING_SERVICES = new Set<string>([
   "white_glove",
   "specialty",
   "single_item",
-  "event",
+  // NOTE: `event` is intentionally NOT here. Per operator directive (2026-07),
+  // B2B events take a deposit + balance like Estate/Priority (25% / $500 min,
+  // see eventDeposit in the generate route), NOT full payment at booking.
+  // Classifying events as full-payment made the payment gate reject the 25%
+  // deposit the event quote page shows, breaking event bookings.
   "b2b_delivery",
   "b2b_oneoff",
   "bin_rental",

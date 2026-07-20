@@ -61,11 +61,14 @@ export async function GET(req: NextRequest) {
   // immediately — don't wait for T-2 — so short-notice bookings don't sit
   // uncollected. Payment gate in /api/payments/process now prevents new
   // leaks; this is the safety net that catches anything already in flight.
+  // NOTE: `event` is deliberately excluded — B2B events take a deposit +
+  // balance (Estate posture, 25% / $500 min), so their outstanding balance is
+  // collected on the normal T-2 window (windowMoves above), NOT charged in full
+  // immediately. Keeping it here would have charged the 75% balance at booking.
   const FULL_PAYMENT_SERVICES = [
     "white_glove",
     "specialty",
     "single_item",
-    "event",
     "b2b_delivery",
     "b2b_oneoff",
     "bin_rental",
