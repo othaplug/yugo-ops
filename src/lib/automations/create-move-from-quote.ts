@@ -102,6 +102,9 @@ type EventLegStored = {
   event_crew?: number;
   event_hours?: number;
   event_leg_truck_count?: number;
+  event_leg_arrival_window?: string | null;
+  event_leg_hard_cutoff?: string | null;
+  event_leg_after_hours?: boolean;
 };
 
 /** Human fleet label for the move's customer-facing `truck_info` (shown as
@@ -549,6 +552,9 @@ export async function createMoveFromQuote(
       crew: number | null | undefined;
       hours: number | null | undefined;
       truckCount?: number | null | undefined;
+      arrivalWindow?: string | null | undefined;
+      hardCutoff?: string | null | undefined;
+      afterHours?: boolean | null | undefined;
       isFirstOverall: boolean;
     },
   ) {
@@ -556,6 +562,8 @@ export async function createMoveFromQuote(
     const dt = driveTimeFromKm(distKm);
     const truck = (quote.truck_primary as string) ?? null;
     const fleetInfo = eventFleetInfo(truck, opts.truckCount);
+    const arrivalWindow = (opts.arrivalWindow || "").trim() || null;
+    const hardCutoff = (opts.hardCutoff || "").trim() || null;
 
     // Palletized-freight ops note so the crew knows the gear the job needs.
     const equipBits: string[] = [];
@@ -567,10 +575,17 @@ export async function createMoveFromQuote(
     if (dn > 0) equipBits.push(`${dn} ${dn === 1 ? "dolly" : "dollies"}`);
     const equipLine = equipBits.length ? `Equipment: ${equipBits.join(", ")}` : null;
 
+    // Hard scheduling constraint so dispatch never misses the load-out cutoff.
+    const schedBits: string[] = [];
+    if (hardCutoff) schedBits.push(`off-site by ${hardCutoff}`);
+    if (opts.afterHours) schedBits.push("early / after-hours");
+    const schedLine = schedBits.length ? `Schedule: ${schedBits.join(", ")}` : null;
+
     const mkInternal = (phase: "delivery" | "return") =>
       [
         `Event bundle${eventTitleForNotes ? `, ${eventTitleForNotes}` : ""}: ${opts.legLabel} (${phase})`,
         equipLine,
+        schedLine,
         `Quote ${input.quoteId}`,
       ]
         .filter(Boolean)
@@ -590,6 +605,7 @@ export async function createMoveFromQuote(
       drive_time_min: dt,
       truck_primary: truck,
       truck_info: fleetInfo,
+      arrival_window: arrivalWindow,
       est_crew_size: opts.crew ?? null,
       est_hours: opts.hours ?? null,
       internal_notes: mkInternal("delivery"),
@@ -612,6 +628,7 @@ export async function createMoveFromQuote(
       drive_time_min: dt,
       truck_primary: truck,
       truck_info: fleetInfo,
+      arrival_window: arrivalWindow,
       est_crew_size: opts.crew ?? null,
       est_hours: opts.hours ?? null,
       internal_notes: mkInternal("return"),
@@ -652,6 +669,15 @@ export async function createMoveFromQuote(
           truckCount:
             leg.event_leg_truck_count ??
             (factors.event_truck_count as number | undefined),
+          arrivalWindow:
+            leg.event_leg_arrival_window ??
+            (factors.event_arrival_window as string | undefined),
+          hardCutoff:
+            leg.event_leg_hard_cutoff ??
+            (factors.event_hard_cutoff as string | undefined),
+          afterHours:
+            leg.event_leg_after_hours ??
+            (factors.event_after_hours as boolean | undefined),
           isFirstOverall,
         });
         isFirstOverall = false;
@@ -686,6 +712,9 @@ export async function createMoveFromQuote(
           crew,
           hours,
           truckCount: factors.event_truck_count as number | undefined,
+          arrivalWindow: factors.event_arrival_window as string | undefined,
+          hardCutoff: factors.event_hard_cutoff as string | undefined,
+          afterHours: factors.event_after_hours as boolean | undefined,
           isFirstOverall: true,
         });
       }

@@ -204,6 +204,9 @@ interface EventLegForm {
   event_same_location_onsite: boolean;
   event_leg_truck_type: string;
   event_leg_truck_count: number;
+  event_leg_arrival_window: string;
+  event_leg_hard_cutoff: string;
+  event_leg_after_hours: boolean;
   event_return_rate_preset:
     | "auto"
     | "60"
@@ -1661,6 +1664,11 @@ export default function QuoteFormClient({
   const [eventPalletJack, setEventPalletJack] = useState(false);
   const [eventLiftgate, setEventLiftgate] = useState(false);
   const [eventDollies, setEventDollies] = useState(0);
+  // Scheduling constraints: target load-in window, a hard "off-site by" cutoff
+  // (e.g. off Bay St by 7AM), and an early/after-hours premium toggle.
+  const [eventArrivalWindow, setEventArrivalWindow] = useState("");
+  const [eventHardCutoff, setEventHardCutoff] = useState("");
+  const [eventAfterHours, setEventAfterHours] = useState(false);
   const [eventSameLocationSingle, setEventSameLocationSingle] = useState(false);
   const [eventReturnRateSingle, setEventReturnRateSingle] = useState<
     "auto" | "60" | "65" | "80" | "85" | "100" | "custom"
@@ -1682,6 +1690,9 @@ export default function QuoteFormClient({
       event_same_location_onsite: false,
       event_leg_truck_type: "sprinter",
       event_leg_truck_count: 1,
+      event_leg_arrival_window: "",
+      event_leg_hard_cutoff: "",
+      event_leg_after_hours: false,
       event_return_rate_preset: "auto",
       event_return_rate_custom: "",
     },
@@ -1697,6 +1708,9 @@ export default function QuoteFormClient({
       event_same_location_onsite: false,
       event_leg_truck_type: "sprinter",
       event_leg_truck_count: 1,
+      event_leg_arrival_window: "",
+      event_leg_hard_cutoff: "",
+      event_leg_after_hours: false,
       event_return_rate_preset: "auto",
       event_return_rate_custom: "",
     },
@@ -1717,6 +1731,9 @@ export default function QuoteFormClient({
         event_same_location_onsite: false,
         event_leg_truck_type: "sprinter",
       event_leg_truck_count: 1,
+      event_leg_arrival_window: "",
+      event_leg_hard_cutoff: "",
+      event_leg_after_hours: false,
         event_return_rate_preset: "auto",
         event_return_rate_custom: "",
       },
@@ -3180,6 +3197,11 @@ export default function QuoteFormClient({
             if (fa.event_liftgate_required === true) setEventLiftgate(true);
             if (fa.event_pallet_jack === true) setEventPalletJack(true);
           }
+          const arrivalWin = cStr(fa.event_arrival_window);
+          if (arrivalWin) setEventArrivalWindow(arrivalWin);
+          const hardCutoff = cStr(fa.event_hard_cutoff);
+          if (hardCutoff) setEventHardCutoff(hardCutoff);
+          if (fa.event_after_hours === true) setEventAfterHours(true);
           if (fa.event_setup_required === true) setEventSetupRequired(true);
           if (fa.teardown_required === false) setEventTeardownRequired(false);
           const setupHours = faNum("event_setup_hours");
@@ -5110,6 +5132,9 @@ export default function QuoteFormClient({
                 }
               : undefined;
         }
+        base.event_arrival_window = eventArrivalWindow.trim() || undefined;
+        base.event_hard_cutoff = eventHardCutoff.trim() || undefined;
+        base.event_after_hours = eventAfterHours || undefined;
         base.event_additional_services =
           eventAdditionalServices.length > 0
             ? eventAdditionalServices
@@ -5136,6 +5161,9 @@ export default function QuoteFormClient({
             event_leg_truck_count: leg.event_same_location_onsite
               ? 1
               : Math.min(4, Math.max(1, Number(leg.event_leg_truck_count) || 1)),
+            event_leg_arrival_window: leg.event_leg_arrival_window?.trim() || undefined,
+            event_leg_hard_cutoff: leg.event_leg_hard_cutoff?.trim() || undefined,
+            event_leg_after_hours: leg.event_leg_after_hours || undefined,
             event_return_rate_preset: leg.event_return_rate_preset,
             event_return_rate_custom:
               leg.event_return_rate_preset === "custom" &&
@@ -9567,6 +9595,9 @@ export default function QuoteFormClient({
                                 event_same_location_onsite: eventSameLocationSingle,
                                 event_leg_truck_type: eventTruckType || "sprinter",
                                 event_leg_truck_count: eventTruckCount || 1,
+                                event_leg_arrival_window: "",
+                                event_leg_hard_cutoff: "",
+                                event_leg_after_hours: eventAfterHours,
                                 event_return_rate_preset:
                                   eventReturnRateSingle as EventLegForm["event_return_rate_preset"],
                                 event_return_rate_custom: eventReturnRateCustomSingle,
@@ -9583,6 +9614,9 @@ export default function QuoteFormClient({
                                 event_same_location_onsite: false,
                                 event_leg_truck_type: eventTruckType || "sprinter",
                                 event_leg_truck_count: eventTruckCount || 1,
+                                event_leg_arrival_window: "",
+                                event_leg_hard_cutoff: "",
+                                event_leg_after_hours: eventAfterHours,
                                 event_return_rate_preset: "auto",
                                 event_return_rate_custom: "",
                               },
@@ -10048,6 +10082,45 @@ export default function QuoteFormClient({
                                   Palletized load with no dock usually needs a liftgate truck.
                                 </p>
                               )}
+                            </div>
+
+                            {/* Scheduling — load-in window + a hard off-site
+                                cutoff (e.g. off Bay St by 7AM) + early premium. */}
+                            <div className="rounded-lg border border-[var(--brd)] p-2.5 space-y-2">
+                              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]">
+                                Scheduling
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <Field label="Load-in window">
+                                  <input
+                                    type="text"
+                                    value={eventArrivalWindow}
+                                    placeholder="6:00 - 7:00 AM"
+                                    onChange={(e) => setEventArrivalWindow(e.target.value)}
+                                    className={fieldInput}
+                                  />
+                                </Field>
+                                <Field label="Off-site by">
+                                  <input
+                                    type="text"
+                                    value={eventHardCutoff}
+                                    placeholder="7:00 AM"
+                                    onChange={(e) => setEventHardCutoff(e.target.value)}
+                                    className={fieldInput}
+                                  />
+                                </Field>
+                              </div>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={eventAfterHours}
+                                  onChange={(e) => setEventAfterHours(e.target.checked)}
+                                  className={`${checkboxAccentClass} w-3.5 h-3.5`}
+                                />
+                                <span className="text-[11px] text-[var(--tx2)]">
+                                  Early / after-hours window (before 7AM or after 8PM)
+                                </span>
+                              </label>
                             </div>
 
                             {/* Same-day return */}

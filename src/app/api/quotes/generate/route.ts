@@ -440,6 +440,12 @@ interface QuoteInput {
   event_same_location_onsite?: boolean;
   event_same_day?: boolean;
   event_pickup_time_after?: string;
+  /** Target load-in / arrival window, e.g. "6:00 AM - 7:00 AM". */
+  event_arrival_window?: string;
+  /** Hard cutoff — crew must be loaded and off-site by this time (e.g. "7:00 AM"). */
+  event_hard_cutoff?: string;
+  /** Window falls outside business hours (before 7AM / after 8PM) — early/after-hours premium. */
+  event_after_hours?: boolean;
   event_return_rate_preset?: EventReturnRatePreset;
   event_return_rate_custom?: number;
   event_additional_services?: string[];
@@ -593,6 +599,12 @@ export interface EventLegInput {
   move_date: string;
   event_return_date?: string;
   event_same_day?: boolean;
+  /** Per-leg target load-in / arrival window. */
+  event_leg_arrival_window?: string;
+  /** Per-leg hard cutoff — must be loaded and off-site by this time. */
+  event_leg_hard_cutoff?: string;
+  /** Per-leg early/after-hours window (before 7AM / after 8PM). */
+  event_leg_after_hours?: boolean;
   /** Items repositioned within venue — no transit, no truck surcharge; auto return rate uses same-venue default */
   event_same_location_onsite?: boolean;
   event_leg_truck_type?: string;
@@ -3725,6 +3737,10 @@ function buildEventIncludesList(input: QuoteInput): string[] {
   }
   if (anyLiftgate) lines.push("Liftgate truck for dock-free loading");
   if (anyJack) lines.push("Pallet jack on site");
+  const cutoff = (input.event_hard_cutoff || "").trim();
+  const legCutoff = (input.event_legs ?? []).map((l) => (l.event_leg_hard_cutoff || "").trim()).find(Boolean);
+  const hardCutoff = cutoff || legCutoff;
+  if (hardCutoff) lines.push(`Guaranteed loaded and off-site by ${hardCutoff}`);
   lines.push("Post-event teardown and return", "Real-time coordination");
   return lines;
 }
@@ -3767,6 +3783,8 @@ async function computeEventLegPrice(
     truckCount?: number;
     /** Palletized / equipment logistics for this leg. */
     equipment?: EventEquipmentInput;
+    /** Early / after-hours load window (before 7AM / after 8PM) — flat premium. */
+    afterHours?: boolean;
     fromParking: string;
     toParking: string;
     fromLongCarry: boolean;
@@ -3857,6 +3875,12 @@ async function computeEventLegPrice(
     : 0;
   const equipmentSurcharge = liftgateFee + palletJackFee;
 
+  // Early load-in (before 7AM) / late strike (after 8PM) — a flat premium, the
+  // same explicit-toggle model office/labour/B2B after-hours already use.
+  const afterHoursFee = input.afterHours
+    ? cfgNum(input.config, "event_after_hours_fee", 150)
+    : 0;
+
   const [oa, va] = await Promise.all([
     getAccessSurcharge(sb, input.fromAccess),
     getAccessSurcharge(sb, input.toAccess),
@@ -3864,7 +3888,7 @@ async function computeEventLegPrice(
 
   const rounding = cfgNum(input.config, "rounding_nearest", 50);
   const rawDelivery =
-    deliveryLabour + truckSur + equipmentSurcharge + distanceSurcharge + wrapSur + parkingSur + oa + va + longSur;
+    deliveryLabour + truckSur + equipmentSurcharge + afterHoursFee + distanceSurcharge + wrapSur + parkingSur + oa + va + longSur;
   let deliveryCharge = roundTo(Math.round(rawDelivery), rounding);
 
   const returnDiscount = Math.min(1, Math.max(0, input.returnDiscount));
@@ -3906,6 +3930,8 @@ async function computeEventLegPrice(
     dollyCount,
     liftgateRequired: wantsLiftgate,
     palletJack: wantsPalletJack,
+    afterHoursFee,
+    afterHours: !!input.afterHours,
   };
 }
 
@@ -3946,6 +3972,7 @@ async function calcEvent(
     truckType,
     truckCount: onSite ? 1 : input.event_truck_count,
     equipment: input.event_equipment,
+    afterHours: !!input.event_after_hours,
     fromParking,
     toParking,
     fromLongCarry: !!input.from_long_carry,
@@ -4041,6 +4068,10 @@ async function calcEvent(
       event_dolly_count: core.dollyCount,
       event_liftgate_required: core.liftgateRequired,
       event_pallet_jack: core.palletJack,
+      event_arrival_window: input.event_arrival_window?.trim() || null,
+      event_hard_cutoff: input.event_hard_cutoff?.trim() || null,
+      event_after_hours: core.afterHours,
+      event_after_hours_surcharge: core.afterHoursFee,
     },
     labour: {
       ...core.labour,
@@ -4100,6 +4131,7 @@ async function calcMultiEvent(
       truckType: truckLeg,
       truckCount: onSite ? 1 : (leg.event_leg_truck_count ?? input.event_truck_count),
       equipment: leg.event_equipment ?? input.event_equipment,
+      afterHours: leg.event_leg_after_hours ?? !!input.event_after_hours,
       fromParking,
       toParking,
       fromLongCarry: !!fromLc,
@@ -4149,6 +4181,10 @@ async function calcMultiEvent(
       event_leg_truck_count: core.truckCount,
       event_leg_pallet_count: core.palletCount,
       event_leg_equipment_surcharge: core.equipmentSurcharge,
+      event_leg_arrival_window: leg.event_leg_arrival_window?.trim() || null,
+      event_leg_hard_cutoff: leg.event_leg_hard_cutoff?.trim() || null,
+      event_leg_after_hours: core.afterHours,
+      event_leg_after_hours_surcharge: core.afterHoursFee,
     });
   }
 
@@ -4228,6 +4264,11 @@ async function calcMultiEvent(
       event_pallet_jack:
         !!(input.event_equipment?.pallet_jack) ||
         legBreakdown.some((l) => ((l as { event_leg_pallet_count?: number }).event_leg_pallet_count ?? 0) > 0),
+      event_after_hours: legBreakdown.some((l) => !!(l as { event_leg_after_hours?: boolean }).event_leg_after_hours),
+      event_after_hours_surcharge: legBreakdown.reduce(
+        (s, l) => s + ((l as { event_leg_after_hours_surcharge?: number }).event_leg_after_hours_surcharge ?? 0),
+        0,
+      ),
       truck_breakdown_line: formatTruckBreakdownLine(defaultTruck, config),
       event_delivery_labour: totalLabourLine,
       event_distance_surcharge: totalDistSur,
