@@ -561,7 +561,12 @@ export function calculateDeposit(
       // the slot.
       return total;
     case "event":
-      return total; // full payment at booking
+      // Events use a threshold policy (full under ~$1.5k, else 25% + balance),
+      // computed authoritatively by eventDeposit() in the generate route and
+      // stored on quote.deposit_amount — which every event surface reads first.
+      // This branch is only a missing-value fallback, so return the full total
+      // (safe: never under-charges) rather than duplicate the threshold logic.
+      return total;
     case "labour_only":
       // 10 % with a $150 floor (operator directive: minimum is always
       // $150). The universal < $600 gate above already collects full

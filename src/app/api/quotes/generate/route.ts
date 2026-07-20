@@ -1052,21 +1052,31 @@ async function calculateDeposit(
 }
 
 /**
- * Event deposit — mirrors the Estate tier posture (operator directive
- * 2026-07: B2B events take a deposit + balance like Estate / Priority, NOT
- * full payment at booking). 25% with a $500 floor (config
- * deposit_estate_pct / deposit_estate_min), capped at the price so a tiny
- * event never asks for more than the total. Honors the universal short-notice
- * rule: booked <4 days out pays in full, since the 48h balance window can't be
- * met.
+ * Event deposit — luxury threshold policy (operator directive 2026-07):
+ *   • event under the full-payment threshold (config event_full_payment_under,
+ *     default $1,500 pre-tax) → paid in full at booking;
+ *   • larger event → a percentage deposit (config event_deposit_pct, default
+ *     25%, rounded to config event_deposit_round, default $25) + balance
+ *     collected 48h before service.
+ *   • booked <4 days out → full, since the 48h balance window can't be met.
+ *
+ * `amount` is the PRE-TAX price. "Full payment" returns the TAX-INCLUSIVE grand
+ * total so the client is genuinely settled at booking (a pre-tax "full" left the
+ * 13% HST as a surprise balance). The percentage deposit is taken on the pre-tax
+ * price (matching the residential/Estate convention); the balance sweeps the
+ * remainder + tax.
  */
 function eventDeposit(
   amount: number,
   config: Map<string, string>,
   moveDate?: string | null,
 ): number {
-  const amt = Math.round(amount);
-  if (amt <= 0) return 0;
+  const preTax = Math.round(amount);
+  if (preTax <= 0) return 0;
+  const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
+  const inclusive = preTax + Math.round(preTax * taxRate); // full grand total
+
+  // Short-notice: booked <4 days out pays in full (48h balance window can't be met).
   if (moveDate) {
     const target = new Date(`${String(moveDate).trim().slice(0, 10)}T00:00:00`);
     if (!Number.isNaN(target.getTime())) {
@@ -1075,12 +1085,19 @@ function eventDeposit(
       const daysOut = Math.floor(
         (target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
       );
-      if (daysOut < 4) return amt;
+      if (daysOut < 4) return inclusive;
     }
   }
-  const pct = cfgNum(config, "deposit_estate_pct", 25);
-  const min = cfgNum(config, "deposit_estate_min", 500);
-  return Math.min(amt, Math.max(min, Math.round((amt * pct) / 100)));
+
+  // Under the threshold → paid in full (tax included).
+  const fullUnder = cfgNum(config, "event_full_payment_under", 1500);
+  if (preTax < fullUnder) return inclusive;
+
+  // Above the threshold → percentage deposit, rounded, never below one step.
+  const pct = cfgNum(config, "event_deposit_pct", 25);
+  const step = Math.max(1, cfgNum(config, "event_deposit_round", 25));
+  const dep = Math.round((preTax * pct) / 100 / step) * step;
+  return Math.min(inclusive, Math.max(step, dep));
 }
 
 // ═══════════════════════════════════════════════
