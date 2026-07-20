@@ -87,7 +87,7 @@ function serviceDescription(p: NonBinAgreementBuildParams): string {
     case "b2b_delivery":
       return `${companyDisplayName} will complete the commercial pickup and delivery in your quote with the documentation and handling standards specified.`;
     case "event":
-      return `${companyDisplayName} will manage event logistics as quoted: round-trip transport between venues (or the legs listed), optional on-site setup or strike, and a coordinated return, executed with the same precision we apply on private moves.`;
+      return `${companyDisplayName} will manage your event logistics end to end, as quoted: a dedicated crew that handles delivery, on-site placement, optional setup, and the post-event strike and return across the date(s) and leg(s) in your quote. Every piece is inventoried, wrapped, and protected; load-in and load-out are run to the windows and access rules of your venue; and a coordinator stays reachable through both the delivery and return days. Round trips are handled by the same team so nothing is re-briefed, executed with the same precision and discretion we bring to a private estate move.`;
     case "labour_only":
       return `${companyDisplayName} will place an on-site crew at the address for the tasks in your quote (for example loading, unloading, or staging). Unless your quote explicitly includes transport, this agreement does not cover moving goods in ${companyDisplayName}'s vehicles.`;
     default:
@@ -215,7 +215,9 @@ export function buildNonBinAgreementSections(p: NonBinAgreementBuildParams): { t
             ? `Standard Protection is included with your White Glove service: cargo liability at $5.00 per pound per article, total coverage up to $30,000, zero deductible. Eligible claims are resolved through full repair of any damaged item, or replacement at current market value where repair is not possible. Where you select an enhanced or full-replacement coverage rider shown on your quote, those terms govern. ${companyDisplayName} maintains $5,000,000 in commercial liability insurance.`
             : p.serviceType === "office_move"
               ? `Commercial cargo liability applies to the furniture, equipment, and materials in your quote, with eligible claims resolved through full repair, or replacement at current market value where repair is not possible. ${companyDisplayName} carries $5,000,000 in commercial general liability insurance, and on request provides a Certificate of Insurance (COI) naming your building management along with a WSIB Certificate of Clearance. This coverage protects the physical handling of your property; it does not extend to business interruption, downtime, lost revenue, or consequential or indirect losses arising from the relocation. Where you declare individual high-value items or select upgraded coverage shown on your quote, those terms govern.`
-              : `Released-value cargo liability applies at $0.60 per pound per article unless you purchase upgraded coverage shown on your quote. ${companyDisplayName} maintains $5,000,000 in commercial liability insurance. Where you select enhanced valuation or full-value protection, those terms on your quote govern.`;
+              : p.serviceType === "event"
+                ? `Standard Protection is included with your event: cargo liability at $5.00 per pound per article, total coverage up to $30,000, zero deductible. Eligible claims are resolved through full repair of any damaged item, or replacement at current market value where repair is not possible. High-value production, staging, or AV equipment should be individually declared before the event so we can plan handling and coverage; pieces not declared are subject to the standard limits above. Where you select an enhanced coverage rider shown on your quote (for example $50,000 or $100,000 event value), those terms govern. ${companyDisplayName} maintains $5,000,000 in commercial liability insurance and, on request, provides a Certificate of Insurance naming your venue.`
+                : `Released-value cargo liability applies at $0.60 per pound per article unless you purchase upgraded coverage shown on your quote. ${companyDisplayName} maintains $5,000,000 in commercial liability insurance. Where you select enhanced valuation or full-value protection, those terms on your quote govern.`;
 
   const sections: { title: string; body: string }[] = [
     {
@@ -281,6 +283,26 @@ export function buildNonBinAgreementSections(p: NonBinAgreementBuildParams): { t
       {
         title: "14. Business Continuity",
         body: `${companyDisplayName} will work to the schedule and floor plan agreed with you to keep disruption to a minimum, with a dedicated coordinator as your single point of contact. Our responsibility is limited to the careful physical handling of your property under the coverage above. We are not liable for business interruption, downtime, lost revenue, or third-party costs (including telecom or internet provisioning) arising from the relocation.`,
+      },
+    );
+  }
+
+  // Events carry three additional clauses that matter for date-critical,
+  // venue-bound work: venue access + COI + compliance, the setup/strike and
+  // standby scope, and the timing/postponement boundary an event demands.
+  if (p.serviceType === "event") {
+    sections.push(
+      {
+        title: "12. Venue Access, Certificate of Insurance and Compliance",
+        body: `You agree to secure, and to share with ${companyDisplayName} in advance, everything our crew needs to enter and work at each venue: confirmed load-in and load-out windows, dock or freight-elevator reservations, parking or staging areas, gate or security clearance, and any building or municipal permits. On request, ${companyDisplayName} will issue a Certificate of Insurance naming the venue in time for its deadline. You are responsible for confirming and meeting each venue's rules, including floor and surface protection, noise or curfew limits, union or house-labour requirements, and any hard vacate time. ${companyDisplayName} is not responsible for delays, denied access, or fees arising from venue requirements, access, or documentation that were not arranged in time, and where a venue imposes a hard cutoff we will prioritize a safe, on-time exit over unfinished non-essential tasks.`,
+      },
+      {
+        title: "13. Setup, Strike and On-Site Standby",
+        body: `Where your quote includes setup or strike (teardown), ${companyDisplayName} will place, assemble, and later dismantle and return the items in scope to their original condition and location, using the equipment quoted (which may include dollies, pallet jacks, or a liftgate truck for palletized freight). Our scope is the physical logistics of your items; it does not include the design, programming, rigging, electrical, or operation of third-party production, staging, or AV systems unless expressly quoted. If our crew is held on site beyond the scheduled window because a venue, vendor, or space is not ready, standby (wait) time may apply at the rate on your quote, always confirmed with you before it accrues. Please designate an on-site contact empowered to make decisions during load-in and load-out.`,
+      },
+      {
+        title: "14. Event Timing, Postponement and Force Majeure",
+        body: `An event is date-critical, and ${companyDisplayName} plans crew and fleet around your specific window. Deposits secure that reserved capacity; the cancellation terms in Section 5 reflect the commitments we make on your behalf ahead of the date. Should you need to postpone, we will make every reasonable effort to transfer your booking to a new date subject to availability, and any date-driven price difference will be confirmed with you in writing. ${companyDisplayName} cannot be responsible for delays or losses arising from causes outside reasonable control, including severe weather, road or venue closures, power or elevator outages, labour disruptions, permit or government orders, or a venue's failure to open or provide agreed access. In such cases we will communicate quickly and work with you to reschedule for the earliest suitable time, without penalty on our side except where unavoidable third-party costs apply.`,
       },
     );
   }

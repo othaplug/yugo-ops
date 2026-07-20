@@ -150,7 +150,7 @@ const BALANCE_DUE: Record<string, string> = {
   specialty: "upon project completion",
   b2b_oneoff: "upon delivery",
   b2b_delivery: "upon delivery",
-  event: "before final return date per quote",
+  event: "48 hours before your event",
   labour_only: "before service date",
   bin_rental: "included in the amount due at booking (full payment)",
 };
