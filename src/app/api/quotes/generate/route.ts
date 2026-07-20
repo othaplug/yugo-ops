@@ -4399,7 +4399,10 @@ async function calcLabourOnly(
   const visit2Discount = cfgNum(config, "labour_only_visit2_discount", 0.85);
   let visit2Price = 0;
   if ((input.labour_visits ?? 1) >= 2) {
-    visit2Price = roundTo(Math.round(basePrice * visit2Discount) + truckFee + accessSurcharge + plcLab.total, rounding);
+    // Visit 2 re-incurs the truck (a second dispatch), but NOT the access
+    // surcharge or parking/long-carry — those are properties of the site, not
+    // per-trip fees, and billing them twice over-charged the customer.
+    visit2Price = roundTo(Math.round(basePrice * visit2Discount) + truckFee, rounding);
   }
 
   const storageWeekly = cfgNum(config, "storage_weekly_rate", 75);
