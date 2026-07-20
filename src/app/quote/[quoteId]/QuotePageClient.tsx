@@ -420,10 +420,17 @@ export default function QuotePageClient({
     quote.service_type === "single_item" ||
     quote.service_type === "specialty";
   /**
+   * Events move high-value freight (festival kits, staging, AV) for a premium
+   * brand — a token $0.60/lb released-value default reimburses ~$30 on a damaged
+   * 50lb case and reads as budget movers. Events get the same rich default as
+   * White Glove: Standard Protection $5/lb (included) + $50k / $100k riders.
+   */
+  const isEvent = quote.service_type === "event";
+  /**
    * Surfaces that use the White-Glove-style protection presentation:
    * Standard Protection default + $50k / $100k rider ladder.
    */
-  const usesPremiumProtection = isWhiteGlove || isPremiumStandaloneItem;
+  const usesPremiumProtection = isWhiteGlove || isPremiumStandaloneItem || isEvent;
   /**
    * White Glove sub-type chosen by the coordinator at quote time and stored in
    * factors_applied.white_glove_kind. "delivery" = item transport (the default,

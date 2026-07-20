@@ -6471,7 +6471,15 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
               typeof (factors as Record<string, unknown>)?.office_truck_size ===
                 "string"
             ? String((factors as Record<string, unknown>).office_truck_size)
-            : truckResult.primary?.vehicle_type ?? (labourTruckKey && TRUCK_DISPLAY[labourTruckKey] ? labourTruckKey : null),
+            : // Events: use the operator-selected event truck, not the generic
+              // inventory allocator (which keys off a default move_size and
+              // returned e.g. "16ft" while the operator chose 26ft — the client
+              // page + booked move showed/dispatched the wrong truck).
+              svcType === "event" &&
+                typeof (factors as Record<string, unknown>)?.event_truck_type === "string" &&
+                (factors as Record<string, unknown>).event_truck_type !== "none"
+              ? String((factors as Record<string, unknown>).event_truck_type)
+              : truckResult.primary?.vehicle_type ?? (labourTruckKey && TRUCK_DISPLAY[labourTruckKey] ? labourTruckKey : null),
       truck_secondary: truckResult.secondary?.vehicle_type ?? null,
       // Single-item is non-tiered — never stamp a residential tier on it (was
       // defaulting to 'signature', which then leaked into confirmation emails).
