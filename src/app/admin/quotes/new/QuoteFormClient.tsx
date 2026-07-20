@@ -6044,6 +6044,38 @@ export default function QuoteFormClient({
         }
       }
     }
+    // Guard: event pre-tax override typed but not yet regenerated. Same class
+    // of stale-send bug as the tier guard above — the coordinator override
+    // only reaches the saved quote row on Regenerate, so sending without it
+    // ships the engine price, not the override (the $5,603-vs-$5,440 gap the
+    // operator saw). Apply it for them (regenerate persists + reprices), then
+    // send the fresh price.
+    if (serviceType === "event") {
+      const typed = Number(eventPreTaxOverride);
+      const hasOverride =
+        eventPreTaxOverride.trim() !== "" && Number.isFinite(typed) && typed > 0;
+      if (hasOverride && eventOverrideReason.trim().length < 3) {
+        toast("Event price override needs a reason before sending.", "alertTriangle");
+        return;
+      }
+      if (hasOverride) {
+        const applied = (quoteResult?.factors as Record<string, unknown> | undefined)
+          ?.event_pre_tax_override;
+        const appliedNum = typeof applied === "number" ? applied : null;
+        const stale = appliedNum === null || Math.abs(typed - appliedNum) >= 1;
+        if (stale) {
+          toast("Applying event price override…", "info");
+          const ok = await handleGenerate();
+          if (!ok) {
+            toast(
+              "Could not apply the override automatically. Regenerate, then Send.",
+              "alertTriangle",
+            );
+            return;
+          }
+        }
+      }
+    }
     setSending(true);
     try {
       const res = await fetch("/api/quotes/send", {
