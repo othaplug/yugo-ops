@@ -9,6 +9,7 @@ import type { CreateMoveFromQuoteInput } from "@/lib/automations/create-move-fro
 import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
 import { ensureB2bDeliverySchedule } from "@/lib/calendar/ensure-b2b-delivery-schedule";
 import { normalizeDeliveryCategory } from "@/lib/partners/delivery-category";
+import { ontarioHstBreakdownFromPreTax } from "@/lib/format-currency";
 
 export type CreateDeliveryFromB2BQuoteResult = {
   deliveryId: string;
@@ -70,7 +71,10 @@ export async function createDeliveryFromB2BQuote(
     Number(factors.b2b_calculated_pre_tax) > 0
       ? Number(factors.b2b_calculated_pre_tax)
       : basePrice;
-  const totalWithTax = Math.round(basePrice * 1.13);
+  // Derive the tax-inclusive total the same way create-move-from-quote and the
+  // contract display do (canonical Ontario HST helper), instead of an ad-hoc
+  // ×1.13 that silently diverged from the engine if the rate ever changed.
+  const totalWithTax = ontarioHstBreakdownFromPreTax(basePrice).inclusive;
 
   const itemsFromFactors = (): string[] => {
     const lines = factors.b2b_line_items;
@@ -156,7 +160,11 @@ export async function createDeliveryFromB2BQuote(
     delivery_access: quote.to_access || null,
     item_weight_category: (factors.b2b_weight_category as string) || null,
     recommended_vehicle: (quote.truck_primary as string) || null,
-    pricing_breakdown: factors.b2b_pricing_breakdown ?? null,
+    // Engine emits `b2b_price_breakdown` (generate route); the old
+    // `b2b_pricing_breakdown` key never existed, so this always landed null.
+    // Keep the legacy read as a fallback for any pre-fix stored quotes.
+    pricing_breakdown:
+      factors.b2b_price_breakdown ?? factors.b2b_pricing_breakdown ?? null,
     calculated_price: calculatedPreTax,
     total_price: totalWithTax,
     quoted_price: basePrice,
