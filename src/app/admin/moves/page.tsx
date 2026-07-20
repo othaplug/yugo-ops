@@ -137,6 +137,35 @@ export default async function AllMovesPage() {
     for (const r of cfgRows ?? []) config[r.key] = r.value;
   }
 
+  // Per-job cost overrides — the same table /api/admin/profitability
+  // reads (route.ts:123-133). Operators manually adjust labour / fuel
+  // / truck / supplies when the tracked-hours-derived numbers don't
+  // reflect reality (long-open tracking session, mid-job crew swap,
+  // rental truck actually cost less than the day rate, etc.). Without
+  // this join the moves list would derive labour from crew × hours ×
+  // loaded rate and disagree with every other surface. MV-30348
+  // surfaced exactly this: 5 movers × 36.96h × $28 = $5,174 derived
+  // labour → 55 % list pill vs $3,170 overridden labour → 69.7 % on
+  // the profitability page + move detail panel.
+  const costOverridesMap: Record<
+    string,
+    { labour: number | null; fuel: number | null; truck: number | null; supplies: number | null }
+  > = {};
+  if (moveIdList.length > 0) {
+    const { data: overrideRows } = await db
+      .from("job_cost_overrides")
+      .select("job_id, labour, fuel, truck, supplies")
+      .in("job_id", moveIdList);
+    for (const ov of overrideRows ?? []) {
+      costOverridesMap[String(ov.job_id)] = {
+        labour: ov.labour ?? null,
+        fuel: ov.fuel ?? null,
+        truck: ov.truck ?? null,
+        supplies: ov.supplies ?? null,
+      };
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const movesForClient = (moves as any[]).map((m) => {
     const display_status = resolveAdminMoveListDisplayStatus(
@@ -196,7 +225,25 @@ export default async function AllMovesPage() {
         config,
         1,
       );
-      margin_percent = costs.grossMargin;
+
+      // Apply per-job cost overrides field-by-field, then recompute the
+      // margin off the merged totals. Same shape /api/admin/profitability
+      // uses (route.ts:227-251). Without this branch, MV-30348 (Julie)
+      // showed 55 % on the list vs 69.7 % on the profitability page + move
+      // detail — because the operator had overridden labour to $3,170 to
+      // correct a 36.96-hour tracking session that stayed open across
+      // two days, but the list re-derived from the raw session hours.
+      const ov = costOverridesMap[m.id];
+      const revenueForMargin = effectivePrice;
+      const labourFinal = ov?.labour != null ? ov.labour : costs.labour;
+      const fuelFinal = ov?.fuel != null ? ov.fuel : costs.fuel;
+      const truckFinal = ov?.truck != null ? ov.truck : costs.truck;
+      const suppliesFinal = ov?.supplies != null ? ov.supplies : costs.supplies;
+      const directWithOv = labourFinal + fuelFinal + truckFinal + suppliesFinal;
+      margin_percent =
+        revenueForMargin > 0
+          ? Math.round(((revenueForMargin - directWithOv) / revenueForMargin) * 100 * 10) / 10
+          : costs.grossMargin;
       if (est_margin_percent == null) est_margin_percent = margin_percent;
     }
 
