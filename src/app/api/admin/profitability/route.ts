@@ -51,7 +51,19 @@ export async function GET(req: NextRequest) {
         .eq("job_id", singleMoveId).eq("job_type", "move").eq("status", "completed")
         .order("updated_at", { ascending: false }).limit(1),
       sb.from("platform_config").select("key, value"),
-      sb.from("move_cost_overrides").select("*").eq("move_id", singleMoveId).maybeSingle(),
+      // Cost overrides the admin sets on the Profitability page live in
+      // `job_cost_overrides` keyed by (job_id, job_type) — the same table the
+      // range branch reads. This used to query a `move_cost_overrides` table
+      // that does not exist, so the lookup silently returned nothing and the
+      // move-detail Money tab rendered raw derived costs while the
+      // profitability list showed the operator's actual updated labour / truck
+      // / supplies. Every overridden job disagreed between the two screens.
+      sb
+        .from("job_cost_overrides")
+        .select("job_id, labour, fuel, truck, supplies, processing")
+        .eq("job_id", singleMoveId)
+        .eq("job_type", "move")
+        .maybeSingle(),
     ]);
     if (!move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
     const cfg: Record<string, string> = {};
