@@ -196,10 +196,14 @@ export async function createMoveFromQuote(
   const clientEmail = input.clientEmail || contact?.email || "";
   const clientPhone = contact?.phone || "";
 
-  // Only local_move and long_distance use tier-based pricing.
-  // For all other service types (white_glove, office, specialty, etc.) tier is always null.
+  // Tier-based pricing only applies when the quote actually carries tier data.
+  // long_distance is declared tier-capable but emits a flat custom_price with
+  // quote.tiers null — without the `quote.tiers` guard a stray selected_tier
+  // (e.g. "estate") would stamp tier_selected onto a flatly-priced move and even
+  // mint an Estate welcome-package token for it (see safeTier / line ~520).
   const rawTier = input.selectedTier ?? quote.selected_tier;
-  const selectedTier = serviceTypeHasTiers(quote.service_type) ? rawTier : null;
+  const selectedTier =
+    serviceTypeHasTiers(quote.service_type) && quote.tiers ? rawTier : null;
 
   let basePrice: number;
   let totalWithTax: number;
