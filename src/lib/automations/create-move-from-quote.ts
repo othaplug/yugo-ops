@@ -557,11 +557,24 @@ export async function createMoveFromQuote(
     const truck = (quote.truck_primary as string) ?? null;
     const fleetInfo = eventFleetInfo(truck, opts.truckCount);
 
+    // Palletized-freight ops note so the crew knows the gear the job needs.
+    const equipBits: string[] = [];
+    const pn = Math.round(Number(factors.event_pallet_count ?? 0)) || 0;
+    const dn = Math.round(Number(factors.event_dolly_count ?? 0)) || 0;
+    if (pn > 0) equipBits.push(`${pn} ${pn === 1 ? "pallet" : "pallets"}`);
+    if (factors.event_liftgate_required === true) equipBits.push("liftgate truck");
+    if (factors.event_pallet_jack === true) equipBits.push("pallet jack");
+    if (dn > 0) equipBits.push(`${dn} ${dn === 1 ? "dolly" : "dollies"}`);
+    const equipLine = equipBits.length ? `Equipment: ${equipBits.join(", ")}` : null;
+
     const mkInternal = (phase: "delivery" | "return") =>
       [
         `Event bundle${eventTitleForNotes ? `, ${eventTitleForNotes}` : ""}: ${opts.legLabel} (${phase})`,
+        equipLine,
         `Quote ${input.quoteId}`,
-      ].join("\n");
+      ]
+        .filter(Boolean)
+        .join("\n");
 
     rows.push({
       ...sharedStatic,

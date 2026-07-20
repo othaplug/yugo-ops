@@ -444,6 +444,8 @@ interface QuoteInput {
   event_return_rate_custom?: number;
   event_additional_services?: string[];
   event_items?: EventQuoteItemInput[];
+  /** Palletized / equipment logistics (shared across legs unless a leg overrides). */
+  event_equipment?: EventEquipmentInput;
   /** When "multi", use event_legs (≥2) for bundled round-trips; single-leg fields mirror first leg for DB compatibility */
   event_mode?: "single" | "multi";
   event_legs?: EventLegInput[];
@@ -564,6 +566,23 @@ export type EventQuoteItemInput = {
 
 export type EventReturnRatePreset = "auto" | "60" | "65" | "80" | "85" | "100" | "custom";
 
+/**
+ * Palletized / equipment logistics for an event. Events routinely move freight
+ * on pallets (festival kits, trade-show booths) that a single Sprinter and hand
+ * carry can't handle — this makes that first-class so the engine prices the
+ * handling + gear and the quote surfaces the capability the job actually needs.
+ */
+export type EventEquipmentInput = {
+  /** Palletized loads (jack/liftgate handling, ~2-person). */
+  pallets?: number;
+  /** Bring a pallet jack (required to move pallets off a liftgate). */
+  pallet_jack?: boolean;
+  /** Truck must have a liftgate (loading pallets without a dock). */
+  liftgate_required?: boolean;
+  /** Utility / appliance dollies to bring. */
+  dollies?: number;
+};
+
 /** One delivery/return pair in a multi-event quote */
 export interface EventLegInput {
   label?: string;
@@ -582,6 +601,8 @@ export interface EventLegInput {
   event_return_rate_preset?: EventReturnRatePreset;
   event_return_rate_custom?: number;
   event_items?: EventQuoteItemInput[];
+  /** Per-leg palletized / equipment logistics; falls back to quote-level event_equipment. */
+  event_equipment?: EventEquipmentInput;
   from_parking?: "dedicated" | "street" | "no_dedicated";
   to_parking?: "dedicated" | "street" | "no_dedicated";
   from_long_carry?: boolean;
@@ -3690,6 +3711,20 @@ function buildEventIncludesList(input: QuoteInput): string[] {
   } else if (input.event_setup_required) {
     lines.push("On-site setup and arrangement");
   }
+  // Palletized-freight capability — reads from quote-level or any leg's equipment.
+  const eq = input.event_equipment;
+  const legPallets = (input.event_legs ?? []).reduce(
+    (m, l) => Math.max(m, Math.round(Number(l.event_equipment?.pallets ?? 0)) || 0),
+    0,
+  );
+  const pallets = Math.max(Math.round(Number(eq?.pallets ?? 0)) || 0, legPallets);
+  const anyLiftgate = !!eq?.liftgate_required || (input.event_legs ?? []).some((l) => l.event_equipment?.liftgate_required);
+  const anyJack = !!eq?.pallet_jack || pallets > 0;
+  if (pallets > 0) {
+    lines.push(`Palletized freight handling (${pallets} ${pallets === 1 ? "pallet" : "pallets"})`);
+  }
+  if (anyLiftgate) lines.push("Liftgate truck for dock-free loading");
+  if (anyJack) lines.push("Pallet jack on site");
   lines.push("Post-event teardown and return", "Real-time coordination");
   return lines;
 }
@@ -3730,6 +3765,8 @@ async function computeEventLegPrice(
     truckType: TruckKey;
     /** Number of trucks of `truckType` for this leg (event fleet). Default 1. */
     truckCount?: number;
+    /** Palletized / equipment logistics for this leg. */
+    equipment?: EventEquipmentInput;
     fromParking: string;
     toParking: string;
     fromLongCarry: boolean;
@@ -3743,7 +3780,21 @@ async function computeEventLegPrice(
   },
 ) {
   const distKm = input.distInfo?.distance_km ?? 0;
-  const systemHours = estimateEventSystemHours(input.eventItems, input.distInfo, input.venueSetupComplex, input.config);
+  const itemHours = estimateEventSystemHours(input.eventItems, input.distInfo, input.venueSetupComplex, input.config);
+
+  // Palletized freight + gear. A pallet is jack-moved 2-person freight, not a
+  // hand-carried box, so it adds its own handling time and (liftgate/jack) gear
+  // fees. Without this, a 4-pallet festival kit priced as if it were nothing.
+  const equip = input.equipment;
+  const palletCount = Math.max(0, Math.round(Number(equip?.pallets ?? 0)) || 0);
+  const dollyCount = Math.max(0, Math.round(Number(equip?.dollies ?? 0)) || 0);
+  const wantsLiftgate = !!equip?.liftgate_required;
+  const wantsPalletJack = !!equip?.pallet_jack || palletCount > 0;
+  const palletMinPer = cfgNum(input.config, "event_pallet_minutes_per", 12);
+  // Load + unload → x2, same convention as item handling.
+  const equipmentHours = Math.round(((palletCount * palletMinPer * 2) / 60) * 2) / 2;
+  const systemHours = Math.round((itemHours + equipmentHours) * 2) / 2;
+
   const minHours = input.isLuxury
     ? cfgNum(input.config, "event_min_hours_luxury", 2)
     : cfgNum(input.config, "event_min_hours_standard", 2);
@@ -3762,6 +3813,8 @@ async function computeEventLegPrice(
   // With more than one truck the floor is 2 movers per truck (load + unload
   // simultaneously), matching how event crews actually run.
   if (truckCount > 1) crewSize = Math.max(crewSize, truckCount * 2);
+  // Palletized loads are 2-person freight; a heavy pallet count needs a 3rd hand.
+  if (palletCount >= 4) crewSize = Math.max(crewSize, 3);
   if (input.crewOverride != null && Number.isFinite(input.crewOverride)) {
     // Cap raised 6 -> 12: a 2-truck event routinely runs 6 movers.
     crewSize = Math.min(12, Math.max(2, Math.round(input.crewOverride)));
@@ -3793,6 +3846,17 @@ async function computeEventLegPrice(
   const truckSur = input.skipTruckSurcharge
     ? 0
     : getTruckFeeSync(input.truckType, input.config) * truckCount;
+
+  // Gear fees: a liftgate truck + pallet jack are hard requirements to load
+  // pallets without a dock. Charged per leg (each load/unload needs the gear).
+  const liftgateFee = wantsLiftgate
+    ? cfgNum(input.config, "event_liftgate_fee", 75)
+    : 0;
+  const palletJackFee = wantsPalletJack
+    ? cfgNum(input.config, "event_pallet_jack_fee", 40)
+    : 0;
+  const equipmentSurcharge = liftgateFee + palletJackFee;
+
   const [oa, va] = await Promise.all([
     getAccessSurcharge(sb, input.fromAccess),
     getAccessSurcharge(sb, input.toAccess),
@@ -3800,7 +3864,7 @@ async function computeEventLegPrice(
 
   const rounding = cfgNum(input.config, "rounding_nearest", 50);
   const rawDelivery =
-    deliveryLabour + truckSur + distanceSurcharge + wrapSur + parkingSur + oa + va + longSur;
+    deliveryLabour + truckSur + equipmentSurcharge + distanceSurcharge + wrapSur + parkingSur + oa + va + longSur;
   let deliveryCharge = roundTo(Math.round(rawDelivery), rounding);
 
   const returnDiscount = Math.min(1, Math.max(0, input.returnDiscount));
@@ -3836,6 +3900,12 @@ async function computeEventLegPrice(
     crewFromOverride: input.crewOverride != null && Number.isFinite(input.crewOverride),
     crewSize,
     truckCount,
+    equipmentSurcharge,
+    equipmentHours,
+    palletCount,
+    dollyCount,
+    liftgateRequired: wantsLiftgate,
+    palletJack: wantsPalletJack,
   };
 }
 
@@ -3875,6 +3945,7 @@ async function calcEvent(
     isLuxury,
     truckType,
     truckCount: onSite ? 1 : input.event_truck_count,
+    equipment: input.event_equipment,
     fromParking,
     toParking,
     fromLongCarry: !!input.from_long_carry,
@@ -3965,6 +4036,11 @@ async function calcEvent(
       event_system_delivery_charge: core.deliveryCharge,
       event_system_return_charge: core.returnCharge,
       event_minimum_applied: eventMinimumApplied,
+      event_equipment_surcharge: core.equipmentSurcharge,
+      event_pallet_count: core.palletCount,
+      event_dolly_count: core.dollyCount,
+      event_liftgate_required: core.liftgateRequired,
+      event_pallet_jack: core.palletJack,
     },
     labour: {
       ...core.labour,
@@ -4023,6 +4099,7 @@ async function calcMultiEvent(
       isLuxury,
       truckType: truckLeg,
       truckCount: onSite ? 1 : (leg.event_leg_truck_count ?? input.event_truck_count),
+      equipment: leg.event_equipment ?? input.event_equipment,
       fromParking,
       toParking,
       fromLongCarry: !!fromLc,
@@ -4070,6 +4147,8 @@ async function calcMultiEvent(
       event_type_label: onSite ? "On-site Event" : "Venue delivery",
       truck_type: truckLeg,
       event_leg_truck_count: core.truckCount,
+      event_leg_pallet_count: core.palletCount,
+      event_leg_equipment_surcharge: core.equipmentSurcharge,
     });
   }
 
@@ -4137,6 +4216,18 @@ async function calcMultiEvent(
         (m, l) => Math.max(m, (l as { event_leg_truck_count?: number }).event_leg_truck_count ?? 1),
         1,
       ),
+      event_pallet_count: legBreakdown.reduce(
+        (m, l) => Math.max(m, (l as { event_leg_pallet_count?: number }).event_leg_pallet_count ?? 0),
+        0,
+      ),
+      event_equipment_surcharge: legBreakdown.reduce(
+        (s, l) => s + ((l as { event_leg_equipment_surcharge?: number }).event_leg_equipment_surcharge ?? 0),
+        0,
+      ),
+      event_liftgate_required: !!(input.event_equipment?.liftgate_required),
+      event_pallet_jack:
+        !!(input.event_equipment?.pallet_jack) ||
+        legBreakdown.some((l) => ((l as { event_leg_pallet_count?: number }).event_leg_pallet_count ?? 0) > 0),
       truck_breakdown_line: formatTruckBreakdownLine(defaultTruck, config),
       event_delivery_labour: totalLabourLine,
       event_distance_surcharge: totalDistSur,

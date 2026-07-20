@@ -1654,6 +1654,13 @@ export default function QuoteFormClient({
   // Event fleet size (1-4). Multi-truck events (e.g. 2 x 26ft to load and
   // unload simultaneously) were impossible before — a single truck was assumed.
   const [eventTruckCount, setEventTruckCount] = useState(1);
+  // Palletized / equipment logistics (festival kits, trade-show freight). Shared
+  // across legs; the engine prices handling + liftgate/jack and surfaces the
+  // capability so a 4-pallet event isn't quoted as if it were hand-carried boxes.
+  const [eventPallets, setEventPallets] = useState(0);
+  const [eventPalletJack, setEventPalletJack] = useState(false);
+  const [eventLiftgate, setEventLiftgate] = useState(false);
+  const [eventDollies, setEventDollies] = useState(0);
   const [eventSameLocationSingle, setEventSameLocationSingle] = useState(false);
   const [eventReturnRateSingle, setEventReturnRateSingle] = useState<
     "auto" | "60" | "65" | "80" | "85" | "100" | "custom"
@@ -3152,6 +3159,26 @@ export default function QuoteFormClient({
           const evTruckCount = faNum("event_truck_count");
           if (evTruckCount != null && evTruckCount >= 1) {
             setEventTruckCount(Math.min(4, Math.max(1, evTruckCount)));
+          }
+          const evEquip = fa.event_equipment as
+            | {
+                pallets?: number;
+                pallet_jack?: boolean;
+                liftgate_required?: boolean;
+                dollies?: number;
+              }
+            | undefined;
+          if (evEquip && typeof evEquip === "object") {
+            if (Number(evEquip.pallets) > 0) setEventPallets(Math.round(Number(evEquip.pallets)));
+            if (Number(evEquip.dollies) > 0) setEventDollies(Math.round(Number(evEquip.dollies)));
+            if (evEquip.pallet_jack === true) setEventPalletJack(true);
+            if (evEquip.liftgate_required === true) setEventLiftgate(true);
+          } else {
+            // Fallback to the flattened factors the engine also persists.
+            const palletCount = faNum("event_pallet_count");
+            if (palletCount != null && palletCount > 0) setEventPallets(Math.round(palletCount));
+            if (fa.event_liftgate_required === true) setEventLiftgate(true);
+            if (fa.event_pallet_jack === true) setEventPalletJack(true);
           }
           if (fa.event_setup_required === true) setEventSetupRequired(true);
           if (fa.teardown_required === false) setEventTeardownRequired(false);
@@ -5070,6 +5097,19 @@ export default function QuoteFormClient({
         // so the crew flow, client timeline, and notifications can branch on it.
         base.teardown_required = eventTeardownRequired;
         base.event_items = eventItems.length > 0 ? eventItems : undefined;
+        {
+          const pallets = Math.max(0, Math.round(Number(eventPallets) || 0));
+          const dollies = Math.max(0, Math.round(Number(eventDollies) || 0));
+          base.event_equipment =
+            pallets > 0 || dollies > 0 || eventPalletJack || eventLiftgate
+              ? {
+                  pallets: pallets || undefined,
+                  pallet_jack: eventPalletJack || undefined,
+                  liftgate_required: eventLiftgate || undefined,
+                  dollies: dollies || undefined,
+                }
+              : undefined;
+        }
         base.event_additional_services =
           eventAdditionalServices.length > 0
             ? eventAdditionalServices
@@ -9948,6 +9988,67 @@ export default function QuoteFormClient({
                                 <div />
                               </div>
                             )}
+
+                            {/* Palletized freight + gear — priced handling +
+                                liftgate/jack, surfaced as capability on the quote. */}
+                            <div className="rounded-lg border border-[var(--brd)] p-2.5 space-y-2">
+                              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]">
+                                Equipment &amp; freight
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <Field label="Pallets">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={eventPallets ? String(eventPallets) : ""}
+                                    placeholder="0"
+                                    onChange={(e) =>
+                                      setEventPallets(Math.max(0, Number(e.target.value) || 0))
+                                    }
+                                    className={fieldInput}
+                                  />
+                                </Field>
+                                <Field label="Dollies">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={eventDollies ? String(eventDollies) : ""}
+                                    placeholder="0"
+                                    onChange={(e) =>
+                                      setEventDollies(Math.max(0, Number(e.target.value) || 0))
+                                    }
+                                    className={fieldInput}
+                                  />
+                                </Field>
+                              </div>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={eventLiftgate}
+                                  onChange={(e) => setEventLiftgate(e.target.checked)}
+                                  className={`${checkboxAccentClass} w-3.5 h-3.5`}
+                                />
+                                <span className="text-[11px] text-[var(--tx2)]">
+                                  Liftgate truck required (no dock)
+                                </span>
+                              </label>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={eventPalletJack}
+                                  onChange={(e) => setEventPalletJack(e.target.checked)}
+                                  className={`${checkboxAccentClass} w-3.5 h-3.5`}
+                                />
+                                <span className="text-[11px] text-[var(--tx2)]">
+                                  Bring a pallet jack
+                                </span>
+                              </label>
+                              {eventPallets > 0 && !eventLiftgate && (
+                                <p className="text-[10px] text-amber-600">
+                                  Palletized load with no dock usually needs a liftgate truck.
+                                </p>
+                              )}
+                            </div>
 
                             {/* Same-day return */}
                             <label className="flex items-center gap-2 cursor-pointer">
