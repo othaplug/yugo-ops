@@ -450,6 +450,8 @@ interface QuoteInput {
   event_is_luxury?: boolean;
   /** Event default sprinter; other types use coordinator override */
   event_truck_type?: string;
+  /** Event fleet: number of trucks of `event_truck_type` (1-4). Default 1. */
+  event_truck_count?: number;
   /** Coordinator override — billable crew count for labour line. */
   event_crew_override?: number;
   /** Coordinator override — billable hours (system still estimates for display when unset). */
@@ -575,6 +577,8 @@ export interface EventLegInput {
   /** Items repositioned within venue — no transit, no truck surcharge; auto return rate uses same-venue default */
   event_same_location_onsite?: boolean;
   event_leg_truck_type?: string;
+  /** Per-leg fleet size (1-4). Falls back to event_truck_count. */
+  event_leg_truck_count?: number;
   event_return_rate_preset?: EventReturnRatePreset;
   event_return_rate_custom?: number;
   event_items?: EventQuoteItemInput[];
@@ -3724,6 +3728,8 @@ async function computeEventLegPrice(
     config: Map<string, string>;
     isLuxury: boolean;
     truckType: TruckKey;
+    /** Number of trucks of `truckType` for this leg (event fleet). Default 1. */
+    truckCount?: number;
     fromParking: string;
     toParking: string;
     fromLongCarry: boolean;
@@ -3747,9 +3753,18 @@ async function computeEventLegPrice(
   }
   billableHours = Math.max(billableHours, minHours);
 
+  // Fleet: N trucks of the selected size. Multi-truck events (e.g. 2 x 26ft
+  // to load/unload simultaneously) were impossible — a single truck was
+  // assumed everywhere. Clamp 1-4.
+  const truckCount = Math.min(4, Math.max(1, Math.round(input.truckCount ?? 1) || 1));
+
   let crewSize = recommendEventCrewForEvent(input.eventItems, input.fromAccess, input.toAccess);
+  // With more than one truck the floor is 2 movers per truck (load + unload
+  // simultaneously), matching how event crews actually run.
+  if (truckCount > 1) crewSize = Math.max(crewSize, truckCount * 2);
   if (input.crewOverride != null && Number.isFinite(input.crewOverride)) {
-    crewSize = Math.min(6, Math.max(2, Math.round(input.crewOverride)));
+    // Cap raised 6 -> 12: a 2-truck event routinely runs 6 movers.
+    crewSize = Math.min(12, Math.max(2, Math.round(input.crewOverride)));
   }
 
   const moverRate = input.isLuxury
@@ -3775,7 +3790,9 @@ async function computeEventLegPrice(
   const lcFee = cfgNum(input.config, "long_carry_surcharge", 75);
   const longSur = (input.fromLongCarry ? lcFee : 0) + (input.toLongCarry ? lcFee : 0);
 
-  const truckSur = input.skipTruckSurcharge ? 0 : getTruckFeeSync(input.truckType, input.config);
+  const truckSur = input.skipTruckSurcharge
+    ? 0
+    : getTruckFeeSync(input.truckType, input.config) * truckCount;
   const [oa, va] = await Promise.all([
     getAccessSurcharge(sb, input.fromAccess),
     getAccessSurcharge(sb, input.toAccess),
@@ -3817,6 +3834,8 @@ async function computeEventLegPrice(
     systemEstimatedHours: systemHours,
     hoursFromOverride: input.hoursOverride != null && Number.isFinite(input.hoursOverride) && input.hoursOverride > 0,
     crewFromOverride: input.crewOverride != null && Number.isFinite(input.crewOverride),
+    crewSize,
+    truckCount,
   };
 }
 
@@ -3855,6 +3874,7 @@ async function calcEvent(
     config,
     isLuxury,
     truckType,
+    truckCount: onSite ? 1 : input.event_truck_count,
     fromParking,
     toParking,
     fromLongCarry: !!input.from_long_carry,
@@ -3925,6 +3945,7 @@ async function calcEvent(
       same_day: input.event_same_day ?? false,
       event_is_luxury: isLuxury,
       event_truck_type: truckType,
+      event_truck_count: core.truckCount,
       event_same_location_onsite: onSite,
       event_type_label: onSite ? "On-site Event" : "Venue delivery",
       truck_surcharge: core.truckSurcharge,
@@ -3949,6 +3970,7 @@ async function calcEvent(
       ...core.labour,
       estimatedHours: core.billableHours,
       truckSize: truckType,
+      truckCount: core.truckCount,
     },
   };
 }
@@ -4000,6 +4022,7 @@ async function calcMultiEvent(
       config,
       isLuxury,
       truckType: truckLeg,
+      truckCount: onSite ? 1 : (leg.event_leg_truck_count ?? input.event_truck_count),
       fromParking,
       toParking,
       fromLongCarry: !!fromLc,
@@ -4046,6 +4069,7 @@ async function calcMultiEvent(
       is_on_site: onSite,
       event_type_label: onSite ? "On-site Event" : "Venue delivery",
       truck_type: truckLeg,
+      event_leg_truck_count: core.truckCount,
     });
   }
 
@@ -4109,6 +4133,10 @@ async function calcMultiEvent(
       same_day: false,
       event_is_luxury: isLuxury,
       event_truck_type: defaultTruck,
+      event_truck_count: legBreakdown.reduce(
+        (m, l) => Math.max(m, (l as { event_leg_truck_count?: number }).event_leg_truck_count ?? 1),
+        1,
+      ),
       truck_breakdown_line: formatTruckBreakdownLine(defaultTruck, config),
       event_delivery_labour: totalLabourLine,
       event_distance_surcharge: totalDistSur,

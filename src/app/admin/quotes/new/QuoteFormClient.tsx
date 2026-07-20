@@ -203,6 +203,7 @@ interface EventLegForm {
   event_same_day: boolean;
   event_same_location_onsite: boolean;
   event_leg_truck_type: string;
+  event_leg_truck_count: number;
   event_return_rate_preset:
     | "auto"
     | "60"
@@ -1650,6 +1651,9 @@ export default function QuoteFormClient({
   const [eventLuxury, setEventLuxury] = useState(false);
   const [eventComplexSetup, setEventComplexSetup] = useState(false);
   const [eventTruckType, setEventTruckType] = useState("sprinter");
+  // Event fleet size (1-4). Multi-truck events (e.g. 2 x 26ft to load and
+  // unload simultaneously) were impossible before — a single truck was assumed.
+  const [eventTruckCount, setEventTruckCount] = useState(1);
   const [eventSameLocationSingle, setEventSameLocationSingle] = useState(false);
   const [eventReturnRateSingle, setEventReturnRateSingle] = useState<
     "auto" | "60" | "65" | "80" | "85" | "100" | "custom"
@@ -1670,6 +1674,7 @@ export default function QuoteFormClient({
       event_same_day: false,
       event_same_location_onsite: false,
       event_leg_truck_type: "sprinter",
+      event_leg_truck_count: 1,
       event_return_rate_preset: "auto",
       event_return_rate_custom: "",
     },
@@ -1684,6 +1689,7 @@ export default function QuoteFormClient({
       event_same_day: false,
       event_same_location_onsite: false,
       event_leg_truck_type: "sprinter",
+      event_leg_truck_count: 1,
       event_return_rate_preset: "auto",
       event_return_rate_custom: "",
     },
@@ -1703,6 +1709,7 @@ export default function QuoteFormClient({
         event_same_day: false,
         event_same_location_onsite: false,
         event_leg_truck_type: "sprinter",
+      event_leg_truck_count: 1,
         event_return_rate_preset: "auto",
         event_return_rate_custom: "",
       },
@@ -3142,6 +3149,10 @@ export default function QuoteFormClient({
           if (fa.event_is_luxury === true) setEventLuxury(true);
           const evTruck = cStr(fa.event_truck_type);
           if (evTruck) setEventTruckType(evTruck);
+          const evTruckCount = faNum("event_truck_count");
+          if (evTruckCount != null && evTruckCount >= 1) {
+            setEventTruckCount(Math.min(4, Math.max(1, evTruckCount)));
+          }
           if (fa.event_setup_required === true) setEventSetupRequired(true);
           if (fa.teardown_required === false) setEventTeardownRequired(false);
           const setupHours = faNum("event_setup_hours");
@@ -5037,6 +5048,10 @@ export default function QuoteFormClient({
         base.event_is_luxury = eventLuxury;
         base.event_truck_type =
           eventSameLocationSingle && !eventMulti ? "none" : eventTruckType;
+        base.event_truck_count =
+          eventSameLocationSingle && !eventMulti
+            ? 1
+            : Math.min(4, Math.max(1, Number(eventTruckCount) || 1));
         base.event_name = eventName.trim() || undefined;
         base.event_complex_setup_required = eventLuxury
           ? eventComplexSetup
@@ -5078,6 +5093,9 @@ export default function QuoteFormClient({
             event_leg_truck_type: leg.event_same_location_onsite
               ? "none"
               : leg.event_leg_truck_type,
+            event_leg_truck_count: leg.event_same_location_onsite
+              ? 1
+              : Math.min(4, Math.max(1, Number(leg.event_leg_truck_count) || 1)),
             event_return_rate_preset: leg.event_return_rate_preset,
             event_return_rate_custom:
               leg.event_return_rate_preset === "custom" &&
@@ -9508,6 +9526,7 @@ export default function QuoteFormClient({
                                 event_same_day: eventSameDay,
                                 event_same_location_onsite: eventSameLocationSingle,
                                 event_leg_truck_type: eventTruckType || "sprinter",
+                                event_leg_truck_count: eventTruckCount || 1,
                                 event_return_rate_preset:
                                   eventReturnRateSingle as EventLegForm["event_return_rate_preset"],
                                 event_return_rate_custom: eventReturnRateCustomSingle,
@@ -9523,6 +9542,7 @@ export default function QuoteFormClient({
                                 event_same_day: false,
                                 event_same_location_onsite: false,
                                 event_leg_truck_type: eventTruckType || "sprinter",
+                                event_leg_truck_count: eventTruckCount || 1,
                                 event_return_rate_preset: "auto",
                                 event_return_rate_custom: "",
                               },
@@ -9906,6 +9926,29 @@ export default function QuoteFormClient({
                               </Field>
                             </div>
 
+                            {/* Fleet size — number of trucks of the selected
+                                size (e.g. 2 x 26ft to load + unload at once). */}
+                            {!eventSameLocationSingle && (
+                              <div className="grid grid-cols-2 gap-2">
+                                <Field label="Trucks">
+                                  <select
+                                    value={String(eventTruckCount)}
+                                    onChange={(e) =>
+                                      setEventTruckCount(Number(e.target.value) || 1)
+                                    }
+                                    className={fieldInput}
+                                  >
+                                    {[1, 2, 3, 4].map((n) => (
+                                      <option key={n} value={n}>
+                                        {n} {n === 1 ? "truck" : "trucks"}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </Field>
+                                <div />
+                              </div>
+                            )}
+
                             {/* Same-day return */}
                             <label className="flex items-center gap-2 cursor-pointer">
                               <input
@@ -10211,6 +10254,37 @@ export default function QuoteFormClient({
                                   </Field>
                                 )}
                               </div>
+
+                              {!leg.event_same_location_onsite && (
+                                <div className="grid grid-cols-2 gap-2">
+                                  <Field label="Trucks">
+                                    <select
+                                      value={String(leg.event_leg_truck_count)}
+                                      onChange={(e) =>
+                                        setEventLegs((prev) =>
+                                          prev.map((L, i) =>
+                                            i === idx
+                                              ? {
+                                                  ...L,
+                                                  event_leg_truck_count:
+                                                    Number(e.target.value) || 1,
+                                                }
+                                              : L,
+                                          ),
+                                        )
+                                      }
+                                      className={fieldInput}
+                                    >
+                                      {[1, 2, 3, 4].map((n) => (
+                                        <option key={n} value={n}>
+                                          {n} {n === 1 ? "truck" : "trucks"}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </Field>
+                                  <div />
+                                </div>
+                              )}
 
                               {/* Return */}
                               <label className="flex items-center gap-2 cursor-pointer">
@@ -13340,20 +13414,31 @@ export default function QuoteFormClient({
               let eventFleetLabel: string | null = null;
               if (serviceType === "event") {
                 if (eventMulti && eventLegs.length > 0) {
+                  // Sum TRUCKS per size across legs (a leg can use 2 x 26ft),
+                  // not the number of legs, so the card reads the real fleet.
                   const counts = new Map<string, number>();
                   for (const leg of eventLegs) {
-                    const t = leg.event_same_location_onsite
-                      ? "none"
-                      : leg.event_leg_truck_type || "sprinter";
-                    counts.set(t, (counts.get(t) ?? 0) + 1);
+                    if (leg.event_same_location_onsite) {
+                      counts.set("none", (counts.get("none") ?? 0) + 1);
+                      continue;
+                    }
+                    const t = leg.event_leg_truck_type || "sprinter";
+                    const n = Math.min(
+                      4,
+                      Math.max(1, Number(leg.event_leg_truck_count) || 1),
+                    );
+                    counts.set(t, (counts.get(t) ?? 0) + n);
                   }
                   eventFleetLabel = [...counts.entries()]
                     .map(([t, n]) => `${n > 1 ? `${n} × ` : ""}${truckSizeLabel(t)}`)
                     .join(" + ");
                 } else {
-                  eventFleetLabel = truckSizeLabel(
+                  const n = eventSameLocationSingle
+                    ? 1
+                    : Math.min(4, Math.max(1, Number(eventTruckCount) || 1));
+                  eventFleetLabel = `${n > 1 ? `${n} × ` : ""}${truckSizeLabel(
                     eventSameLocationSingle ? "none" : eventTruckType,
-                  );
+                  )}`;
                 }
               }
               return (

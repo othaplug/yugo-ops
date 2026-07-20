@@ -101,7 +101,28 @@ type EventLegStored = {
   distance_km?: number;
   event_crew?: number;
   event_hours?: number;
+  event_leg_truck_count?: number;
 };
+
+/** Human fleet label for the move's customer-facing `truck_info` (shown as
+ * "Fleet"/"Truck" on booking + reminder emails). Reflects the number of trucks
+ * the event was priced for so dispatch and the client see "2 × 26ft", not "1". */
+const EVENT_TRUCK_LABELS: Record<string, string> = {
+  sprinter: "Sprinter Van",
+  "16ft": "16ft Box Truck",
+  "20ft": "20ft Box Truck",
+  "26ft": "26ft Box Truck",
+};
+function eventFleetInfo(
+  truckPrimary: string | null | undefined,
+  truckCount: number | null | undefined,
+): string | null {
+  const key = String(truckPrimary ?? "").trim();
+  if (!key || key === "none") return null;
+  const label = EVENT_TRUCK_LABELS[key] ?? key;
+  const n = Math.min(4, Math.max(1, Math.round(Number(truckCount) || 1)));
+  return n > 1 ? `${n} × ${label}` : label;
+}
 
 function parseEventLegs(factors: Record<string, unknown>): EventLegStored[] {
   const raw = factors.event_legs;
@@ -527,12 +548,14 @@ export async function createMoveFromQuote(
       distanceKm: number | null | undefined;
       crew: number | null | undefined;
       hours: number | null | undefined;
+      truckCount?: number | null | undefined;
       isFirstOverall: boolean;
     },
   ) {
     const distKm = opts.distanceKm ?? null;
     const dt = driveTimeFromKm(distKm);
     const truck = (quote.truck_primary as string) ?? null;
+    const fleetInfo = eventFleetInfo(truck, opts.truckCount);
 
     const mkInternal = (phase: "delivery" | "return") =>
       [
@@ -553,6 +576,7 @@ export async function createMoveFromQuote(
       distance_km: distKm,
       drive_time_min: dt,
       truck_primary: truck,
+      truck_info: fleetInfo,
       est_crew_size: opts.crew ?? null,
       est_hours: opts.hours ?? null,
       internal_notes: mkInternal("delivery"),
@@ -574,6 +598,7 @@ export async function createMoveFromQuote(
       distance_km: distKm,
       drive_time_min: dt,
       truck_primary: truck,
+      truck_info: fleetInfo,
       est_crew_size: opts.crew ?? null,
       est_hours: opts.hours ?? null,
       internal_notes: mkInternal("return"),
@@ -611,6 +636,9 @@ export async function createMoveFromQuote(
           distanceKm: leg.distance_km,
           crew: leg.event_crew,
           hours: leg.event_hours,
+          truckCount:
+            leg.event_leg_truck_count ??
+            (factors.event_truck_count as number | undefined),
           isFirstOverall,
         });
         isFirstOverall = false;
@@ -644,6 +672,7 @@ export async function createMoveFromQuote(
           distanceKm: distKm,
           crew,
           hours,
+          truckCount: factors.event_truck_count as number | undefined,
           isFirstOverall: true,
         });
       }
