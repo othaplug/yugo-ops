@@ -13557,7 +13557,21 @@ export default function QuoteFormClient({
                 <div className="flex items-center gap-2">
                   <Truck className="w-3.5 h-3.5 text-[var(--gold)]" />
                   <span className="text-[var(--tx)]">
-                    1 × {quoteResult.labour.truckSize}
+                    {(() => {
+                      // Count-aware, so this never contradicts Fleet Allocation
+                      // below (events / office can run more than one truck).
+                      const fac = (quoteResult.factors ?? {}) as Record<
+                        string,
+                        unknown
+                      >;
+                      const n =
+                        serviceType === "event"
+                          ? Math.max(1, Math.round(Number(fac.event_truck_count ?? 1)) || 1)
+                          : serviceType === "office_move"
+                            ? Math.max(1, Math.round(Number(fac.office_trucks ?? 1)) || 1)
+                            : 1;
+                      return `${n} × ${quoteResult.labour.truckSize}`;
+                    })()}
                   </span>
                 </div>
                 {quoteResult.inventory &&
