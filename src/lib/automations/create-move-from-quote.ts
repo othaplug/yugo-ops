@@ -980,9 +980,35 @@ export async function createMoveFromQuote(
       typeof rawDays === "number" && Number.isFinite(rawDays)
         ? Math.round(rawDays)
         : parseInt(String(rawDays ?? "1"), 10);
-    const estimatedDays =
+    let estimatedDays =
       Number.isFinite(estDays) && estDays > 0 ? estDays : 1;
-    const dayBreakdown = (quote as { day_breakdown?: unknown }).day_breakdown;
+    let dayBreakdown = (quote as { day_breakdown?: unknown }).day_breakdown;
+
+    // The Estate tier computes its OWN pack/move/unpack schedule in
+    // factors.estate_day_plan (e.g. {days: 2}), but `estimated_days` is set by
+    // the separate move-scope model and stays at 1 for it — so an Estate move
+    // that is really 2-3 days created zero move_project_days and rendered as a
+    // single calendar day. When the client booked Estate, honour that plan.
+    const bookedTier = (selectedTier ?? "").toLowerCase();
+    const estatePlan = (factors.estate_day_plan ?? null) as {
+      days?: number;
+    } | null;
+    const estatePlanDays =
+      estatePlan && Number.isFinite(Number(estatePlan.days))
+        ? Math.round(Number(estatePlan.days))
+        : 0;
+    if (bookedTier === "estate" && estatePlanDays > estimatedDays) {
+      estimatedDays = estatePlanDays;
+      // Build the pack -> move -> (unpack) sequence the day project expects.
+      const hasUnpack = estatePlanDays >= 3;
+      const moveDayIndex = hasUnpack ? estatePlanDays - 1 : estatePlanDays;
+      dayBreakdown = Array.from({ length: estatePlanDays }, (_, idx) => {
+        const day = idx + 1;
+        const type =
+          day < moveDayIndex ? "pack" : day === moveDayIndex ? "move" : "unpack";
+        return { day, type };
+      });
+    }
 
     if (estimatedDays > 1) {
       const scheduledIso =
