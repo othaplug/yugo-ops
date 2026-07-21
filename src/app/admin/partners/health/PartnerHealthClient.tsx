@@ -50,8 +50,8 @@ const STATUS_CONFIG: Record<
     dotCls: "bg-amber-500",
     badgeCls: "text-amber-800 dark:text-amber-200",
   },
-  cold: {
-    label: "Cold",
+  dormant: {
+    label: "Dormant",
     dotCls: "bg-sky-500",
     badgeCls: "text-sky-800 dark:text-sky-200",
   },
@@ -59,6 +59,11 @@ const STATUS_CONFIG: Record<
     label: "Churned",
     dotCls: "bg-[var(--yu3-ink-muted)]",
     badgeCls: "text-[var(--yu3-ink-muted)]",
+  },
+  never_activated: {
+    label: "Never activated",
+    dotCls: "bg-violet-400",
+    badgeCls: "text-violet-700 dark:text-violet-300",
   },
 };
 
@@ -106,9 +111,23 @@ function ReEngageModal({ partner, onClose }: ReEngageModalProps) {
   const [smsSending, setSmsSending] = useState(false);
   const [smsSent, setSmsSent] = useState(false);
   const firstName = partner.contact_name?.split(" ")[0] || partner.name;
+  // Never-booked partners need an activation nudge, not a "we miss you" —
+  // they were never active to re-engage.
+  const isActivation = partner.health_status === "never_activated";
 
-  const subject = `Checking in, ${partner.name} × Yugo`;
-  const body = `Hi ${firstName},
+  const subject = isActivation
+    ? `Let's get started, ${partner.name} × Yugo`
+    : `Checking in, ${partner.name} × Yugo`;
+  const body = isActivation
+    ? `Hi ${firstName},
+
+We're all set up on our side and haven't had the chance to handle a job for you yet. We'd love to make your first delivery with Yugo effortless.
+
+Whenever you have something to move, just send it our way, we'll take it from there.
+
+Best,
+The Yugo Team`
+    : `Hi ${firstName},
 
 It's been a few weeks since your last job with us. Just checking in to see if you have any upcoming needs.
 
@@ -132,13 +151,21 @@ The Yugo Team`;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to: partner.phone,
-          message: [
-            `Hi ${firstName},`,
-            `Just checking in from Yugo. It has been a while since your last job with us.`,
-            `Do you have any upcoming needs we can help with? We are here anytime.`,
-            `The Yugo Team`,
-          ].join("\n\n"),
-          type: "partner_reengagement",
+          message: (isActivation
+            ? [
+                `Hi ${firstName},`,
+                `It's Yugo. We're set up and ready for your first job whenever you are.`,
+                `What can we help you move? We'll take it from there.`,
+                `The Yugo Team`,
+              ]
+            : [
+                `Hi ${firstName},`,
+                `Just checking in from Yugo. It has been a while since your last job with us.`,
+                `Do you have any upcoming needs we can help with? We are here anytime.`,
+                `The Yugo Team`,
+              ]
+          ).join("\n\n"),
+          type: isActivation ? "partner_activation" : "partner_reengagement",
           related_id: partner.id,
           related_type: "organization",
           recipient_name: partner.contact_name || partner.name,
@@ -163,7 +190,7 @@ The Yugo Team`;
             id="reengage-title"
             className="font-heading text-[16px] font-bold text-[var(--yu3-ink-strong)]"
           >
-            Re-engage {partner.name}
+            {isActivation ? "Activate" : "Re-engage"} {partner.name}
           </h3>
           <button
             type="button"
@@ -225,22 +252,30 @@ The Yugo Team`;
   );
 }
 
-type FilterStatus = "all" | "active" | "at_risk" | "cold" | "churned";
+type FilterStatus =
+  | "all"
+  | "active"
+  | "at_risk"
+  | "dormant"
+  | "churned"
+  | "never_activated";
 
 const FILTER_LABELS: Record<FilterStatus, string> = {
   all: "All",
   active: "Active",
   at_risk: "At risk",
-  cold: "Cold",
+  dormant: "Dormant",
   churned: "Churned",
+  never_activated: "Never activated",
 };
 
 const TABLE_SECTION_LABEL: Record<FilterStatus, string> = {
   all: "All partners",
   active: "Active partners",
   at_risk: "At risk partners",
-  cold: "Cold partners",
+  dormant: "Dormant partners",
   churned: "Churned partners",
+  never_activated: "Never activated partners",
 };
 
 const pillActionCls =
@@ -249,7 +284,7 @@ const pillActionCls =
 export default function PartnerHealthClient() {
   const router = useRouter();
   const [partners, setPartners] = useState<PartnerHealthRow[]>([]);
-  const [stats, setStats] = useState({ total: 0, active: 0, at_risk: 0, cold: 0, churned: 0 });
+  const [stats, setStats] = useState({ total: 0, active: 0, at_risk: 0, dormant: 0, churned: 0, never_activated: 0 });
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterStatus>("all");
@@ -278,12 +313,6 @@ export default function PartnerHealthClient() {
   const kpiTiles = useMemo(
     () => [
       {
-        id: "total",
-        label: "Total partners",
-        value: String(stats.total),
-        hint: "All verticals",
-      },
-      {
         id: "active",
         label: "Active",
         value: String(stats.active),
@@ -298,11 +327,11 @@ export default function PartnerHealthClient() {
         valueClassName: stats.at_risk > 0 ? "text-amber-700 dark:text-amber-200" : undefined,
       },
       {
-        id: "cold",
-        label: "Cold",
-        value: String(stats.cold),
+        id: "dormant",
+        label: "Dormant",
+        value: String(stats.dormant),
         hint: "31-60 days",
-        valueClassName: stats.cold > 0 ? "text-sky-800 dark:text-sky-200" : undefined,
+        valueClassName: stats.dormant > 0 ? "text-sky-800 dark:text-sky-200" : undefined,
       },
       {
         id: "churned",
@@ -310,6 +339,13 @@ export default function PartnerHealthClient() {
         value: String(stats.churned),
         hint: "60+ days silent",
         valueClassName: stats.churned > 0 ? "text-[var(--yu3-ink-muted)]" : undefined,
+      },
+      {
+        id: "never_activated",
+        label: "Never activated",
+        value: String(stats.never_activated),
+        hint: "Onboarded, no jobs",
+        valueClassName: stats.never_activated > 0 ? "text-violet-700 dark:text-violet-300" : undefined,
       },
     ],
     [stats],
@@ -361,7 +397,7 @@ export default function PartnerHealthClient() {
 
       <KpiStrip tiles={kpiTiles} columns={5} variant="grid" className="gap-3" />
 
-      {stats.at_risk + stats.cold > 0 && (
+      {stats.at_risk + stats.dormant > 0 && (
         <div
           className="flex items-center gap-3 rounded-[var(--yu3-r-lg)] border border-amber-500/25 bg-amber-500/10 px-4 py-3"
           role="status"
@@ -369,16 +405,16 @@ export default function PartnerHealthClient() {
           <Icon name="alertTriangle" className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-300" />
           <p className="text-[12px] text-amber-900 dark:text-amber-200">
             <span className="font-semibold">
-              {stats.at_risk + stats.cold} partner{stats.at_risk + stats.cold !== 1 ? "s" : ""}
+              {stats.at_risk + stats.dormant} partner{stats.at_risk + stats.dormant !== 1 ? "s" : ""}
             </span>{" "}
-            {stats.at_risk + stats.cold === 1 ? "has" : "have"} not booked in 15+ days. Consider reaching out.
+            {stats.at_risk + stats.dormant === 1 ? "has" : "have"} not booked in 15+ days. Consider reaching out.
           </p>
         </div>
       )}
 
       <div>
         <div className="flex flex-wrap items-center gap-1.5 border-b border-[var(--yu3-line)] pb-4">
-          {(["all", "active", "at_risk", "cold", "churned"] as FilterStatus[]).map((key) => {
+          {(["all", "active", "at_risk", "dormant", "churned", "never_activated"] as FilterStatus[]).map((key) => {
             const cfg = key !== "all" ? STATUS_CONFIG[key] : null;
             const count = key === "all" ? stats.total : (stats[key as keyof typeof stats] as number);
             const isActive = filter === key;
@@ -432,8 +468,9 @@ export default function PartnerHealthClient() {
               {filtered.map((p) => {
                 const statusCfg = STATUS_CONFIG[p.health_status] ?? STATUS_CONFIG.churned!;
                 const trendCfg = TREND_CONFIG[p.trend] ?? TREND_CONFIG.stable!;
-                const canReEngage = p.health_status === "at_risk" || p.health_status === "cold";
+                const canReEngage = p.health_status === "at_risk" || p.health_status === "dormant";
                 const isChurned = p.health_status === "churned";
+                const isNeverActivated = p.health_status === "never_activated";
 
                 return (
                   <tr
@@ -498,7 +535,17 @@ export default function PartnerHealthClient() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      {isChurned ? (
+                      {isNeverActivated ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 rounded-full border-violet-500/30 bg-violet-500/10 text-violet-800 hover:bg-violet-500/15 dark:text-violet-200"
+                          onClick={() => setReEngagePartner(p)}
+                        >
+                          Activate
+                        </Button>
+                      ) : isChurned ? (
                         <button
                           type="button"
                           onClick={() => router.push(`/admin/clients/${p.id}`)}

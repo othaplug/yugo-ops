@@ -10,7 +10,7 @@ export interface PartnerHealthRow {
   email: string | null;
   phone: string | null;
   last_delivery_at: string | null;
-  health_status: "active" | "at_risk" | "cold" | "churned";
+  health_status: "active" | "at_risk" | "dormant" | "churned" | "never_activated";
   volume_30d: number;
   revenue_30d: number;
   trend: "increasing" | "stable" | "declining";
@@ -21,32 +21,24 @@ export interface PartnerHealthRow {
 }
 
 /**
- * Classify health from last-activity date.
- * If there is no activity, fall back to how long the org has been a partner:
- *   - joined < 30 days ago → active (brand new, give them time)
- *   - joined 30–60 days ago → at_risk (needs engagement)
- *   - joined > 60 days ago → churned (inactive long enough to count)
+ * Classify health from last-activity date. Churn requires prior activation —
+ * a partner that has NEVER booked can't have churned, so it gets its own
+ * `never_activated` state (an onboarding/activation problem, not a retention
+ * one). Partners with real past activity age active → at_risk → dormant →
+ * churned by recency.
  */
 function getHealthStatus(
   lastActivityAt: string | null,
-  orgCreatedAt: string | null,
 ): PartnerHealthRow["health_status"] {
   if (lastActivityAt) {
     const days = Math.floor((Date.now() - new Date(lastActivityAt).getTime()) / 86_400_000);
     if (days <= 14) return "active";
     if (days <= 30) return "at_risk";
-    if (days <= 60) return "cold";
+    if (days <= 60) return "dormant";
     return "churned";
   }
-  // No recorded activity — use partner tenure
-  if (orgCreatedAt) {
-    const daysSince = Math.floor(
-      (Date.now() - new Date(orgCreatedAt).getTime()) / 86_400_000,
-    );
-    if (daysSince <= 30) return "active";
-    if (daysSince <= 60) return "at_risk";
-  }
-  return "churned";
+  // Never booked — an activation problem, not churn.
+  return "never_activated";
 }
 
 function getTrend(current: number, previous: number): PartnerHealthRow["trend"] {
@@ -116,7 +108,7 @@ export async function GET() {
   const orgIds = (orgs ?? []).map((o) => o.id);
 
   if (orgIds.length === 0) {
-    return NextResponse.json({ partners: [], stats: { total: 0, active: 0, at_risk: 0, cold: 0, churned: 0 } });
+    return NextResponse.json({ partners: [], stats: { total: 0, active: 0, at_risk: 0, dormant: 0, churned: 0, never_activated: 0 } });
   }
 
   // ── Split PM vs delivery org IDs ──────────────────────────────────────────
@@ -352,9 +344,7 @@ export async function GET() {
       // A PM partner with an upcoming booked move is active regardless of when
       // their last completed job was.
       health_status:
-        pm && movesHasUpcoming[org.id]
-          ? "active"
-          : getHealthStatus(lastAt, (org as { created_at?: string | null }).created_at ?? null),
+        pm && movesHasUpcoming[org.id] ? "active" : getHealthStatus(lastAt),
       volume_30d: vol,
       revenue_30d: Math.round(rev),
       trend: getTrend(vol, prevVol),
@@ -364,15 +354,22 @@ export async function GET() {
     };
   });
 
-  const urgencyOrder: Record<string, number> = { at_risk: 0, cold: 1, churned: 2, active: 3 };
-  partners.sort((a, b) => (urgencyOrder[a.health_status] ?? 4) - (urgencyOrder[b.health_status] ?? 4));
+  const urgencyOrder: Record<string, number> = {
+    at_risk: 0,
+    dormant: 1,
+    churned: 2,
+    never_activated: 3,
+    active: 4,
+  };
+  partners.sort((a, b) => (urgencyOrder[a.health_status] ?? 5) - (urgencyOrder[b.health_status] ?? 5));
 
   const stats = {
     total: partners.length,
     active: partners.filter((p) => p.health_status === "active").length,
     at_risk: partners.filter((p) => p.health_status === "at_risk").length,
-    cold: partners.filter((p) => p.health_status === "cold").length,
+    dormant: partners.filter((p) => p.health_status === "dormant").length,
     churned: partners.filter((p) => p.health_status === "churned").length,
+    never_activated: partners.filter((p) => p.health_status === "never_activated").length,
   };
 
   return NextResponse.json({ partners, stats });
