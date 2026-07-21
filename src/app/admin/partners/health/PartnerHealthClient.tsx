@@ -89,6 +89,7 @@ function fmtCurrency(n: number) {
 
 function fmtLastJob(days: number | null): string {
   if (days === null) return "Never";
+  if (days < 0) return "Upcoming";
   if (days === 0) return "Today";
   if (days === 1) return "Yesterday";
   if (days < 7) return `${days}d ago`;
@@ -370,7 +371,7 @@ export default function PartnerHealthClient() {
             <span className="font-semibold">
               {stats.at_risk + stats.cold} partner{stats.at_risk + stats.cold !== 1 ? "s" : ""}
             </span>{" "}
-            have not booked in 15+ days. Consider reaching out.
+            {stats.at_risk + stats.cold === 1 ? "has" : "have"} not booked in 15+ days. Consider reaching out.
           </p>
         </div>
       )}
@@ -408,7 +409,7 @@ export default function PartnerHealthClient() {
           <table className="w-full min-w-[720px]">
             <thead>
               <tr className="border-b border-[var(--yu3-line)] bg-[var(--yu3-bg-canvas)]/50">
-                {["Partner", "Status", "Volume (30d)", "Trend", "Revenue", "Last job", "Action"].map(
+                {["Partner", "Status", "Volume (30d)", "Trend", "Revenue (30d)", "Last job", "Action"].map(
                   (h) => (
                     <th
                       key={h}

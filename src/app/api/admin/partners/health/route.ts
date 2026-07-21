@@ -87,6 +87,10 @@ export async function GET() {
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 86_400_000).toISOString();
   const sixtyDaysAgo = new Date(now.getTime() - 60 * 86_400_000).toISOString();
   const ninetyDaysAgo = new Date(now.getTime() - 90 * 86_400_000).toISOString();
+  // Cap "past" activity at today. PM moves carry a future scheduled_date for
+  // upcoming jobs; without this cap the "last job" picked a future date (giving
+  // a negative "-18d ago") and the 30-day volume/revenue counted upcoming moves.
+  const todayStr = now.toISOString().slice(0, 10);
 
   // Fetch orgs — include created_at for new-partner classification
   let { data: orgs, error: orgsError } = await admin
@@ -121,6 +125,7 @@ export async function GET() {
 
   // ── Moves data for PM orgs ────────────────────────────────────────────────
   const movesLastActivity: Record<string, string> = {};
+  const movesHasUpcoming: Record<string, boolean> = {};
   const movesVolume30d: Record<string, number> = {};
   const movesRevenue30d: Record<string, number> = {};
   const movesPrevVolume: Record<string, number> = {};
@@ -140,15 +145,23 @@ export async function GET() {
 
       for (const m of rows ?? []) {
         const oid = String(m.organization_id);
-        const ts = (m.completed_at as string | null) ?? (m.scheduled_date as string | null);
-        if (!ts) continue;
-        if (!movesLastActivity[oid] || ts > movesLastActivity[oid]) {
-          movesLastActivity[oid] = ts;
+        const completed = m.completed_at as string | null;
+        const sched = m.scheduled_date as string | null;
+        // "Last job" is the most recent PAST activity: completed_at, or a
+        // scheduled_date on/before today. A future scheduled_date is upcoming
+        // work, not a last job — track it separately so health stays "active"
+        // without producing a negative "days ago".
+        const pastTs =
+          completed ?? (sched && sched.slice(0, 10) <= todayStr ? sched : null);
+        if (pastTs && (!movesLastActivity[oid] || pastTs > movesLastActivity[oid])) {
+          movesLastActivity[oid] = pastTs;
         }
+        if (sched && sched.slice(0, 10) > todayStr) movesHasUpcoming[oid] = true;
       }
     }
 
-    // Volume + revenue: last 30 days
+    // Volume + revenue: last 30 days (past only — cap at today so upcoming
+    // scheduled moves don't inflate the 30-day count).
     for (let i = 0; i < pmOrgIds.length; i += ORG_CHUNK) {
       const chunk = pmOrgIds.slice(i, i + ORG_CHUNK);
       const { data: rows } = await admin
@@ -156,6 +169,7 @@ export async function GET() {
         .select("organization_id, total_price")
         .in("organization_id", chunk)
         .gte("scheduled_date", thirtyDaysAgo)
+        .lte("scheduled_date", todayStr)
         .in("status", PM_MOVE_STATUSES);
 
       for (const m of rows ?? []) {
@@ -304,9 +318,11 @@ export async function GET() {
     const prevVol = pm ? (movesPrevVolume[org.id] || 0) : (prevVolumeMap[org.id] || 0);
     const rev = pm ? (movesRevenue30d[org.id] || 0) : (revenueMap[org.id] || 0);
 
-    const daysSince = lastAt
+    const daysSinceRaw = lastAt
       ? Math.floor((now.getTime() - new Date(lastAt).getTime()) / 86_400_000)
       : null;
+    // Never surface a negative "days ago" — a future timestamp isn't a last job.
+    const daysSince = daysSinceRaw != null && daysSinceRaw >= 0 ? daysSinceRaw : null;
 
     const displayType =
       (org as { vertical?: string | null }).vertical ||
@@ -333,7 +349,12 @@ export async function GET() {
       email: org.email,
       phone: org.phone,
       last_delivery_at: lastAt,
-      health_status: getHealthStatus(lastAt, (org as { created_at?: string | null }).created_at ?? null),
+      // A PM partner with an upcoming booked move is active regardless of when
+      // their last completed job was.
+      health_status:
+        pm && movesHasUpcoming[org.id]
+          ? "active"
+          : getHealthStatus(lastAt, (org as { created_at?: string | null }).created_at ?? null),
       volume_30d: vol,
       revenue_30d: Math.round(rev),
       trend: getTrend(vol, prevVol),
