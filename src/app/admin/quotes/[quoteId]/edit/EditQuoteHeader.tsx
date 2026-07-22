@@ -22,6 +22,13 @@ interface Props {
   generating: boolean;
   linking: boolean;
   hasChanges: boolean;
+  /**
+   * Metadata-only mode for custom-priced quotes (event / B2B / bin). In this
+   * mode "Save changes" patches logistics fields (date, address, access,
+   * coordinator) WITHOUT re-pricing, so the copy drops the "preview new
+   * pricing" language and the version hint.
+   */
+  detailsMode?: boolean;
 
   onBack: () => void;
   onSaveChanges: () => void | Promise<void>;
@@ -48,6 +55,7 @@ export default function EditQuoteHeader({
   generating,
   linking,
   hasChanges,
+  detailsMode = false,
   onBack,
   onSaveChanges,
   onSaveAndResend,
@@ -67,7 +75,7 @@ export default function EditQuoteHeader({
         </button>
         <div className="min-w-0 flex-1">
           <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest uppercase">
-            Re-Quote
+            {detailsMode ? "Edit Details" : "Re-Quote"}
           </div>
           <h1 className="text-lg font-bold text-[var(--tx)] flex items-baseline gap-2 flex-wrap">
             Edit Quote {quoteId}
@@ -112,7 +120,11 @@ export default function EditQuoteHeader({
               size={12}
               className={generating ? "animate-spin" : ""}
             />
-            {generating ? "Saving…" : "Save changes"}
+            {generating
+              ? "Saving…"
+              : detailsMode
+                ? "Save details"
+                : "Save changes"}
           </button>
           <button
             type="button"
@@ -133,8 +145,17 @@ export default function EditQuoteHeader({
             Unsaved changes
           </span>
           <span className="text-amber-700/70 dark:text-amber-400/70">
-            · click Save changes to preview the new pricing or Save
-            &amp; resend to publish &amp; email the client.
+            {detailsMode ? (
+              <>
+                · click Save details to update the quote without re-pricing,
+                or Save &amp; resend to also email the client.
+              </>
+            ) : (
+              <>
+                · click Save changes to preview the new pricing or Save
+                &amp; resend to publish &amp; email the client.
+              </>
+            )}
           </span>
         </div>
       )}

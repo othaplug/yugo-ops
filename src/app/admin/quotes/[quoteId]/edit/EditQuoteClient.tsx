@@ -1616,6 +1616,103 @@ export default function EditQuoteClient({
     }
   }, [pendingResend, newQuoteResult, newQuoteId, handleSendUpdate]);
 
+  // ── Metadata-only save (custom-priced quotes) ────────────────────
+  // Event / B2B / bin quotes are priced outside the move engine, so the
+  // re-quote path above is blocked (it would re-run them as a plain move
+  // and destroy their scope). But operators still need to fix logistics
+  // fields — most commonly the date. This path patches those fields in
+  // place via /api/admin/quotes/[id]/details WITHOUT touching pricing,
+  // and optionally re-sends the updated quote to the client.
+  const [detailBaseline] = useState(() => ({
+    move_date: oq.move_date || "",
+    from_address: oq.from_address || "",
+    to_address: oq.to_address || "",
+    from_access: oq.from_access || "",
+    to_access: oq.to_access || "",
+    arrival_window: typeof oq.arrival_window === "string" ? oq.arrival_window : "",
+    preferred_time: typeof oq.preferred_time === "string" ? oq.preferred_time : "",
+    coordinator_name:
+      typeof factors.coordinator_name === "string" ? factors.coordinator_name : "",
+  }));
+  const detailPatch = useMemo(() => {
+    const norm = (v: string) => (v ?? "").trim();
+    const out: Record<string, string> = {};
+    if (norm(moveDate) !== norm(detailBaseline.move_date)) out.move_date = moveDate;
+    if (norm(fromAddress) !== norm(detailBaseline.from_address))
+      out.from_address = fromAddress;
+    if (norm(toAddress) !== norm(detailBaseline.to_address)) out.to_address = toAddress;
+    if (norm(fromAccess) !== norm(detailBaseline.from_access))
+      out.from_access = fromAccess;
+    if (norm(toAccess) !== norm(detailBaseline.to_access)) out.to_access = toAccess;
+    if (norm(arrivalWindow) !== norm(detailBaseline.arrival_window))
+      out.arrival_window = arrivalWindow;
+    if (norm(preferredTime) !== norm(detailBaseline.preferred_time))
+      out.preferred_time = preferredTime;
+    if (norm(coordinatorName) !== norm(detailBaseline.coordinator_name))
+      out.coordinator_name = coordinatorName;
+    return out;
+  }, [
+    detailBaseline,
+    moveDate,
+    fromAddress,
+    toAddress,
+    fromAccess,
+    toAccess,
+    arrivalWindow,
+    preferredTime,
+    coordinatorName,
+  ]);
+  const hasDetailChanges = Object.keys(detailPatch).length > 0;
+
+  const handleSaveDetails = useCallback(
+    async (resend: boolean) => {
+      if (!hasDetailChanges) return;
+      setError(null);
+      if (resend && (!reason || reason.length < 3)) {
+        setError(
+          "Pick a reason for the update before resending — the client sees it in the email.",
+        );
+        return;
+      }
+      if (resend) setLinking(true);
+      else setGenerating(true);
+      try {
+        const res = await fetch(
+          `/api/admin/quotes/${encodeURIComponent(oq.quote_id)}/details`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...detailPatch,
+              reason: resend ? reason : undefined,
+              reason_code: resend ? reasonValue || null : undefined,
+              resend,
+            }),
+          },
+        );
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || "Failed to save changes");
+          return;
+        }
+        if (resend) {
+          setDone(true);
+        } else {
+          // Metadata saved without resend — reflect it and reload so the
+          // baseline resets and the amber banner clears.
+          router.refresh();
+          router.push(`/admin/quotes/${oq.quote_id}`);
+        }
+      } catch {
+        setError("Network error saving changes");
+      } finally {
+        setLinking(false);
+        setGenerating(false);
+      }
+    },
+    [hasDetailChanges, reason, reasonValue, detailPatch, oq.quote_id, router],
+  );
+
   if (done) {
     return (
       <div className="max-w-lg mx-auto text-center py-16">
@@ -1663,10 +1760,15 @@ export default function EditQuoteClient({
         moveDate={oq.move_date}
         generating={generating}
         linking={linking}
-        hasChanges={hasChanges}
+        hasChanges={blockMoveEngineRegen ? hasDetailChanges : hasChanges}
+        detailsMode={blockMoveEngineRegen}
         onBack={() => router.back()}
-        onSaveChanges={handleRegenerate}
-        onSaveAndResend={handleSaveAndResend}
+        onSaveChanges={
+          blockMoveEngineRegen ? () => handleSaveDetails(false) : handleRegenerate
+        }
+        onSaveAndResend={
+          blockMoveEngineRegen ? () => handleSaveDetails(true) : handleSaveAndResend
+        }
       />
 
       {/* Main 2-col grid:
@@ -3356,9 +3458,13 @@ export default function EditQuoteClient({
           that's the "Save & resend" button in the result panel. */}
       {!newQuoteResult && blockMoveEngineRegen && (
         <div className="rounded-xl px-4 py-3 text-[12px] border bg-[var(--gold)]/5 border-[var(--gold)]/20 text-[var(--tx2)]">
-          This quote type is priced outside the move engine, so re-pricing is
-          disabled here to protect its scope. To change it, regenerate it from
-          the Generate Quote flow.
+          This quote is priced outside the move engine, so re-pricing stays
+          locked here to protect its scope. You can still update logistics —
+          date, addresses, access, arrival window, coordinator — with{" "}
+          <strong className="text-[var(--tx)]">Save details</strong> at the top
+          (or <strong className="text-[var(--tx)]">Save &amp; resend</strong> to
+          also email the client the updated date). To change pricing or scope,
+          regenerate it from the Generate Quote flow.
         </div>
       )}
 
