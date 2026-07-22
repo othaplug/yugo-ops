@@ -394,7 +394,10 @@ function humanizeSlug(s: string | null | undefined): string {
 }
 
 function formatCurrency(n: number): string {
-  return n.toLocaleString("en-CA", {
+  // Coerce -0 (and sub-cent float artifacts) to +0 so callers that prepend
+  // "$" can't emit "$-0.00" on an invoice line.
+  const safe = (Math.round(n * 100) + 0) / 100;
+  return safe.toLocaleString("en-CA", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });

@@ -36,7 +36,12 @@ const POLICY_HOURS: Record<string, number> = {
 };
 
 function formatCurrency(n: number): string {
-  return `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  const safe = (Math.round(n * 100) + 0) / 100;
+  const abs = Math.abs(safe).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+  return safe < 0 ? `-$${abs}` : `$${abs}`;
 }
 
 export default function CancelMoveModal({ move, open, onClose, onCancelled }: CancelMoveModalProps) {

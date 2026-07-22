@@ -5,14 +5,30 @@
 export function formatCurrency(value: number | string | null | undefined): string {
   const n = typeof value === "string" ? parseFloat(value) : Number(value);
   if (Number.isNaN(n)) return "$0";
-  return `$${Math.round(n).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  // Round first, then kill negative zero. Without the `+ 0`, a value like
+  // -0.3 rounds to -0, which Intl/toLocaleString renders as the literal
+  // "-0" — producing the bogus "$-0" balance. Adding 0 coerces -0 → +0.
+  const rounded = Math.round(n) + 0;
+  const abs = Math.abs(rounded).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+  // Genuine negatives (credits/overpayments) use the "-$5" convention, not "$-5".
+  return rounded < 0 ? `-$${abs}` : `$${abs}`;
 }
 
 /** HTML emails and receipts — always two decimals for alignment and trust. */
 export function formatCurrencyEmail(value: number | string | null | undefined): string {
   const n = typeof value === "string" ? parseFloat(value) : Number(value);
   if (Number.isNaN(n)) return "$0.00";
-  return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  // Snap sub-cent magnitudes to 0 so a -0.0001 float artifact can't render as
+  // "-0.00", and format the sign ourselves to avoid Intl's "-0.00".
+  const cents = Math.round(n * 100) + 0;
+  const abs = (Math.abs(cents) / 100).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return cents < 0 ? `-$${abs}` : `$${abs}`;
 }
 
 /**

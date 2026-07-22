@@ -286,7 +286,13 @@ export async function GET(req: NextRequest) {
 }
 
 function formatCurrency(n: number): string {
-  return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  // Round to cents and coerce -0 → +0 so a float artifact never renders "$-0.00".
+  const cents = Math.round(n * 100) + 0;
+  const abs = (Math.abs(cents) / 100).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return cents < 0 ? `-$${abs}` : `$${abs}`;
 }
 
 /* ── HubSpot Task Creation ── */

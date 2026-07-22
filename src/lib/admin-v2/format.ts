@@ -1,6 +1,12 @@
 // Shared formatters for admin-v2 modules. Every page imports from here
 // so currency, percents, and dates render consistently.
 
+// Snap sub-dollar magnitudes to a clean 0 so a -0 / -0.3 value can't render
+// as "-$0" via Intl (which shows the sign on negative zero). Genuine
+// negatives (< -$0.50) are preserved so credits still read "-$5".
+const snapZeroDollars = (value: number): number =>
+  Math.abs(value) < 0.5 ? 0 : value
+
 export const formatCurrencyCompact = (value: number): string => {
   if (Math.abs(value) >= 1_000_000) {
     const formatted = (value / 1_000_000).toFixed(value >= 10_000_000 ? 1 : 2)
@@ -14,7 +20,7 @@ export const formatCurrencyCompact = (value: number): string => {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
-  }).format(value)
+  }).format(snapZeroDollars(value))
 }
 
 export const formatCurrency = (value: number): string =>
@@ -22,7 +28,7 @@ export const formatCurrency = (value: number): string =>
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
-  }).format(value)
+  }).format(snapZeroDollars(value))
 
 export const formatNumber = (value: number): string =>
   new Intl.NumberFormat("en-US").format(value)
