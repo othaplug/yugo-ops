@@ -218,6 +218,15 @@ export default function NewDeliveryForm({
   const [specialHandling, setSpecialHandling] = useState(false);
   const [quotedPrice, setQuotedPrice] = useState("");
   const [crewId, setCrewId] = useState("");
+  /**
+   * Which members of the chosen crew are actually going on this job.
+   * Empty when no crew is picked. Defaults to the full roster the first
+   * time a crew is chosen so the common case stays one click, but the
+   * operator can uncheck anyone who is not on the run — otherwise the
+   * whole roster gets snapshotted on the delivery and shows up on the
+   * customer's tracking page (DLV-30372 hit this — 5 names when 3 went).
+   */
+  const [selectedCrewMembers, setSelectedCrewMembers] = useState<string[]>([]);
   const [pickupAccess, setPickupAccess] = useState("elevator");
   const [deliveryAccess, setDeliveryAccess] = useState("elevator");
   const [itemWeightCategory, setItemWeightCategory] = useState("standard");
@@ -453,6 +462,43 @@ export default function NewDeliveryForm({
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  /**
+   * When the operator switches crew, reset the member picker to the full
+   * roster of the newly-chosen crew. Unassigning clears it. Keeping the
+   * previous selection across a crew swap makes no sense — the names
+   * belong to a different team.
+   */
+  useEffect(() => {
+    if (!crewId) {
+      setSelectedCrewMembers([]);
+      return;
+    }
+    const crew = crews.find((c) => c.id === crewId);
+    const roster = Array.isArray(crew?.members)
+      ? crew!.members!.filter(
+          (m): m is string => typeof m === "string" && m.trim().length > 0,
+        ).map((m) => m.trim())
+      : [];
+    setSelectedCrewMembers(roster);
+  }, [crewId, crews]);
+
+  const crewRoster: string[] = (() => {
+    if (!crewId) return [];
+    const crew = crews.find((c) => c.id === crewId);
+    if (!crew || !Array.isArray(crew.members)) return [];
+    return crew.members
+      .filter(
+        (m): m is string => typeof m === "string" && m.trim().length > 0,
+      )
+      .map((m) => m.trim());
+  })();
+
+  const toggleCrewMember = (name: string) => {
+    setSelectedCrewMembers((prev) =>
+      prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name],
+    );
+  };
 
   useEffect(() => {
     if (organizationId) {
@@ -730,6 +776,11 @@ export default function NewDeliveryForm({
       special_handling: specialHandling,
       quoted_price: parseNumberInput(quotedPrice) || null,
       crew_id: crewId || null,
+      // Only send the subset when the operator actually narrowed it.
+      // Empty (or full-roster) selection lets the API keep its default
+      // snapshot path so we never send an accidental empty array.
+      assigned_members:
+        crewId && selectedCrewMembers.length > 0 ? selectedCrewMembers : null,
       pickup_access:
         routeMode === "multi"
           ? firstPu?.accessType || null
@@ -1287,6 +1338,55 @@ export default function NewDeliveryForm({
                   ))}
                 </select>
               </Field>
+            )}
+            {crewId && crewRoster.length > 0 && (
+              <div className="sm:col-span-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]">
+                    Members on this job
+                  </span>
+                  <div className="flex items-center gap-2 text-[10px]">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCrewMembers([...crewRoster])}
+                      className="text-[var(--gold)] hover:underline"
+                    >
+                      All
+                    </button>
+                    <span className="text-[var(--tx3)]">·</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCrewMembers([])}
+                      className="text-[var(--tx3)] hover:underline"
+                    >
+                      None
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5 rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-2.5 py-2">
+                  {crewRoster.map((name) => {
+                    const checked = selectedCrewMembers.includes(name);
+                    return (
+                      <button
+                        key={name}
+                        type="button"
+                        onClick={() => toggleCrewMember(name)}
+                        className={`text-[11px] font-medium px-2.5 py-1 rounded-md border transition-colors ${
+                          checked
+                            ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--tx)]"
+                            : "border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--tx)]"
+                        }`}
+                      >
+                        {name}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-1 text-[10px] text-[var(--tx3)]">
+                  Only checked members appear on the delivery and on the
+                  customer's tracking page.
+                </p>
+              </div>
             )}
             <Field label="Quoted Price">
               <input
