@@ -1054,13 +1054,16 @@ async function calculateDeposit(
 /**
  * Event deposit — luxury threshold policy (operator directive 2026-07):
  *   • event under the full-payment threshold (config event_full_payment_under,
- *     default $1,500 pre-tax) → paid in full at booking;
+ *     default $2,500 measured on the TAX-INCLUSIVE total) → paid in full at
+ *     booking;
  *   • larger event → a percentage deposit (config event_deposit_pct, default
  *     25%, rounded to config event_deposit_round, default $25) + balance
  *     collected 48h before service.
  *   • booked <4 days out → full, since the 48h balance window can't be met.
  *
- * `amount` is the PRE-TAX price. "Full payment" returns the TAX-INCLUSIVE grand
+ * `amount` is the PRE-TAX price. The threshold is compared against the
+ * TAX-INCLUSIVE grand total (the number the client actually pays and sees on the
+ * quote) — operator directive 2026-07-25. "Full payment" returns that inclusive
  * total so the client is genuinely settled at booking (a pre-tax "full" left the
  * 13% HST as a surprise balance). The percentage deposit is taken on the pre-tax
  * price (matching the residential/Estate convention); the balance sweeps the
@@ -1089,9 +1092,9 @@ function eventDeposit(
     }
   }
 
-  // Under the threshold → paid in full (tax included).
-  const fullUnder = cfgNum(config, "event_full_payment_under", 1500);
-  if (preTax < fullUnder) return inclusive;
+  // Under the threshold (on the tax-inclusive total the client pays) → paid in full.
+  const fullUnder = cfgNum(config, "event_full_payment_under", 2500);
+  if (inclusive < fullUnder) return inclusive;
 
   // Above the threshold → percentage deposit, rounded, never below one step.
   const pct = cfgNum(config, "event_deposit_pct", 25);
