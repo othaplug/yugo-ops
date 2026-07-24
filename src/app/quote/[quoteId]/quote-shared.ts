@@ -118,6 +118,11 @@ export interface AddonSelection {
   slug: string;
   quantity: number;
   tier_index: number;
+  /**
+   * TV mount (variant_matrix) — one row per TV in the household.
+   * Expanded into one selected_addons payload entry per row on submit.
+   */
+  variants?: Array<{ size: string; type: string; quantity: number }>;
 }
 
 export interface Quote {

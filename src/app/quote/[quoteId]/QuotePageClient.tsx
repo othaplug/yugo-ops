@@ -145,6 +145,8 @@ import {
   estateAddonDisplayName,
 } from "@/lib/quotes/addon-visibility";
 import { STORAGE_ADDON_SLUG, STORAGE_MAX_WEEKS } from "@/lib/quotes/storage-pricing";
+import { lookupTVMountCell, type TVMountType } from "@/lib/quotes/tv-mount-matrix";
+import { TVMountClientPicker } from "./TVMountClientPicker";
 import { formatAddressForDisplay } from "@/lib/format-text";
 import { getDisplayLabel, VALUATION_TIER_LABELS } from "@/lib/displayLabels";
 import { SafeText } from "@/components/SafeText";
@@ -1141,12 +1143,18 @@ export default function QuotePageClient({
           next.delete(addon.id);
         } else {
           const tierIndex = 0;
-          next.set(addon.id, {
+          const base: AddonSelection = {
             addon_id: addon.id,
             slug: addon.slug,
             quantity: 1,
             tier_index: tierIndex,
-          });
+          };
+          // TV mount is variant-driven — seed one placeholder TV so the
+          // picker has a row to edit the moment the toggle flips on.
+          if (addon.price_type === "variant_matrix") {
+            base.variants = [{ size: "43-55", type: "fixed", quantity: 1 }];
+          }
+          next.set(addon.id, base);
         }
         trackEvent("addon_toggled", { addon: addon.slug, enabled: !toggled });
         trackEngagement("addon_toggled", {
@@ -1158,6 +1166,85 @@ export default function QuotePageClient({
     },
     [quote.move_size, trackEvent, trackEngagement],
   );
+
+  const updateVariantRow = useCallback(
+    (
+      addonId: string,
+      index: number,
+      patch: Partial<{ size: string; type: string; quantity: number }>,
+    ) => {
+      setSelectedAddons((prev) => {
+        const next = new Map(prev);
+        const cur = next.get(addonId);
+        if (!cur || !cur.variants) return prev;
+        const nextVariants = cur.variants.map((v, i) =>
+          i === index ? { ...v, ...patch } : v,
+        );
+        next.set(addonId, { ...cur, variants: nextVariants });
+        return next;
+      });
+    },
+    [],
+  );
+
+  const addVariantRow = useCallback((addonId: string) => {
+    setSelectedAddons((prev) => {
+      const next = new Map(prev);
+      const cur = next.get(addonId);
+      if (!cur) return prev;
+      const variants = cur.variants ?? [];
+      next.set(addonId, {
+        ...cur,
+        variants: [...variants, { size: "43-55", type: "fixed", quantity: 1 }],
+      });
+      return next;
+    });
+  }, []);
+
+  const removeVariantRow = useCallback(
+    (addonId: string, index: number) => {
+      setSelectedAddons((prev) => {
+        const next = new Map(prev);
+        const cur = next.get(addonId);
+        if (!cur || !cur.variants) return prev;
+        const remaining = cur.variants.filter((_, i) => i !== index);
+        if (remaining.length === 0) {
+          next.delete(addonId);
+        } else {
+          next.set(addonId, { ...cur, variants: remaining });
+        }
+        return next;
+      });
+    },
+    [],
+  );
+
+  /**
+   * Server-shaped payload: variant_matrix entries expand into one row
+   * per TV variant so the engine can price each independently. All other
+   * selections pass through unchanged.
+   */
+  const selectedAddonsForPayload = useMemo(() => {
+    return Array.from(selectedAddons.values()).flatMap((sel) => {
+      if (!sel.variants || sel.variants.length === 0) {
+        return [
+          {
+            addon_id: sel.addon_id,
+            slug: sel.slug,
+            quantity: sel.quantity,
+            tier_index: sel.tier_index,
+          },
+        ];
+      }
+      return sel.variants.map((v) => ({
+        addon_id: sel.addon_id,
+        slug: sel.slug,
+        quantity: v.quantity,
+        tier_index: 0,
+        variant: { size: v.size, type: v.type },
+      }));
+    });
+  }, [selectedAddons]);
 
   const updateQty = useCallback(
     (id: string, qty: number) => {
@@ -1207,6 +1294,18 @@ export default function QuotePageClient({
             basePrice * Math.min(Math.max(addon.percent_value ?? 0, 0), 1),
           );
           break;
+        case "variant_matrix": {
+          const cfg = addon.variant_config ?? null;
+          for (const v of sel.variants ?? []) {
+            const cell = lookupTVMountCell(
+              cfg,
+              v.size as import("@/lib/quotes/tv-mount-matrix").TVMountSizeBand,
+              v.type as TVMountType,
+            );
+            if (cell) sum += cell.price * (v.quantity || 1);
+          }
+          break;
+        }
       }
     }
     return sum;
@@ -1382,6 +1481,35 @@ export default function QuotePageClient({
     for (const [id, sel] of selectedAddons) {
       const addon = allAddons.find((a) => a.id === id);
       if (!addon) continue;
+      // variant_matrix add-ons expand into one contract line per TV so
+      // each row shows its own size/type/model on the signed contract.
+      if (addon.price_type === "variant_matrix") {
+        const cfg = addon.variant_config ?? null;
+        const typeLabelMap: Record<string, string> = {
+          fixed: "Fixed",
+          tilt: "Tilting",
+          full_motion: "Full motion",
+        };
+        for (const v of sel.variants ?? []) {
+          const cell = lookupTVMountCell(
+            cfg,
+            v.size as import("@/lib/quotes/tv-mount-matrix").TVMountSizeBand,
+            v.type as TVMountType,
+          );
+          if (!cell) continue;
+          const sizeDisplay = v.size.replace("-", "–") + '"';
+          const typeDisplay = typeLabelMap[v.type] ?? v.type;
+          const label = cell.mount_model
+            ? `${addon.name} (${sizeDisplay} · ${typeDisplay} · ${cell.mount_model})`
+            : `${addon.name} (${sizeDisplay} · ${typeDisplay})`;
+          list.push({
+            name: label,
+            price: cell.price * (v.quantity || 1),
+            quantity: v.quantity || 1,
+          });
+        }
+        continue;
+      }
       let cost = 0;
       switch (addon.price_type) {
         case "flat":
@@ -1876,7 +2004,7 @@ export default function QuotePageClient({
           clientName: signedName,
           clientEmail: contactEmail ?? "",
           selectedTier: selectedTier ?? "custom",
-          selectedAddons: Array.from(selectedAddons.values()),
+          selectedAddons: selectedAddonsForPayload,
         }),
       });
       const data = (await res.json()) as {
@@ -1902,7 +2030,7 @@ export default function QuotePageClient({
     } finally {
       setInvoiceConfirmLoading(false);
     }
-  }, [quote.quote_id, signedName, contactEmail, selectedTier, selectedAddons]);
+  }, [quote.quote_id, signedName, contactEmail, selectedTier, selectedAddonsForPayload]);
 
   /* ── Hero config ── */
   const hero = useMemo(() => {
@@ -2677,6 +2805,9 @@ export default function QuotePageClient({
                 allAddons={allAddons}
                 includedAddons={adminIncludedAddons}
                 selectedAddons={selectedAddons}
+                updateVariantRow={updateVariantRow}
+                addVariantRow={addVariantRow}
+                removeVariantRow={removeVariantRow}
                 basePrice={basePrice}
                 addonTotal={addonTotal}
                 valuationCost={valuationCost}
@@ -6313,6 +6444,9 @@ function AddOnsSection({
   toggleAddon,
   updateQty,
   updateTierIdx,
+  updateVariantRow,
+  addVariantRow,
+  removeVariantRow,
   isProgressive,
   onContinue,
   showContinueButton = false,
@@ -6346,6 +6480,14 @@ function AddOnsSection({
   toggleAddon: (addon: Addon) => void;
   updateQty: (id: string, qty: number) => void;
   updateTierIdx: (id: string, idx: number) => void;
+  /** TV mount (variant_matrix): per-TV row edits. */
+  updateVariantRow?: (
+    addonId: string,
+    index: number,
+    patch: Partial<{ size: string; type: string; quantity: number }>,
+  ) => void;
+  addVariantRow?: (addonId: string) => void;
+  removeVariantRow?: (addonId: string, index: number) => void;
   isProgressive?: boolean;
   onContinue?: () => void;
   showContinueButton?: boolean;
@@ -6908,6 +7050,24 @@ function AddOnsSection({
                         </select>
                       </div>
                     )}
+                    {isOn &&
+                      addon.price_type === "variant_matrix" &&
+                      updateVariantRow &&
+                      addVariantRow &&
+                      removeVariantRow && (
+                        <TVMountClientPicker
+                          config={addon.variant_config ?? null}
+                          variants={sel?.variants ?? []}
+                          onUpdate={(i, patch) =>
+                            updateVariantRow(addon.id, i, patch)
+                          }
+                          onAdd={() => addVariantRow(addon.id)}
+                          onRemove={(i) => removeVariantRow(addon.id, i)}
+                          premiumChrome={premiumChrome}
+                          shellText={shellText}
+                          premiumShellKind={premiumShellKind}
+                        />
+                      )}
                   </div>
                 </div>
 
