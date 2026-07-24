@@ -22,7 +22,7 @@ export default async function NewQuotePage() {
     db
       .from("addons")
       .select(
-        "id, name, slug, description, price, price_type, unit_label, tiers, percent_value, applicable_service_types, excluded_tiers, is_popular, display_order",
+        "id, name, slug, description, price, price_type, unit_label, tiers, percent_value, applicable_service_types, excluded_tiers, is_popular, display_order, variant_config",
       )
       .eq("active", true)
       .order("display_order"),

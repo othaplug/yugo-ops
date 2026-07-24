@@ -18,6 +18,7 @@ import {
   ESTATE_ADDON_UI_LINES,
 } from "@/lib/quotes/addon-visibility";
 import { quoteFormServiceDateLabel } from "@/lib/quotes/quote-field-labels";
+import { TVMountVariantPicker } from "@/app/admin/quotes/new/TVMountVariantPicker";
 import {
   isB2BDeliveryQuoteServiceType,
   isB2BOutboundStageServiceType,
@@ -164,7 +165,7 @@ interface Addon {
   slug: string;
   description: string | null;
   price: number;
-  price_type: "flat" | "per_unit" | "tiered" | "percent";
+  price_type: "flat" | "per_unit" | "tiered" | "percent" | "variant_matrix";
   unit_label: string | null;
   tiers: { label: string; price: number }[] | null;
   percent_value: number | null;
@@ -172,6 +173,7 @@ interface Addon {
   excluded_tiers: string[] | null;
   is_popular: boolean;
   display_order: number;
+  variant_config?: import("@/lib/quotes/tv-mount-matrix").TVMountVariantConfig | null;
 }
 
 interface AddonSelection {
@@ -179,6 +181,7 @@ interface AddonSelection {
   slug: string;
   quantity: number;
   tier_index: number;
+  variants?: Array<{ size: string; type: string; quantity: number }>;
 }
 
 interface ItemWeight {
@@ -743,17 +746,33 @@ export default function EditQuoteClient({
     Map<string, AddonSelection>
   >(() => {
     const map = new Map<string, AddonSelection>();
-    // oq.selected_addons is the breakdown array [{addon_id, slug, name, price, quantity, subtotal}]
+    // oq.selected_addons is the breakdown array; variant_matrix rows
+    // (TV mount) may appear once per TV — collapse them back into a
+    // single Map entry with variants[] so the picker sees one row per TV.
     const saved: any[] = Array.isArray(oq.selected_addons)
       ? oq.selected_addons
       : [];
     for (const item of saved) {
       if (!item.addon_id) continue;
+      const qty = item.quantity || 1;
+      const v = item.variant;
+      const variantRow =
+        v && typeof v.size === "string" && typeof v.type === "string"
+          ? { size: v.size, type: v.type, quantity: qty }
+          : null;
+      const existing = map.get(item.addon_id);
+      if (existing) {
+        if (variantRow) {
+          existing.variants = [...(existing.variants ?? []), variantRow];
+        }
+        continue;
+      }
       map.set(item.addon_id, {
         addon_id: item.addon_id,
         slug: item.slug || "",
-        quantity: item.quantity || 1,
+        quantity: qty,
         tier_index: item.tier_index ?? 0,
+        ...(variantRow ? { variants: [variantRow] } : {}),
       });
     }
     return map;
@@ -869,12 +888,16 @@ export default function EditQuoteClient({
         next.delete(addon.id);
         return next;
       }
-      next.set(addon.id, {
+      const base: AddonSelection = {
         addon_id: addon.id,
         slug: addon.slug,
         quantity: 1,
         tier_index: 0,
-      });
+      };
+      if (addon.price_type === "variant_matrix") {
+        base.variants = [{ size: "43-55", type: "fixed", quantity: 1 }];
+      }
+      next.set(addon.id, base);
       return next;
     });
   }
@@ -893,6 +916,52 @@ export default function EditQuoteClient({
       const next = new Map(prev);
       const sel = next.get(addonId);
       if (sel) next.set(addonId, { ...sel, tier_index: tierIndex });
+      return next;
+    });
+  }
+
+  function updateVariantRow(
+    addonId: string,
+    index: number,
+    patch: Partial<{ size: string; type: string; quantity: number }>,
+  ) {
+    setSelectedAddons((prev) => {
+      const next = new Map(prev);
+      const cur = next.get(addonId);
+      if (!cur || !cur.variants) return prev;
+      const nextVariants = cur.variants.map((v, i) =>
+        i === index ? { ...v, ...patch } : v,
+      );
+      next.set(addonId, { ...cur, variants: nextVariants });
+      return next;
+    });
+  }
+
+  function addVariantRow(addonId: string) {
+    setSelectedAddons((prev) => {
+      const next = new Map(prev);
+      const cur = next.get(addonId);
+      if (!cur) return prev;
+      const variants = cur.variants ?? [];
+      next.set(addonId, {
+        ...cur,
+        variants: [...variants, { size: "43-55", type: "fixed", quantity: 1 }],
+      });
+      return next;
+    });
+  }
+
+  function removeVariantRow(addonId: string, index: number) {
+    setSelectedAddons((prev) => {
+      const next = new Map(prev);
+      const cur = next.get(addonId);
+      if (!cur || !cur.variants) return prev;
+      const remaining = cur.variants.filter((_, i) => i !== index);
+      if (remaining.length === 0) {
+        next.delete(addonId);
+      } else {
+        next.set(addonId, { ...cur, variants: remaining });
+      }
       return next;
     });
   }
@@ -918,7 +987,26 @@ export default function EditQuoteClient({
       move_date: moveDate || undefined,
       contact_id: contact?.id || oq.contact_id,
       hubspot_deal_id: oq.hubspot_deal_id || undefined,
-      selected_addons: Array.from(selectedAddons.values()),
+      // Expand variant_matrix selections into one entry per variant row.
+      selected_addons: Array.from(selectedAddons.values()).flatMap((sel) => {
+        if (!sel.variants || sel.variants.length === 0) {
+          return [
+            {
+              addon_id: sel.addon_id,
+              slug: sel.slug,
+              quantity: sel.quantity,
+              tier_index: sel.tier_index,
+            },
+          ];
+        }
+        return sel.variants.map((v) => ({
+          addon_id: sel.addon_id,
+          slug: sel.slug,
+          quantity: v.quantity,
+          tier_index: 0,
+          variant: { size: v.size, type: v.type },
+        }));
+      }),
       // Scheduling / building-access fields prefilled from the original
       // quote — pass them on every regenerate so the engine doesn't drop
       // them when it recomputes prices.
@@ -3260,6 +3348,8 @@ export default function EditQuoteClient({
                 else if (addon.price_type === "tiered") displayPrice = "varies";
                 else if (addon.price_type === "percent")
                   displayPrice = `${((addon.percent_value ?? 0) * 100).toFixed(0)}%`;
+                else if (addon.price_type === "variant_matrix")
+                  displayPrice = "from $219";
                 return (
                   <div key={addon.id} className="space-y-1">
                     <label className="flex items-start gap-2.5 cursor-pointer group">
@@ -3335,6 +3425,18 @@ export default function EditQuoteClient({
                           </select>
                         </div>
                       )}
+                    {isSelected &&
+                      addon.price_type === "variant_matrix" && (
+                        <TVMountVariantPicker
+                          config={addon.variant_config ?? null}
+                          variants={sel!.variants ?? []}
+                          onUpdate={(idx, patch) =>
+                            updateVariantRow(addon.id, idx, patch)
+                          }
+                          onAdd={() => addVariantRow(addon.id)}
+                          onRemove={(idx) => removeVariantRow(addon.id, idx)}
+                        />
+                      )}
                   </div>
                 );
               })}
@@ -3364,6 +3466,8 @@ export default function EditQuoteClient({
                     displayPrice = "varies";
                   else if (addon.price_type === "percent")
                     displayPrice = `${((addon.percent_value ?? 0) * 100).toFixed(0)}%`;
+                  else if (addon.price_type === "variant_matrix")
+                    displayPrice = "from $219";
                   return (
                     <div key={addon.id} className="space-y-1">
                       <label className="flex items-start gap-2.5 cursor-pointer group">
@@ -3433,6 +3537,20 @@ export default function EditQuoteClient({
                               ))}
                             </select>
                           </div>
+                        )}
+                      {isSelected &&
+                        addon.price_type === "variant_matrix" && (
+                          <TVMountVariantPicker
+                            config={addon.variant_config ?? null}
+                            variants={sel!.variants ?? []}
+                            onUpdate={(idx, patch) =>
+                              updateVariantRow(addon.id, idx, patch)
+                            }
+                            onAdd={() => addVariantRow(addon.id)}
+                            onRemove={(idx) =>
+                              removeVariantRow(addon.id, idx)
+                            }
+                          />
                         )}
                     </div>
                   );

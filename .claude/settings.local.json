@@ -180,7 +180,30 @@
       "Bash(brew install *)",
       "Bash(pdftoppm -v)",
       "Bash(perl -0pi -e 's/scheduledDate < todayYmdLocal\\\\\\)/scheduledDate < todayStr\\)/; s/min=\\\\{todayYmdLocal\\\\}/min={todayStr}/; s/min=\\\\{scheduledDate \\\\|\\\\| todayYmdLocal\\\\}/min={scheduledDate || todayStr}/' src/app/partner/PartnerPropertyManagementPortal.tsx)",
-      "Bash(grep -rn \"sessionJobDurationMinutes\" src --include=\"*.ts\" --include=\"*.tsx\" | grep -v \"session-job-duration-minutes.ts\"; echo \"=== tracking-duration route ===\"; sed -n '1,60p' src/app/api/admin/moves/[id]/tracking-duration/route.ts | grep -n \"session\\\\|duration\\\\|hours\\\\|checkpoint\\\\|started_at\\\\|completed_at\" | head)"
+      "Bash(grep -rn \"sessionJobDurationMinutes\" src --include=\"*.ts\" --include=\"*.tsx\" | grep -v \"session-job-duration-minutes.ts\"; echo \"=== tracking-duration route ===\"; sed -n '1,60p' src/app/api/admin/moves/[id]/tracking-duration/route.ts | grep -n \"session\\\\|duration\\\\|hours\\\\|checkpoint\\\\|started_at\\\\|completed_at\" | head)",
+      "Bash(perl -0pi -e 's/\\(event_leg_truck_count: 1,\\\\n\\)/$1      event_leg_arrival_window: \"\",\\\\n      event_leg_hard_cutoff: \"\",\\\\n      event_leg_after_hours: false,\\\\n/g' src/app/admin/quotes/new/QuoteFormClient.tsx)",
+      "Bash(perl -0pi -e 's/\\(event_leg_truck_count: eventTruckCount \\\\|\\\\| 1,\\\\n\\)/$1                                event_leg_arrival_window: \"\",\\\\n                                event_leg_hard_cutoff: \"\",\\\\n                                event_leg_after_hours: eventAfterHours,\\\\n/g' src/app/admin/quotes/new/QuoteFormClient.tsx)",
+      "Bash(node ./._check_pay_rules.mjs)",
+      "Bash(awk 'NR>=3740 && NR<=3920 && \\(/icon/ || /Check/ || /<svg/ || /weight=/ || /\\\\.map\\\\\\(/\\)' QuotePageClient.tsx)",
+      "Bash(perl -0pi -e 's/stats\\\\.at_risk \\\\+ stats\\\\.cold/stats.at_risk + stats.dormant/g' src/app/admin/partners/health/PartnerHealthClient.tsx)",
+      "Skill(deep-research)",
+      "Skill(deep-research:*)",
+      "WebFetch(domain:www.bestbuy.ca)",
+      "WebFetch(domain:www.amazon.ca)",
+      "WebFetch(domain:www.tvmounts.ca)",
+      "WebFetch(domain:www.6ixassembly.ca)",
+      "WebFetch(domain:www.homedepot.ca)",
+      "WebFetch(domain:www.customavi.ca)",
+      "WebFetch(domain:northteam.ca)",
+      "WebFetch(domain:www.auxe.ca)",
+      "WebFetch(domain:www.rona.ca)",
+      "WebFetch(domain:www.newegg.ca)",
+      "WebFetch(domain:www.crutchfield.ca)",
+      "WebFetch(domain:www.sunnyelectronics.ca)",
+      "Bash(curl -s \"https://mpaqqjhxrgxuwumirwxo.supabase.co/rest/v1/rpc/get_config?p_key=crew_hourly_cost\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wYXFxamh4cmd4dXd1bWlyd3hvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxMDg4OCwiZXhwIjoyMDg2NTg2ODg4fQ.kjolSJ-IXOIy7BjCSnTxA0zggDEpqGtoS_dXrfiV34I\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wYXFxamh4cmd4dXd1bWlyd3hvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxMDg4OCwiZXhwIjoyMDg2NTg2ODg4fQ.kjolSJ-IXOIy7BjCSnTxA0zggDEpqGtoS_dXrfiV34I\")",
+      "Bash(curl -s \"https://mpaqqjhxrgxuwumirwxo.supabase.co/rest/v1/platform_config?limit=1\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wYXFxamh4cmd4dXd1bWlyd3hvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxMDg4OCwiZXhwIjoyMDg2NTg2ODg4fQ.kjolSJ-IXOIy7BjCSnTxA0zggDEpqGtoS_dXrfiV34I\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wYXFxamh4cmd4dXd1bWlyd3hvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxMDg4OCwiZXhwIjoyMDg2NTg2ODg4fQ.kjolSJ-IXOIy7BjCSnTxA0zggDEpqGtoS_dXrfiV34I\")",
+      "Bash(curl -s -X POST \"https://mpaqqjhxrgxuwumirwxo.supabase.co/rest/v1/rpc/pgrst_watch\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wYXFxamh4cmd4dXd1bWlyd3hvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxMDg4OCwiZXhwIjoyMDg2NTg2ODg4fQ.kjolSJ-IXOIy7BjCSnTxA0zggDEpqGtoS_dXrfiV34I\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wYXFxamh4cmd4dXd1bWlyd3hvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxMDg4OCwiZXhwIjoyMDg2NTg2ODg4fQ.kjolSJ-IXOIy7BjCSnTxA0zggDEpqGtoS_dXrfiV34I\")",
+      "Bash(curl -s \"https://mpaqqjhxrgxuwumirwxo.supabase.co/rest/v1/addons?slug=eq.tv_mounting&select=slug,name,price_type,price,variant_config\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wYXFxamh4cmd4dXd1bWlyd3hvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxMDg4OCwiZXhwIjoyMDg2NTg2ODg4fQ.kjolSJ-IXOIy7BjCSnTxA0zggDEpqGtoS_dXrfiV34I\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wYXFxamh4cmd4dXd1bWlyd3hvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxMDg4OCwiZXhwIjoyMDg2NTg2ODg4fQ.kjolSJ-IXOIy7BjCSnTxA0zggDEpqGtoS_dXrfiV34I\")"
     ]
   }
 }

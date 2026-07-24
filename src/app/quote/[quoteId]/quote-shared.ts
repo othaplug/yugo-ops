@@ -102,7 +102,7 @@ export interface Addon {
   slug: string;
   description: string | null;
   price: number;
-  price_type: "flat" | "per_unit" | "tiered" | "percent";
+  price_type: "flat" | "per_unit" | "tiered" | "percent" | "variant_matrix";
   unit_label: string | null;
   tiers: { label: string; price: number }[] | null;
   percent_value: number | null;
@@ -110,6 +110,7 @@ export interface Addon {
   excluded_tiers: string[] | null;
   is_popular: boolean;
   display_order: number;
+  variant_config?: import("@/lib/quotes/tv-mount-matrix").TVMountVariantConfig | null;
 }
 
 export interface AddonSelection {

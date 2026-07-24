@@ -76,6 +76,14 @@ import JobScopeSection, {
 import TierPriceOverrideEditor from "./TierPriceOverrideEditor";
 import { PRICE_OVERRIDE_REASONS } from "@/lib/quotes/price-override-reasons";
 import {
+  TV_MOUNT_TYPES,
+  getTVSizeBand,
+  lookupTVMountCell,
+  type TVMountType,
+  type TVMountVariantConfig,
+} from "@/lib/quotes/tv-mount-matrix";
+import { TVMountVariantPicker } from "./TVMountVariantPicker";
+import {
   WhiteGloveItemsEditor,
   createDefaultWhiteGloveItem,
   type WhiteGloveItemRow,
@@ -175,7 +183,7 @@ interface Addon {
   slug: string;
   description: string | null;
   price: number;
-  price_type: "flat" | "per_unit" | "tiered" | "percent";
+  price_type: "flat" | "per_unit" | "tiered" | "percent" | "variant_matrix";
   unit_label: string | null;
   tiers: { label: string; price: number }[] | null;
   percent_value: number | null;
@@ -183,6 +191,8 @@ interface Addon {
   excluded_tiers: string[] | null;
   is_popular: boolean;
   display_order: number;
+  /** Full pricing grid for variant_matrix add-ons (currently only tv_mounting). */
+  variant_config?: import("@/lib/quotes/tv-mount-matrix").TVMountVariantConfig | null;
 }
 
 interface AddonSelection {
@@ -190,6 +200,15 @@ interface AddonSelection {
   slug: string;
   quantity: number;
   tier_index: number;
+  /**
+   * Per-variant rows for variant_matrix add-ons (TV mount: one row per TV
+   * in the household). Absent for flat / per_unit / tiered / percent.
+   */
+  variants?: Array<{
+    size: string;
+    type: string;
+    quantity: number;
+  }>;
 }
 
 /** One delivery + return pair in a multi-event quote */
@@ -2997,7 +3016,10 @@ export default function QuoteFormClient({
           setRecommendedTier("essential");
         }
 
-        // selected_addons: stored as Array<{addon_id, quantity, tier_index?}>
+        // selected_addons: stored as Array<{addon_id, quantity, tier_index?, variant?}>
+        // Variant-matrix rows (TV mount) may appear multiple times with the
+        // same addon_id — collapse them back into a single Map entry with
+        // variants[] so the picker sees one row per TV.
         const selAddonsRaw = Q.selected_addons;
         if (Array.isArray(selAddonsRaw) && selAddonsRaw.length > 0) {
           const restored = new Map<string, AddonSelection>();
@@ -3005,12 +3027,29 @@ export default function QuoteFormClient({
             const r = row as Record<string, unknown>;
             const id = cStr(r.addon_id);
             if (!id) continue;
+            const qty = Math.max(1, Math.floor(Number(r.quantity) || 1));
+            const variantRaw = r.variant as
+              | { size?: unknown; type?: unknown }
+              | null
+              | undefined;
+            const variantRow =
+              variantRaw && typeof variantRaw.size === "string" && typeof variantRaw.type === "string"
+                ? { size: variantRaw.size, type: variantRaw.type, quantity: qty }
+                : null;
+            const existing = restored.get(id);
+            if (existing) {
+              if (variantRow) {
+                existing.variants = [...(existing.variants ?? []), variantRow];
+              }
+              continue;
+            }
             restored.set(id, {
               addon_id: id,
-              quantity: Math.max(1, Math.floor(Number(r.quantity) || 1)),
+              quantity: qty,
               tier_index:
                 typeof r.tier_index === "number" ? r.tier_index : undefined,
               slug: typeof r.slug === "string" ? r.slug : undefined,
+              ...(variantRow ? { variants: [variantRow] } : {}),
             } as AddonSelection);
           }
           if (restored.size > 0) setSelectedAddons(restored);
@@ -4001,6 +4040,18 @@ export default function QuoteFormClient({
         case "percent":
           total += Math.round(1199 * (addon.percent_value ?? 0));
           break;
+        case "variant_matrix": {
+          const cfg = addon.variant_config ?? null;
+          for (const v of sel.variants ?? []) {
+            const cell = lookupTVMountCell(
+              cfg,
+              v.size as import("@/lib/quotes/tv-mount-matrix").TVMountSizeBand,
+              v.type as TVMountType,
+            );
+            if (cell) total += cell.price * (v.quantity || 1);
+          }
+          break;
+        }
       }
     }
     return total;
@@ -4778,17 +4829,83 @@ export default function QuoteFormClient({
         if (next.has(addon.id)) {
           next.delete(addon.id);
         } else {
-          next.set(addon.id, {
+          const base: AddonSelection = {
             addon_id: addon.id,
             slug: addon.slug,
             quantity: 1,
             tier_index: 0,
-          });
+          };
+          if (addon.price_type === "variant_matrix") {
+            // Seed with one placeholder TV so the picker has a row to
+            // edit. Operator changes size/type on the row; "+ Add" adds
+            // more rows for households with multiple TVs.
+            base.variants = [{ size: "43-55", type: "fixed", quantity: 1 }];
+          }
+          next.set(addon.id, base);
         }
         return next;
       });
     },
     [moveSize],
+  );
+
+  /**
+   * Variant-matrix helpers — mutate the variants[] array on the selection
+   * for a variant_matrix add-on (currently just tv_mounting). Kept in one
+   * place so the picker component below stays declarative.
+   */
+  const updateVariantRow = useCallback(
+    (
+      addonId: string,
+      index: number,
+      patch: Partial<{ size: string; type: string; quantity: number }>,
+    ) => {
+      setSelectedAddons((prev) => {
+        const next = new Map(prev);
+        const cur = next.get(addonId);
+        if (!cur || !cur.variants) return prev;
+        const nextVariants = cur.variants.map((v, i) =>
+          i === index ? { ...v, ...patch } : v,
+        );
+        next.set(addonId, { ...cur, variants: nextVariants });
+        return next;
+      });
+    },
+    [],
+  );
+
+  const addVariantRow = useCallback((addonId: string) => {
+    setSelectedAddons((prev) => {
+      const next = new Map(prev);
+      const cur = next.get(addonId);
+      if (!cur) return prev;
+      const variants = cur.variants ?? [];
+      next.set(addonId, {
+        ...cur,
+        variants: [...variants, { size: "43-55", type: "fixed", quantity: 1 }],
+      });
+      return next;
+    });
+  }, []);
+
+  const removeVariantRow = useCallback(
+    (addonId: string, index: number) => {
+      setSelectedAddons((prev) => {
+        const next = new Map(prev);
+        const cur = next.get(addonId);
+        if (!cur || !cur.variants) return prev;
+        const remaining = cur.variants.filter((_, i) => i !== index);
+        if (remaining.length === 0) {
+          // Last TV removed → deselect the whole add-on so the operator
+          // isn't left with a checkbox that stamps zero-priced entries.
+          next.delete(addonId);
+        } else {
+          next.set(addonId, { ...cur, variants: remaining });
+        }
+        return next;
+      });
+    },
+    [],
   );
 
   const updateAddonQty = useCallback((id: string, qty: number) => {
@@ -4866,7 +4983,29 @@ export default function QuoteFormClient({
         preferred_time: preferredTime || undefined,
         arrival_window: arrivalWindow || undefined,
         hubspot_deal_id: hubspotDealId || undefined,
-        selected_addons: Array.from(selectedAddons.values()),
+        // Expand variant_matrix selections into one payload entry per
+        // variant row (engine looks up variant_config.sizes[size].types[type]
+        // and multiplies by that row's quantity). Non-variant add-ons pass
+        // through unchanged.
+        selected_addons: Array.from(selectedAddons.values()).flatMap((sel) => {
+          if (!sel.variants || sel.variants.length === 0) {
+            return [
+              {
+                addon_id: sel.addon_id,
+                slug: sel.slug,
+                quantity: sel.quantity,
+                tier_index: sel.tier_index,
+              },
+            ];
+          }
+          return sel.variants.map((v) => ({
+            addon_id: sel.addon_id,
+            slug: sel.slug,
+            quantity: v.quantity,
+            tier_index: 0,
+            variant: { size: v.size, type: v.type },
+          }));
+        }),
         recommended_tier: recommendedTier,
         client_name: clientName || undefined,
         client_email: email || undefined,
@@ -11481,6 +11620,8 @@ export default function QuoteFormClient({
                         displayPrice = "varies";
                       else if (addon.price_type === "percent")
                         displayPrice = `${((addon.percent_value ?? 0) * 100).toFixed(0)}%`;
+                      else if (addon.price_type === "variant_matrix")
+                        displayPrice = "from $219";
                       return (
                         <div key={addon.id} className="space-y-1">
                           <label className="flex items-start gap-2.5 cursor-pointer group">
@@ -11556,6 +11697,20 @@ export default function QuoteFormClient({
                                 </select>
                               </div>
                             )}
+                          {isSelected &&
+                            addon.price_type === "variant_matrix" && (
+                              <TVMountVariantPicker
+                                config={addon.variant_config ?? null}
+                                variants={sel!.variants ?? []}
+                                onUpdate={(idx, patch) =>
+                                  updateVariantRow(addon.id, idx, patch)
+                                }
+                                onAdd={() => addVariantRow(addon.id)}
+                                onRemove={(idx) =>
+                                  removeVariantRow(addon.id, idx)
+                                }
+                              />
+                            )}
                         </div>
                       );
                     })}
@@ -11618,6 +11773,8 @@ export default function QuoteFormClient({
                           displayPrice = "varies";
                         else if (addon.price_type === "percent")
                           displayPrice = `${((addon.percent_value ?? 0) * 100).toFixed(0)}%`;
+                        else if (addon.price_type === "variant_matrix")
+                          displayPrice = "from $219";
                         return (
                           <div key={addon.id} className="space-y-1">
                             <label className="flex items-start gap-2.5 cursor-pointer group">
@@ -11693,6 +11850,20 @@ export default function QuoteFormClient({
                                     ))}
                                   </select>
                                 </div>
+                              )}
+                            {isSelected &&
+                              addon.price_type === "variant_matrix" && (
+                                <TVMountVariantPicker
+                                  config={addon.variant_config ?? null}
+                                  variants={sel!.variants ?? []}
+                                  onUpdate={(idx, patch) =>
+                                    updateVariantRow(addon.id, idx, patch)
+                                  }
+                                  onAdd={() => addVariantRow(addon.id)}
+                                  onRemove={(idx) =>
+                                    removeVariantRow(addon.id, idx)
+                                  }
+                                />
                               )}
                           </div>
                         );

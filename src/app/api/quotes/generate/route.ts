@@ -625,6 +625,15 @@ interface AddonSelection {
   addon_id: string;
   quantity?: number;
   tier_index?: number;
+  /**
+   * Variant-matrix selection (currently only TV wall mounting). Presence
+   * of this field routes the engine through the variant_matrix branch.
+   * Multiple selections may share addon_id — one per TV in the household.
+   */
+  variant?: {
+    size: string;
+    type: string;
+  };
 }
 
 interface TierResult {
@@ -642,6 +651,12 @@ interface AddonBreakdownItem {
   price: number;
   quantity: number;
   subtotal: number;
+  /** Preserved on variant_matrix rows so the client display can label the line. */
+  variant?: {
+    size: string;
+    type: string;
+    mount_model?: string;
+  };
 }
 
 type SupabaseAdmin = ReturnType<typeof createAdminClient>;
@@ -1137,6 +1152,7 @@ async function calculateAddons(
 
     let cost = 0;
     const qty = sel.quantity || 1;
+    let variantOut: AddonBreakdownItem["variant"] | undefined;
 
     switch (addon.price_type as string) {
       case "flat":
@@ -1160,6 +1176,26 @@ async function calculateAddons(
       case "percent":
         cost = Math.round(baseTotal * ((addon.percent_value as number) ?? 0));
         break;
+      case "variant_matrix": {
+        // Look up variant_config.sizes[size].types[type].price × qty.
+        // Skip silently on a malformed selection — the picker validates
+        // before submit; anything that gets here is a stale payload.
+        const cfg = addon.variant_config as
+          | { sizes?: Record<string, { types?: Record<string, { price?: number; mount_model?: string }> }> }
+          | null;
+        const size = sel.variant?.size;
+        const type = sel.variant?.type;
+        const cell = size && type ? cfg?.sizes?.[size]?.types?.[type] : null;
+        if (cell && typeof cell.price === "number" && size && type) {
+          cost = cell.price * qty;
+          variantOut = {
+            size,
+            type,
+            mount_model: cell.mount_model,
+          };
+        }
+        break;
+      }
     }
 
     total += cost;
@@ -1170,6 +1206,7 @@ async function calculateAddons(
       price: cost,
       quantity: qty,
       subtotal: cost,
+      ...(variantOut ? { variant: variantOut } : {}),
     });
 
     const excluded = addon.excluded_tiers as string[] | null;

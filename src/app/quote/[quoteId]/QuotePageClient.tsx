@@ -1037,6 +1037,8 @@ export default function QuotePageClient({
       name: string;
       quantity: number;
       subtotal: number;
+      /** Present on variant_matrix rows (currently TV mount) — drives the sub-line. */
+      variant?: { size: string; type: string; mount_model?: string };
     }[] = [];
     for (const r of raw) {
       const row = (r ?? {}) as {
@@ -1046,6 +1048,7 @@ export default function QuotePageClient({
         quantity?: unknown;
         subtotal?: unknown;
         price?: unknown;
+        variant?: unknown;
       };
       const slug = String(row.slug ?? "").trim();
       // enhanced_insurance is reflected separately (coordinatorInsurance / WG).
@@ -1065,12 +1068,28 @@ export default function QuotePageClient({
         "Add-on";
       const qty = Number(row.quantity);
       const sub = Number(row.subtotal ?? row.price);
+      const variantRaw = row.variant as
+        | { size?: unknown; type?: unknown; mount_model?: unknown }
+        | null
+        | undefined;
+      const variant =
+        variantRaw && typeof variantRaw.size === "string" && typeof variantRaw.type === "string"
+          ? {
+              size: variantRaw.size,
+              type: variantRaw.type,
+              mount_model:
+                typeof variantRaw.mount_model === "string"
+                  ? variantRaw.mount_model
+                  : undefined,
+            }
+          : undefined;
       out.push({
         addon_id: id || (catalog?.id ?? ""),
         slug: slug || (catalog?.slug ?? ""),
         name,
         quantity: Number.isFinite(qty) && qty > 0 ? qty : 1,
         subtotal: Number.isFinite(sub) ? sub : 0,
+        ...(variant ? { variant } : {}),
       });
     }
     return out;
@@ -6310,6 +6329,7 @@ function AddOnsSection({
     name: string;
     quantity: number;
     subtotal: number;
+    variant?: { size: string; type: string; mount_model?: string };
   }[];
   selectedAddons: Map<string, AddonSelection>;
   basePrice: number;
@@ -6479,37 +6499,133 @@ function AddOnsSection({
             Included in your quote
           </p>
           <ul className="space-y-1.5">
-            {includedAddons.map((a) => (
-              <li
-                key={a.addon_id || a.slug || a.name}
-                className="flex items-center justify-between text-[13px]"
-              >
-                <span
-                  className="flex items-center gap-2"
-                  style={{
-                    color:
-                      premiumChrome && shellText ? shellText.body : "#2C3E2D",
-                  }}
+            {includedAddons.map((a, i) => {
+              // Variant sub-line: "43-55 · Tilting · Kanto T3760"
+              let variantSubline = "";
+              if (a.variant) {
+                const typeLabelMap: Record<string, string> = {
+                  fixed: "Fixed",
+                  tilt: "Tilting",
+                  full_motion: "Full motion",
+                };
+                const sizeDisplay = a.variant.size.replace("-", "–") + '"';
+                const typeDisplay =
+                  typeLabelMap[a.variant.type] ?? a.variant.type;
+                variantSubline = a.variant.mount_model
+                  ? `${sizeDisplay} · ${typeDisplay} · ${a.variant.mount_model}`
+                  : `${sizeDisplay} · ${typeDisplay}`;
+              }
+              return (
+                <li
+                  key={`${a.addon_id || a.slug || a.name}-${i}`}
+                  className="flex items-start justify-between text-[13px]"
                 >
-                  <Check
-                    className="w-3.5 h-3.5 shrink-0"
-                    style={{ color: toggleOnColor }}
-                  />
-                  {a.name}
-                  {a.quantity > 1 ? ` × ${a.quantity}` : ""}
-                </span>
-                <span
-                  className="text-[12px] font-medium"
-                  style={{
-                    color:
-                      premiumChrome && shellText ? shellText.kicker : "#2C3E2D",
-                  }}
-                >
-                  Included
-                </span>
-              </li>
-            ))}
+                  <span
+                    className="flex items-start gap-2"
+                    style={{
+                      color:
+                        premiumChrome && shellText ? shellText.body : "#2C3E2D",
+                    }}
+                  >
+                    <Check
+                      className="w-3.5 h-3.5 shrink-0 mt-0.5"
+                      style={{ color: toggleOnColor }}
+                    />
+                    <span>
+                      {a.name}
+                      {a.quantity > 1 && !a.variant
+                        ? ` × ${a.quantity}`
+                        : ""}
+                      {variantSubline && (
+                        <span
+                          className="block text-[11px] mt-0.5"
+                          style={{
+                            color:
+                              premiumChrome && shellText
+                                ? shellText.body
+                                : "#5A6B5C",
+                          }}
+                        >
+                          {variantSubline}
+                          {a.quantity > 1 ? ` · qty ${a.quantity}` : ""}
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                  <span
+                    className="text-[12px] font-medium shrink-0"
+                    style={{
+                      color:
+                        premiumChrome && shellText ? shellText.kicker : "#2C3E2D",
+                    }}
+                  >
+                    Included
+                  </span>
+                </li>
+              );
+            })}
           </ul>
+          {(() => {
+            // If any TV mount rows present, show the inclusions bullets
+            // pulled from the addon's variant_config.included list. Renders
+            // once per quote block, not per row.
+            const tvRow = includedAddons.find((a) => a.variant);
+            if (!tvRow) return null;
+            const tvAddon = allAddons.find((x) => x.id === tvRow.addon_id);
+            const cfg = tvAddon?.variant_config;
+            if (!cfg?.included?.length) return null;
+            return (
+              <div
+                className="mt-3 pt-3 border-t"
+                style={{
+                  borderColor:
+                    premiumChrome && shellText
+                      ? shellText.kicker + "22"
+                      : "#2C3E2D22",
+                }}
+              >
+                <p
+                  className="text-[10px] uppercase tracking-[0.15em] font-semibold mb-1.5"
+                  style={{
+                    color:
+                      premiumChrome && shellText ? shellText.kicker : FOREST,
+                  }}
+                >
+                  Your TV mounting includes
+                </p>
+                <ul className="space-y-1">
+                  {cfg.included.map((it, idx) => (
+                    <li
+                      key={idx}
+                      className="text-[11px] flex items-start gap-1.5"
+                      style={{
+                        color:
+                          premiumChrome && shellText
+                            ? shellText.body
+                            : "#5A6B5C",
+                      }}
+                    >
+                      <span aria-hidden>·</span>
+                      <span>{it}</span>
+                    </li>
+                  ))}
+                </ul>
+                {cfg.not_included?.length ? (
+                  <p
+                    className="text-[10px] mt-2 leading-snug"
+                    style={{
+                      color:
+                        premiumChrome && shellText
+                          ? shellText.body
+                          : "#5A6B5C",
+                    }}
+                  >
+                    Not included: {cfg.not_included.join(" · ")}
+                  </p>
+                ) : null}
+              </div>
+            );
+          })()}
           <p
             className="text-[11px] mt-2 leading-snug"
             style={{

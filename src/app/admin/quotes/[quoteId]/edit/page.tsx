@@ -26,7 +26,7 @@ export default async function EditQuotePage({ params }: Props) {
   const [{ data: addons }, { data: configRows }, { data: itemWeights }] = await Promise.all([
     db
       .from("addons")
-      .select("id, name, slug, description, price, price_type, unit_label, tiers, percent_value, applicable_service_types, excluded_tiers, is_popular, display_order")
+      .select("id, name, slug, description, price, price_type, unit_label, tiers, percent_value, applicable_service_types, excluded_tiers, is_popular, display_order, variant_config")
       .eq("active", true)
       .order("display_order"),
     db.from("platform_config").select("key, value"),

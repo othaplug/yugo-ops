@@ -194,7 +194,7 @@ export default async function QuotePage({
       : Promise.resolve({ data: null }),
     admin
       .from("addons")
-      .select("id, name, slug, description, price, price_type, unit_label, tiers, percent_value, applicable_service_types, excluded_tiers, is_popular, display_order")
+      .select("id, name, slug, description, price, price_type, unit_label, tiers, percent_value, applicable_service_types, excluded_tiers, is_popular, display_order, variant_config")
       .eq("active", true)
       .order("display_order"),
     admin.from("crews").select("id", { count: "exact", head: true }).eq("is_active", true),
