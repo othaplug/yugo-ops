@@ -74,6 +74,7 @@ import JobScopeSection, {
   validateInboundDraft,
 } from "./JobScopeSection";
 import TierPriceOverrideEditor from "./TierPriceOverrideEditor";
+import { PRICE_OVERRIDE_REASONS } from "@/lib/quotes/price-override-reasons";
 import {
   WhiteGloveItemsEditor,
   createDefaultWhiteGloveItem,
@@ -11995,18 +11996,20 @@ export default function QuoteFormClient({
                   </Field>
                   <Field label="Reason (required if overriding)">
                     {(() => {
-                      // Standard reasons -- match the ones operators
-                      // actually use in audits. "Other" reveals the
-                      // free-text input so unusual cases still work.
-                      const PRESETS = [
-                        "Competitive match",
-                        "Volume / loyalty discount",
-                        "Partner referral discount",
-                        "Stairs / access not in model",
-                        "Budget cap",
-                        "Scope reduction",
-                      ];
-                      const isPreset = PRESETS.includes(
+                      // Shared list (2026-07 refactor) — was a
+                      // hardcoded 6-option shortlist that lacked
+                      // premium reasons (rush, added scope) so
+                      // operators writing UP fell back to "Other"
+                      // every time. Now uses the same list
+                      // TierPriceOverrideEditor + EditQuoteClient
+                      // read from — one source of truth, richer
+                      // options grouped by intent (discount vs
+                      // premium vs correction). See
+                      // src/lib/quotes/price-override-reasons.ts.
+                      const PRESET_LABELS: string[] = PRICE_OVERRIDE_REASONS
+                        .filter((r) => r.value !== "other")
+                        .map((r) => r.label);
+                      const isPreset = PRESET_LABELS.includes(
                         quotePreTaxOverrideReason,
                       );
                       const dropdownValue = isPreset
@@ -12033,7 +12036,7 @@ export default function QuoteFormClient({
                             className={`${fieldInput} border-b-[rgba(250,247,242,0.42)] focus:border-b-[rgba(250,247,242,0.88)] bg-transparent`}
                           >
                             <option value="">Select a reason…</option>
-                            {PRESETS.map((r) => (
+                            {PRESET_LABELS.map((r) => (
                               <option key={r} value={r}>
                                 {r}
                               </option>
