@@ -679,6 +679,34 @@ function cfgNum(config: Map<string, string>, key: string, fallback: number): num
   return v !== undefined ? Number(v) : fallback;
 }
 
+/**
+ * Per-tier crew sizing for residential moves.
+ *
+ * Historically the engine computed ONE crew size and applied it to Essential,
+ * Signature, and Estate alike — inflating the modelled labour cost (and the
+ * crew shown to the client) on the lighter tiers, which dragged their true
+ * margin below the luxury floor for no real reason.
+ *
+ * Estate carries the full size-based crew: it includes full packing/unpacking,
+ * so it genuinely needs the most hands. Essential and Signature are
+ * transport-forward and run one lighter (config `tier_crew_reduction`, default
+ * 1), floored at 2. Larger moves still scale up on every tier because
+ * `baseCrew` already grows with move size (base_rates.min_crew + inventory).
+ *
+ * Crew count does NOT affect the tier price (prices come from base × tier
+ * multipliers) — only the crew shown to the client, the margin/labour model,
+ * and how the booked move is staffed.
+ */
+function residentialTierCrew(
+  baseCrew: number,
+  config: Map<string, string>,
+): { essential: number; signature: number; estate: number } {
+  const estate = Math.max(2, Math.round(baseCrew || 2));
+  const reduction = Math.max(0, Math.round(cfgNum(config, "tier_crew_reduction", 1)));
+  const lighter = Math.max(2, estate - reduction);
+  return { essential: lighter, signature: lighter, estate };
+}
+
 // CC processing recovery lives in @/lib/pricing/processing-recovery — the
 // single source of truth shared by every quote/price-emitting path.
 import {
@@ -1300,7 +1328,8 @@ async function fetchTierFeatures(
 
 async function residentialIncludes(
   sb: SupabaseAdmin,
-  minCrew: number,
+  /** Per-tier crew counts — Estate carries the full crew, Essential/Signature run lighter. */
+  tierCrew: { essential: number; signature: number; estate: number },
   estHours: number,
   moveSize?: string,
   /** When explicitly false, suppress "Basic disassembly & reassembly" from the includes list. */
@@ -1314,9 +1343,11 @@ async function residentialIncludes(
     fetchTierFeatures(sb, "local_move", "estate"),
   ]);
 
-  const crewLine = `Professional crew of ${minCrew}`;
+  // Each tier shows its own crew line so a plain Essential move isn't quoted an
+  // Estate-sized team. Estate = full crew; Essential/Signature = lighter.
+  const crewLineFor = (n: number) => `Professional crew of ${n}`;
   const ASSEMBLY_PATTERN = /(disassembly\s*(&|and)?\s*reassembly|basic\s+disassembly)/i;
-  const hydrate = (list: string[]) => {
+  const hydrate = (list: string[], crewLine: string) => {
     const filtered = assemblyRequired === false ? list.filter((f) => !ASSEMBLY_PATTERN.test(f)) : list;
     return filtered.map((f) => {
       if (f === "Dedicated moving truck") return truckLabel;
@@ -1325,23 +1356,27 @@ async function residentialIncludes(
     });
   };
 
+  const crewLineEss = crewLineFor(tierCrew.essential);
+  const crewLineSig = crewLineFor(tierCrew.signature);
+  const crewLineEst = crewLineFor(tierCrew.estate);
+
   if (dbEss.length > 0) {
-    const essential = hydrate(dbEss);
+    const essential = hydrate(dbEss, crewLineEss);
     const signature =
       dbSig.length > 0
-        ? hydrate(dbSig)
-        : getResolvedMoveIncludeTitles("signature", truckLabel, crewLine, assemblyRequired);
+        ? hydrate(dbSig, crewLineSig)
+        : getResolvedMoveIncludeTitles("signature", truckLabel, crewLineSig, assemblyRequired);
     const estate =
       dbEst.length > 0
-        ? hydrate(dbEst)
-        : getResolvedMoveIncludeTitles("estate", truckLabel, crewLine, assemblyRequired);
+        ? hydrate(dbEst, crewLineEst)
+        : getResolvedMoveIncludeTitles("estate", truckLabel, crewLineEst, assemblyRequired);
     return { essential, signature, estate };
   }
 
   return {
-    essential: getResolvedMoveIncludeTitles("essential", truckLabel, crewLine, assemblyRequired),
-    signature: getResolvedMoveIncludeTitles("signature", truckLabel, crewLine, assemblyRequired),
-    estate: getResolvedMoveIncludeTitles("estate", truckLabel, crewLine, assemblyRequired),
+    essential: getResolvedMoveIncludeTitles("essential", truckLabel, crewLineEss, assemblyRequired),
+    signature: getResolvedMoveIncludeTitles("signature", truckLabel, crewLineSig, assemblyRequired),
+    estate: getResolvedMoveIncludeTitles("estate", truckLabel, crewLineEst, assemblyRequired),
   };
 }
 
@@ -2235,9 +2270,14 @@ async function calcResidential(
     input.assembly_override !== undefined && input.assembly_override !== null
       ? input.assembly_override
       : input.assembly_required ?? null;
+  // Per-tier crew: Estate carries the full computed crew (packing/unpacking
+  // needs the most hands); Essential/Signature run one lighter (floored at 2).
+  // Drives the client-facing crew line, the margin/labour model, and staffing.
+  // Does NOT change tier price. See residentialTierCrew.
+  const tierCrew = residentialTierCrew(labour?.crewSize ?? minCrew, config);
   const inc = await residentialIncludes(
     sb,
-    minCrew,
+    tierCrew,
     estHours,
     input.move_size,
     effectiveAssemblyRequired,
@@ -2283,7 +2323,12 @@ async function calcResidential(
       )
     : (estHours ?? 4);
   const loadedRate = crewLoadedHourlyRate(config);
-  const estLabourCost = Math.round(actualEstHours * (labour?.crewSize ?? minCrew) * loadedRate);
+  // Estate/base crew for the labour cost (fullest crew). Essential/Signature run
+  // lighter, so their modelled labour cost is lower — this is what corrects the
+  // artificially low true margin the lighter tiers were showing.
+  const baseCrewForCost = labour?.crewSize ?? minCrew;
+  const estLabourCost = Math.round(actualEstHours * baseCrewForCost * loadedRate);
+  const estLabourCostEssSig = Math.round(actualEstHours * tierCrew.essential * loadedRate);
   const estateLoadedMultiDayCost = estateLoadedLabourCost(estateDayPlan, loadedRate);
   const estTruckCost = estimateTruckCostPerMove(recTruck, config);
   // Three-leg fuel: office→pickup deadhead + loaded job route + dropoff→office
@@ -2304,9 +2349,12 @@ async function calcResidential(
   const estFuelCost = fuelBreakdown.total;
   const estSuppliesCost = estimateOperationalSuppliesCost(input.inventory_items ?? []);
   const estTotalCost = estLabourCost + estTruckCost + estFuelCost + estSuppliesCost;
+  // Essential/Signature carry the lighter crew's labour cost; Estate swaps in its
+  // multi-day loaded labour (which already reflects the full estate crew).
+  const estTotalCostEssSig = estLabourCostEssSig + estTruckCost + estFuelCost + estSuppliesCost;
   const estTotalCostEstateOps = estTotalCost - estLabourCost + estateLoadedMultiDayCost;
-  const estMarginPct  = curPrice > 0 ? Math.round(((curPrice - estTotalCost) / curPrice) * 100) : 0;
-  const estSigMarginPct  = sigPrice > 0 ? Math.round(((sigPrice - estTotalCost) / sigPrice) * 100) : 0;
+  const estMarginPct  = curPrice > 0 ? Math.round(((curPrice - estTotalCostEssSig) / curPrice) * 100) : 0;
+  const estSigMarginPct  = sigPrice > 0 ? Math.round(((sigPrice - estTotalCostEssSig) / sigPrice) * 100) : 0;
   const estEstMarginPct  = estPrice > 0 ? Math.round(((estPrice - estTotalCostEstateOps) / estPrice) * 100) : 0;
 
   // ─── Overhead allocation (true contribution margin) ─────────────────
@@ -2357,8 +2405,8 @@ async function calcResidential(
   const claimsReserveEst = Math.round(estPrice * claimsReservePct);
   // True contribution = price − direct cost − overhead share − claims reserve.
   // Per-tier — each uses its own price and the appropriate OH-day count.
-  const trueCostEssential = estTotalCost + ohShareEssential + claimsReserveEss;
-  const trueCostSignature = estTotalCost + ohShareSignature + claimsReserveSig;
+  const trueCostEssential = estTotalCostEssSig + ohShareEssential + claimsReserveEss;
+  const trueCostSignature = estTotalCostEssSig + ohShareSignature + claimsReserveSig;
   const trueCostEstate = estTotalCostEstateOps + ohShareEstate + claimsReserveEst;
   const trueMarginEssential = curPrice > 0
     ? Math.round(((curPrice - trueCostEssential) / curPrice) * 100)
@@ -2461,14 +2509,26 @@ async function calcResidential(
         (input.assembly_override === true ||
           (input.assembly_override !== false && input.assembly_required === true)) &&
         (input.assembly_minutes ?? 0) > 0,
+      // Per-tier crew — Estate carries the full crew; Essential/Signature run
+      // lighter. Drives the client crew line, the margin panel, the labour-rate
+      // check, and how the booked move is staffed. See residentialTierCrew.
+      crew_by_tier: {
+        essential: tierCrew.essential,
+        signature: tierCrew.signature,
+        estate: tierCrew.estate,
+      },
       // Estimated cost / margin (admin only — not shown to clients)
       estimated_cost: {
         labour: estLabourCost,
+        // Essential/Signature labour cost at the lighter crew — what their true
+        // margin is actually computed against (Estate uses estate_loaded below).
+        labour_ess_sig: estLabourCostEssSig,
         estate_loaded_labour_multi_day: estateLoadedMultiDayCost,
         truck: estTruckCost,
         fuel: estFuelCost,
         supplies: estSuppliesCost,
         total: estTotalCost,
+        total_ess_sig: estTotalCostEssSig,
         total_estate_ops: estTotalCostEstateOps,
         // Overhead allocation — per-day model, worst-case 1 job/day.
         // True margin reflects what's left after the company's daily burn
@@ -6210,17 +6270,27 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   let labour_validation_by_tier: Record<string, LabourValidationResult> | undefined
   let labour_validation_primary: LabourValidationResult
 
+  // Per-tier crew for the implied-rate check: Essential/Signature run the
+  // lighter crew, so the labour component is split over fewer movers — the
+  // effective $/hr reads competitively instead of "underpriced" purely because
+  // the lighter tiers were carrying an Estate-sized team. Estate uses the full
+  // crew. Falls back to the single labCrew when crew_by_tier isn't present
+  // (non-residential quotes never populate it).
+  const crewByTier = (factorsRecord.crew_by_tier ?? null) as
+    | { essential?: number; signature?: number; estate?: number }
+    | null
   if (tiers) {
     labour_validation_by_tier = {}
     for (const tk of ["essential", "signature", "estate"] as const) {
       const tierRow = tiers[tk]
       if (!tierRow) continue
+      const tierCrewForCheck = Math.max(1, Math.round(Number(crewByTier?.[tk]) || labCrew))
       labour_validation_by_tier[tk] = validateLabourRate(
         {
           serviceType: svcForLabour,
           tier: tk,
           totalPrice: tierRow.price,
-          crewSize: labCrew,
+          crewSize: tierCrewForCheck,
           estimatedHours: labHours,
           truckType: truckLabour,
           distanceKm: distKmLabour,

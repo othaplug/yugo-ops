@@ -257,6 +257,21 @@ export async function createMoveFromQuote(
 
   const factors = (quote.factors_applied ?? {}) as Record<string, unknown>;
 
+  // Booked-tier crew: the engine sizes crew per tier (Estate carries the full
+  // crew; Essential/Signature run lighter — see residentialTierCrew in the
+  // quote engine). Staff the move with the crew the BOOKED tier actually needs,
+  // not the single quote-level est_crew_size (which is the base/Estate number).
+  // Falls back to the quote-level value for older quotes without crew_by_tier.
+  const crewByTierBooked = (factors.crew_by_tier ?? null) as
+    | { essential?: number; signature?: number; estate?: number }
+    | null;
+  const bookedTierCrew =
+    selectedTier &&
+    crewByTierBooked &&
+    typeof crewByTierBooked[selectedTier as "essential" | "signature" | "estate"] === "number"
+      ? Number(crewByTierBooked[selectedTier as "essential" | "signature" | "estate"])
+      : null;
+
   const clientBoxCountForMove = (): number | null => {
     const rawQ = (quote as { client_box_count?: number | null }).client_box_count;
     const nQ =
@@ -783,7 +798,7 @@ export async function createMoveFromQuote(
         delivery_address: quote.to_address,
         scheduled_date: scenarioDate ?? quote.move_date,
         distance_km: quote.distance_km ?? null,
-        est_crew_size: (quote.est_crew_size as number) ?? null,
+        est_crew_size: bookedTierCrew ?? (quote.est_crew_size as number) ?? null,
         est_hours:
           (typeof factors.est_job_hours === "number"
             ? factors.est_job_hours

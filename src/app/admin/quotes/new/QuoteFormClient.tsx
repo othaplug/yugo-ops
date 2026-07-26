@@ -14022,10 +14022,13 @@ export default function QuoteFormClient({
                     const cost = f.estimated_cost as
                       | {
                           labour?: number;
+                          labour_ess_sig?: number;
                           truck?: number;
                           fuel?: number;
                           supplies?: number;
                           total?: number;
+                          total_ess_sig?: number;
+                          total_estate_ops?: number;
                           monthly_overhead?: number;
                           oh_daily_burn?: number;
                           oh_working_days?: number;
@@ -14059,6 +14062,15 @@ export default function QuoteFormClient({
                       tiers?.signature?.price ?? tiers?.premier?.price ?? 0;
                     const estPrice = tiers?.estate?.price ?? 0;
                     const estTotalCost = cost?.total ?? 0;
+                    // Per-tier direct cost. Essential/Signature run a lighter
+                    // crew so their labour cost (and true margin) is lower than
+                    // Estate's — using one flat cost for all tiers is what made
+                    // the lighter tiers read artificially below the luxury floor.
+                    // Estate carries its multi-day loaded labour (total_estate_ops).
+                    const costFor = (label: string) =>
+                      label === "Estate"
+                        ? cost?.total_estate_ops ?? cost?.total ?? 0
+                        : cost?.total_ess_sig ?? cost?.total ?? 0;
                     // Helpers to recompute margins on-the-fly using the
                     // CURRENTLY DISPLAYED price (which may have been
                     // bumped by a per-tier or global override). The
@@ -14069,11 +14081,11 @@ export default function QuoteFormClient({
                     // bug where Essential displayed 32% true at $720
                     // when the real number at $720 is 43%. Single
                     // source of truth: this calc using displayedPrice +
-                    // the cost stack fields.
-                    const computeGross = (displayedPrice: number) =>
+                    // the per-tier cost stack.
+                    const computeGross = (displayedPrice: number, tierCost: number) =>
                       displayedPrice > 0
                         ? Math.round(
-                            ((displayedPrice - estTotalCost) / displayedPrice) *
+                            ((displayedPrice - tierCost) / displayedPrice) *
                               100,
                           )
                         : 0;
@@ -14081,11 +14093,12 @@ export default function QuoteFormClient({
                       displayedPrice: number,
                       ohShare: number,
                       claimsReserve: number,
+                      tierCost: number,
                     ) =>
                       displayedPrice > 0
                         ? Math.round(
                             ((displayedPrice -
-                              estTotalCost -
+                              tierCost -
                               ohShare -
                               claimsReserve) /
                               displayedPrice) *
@@ -14102,24 +14115,24 @@ export default function QuoteFormClient({
                       {
                         label: "Essential",
                         price: curPrice,
-                        margin: computeGross(curPrice),
-                        trueMargin: computeTrue(curPrice, ohShareEss, claimsEss),
+                        margin: computeGross(curPrice, costFor("Essential")),
+                        trueMargin: computeTrue(curPrice, ohShareEss, claimsEss, costFor("Essential")),
                         ohShare: ohShareEss,
                         claimsReserve: claimsEss,
                       },
                       {
                         label: "Signature",
                         price: sigPrice,
-                        margin: computeGross(sigPrice),
-                        trueMargin: computeTrue(sigPrice, ohShareSig, claimsSig),
+                        margin: computeGross(sigPrice, costFor("Signature")),
+                        trueMargin: computeTrue(sigPrice, ohShareSig, claimsSig, costFor("Signature")),
                         ohShare: ohShareSig,
                         claimsReserve: claimsSig,
                       },
                       {
                         label: "Estate",
                         price: estPrice,
-                        margin: computeGross(estPrice),
-                        trueMargin: computeTrue(estPrice, ohShareEst, claimsEst),
+                        margin: computeGross(estPrice, costFor("Estate")),
+                        trueMargin: computeTrue(estPrice, ohShareEst, claimsEst, costFor("Estate")),
                         ohShare: ohShareEst,
                         claimsReserve: claimsEst,
                       },
@@ -14215,7 +14228,7 @@ export default function QuoteFormClient({
                             claimsReserve,
                           }) => {
                             const alert = marginAlertStyle(margin);
-                            const profit = price - estTotalCost;
+                            const profit = price - costFor(label);
                             // True profit subtracts OH share + claims reserve.
                             const trueProfit = profit - ohShare - claimsReserve;
                             const floor = trueFloorByTier[label] ?? 50;
@@ -14296,19 +14309,28 @@ export default function QuoteFormClient({
                         {cost && (
                           <div className="pt-1 text-[10px] text-[var(--tx3)] space-y-0.5">
                             <div className="flex justify-between">
-                              <span>Direct cost</span>
+                              <span>Direct cost · Essential / Signature</span>
                               <span className="tabular-nums text-[var(--tx2)]">
-                                {fmtPrice(estTotalCost)}
+                                {fmtPrice(cost.total_ess_sig ?? estTotalCost)}
                               </span>
                             </div>
                             <div className="flex justify-between text-[9px]">
                               <span>
-                                Labour {fmtPrice(cost.labour ?? 0)} · Truck{" "}
+                                Labour {fmtPrice(cost.labour_ess_sig ?? cost.labour ?? 0)} · Truck{" "}
                                 {fmtPrice(cost.truck ?? 0)} · Fuel{" "}
                                 {fmtPrice(cost.fuel ?? 0)} · Supplies{" "}
                                 {fmtPrice(cost.supplies ?? 0)}
                               </span>
                             </div>
+                            {cost.total_estate_ops != null &&
+                              cost.total_estate_ops !== (cost.total_ess_sig ?? estTotalCost) && (
+                                <div className="flex justify-between text-[9px]">
+                                  <span>Direct cost · Estate (full crew + multi-day)</span>
+                                  <span className="tabular-nums text-[var(--tx2)]">
+                                    {fmtPrice(cost.total_estate_ops)}
+                                  </span>
+                                </div>
+                              )}
                             {cost.oh_daily_burn != null &&
                               cost.oh_share_essential != null && (
                                 <div className="flex justify-between text-[9px] pt-1 border-t border-[var(--brd)]/40 mt-1">
