@@ -105,6 +105,29 @@ export async function createDeliveryFromB2BQuote(
     "";
   const trackingCode = `${initials}-${suffix}`;
 
+  // Idempotency guard. A B2B booking can fire twice — a double-click on
+  // "Confirm booking", a network retry, or a card payment webhook landing
+  // alongside the accept handler. `delivery_number` is deterministic from the
+  // quote but is NOT uniquely constrained, so without this each submit inserts
+  // a fresh delivery row, and each row triggers its own Google Calendar sync —
+  // double-booking the crew calendar (DLV-30379). If a delivery already exists
+  // for this quote, reuse it instead of creating another.
+  {
+    const { data: existingDelivery } = await supabase
+      .from("deliveries")
+      .select("id, delivery_number")
+      .or(`source_quote_id.eq.${quote.id},delivery_number.eq.${deliveryNumber}`)
+      .limit(1)
+      .maybeSingle();
+    if (existingDelivery?.id) {
+      return {
+        deliveryId: String(existingDelivery.id),
+        deliveryNumber:
+          (existingDelivery.delivery_number as string) || deliveryNumber,
+      };
+    }
+  }
+
   const rateLookup = await getActiveRateCardLookup(partnerOrgId || "");
 
   const scheduledDate =

@@ -11,6 +11,14 @@ import {
 } from "./resolve-job-times";
 
 /**
+ * Sentinel written to `gcal_event_id` to atomically claim a delivery for event
+ * creation. Not a real Google event id — a concurrent sync that sees it steps
+ * aside instead of creating a duplicate. A crashed sync that leaves it behind
+ * self-heals: the next sync treats it as "no event" and recreates.
+ */
+const GCAL_PENDING = "__gcal_pending__";
+
+/**
  * Awaitable GCal sync for a move row. Reads fresh from DB, updates
  * gcal_event_id, returns the action ("created" | "updated" | ...). Used
  * by the resync cron / admin backfill so the result is observable.
@@ -132,6 +140,43 @@ export async function syncDeliveryGCalNow(deliveryId: string): Promise<GCalSyncR
     .single();
   if (!d) return "not_found";
 
+  // ── Concurrency guard against duplicate calendar events ──────────────────
+  // GCal's privateExtendedProperty search (the dedup inside syncJobToGCal) is
+  // EVENTUALLY consistent — a just-created event isn't findable for several
+  // seconds. So two syncs firing for the same delivery within that window
+  // (a booking sync racing its own parallel crew-assignment resync, a
+  // double-submit, or the resync cron) both miss the search and both create
+  // an event — double-booking the crew calendar (DLV-30379). The delivery row
+  // is strongly consistent, so claim it atomically: only the sync that flips
+  // gcal_event_id from null → sentinel may create the event; the loser either
+  // updates the event the winner created or steps aside.
+  let existingEventId = (d as { gcal_event_id?: string | null }).gcal_event_id ?? null;
+  if (existingEventId === GCAL_PENDING) existingEventId = null; // stale claim → recreate
+  let claimedForCreate = false;
+  if (!existingEventId) {
+    const { data: claim } = await db
+      .from("deliveries")
+      .update({ gcal_event_id: GCAL_PENDING })
+      .eq("id", deliveryId)
+      .is("gcal_event_id", null)
+      .select("id");
+    if (claim && claim.length > 0) {
+      claimedForCreate = true;
+    } else {
+      // Lost the claim — another sync owns creation. If it already persisted a
+      // real event id, update that event; otherwise step aside so we don't
+      // create a duplicate.
+      const { data: fresh } = await db
+        .from("deliveries")
+        .select("gcal_event_id")
+        .eq("id", deliveryId)
+        .single();
+      const real = (fresh?.gcal_event_id as string | null) ?? null;
+      if (real && real !== GCAL_PENDING) existingEventId = real;
+      else return "skipped";
+    }
+  }
+
   let crewName: string | null = null;
   if (d.crew_id) {
     const { data: crew } = await db.from("crews").select("name").eq("id", d.crew_id).single();
@@ -164,11 +209,21 @@ export async function syncDeliveryGCalNow(deliveryId: string): Promise<GCalSyncR
     toAddress: String(d.delivery_address || "").trim() || null,
     crewName,
     notes: d.notes ? String(d.notes) : null,
-    existingEventId: (d as { gcal_event_id?: string | null }).gcal_event_id ?? null,
+    existingEventId,
   });
 
-  if (result.eventId !== undefined) {
+  if (result.action === "deleted") {
+    await db.from("deliveries").update({ gcal_event_id: null }).eq("id", deliveryId);
+  } else if (typeof result.eventId === "string" && result.eventId) {
     await db.from("deliveries").update({ gcal_event_id: result.eventId }).eq("id", deliveryId);
+  } else if (claimedForCreate) {
+    // We claimed but no event was created (skipped/error) — release the claim
+    // so a later resync can retry instead of the row staying stuck on sentinel.
+    await db
+      .from("deliveries")
+      .update({ gcal_event_id: null })
+      .eq("id", deliveryId)
+      .eq("gcal_event_id", GCAL_PENDING);
   }
   return result.action;
 }

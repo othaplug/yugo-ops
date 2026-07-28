@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { syncJobToGCal } from "@/lib/google-calendar/sync-job";
+import { syncDeliveryGCalNow } from "@/lib/google-calendar/sync-utils";
 import { isGCalConfigured } from "@/lib/google-calendar/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
@@ -1546,29 +1547,16 @@ export async function runPostPaymentActionsB2BDelivery(
         if (!isGCalConfigured()) return;
         const { data: delivery } = await supabase
           .from("deliveries")
-          .select("id, scheduled_date, time_slot, scheduled_start, estimated_duration_minutes, pickup_address, delivery_address, gcal_event_id")
+          .select("id")
           .eq("delivery_number", input.deliveryNumber)
           .single();
         if (!delivery) return;
-        const result = await syncJobToGCal({
-          jobType: "delivery",
-          jobId: String(delivery.id),
-          jobCode: input.deliveryNumber,
-          clientName,
-          serviceType: String(quote.service_type || "b2b_delivery"),
-          status: "confirmed",
-          scheduledDate: delivery.scheduled_date ? String(delivery.scheduled_date).slice(0, 10) : null,
-          startTime: delivery.scheduled_start ? String(delivery.scheduled_start).slice(0, 5) : null,
-          estimatedDurationMinutes: delivery.estimated_duration_minutes != null ? Number(delivery.estimated_duration_minutes) : null,
-          fromAddress: delivery.pickup_address ? String(delivery.pickup_address) : null,
-          toAddress: delivery.delivery_address ? String(delivery.delivery_address) : null,
-          crewName: null,
-          notes: null,
-          existingEventId: (delivery as { gcal_event_id?: string | null }).gcal_event_id ?? null,
-        });
-        if (result.eventId !== undefined) {
-          await supabase.from("deliveries").update({ gcal_event_id: result.eventId }).eq("id", delivery.id);
-        }
+        // Route through the shared, concurrency-guarded delivery sync so the
+        // atomic gcal_event_id claim runs — this action fires in parallel with
+        // crew assignment (which can trigger its own resync), and GCal's
+        // extendedProperty dedup is eventually consistent, so a direct
+        // syncJobToGCal here double-booked the calendar (DLV-30379).
+        await syncDeliveryGCalNow(String(delivery.id));
       },
     },
   ];
