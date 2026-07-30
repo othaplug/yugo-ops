@@ -32,6 +32,7 @@ import {
 import { parseFromToLinesFromAccessNotes } from "@/lib/crew-move-access";
 import { ensureAndReconcileMultiStopDeliveryTrackingSession } from "@/lib/crew/multi-stop-delivery-tracking";
 import { isTerminalJobStatus } from "@/lib/moves/job-terminal";
+import { resolveActiveProjectDay } from "@/lib/move-projects/active-day";
 
 const COMPLEXITY_BADGE_LABELS: Record<string, string> = {
   specialty_transport: "Specialty transport",
@@ -872,19 +873,9 @@ export async function GET(
 
     if (mpProj && mpDays && mpDays.length > 0) {
       const todayKey = new Date().toISOString().slice(0, 10);
-      const active =
-        mpDays.find(
-          (d) =>
-            String(d.date || "").slice(0, 10) === todayKey &&
-            String(d.status || "").toLowerCase() !== "completed",
-        ) ??
-        mpDays.find(
-          (d) =>
-            !["completed", "cancelled"].includes(
-              String(d.status || "").toLowerCase(),
-            ),
-        ) ??
-        mpDays[mpDays.length - 1];
+      // Shared resolver so the crew API, crew page, and client page agree on
+      // which day is live. See src/lib/move-projects/active-day.ts.
+      const active = resolveActiveProjectDay(mpDays, todayKey);
 
       if (active?.id) {
         const rawStages = active.stages;
