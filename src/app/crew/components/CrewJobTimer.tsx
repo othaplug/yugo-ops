@@ -73,12 +73,17 @@ export default function CrewJobTimer({
     if (Number.isNaN(t0.getTime())) {
       return { startLabel: null, finishLabel: null }
     }
-    const t1 = new Date(t0.getTime() + target * 60000)
+    // Project a LIVE finish: once the job runs past the allocated window the
+    // estimate rolls forward to the current elapsed instead of sitting in the
+    // past (the "EST. FINISH 1:09 PM at 6:31 PM" staleness). Never shows a
+    // finish time earlier than "now-ish".
+    const projectedMinutes = Math.max(target, elapsedMin)
+    const t1 = new Date(t0.getTime() + projectedMinutes * 60000)
     return {
       startLabel: formatClockLabel(t0),
       finishLabel: formatClockLabel(t1),
     }
-  }, [startedAtIso, target])
+  }, [startedAtIso, target, elapsedMin])
 
   const primaryHhMm = startedAtIso
     ? formatMinutesAsHhMm(remainMin)

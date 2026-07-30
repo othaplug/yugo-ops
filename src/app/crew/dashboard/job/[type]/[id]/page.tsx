@@ -1665,10 +1665,10 @@ export default function CrewJobPage({
             <div className="flex flex-col justify-between min-w-0 flex-1 gap-4">
               <div className="min-w-0">
                 <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)] mb-1 [font-family:var(--font-body)] leading-none">
-                  {originLabel}
+                  {job?.moveProjectDay?.dayType === "pack" ? "Packing at" : originLabel}
                 </p>
                 <p className="text-[15px] text-[var(--yu3-ink)] leading-snug font-medium tracking-[-0.01em]">
-                  {job.fromAddress}
+                  {job?.moveProjectDay?.originAddress || job.fromAddress}
                 </p>
                 {fromAccessLine && (
                   <p className="text-[13px] font-medium text-[var(--yu3-ink)] mt-1.5 leading-snug [font-family:var(--font-body)]">
@@ -1676,19 +1676,23 @@ export default function CrewJobPage({
                   </p>
                 )}
               </div>
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)] mb-1 [font-family:var(--font-body)] leading-none">
-                  {destinationLabel}
-                </p>
-                <p className="text-[15px] text-[var(--yu3-ink)] leading-snug font-medium tracking-[-0.01em]">
-                  {job.toAddress}
-                </p>
-                {toAccessLine && (
-                  <p className="text-[13px] font-medium text-[var(--yu3-ink)] mt-1.5 leading-snug [font-family:var(--font-body)]">
-                    {toAccessLine}
+              {/* On a pack day nothing leaves the origin — hide the drop-off so
+                  the crew's day-1 view stays focused on the packing location. */}
+              {job?.moveProjectDay?.dayType === "pack" ? null : (
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)] mb-1 [font-family:var(--font-body)] leading-none">
+                    {destinationLabel}
                   </p>
-                )}
-              </div>
+                  <p className="text-[15px] text-[var(--yu3-ink)] leading-snug font-medium tracking-[-0.01em]">
+                    {job.toAddress}
+                  </p>
+                  {toAccessLine && (
+                    <p className="text-[13px] font-medium text-[var(--yu3-ink)] mt-1.5 leading-snug [font-family:var(--font-body)]">
+                      {toAccessLine}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
