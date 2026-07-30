@@ -2555,6 +2555,30 @@ export default function QuoteFormClient({
     if (!baseTiers) return baseTiers;
     const overrides = tierPriceOverrides;
     if (!overrides || Object.keys(overrides).length === 0) return baseTiers;
+    // Server records which overrides it has already processed (and
+    // grossed up for CC recovery) under factors.tier_overrides_applied.
+    // Shape: [{ tier, original, override: <grossed-up price> }]. When
+    // the server has already accepted THIS ovPrice, baseTiers[tk].price
+    // is the recovery-inclusive value — overlaying the raw ovPrice on
+    // top would strip the recovery back off (that's the bug operators
+    // saw as "CC recovery not being added on override"). Only overlay
+    // when the operator has typed something the server hasn't seen yet,
+    // so they still get "I typed X, X shows" feedback pre-regenerate.
+    const applied = (() => {
+      const fac = quoteResult?.factors as
+        | { tier_overrides_applied?: Array<{ tier?: unknown; original?: unknown }> }
+        | null
+        | undefined;
+      const rows = fac?.tier_overrides_applied;
+      if (!Array.isArray(rows)) return new Map<string, number>();
+      const map = new Map<string, number>();
+      for (const r of rows) {
+        if (typeof r?.tier === "string" && typeof r?.original === "number") {
+          map.set(r.tier, r.original);
+        }
+      }
+      return map;
+    })();
     const TAX_RATE_FOR_PREVIEW = 0.13;
     const next: Record<string, TierResult> = { ...baseTiers };
     for (const tk of activeTierKeys) {
@@ -2563,6 +2587,16 @@ export default function QuoteFormClient({
       if (!ov || !base) continue;
       const ovPrice = parseFloat(ov.price);
       if (!Number.isFinite(ovPrice) || ovPrice <= 0) continue;
+      // Engine has already applied this exact override → base.price is
+      // the grossed-up value; leave it alone so recovery stays visible.
+      const originalForApplied = applied.get(tk);
+      if (
+        typeof originalForApplied === "number" &&
+        Math.abs(ovPrice - originalForApplied) < 0.5
+      ) {
+        continue;
+      }
+      // Untouched engine price → nothing to overlay.
       if (Math.abs(ovPrice - base.price) < 0.005) continue;
       next[tk] = {
         ...base,
@@ -2572,7 +2606,7 @@ export default function QuoteFormClient({
       };
     }
     return next;
-  }, [quoteResult?.tiers, tierPriceOverrides]);
+  }, [quoteResult?.tiers, quoteResult?.factors, tierPriceOverrides]);
   /**
    * True when a per-tier price override has been typed but not yet regenerated,
    * so server-computed panels (labour validation) still reflect the old engine
@@ -2582,17 +2616,42 @@ export default function QuoteFormClient({
   const hasStaleTierOverride = useMemo(() => {
     const base = quoteResult?.tiers;
     if (!base) return false;
+    // Same guard as previewTiers: if the server has already processed
+    // this override (grossed it up), the saved tier price won't equal
+    // the raw ovPrice — but the override is NOT stale, it's applied.
+    // Compare against factors.tier_overrides_applied[tk].original which
+    // holds the pre-gross-up value the server accepted.
+    const fac = quoteResult?.factors as
+      | { tier_overrides_applied?: Array<{ tier?: unknown; original?: unknown }> }
+      | null
+      | undefined;
+    const appliedOriginals = new Map<string, number>();
+    if (Array.isArray(fac?.tier_overrides_applied)) {
+      for (const r of fac!.tier_overrides_applied!) {
+        if (typeof r?.tier === "string" && typeof r?.original === "number") {
+          appliedOriginals.set(r.tier, r.original);
+        }
+      }
+    }
     for (const tk of activeTierKeys) {
       const ov = tierPriceOverrides[tk];
       if (!ov) continue;
       const p = parseFloat(ov.price);
       if (!Number.isFinite(p) || p <= 0) continue;
+      const appliedOriginal = appliedOriginals.get(tk);
+      if (
+        typeof appliedOriginal === "number" &&
+        Math.abs(p - appliedOriginal) < 0.5
+      ) {
+        // Engine already applied this exact override; not stale.
+        continue;
+      }
       const saved = (base as Record<string, { price?: number } | undefined>)[tk]
         ?.price;
       if (typeof saved === "number" && Math.abs(p - saved) >= 1) return true;
     }
     return false;
-  }, [quoteResult?.tiers, tierPriceOverrides]);
+  }, [quoteResult?.tiers, quoteResult?.factors, tierPriceOverrides]);
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendSuccess, setSendSuccess] = useState(false);
