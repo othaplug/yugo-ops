@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   const { data: dayRow } = await db
     .from("move_project_days")
     .select(
-      "id, move_id, project_id, day_number, day_type, status, stages, current_stage, requires_pod, completion_notice_sent",
+      "id, move_id, project_id, day_number, day_type, status, stages, current_stage, requires_pod, completion_notice_sent, estimated_hours, crew_size, crew_day_state",
     )
     .eq("id", dayId)
     .eq("move_id", moveId)
@@ -181,6 +181,25 @@ export async function POST(req: NextRequest) {
         .order("day_number", { ascending: true })
         .limit(1)
         .maybeSingle();
+      // Pack-day recap: on a luxury Estate move, a room-count reassurance turns
+      // the completion text into a trust moment ("your home is packed").
+      let recapLine = "";
+      if (dayTypeLc === "pack") {
+        const cds = (dayRow as { crew_day_state?: unknown }).crew_day_state;
+        const rooms =
+          cds && typeof cds === "object" && !Array.isArray(cds)
+            ? (cds as { pack_rooms?: Record<string, unknown> }).pack_rooms
+            : null;
+        const roomCount =
+          rooms && typeof rooms === "object"
+            ? Object.values(rooms).filter(Boolean).length
+            : 0;
+        if (roomCount > 0) {
+          recapLine = `Your home is packed and protected — ${roomCount} ${
+            roomCount === 1 ? "room" : "rooms"
+          } wrapped and ready for moving day.`;
+        }
+      }
       let bodySms = "";
       if (!nextDay) {
         bodySms = [
@@ -196,7 +215,9 @@ export async function POST(req: NextRequest) {
             : labelForDayType(String(nextDay.day_type || "move")).toLowerCase();
         bodySms = [
           `Hi ${first},`,
-          `We have wrapped ${dayWord.toLowerCase()} for today. Next on ${nd}: ${nextLabel}.`,
+          recapLine
+            ? `${recapLine} Next on ${nd}: ${nextLabel}.`
+            : `We have wrapped ${dayWord.toLowerCase()} for today. Next on ${nd}: ${nextLabel}.`,
           `If you need anything tonight, reply here anytime, or call (647) 370-4525.`,
         ].join("\n\n");
       }
@@ -207,10 +228,42 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  await notifyAdmins("move_project_day_completed", {
-    moveId,
-    description: `${labelForDayType(dayTypeLc)} marked complete · ${mv.move_code || moveId}`,
-  });
+  // Overrun watch: compare this day's real worked hours to its planned budget.
+  // If it ran well over, flag the coordinator so they can reconfirm the next
+  // day's start window with the client instead of the schedule silently drifting.
+  let overrunNote = "";
+  try {
+    const estHrs = Number((dayRow as { estimated_hours?: number }).estimated_hours) || 0;
+    if (estHrs > 0) {
+      const { data: lastSess } = await db
+        .from("tracking_sessions")
+        .select("started_at, completed_at, updated_at, status, checkpoints")
+        .eq("job_id", moveId)
+        .eq("job_type", "move")
+        .order("completed_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lastSess) {
+        const actualHrs =
+          sessionJobDurationMinutes(
+            lastSess as Parameters<typeof sessionJobDurationMinutes>[0],
+          ) / 60;
+        if (actualHrs > estHrs * 1.25) {
+          overrunNote = ` · ran ${actualHrs.toFixed(1)}h vs ${estHrs}h planned — reconfirm next-day timing with the client`;
+        }
+      }
+    }
+  } catch {
+    /* best-effort */
+  }
+
+  await notifyAdmins(
+    overrunNote ? "move_project_day_overrun" : "move_project_day_completed",
+    {
+      moveId,
+      description: `${labelForDayType(dayTypeLc)} marked complete · ${mv.move_code || moveId}${overrunNote}`,
+    },
+  );
 
   return NextResponse.json({ ok: true, all_project_days_done: allDone });
 }
