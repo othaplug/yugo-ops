@@ -72,12 +72,37 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const nextNotes = prevNotes ? `${prevNotes}\n\n${block}` : block;
 
-  const { error } = await admin.from("deliveries").update({ notes: nextNotes, updated_at: stamp }).eq("id", deliveryId);
+  // walkthrough_completed_at stamps the delivery so a re-mount of the
+  // crew job screen doesn't re-open the walkthrough modal. Only set on
+  // the first submission — if the crew re-opens the modal and submits
+  // again, keep the original completion time (audit-friendly, matches
+  // how moves.walkthrough_completed_at behaves).
+  const { data: prior } = await admin
+    .from("deliveries")
+    .select("walkthrough_completed_at")
+    .eq("id", deliveryId)
+    .maybeSingle();
+  const priorCompletedAt = (
+    prior as { walkthrough_completed_at?: string | null } | null
+  )?.walkthrough_completed_at;
+
+  const { error } = await admin
+    .from("deliveries")
+    .update({
+      notes: nextNotes,
+      updated_at: stamp,
+      walkthrough_completed_at: priorCompletedAt ?? stamp,
+    })
+    .eq("id", deliveryId);
 
   if (error) {
     console.error("[crew/delivery/walkthrough]", error);
     return NextResponse.json({ error: "Failed to save walkthrough" }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, id: null });
+  return NextResponse.json({
+    ok: true,
+    id: null,
+    walkthrough_completed_at: priorCompletedAt ?? stamp,
+  });
 }

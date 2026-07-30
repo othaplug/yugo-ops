@@ -454,6 +454,17 @@ export async function GET(
       marginAlertMinutes: deliveryMarginMin,
       operationalAlerts: deliveryOperationalAlerts,
       tipReportNeeded,
+      // Persisted walkthrough state — mirrors moves' walkthroughCompleted
+      // so the crew page sync effect flips local walkthroughDone to true
+      // on re-mount and the modal doesn't auto-open again. Deliveries
+      // use a single timestamptz column (see migration
+      // 20260724130000_delivery_walkthrough_completed_at); truthy means
+      // the crew has completed the pickup walkthrough at least once.
+      walkthroughCompleted: Boolean(
+        (d as { walkthrough_completed_at?: string | null })
+          .walkthrough_completed_at,
+      ),
+      walkthroughSkipped: false,
     });
   }
 

@@ -496,8 +496,47 @@ export default function WalkthroughModal({
     setSubmitting(true);
     setSubmitError("");
     try {
-      await verifyPickupFromWalkthrough("all_present");
       const present = items.filter((i) => i.status !== "missing").length;
+      // Historically this branch skipped the server POST, which left
+      // moves.walkthrough_completed = false forever — any re-mount of
+      // the crew job screen would re-open the modal. Persist the
+      // completion the same way submitChangeRequest does; server handles
+      // the empty-lists case (route.ts guards the change-request insert
+      // and always updates the moves row). Delivery endpoint now stamps
+      // deliveries.walkthrough_completed_at for the same guarantee.
+      const endpoint =
+        jobType === "delivery"
+          ? `/api/crew/delivery/${encodeURIComponent(jobId)}/walkthrough`
+          : `/api/crew/walkthrough/${jobId}`;
+      const body =
+        jobType === "delivery"
+          ? {
+              items_added: [],
+              items_missing: [],
+              items_matched: present,
+              items_missing_count: 0,
+              items_extra: 0,
+            }
+          : {
+              items_added: [],
+              items_removed: [],
+              items_matched: present,
+              items_missing: 0,
+              items_extra: 0,
+            };
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(
+          (data as { error?: string }).error ||
+            "Failed to save verification",
+        );
+      }
+      await verifyPickupFromWalkthrough("all_present");
       onComplete({
         itemsMatched: present,
         itemsMissing: 0,

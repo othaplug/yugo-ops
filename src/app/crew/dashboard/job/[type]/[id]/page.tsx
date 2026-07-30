@@ -394,6 +394,15 @@ export default function CrewJobPage({
   const [walkthroughModalOpen, setWalkthroughModalOpen] = useState(false);
   const [walkthroughDone, setWalkthroughDone] = useState(false);
   const [walkthroughSkipped, setWalkthroughSkipped] = useState(false);
+  /**
+   * If the crew taps the X to close the walkthrough without completing
+   * (e.g. to peek at Items or Photos tabs first), suppress the
+   * auto-open effect until the tracking session changes. Otherwise the
+   * effect at line ~662 slams the modal back open on the next render.
+   * Cleared whenever a new session starts (session.id changes) so the
+   * modal returns to normal behavior on the next job.
+   */
+  const walkthroughDismissedForSessionRef = useRef<string | null>(null);
   const [walkthroughResult, setWalkthroughResult] = useState<{
     itemsMatched: number;
     itemsMissing: number;
@@ -660,12 +669,20 @@ export default function CrewJobPage({
   }, [job?.walkthroughCompleted, job?.walkthroughSkipped]);
 
   useEffect(() => {
+    // Reset the manual-dismiss suppression when a new tracking session
+    // begins (or the same session ends and restarts) so the walkthrough
+    // returns to normal auto-open behavior on the next job.
+    const sid = session?.id ?? null;
+    if (walkthroughDismissedForSessionRef.current !== sid) {
+      walkthroughDismissedForSessionRef.current = null;
+    }
     if (
       currentStatus === "arrived_at_pickup" &&
       !walkthroughDone &&
       !walkthroughSkipped &&
       !loading &&
-      session?.isActive
+      session?.isActive &&
+      walkthroughDismissedForSessionRef.current !== sid
     ) {
       setWalkthroughModalOpen(true);
     }
@@ -675,6 +692,7 @@ export default function CrewJobPage({
     walkthroughSkipped,
     loading,
     session?.isActive,
+    session?.id,
   ]);
 
   useEffect(() => {
@@ -2607,7 +2625,14 @@ export default function CrewJobPage({
             // Open photo verification
             setPickupModalOpen(true);
           }}
-          onClose={() => setWalkthroughModalOpen(false)}
+          onClose={() => {
+            // Mark this session as "user dismissed" so the auto-open
+            // effect doesn't slam the modal back open on the next
+            // render. The crew can re-open manually from the pink
+            // card or from the "Start inventory check" button.
+            walkthroughDismissedForSessionRef.current = session?.id ?? null;
+            setWalkthroughModalOpen(false);
+          }}
         />
       )}
 
