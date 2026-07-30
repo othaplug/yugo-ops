@@ -655,6 +655,7 @@ export default function TrackMoveClient({
         day_number?: number;
         day_type?: string;
         current_stage?: string | null;
+        crew_size?: number | null;
       }[];
     }[];
   } | null;
@@ -1466,7 +1467,11 @@ export default function TrackMoveClient({
             />
           </div>
           <p className="text-[11px] mt-1.5 opacity-70" style={{ color: FOREST }}>
-            {completed.length} of {total} days complete in admin
+            {completed.length >= total
+              ? "All days complete"
+              : completed.length > 0
+                ? `${completed.length} of ${total} days complete · day ${displayDay} underway`
+                : `Day ${displayDay} of ${total} underway`}
           </p>
         </div>
 
@@ -1574,6 +1579,43 @@ export default function TrackMoveClient({
     const dt = String(focus?.day_type || "move").toLowerCase().trim();
     return dt === "move" || dt === "volume";
   }, [moveProjectForTrack, isLogisticsDeliveryTrack, isNonMoveProductTrack]);
+
+  // Active project day for a multi-day move (pack day ≠ move day). Drives the
+  // client hero + scheduling note so a PACK day doesn't render the move-day
+  // "Today's the day / crew N minutes away / En Route → Complete" journey
+  // (nothing is in transit on a pack day) or the move-level crew count.
+  const activeProjectDay = React.useMemo<
+    { dayType: string; crewSize: number | null; label: string | null } | null
+  >(() => {
+    if (!moveProjectForTrack || isLogisticsDeliveryTrack || isNonMoveProductTrack)
+      return null;
+    const flat = (moveProjectForTrack.phases ?? [])
+      .flatMap((ph) => (Array.isArray(ph.days) ? ph.days : []))
+      .filter((d) => d.date)
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    if (flat.length < 2) return null; // single-day move uses the normal hero
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const norm = (s?: string) => (s || "").toLowerCase().replace(/\s+/g, "_");
+    const done = (s?: string) => norm(s) === "completed" || norm(s) === "complete";
+    const focus =
+      flat.find((d) => !done(d.status) && String(d.date || "").slice(0, 10) === todayKey) ??
+      flat.find((d) => !done(d.status)) ??
+      flat[flat.length - 1] ??
+      null;
+    if (!focus) return null;
+    const cs = (focus as { crew_size?: number | null }).crew_size;
+    return {
+      dayType: String(focus.day_type || "move").toLowerCase().trim(),
+      crewSize: cs != null && Number.isFinite(Number(cs)) ? Number(cs) : null,
+      label: (focus as { label?: string | null }).label?.trim() || null,
+    };
+  }, [moveProjectForTrack, isLogisticsDeliveryTrack, isNonMoveProductTrack]);
+
+  /** True when today is a non-cargo day (pack/unpack/crating) of a multi-day move. */
+  const todayIsPrepDay =
+    activeProjectDay != null &&
+    activeProjectDay.dayType !== "move" &&
+    activeProjectDay.dayType !== "volume";
 
   const trackPageBg = "#F9EDE4";
   const trackPageInk = FOREST;
@@ -2220,7 +2262,8 @@ export default function TrackMoveClient({
                       <p className="text-[13px] font-semibold" style={{ color: WINE }}>
                         Estate tier, white glove protocol in effect.
                         Four-point blanket wrap, no dragging, no stacking.
-                        Photo document all specialty items before and after.
+                        Every specialty piece is photo-documented before and
+                        after handling.
                       </p>
                     </div>
                   )}
@@ -2230,7 +2273,10 @@ export default function TrackMoveClient({
           })()}
 
           {(() => {
-            const estRaw = move.est_crew_size;
+            // On a multi-day move show TODAY's crew (pack day = 3, move day = 4),
+            // not the move-level headcount, so the client isn't told "4-person
+            // crew" on a lighter pack day. Falls back to the move value.
+            const estRaw = activeProjectDay?.crewSize ?? move.est_crew_size;
             const est =
               estRaw != null && Number.isFinite(Number(estRaw))
                 ? Math.max(0, Math.round(Number(estRaw)))
@@ -2315,6 +2361,29 @@ export default function TrackMoveClient({
                       style={{ color: FOREST }}
                     >
                       Use the bin rental card on your dashboard for drop-off, your home move day, and pickup.
+                    </div>
+                  </div>
+                ) : todayIsPrepDay ? (
+                  // Multi-day prep day (pack / unpack): nothing is in transit
+                  // today, so show a calm packing hero — not the move-day
+                  // "crew N minutes away" ETA or the En Route → Complete
+                  // transit stepper. The day-by-day schedule is above.
+                  <div className="text-center">
+                    <div
+                      className="font-hero text-[30px] md:text-[34px] leading-tight font-semibold"
+                      style={{ color: trackHero }}
+                    >
+                      {activeProjectDay?.dayType === "unpack"
+                        ? "Unpacking day"
+                        : "Packing day"}
+                    </div>
+                    <div
+                      className="mt-1 text-[12px] font-sans opacity-60 max-w-md mx-auto px-2"
+                      style={{ color: FOREST }}
+                    >
+                      {activeProjectDay?.dayType === "unpack"
+                        ? "Your crew is unpacking and settling your home into place today."
+                        : "Your crew is carefully wrapping and packing your home today. Moving day is next on your schedule above."}
                     </div>
                   </div>
                 ) : (
