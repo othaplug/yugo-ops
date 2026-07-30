@@ -6,6 +6,11 @@ import { sendSMS } from "@/lib/sms/sendSMS";
 import { getFeatureConfig } from "@/lib/platform-settings";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
 import { MOVE_DAY_STAGE_FLOW, labelForDayType } from "@/lib/move-projects/day-types";
+import {
+  closeActiveTrackingSessionsForJob,
+  persistActualMarginForMove,
+} from "@/lib/moves/complete-move-job";
+import { sessionJobDurationMinutes } from "@/lib/crew/session-job-duration-minutes";
 
 const eligibleFinalStage = (dayType: string, stages: string[]): string | null => {
   const flow = MOVE_DAY_STAGE_FLOW[String(dayType || "move")] ?? MOVE_DAY_STAGE_FLOW.move;
@@ -116,6 +121,15 @@ export async function POST(req: NextRequest) {
 
   if (finishErr) return NextResponse.json({ error: finishErr.message }, { status: 500 });
 
+  // Auto-close the day: stop the crew's live tracking session/timer so the day
+  // ends cleanly WITHOUT a client sign-off (operator directive — pack day
+  // closes for the day; the actual move still happens on day 2). Best-effort.
+  try {
+    await closeActiveTrackingSessionsForJob(db, moveId, "move", nowIso);
+  } catch (e) {
+    console.error("[move-project-day/complete] close sessions:", e);
+  }
+
   const { data: allDays } = await db
     .from("move_project_days")
     .select("id, status")
@@ -125,6 +139,31 @@ export async function POST(req: NextRequest) {
 
   if (allDone) {
     await db.from("move_projects").update({ status: "completed", updated_at: nowIso }).eq("id", dayRow.project_id);
+
+    // Every day is done → recompute the ACTUAL expense from real worked hours.
+    // Each project day is its own tracking session; sum them (per-business-day
+    // spans, so overnight gaps aren't counted) to get the true multi-day labour
+    // and bake it into the move's actual margin snapshot. Best-effort.
+    try {
+      const { data: sessions } = await db
+        .from("tracking_sessions")
+        .select("started_at, completed_at, updated_at, status, checkpoints")
+        .eq("job_id", moveId)
+        .eq("job_type", "move");
+      let totalMinutes = 0;
+      for (const s of sessions ?? []) {
+        totalMinutes += sessionJobDurationMinutes(
+          s as Parameters<typeof sessionJobDurationMinutes>[0],
+        );
+      }
+      const totalHours =
+        totalMinutes > 0 ? Math.round((totalMinutes / 60) * 100) / 100 : null;
+      if (totalHours != null) {
+        await persistActualMarginForMove(db, moveId, totalHours);
+      }
+    } catch (e) {
+      console.error("[move-project-day/complete] actual margin recalc:", e);
+    }
   }
 
   const cfg = await getFeatureConfig(["sms_eta_enabled"]);
