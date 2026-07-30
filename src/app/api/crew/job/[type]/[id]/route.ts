@@ -835,6 +835,11 @@ export async function GET(
         requiresProofOfDelivery: boolean;
         status: string;
         crewDayState: Record<string, unknown>;
+        /** This day's own planned crew + hours (pack day ≠ move day). */
+        crewSize: number | null;
+        estimatedHours: number | null;
+        originAddress: string | null;
+        destinationAddress: string | null;
       }
     | null = null;
 
@@ -849,7 +854,7 @@ export async function GET(
     const { data: mpDays } = await admin
       .from("move_project_days")
       .select(
-        "id, day_number, date, label, day_type, status, stages, current_stage, requires_pod, crew_day_state",
+        "id, day_number, date, label, day_type, status, stages, current_stage, requires_pod, crew_day_state, crew_size, estimated_hours, origin_address, destination_address, location_address",
       )
       .eq("move_id", m.id)
       .order("day_number", { ascending: true });
@@ -899,6 +904,21 @@ export async function GET(
           requiresProofOfDelivery: !!(active as { requires_pod?: boolean }).requires_pod,
           status: String(active.status || "scheduled"),
           crewDayState,
+          crewSize:
+            (active as { crew_size?: number | null }).crew_size != null
+              ? Number((active as { crew_size?: number | null }).crew_size)
+              : null,
+          estimatedHours:
+            (active as { estimated_hours?: number | null }).estimated_hours != null
+              ? Number((active as { estimated_hours?: number | null }).estimated_hours)
+              : null,
+          originAddress:
+            (active as { origin_address?: string | null }).origin_address?.trim() ||
+            (active as { location_address?: string | null }).location_address?.trim() ||
+            null,
+          destinationAddress:
+            (active as { destination_address?: string | null }).destination_address?.trim() ||
+            null,
         };
       }
     }

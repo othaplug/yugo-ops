@@ -323,6 +323,10 @@ interface JobDetail {
     requiresProofOfDelivery: boolean;
     status: string;
     crewDayState: Record<string, unknown>;
+    crewSize?: number | null;
+    estimatedHours?: number | null;
+    originAddress?: string | null;
+    destinationAddress?: string | null;
   } | null;
 }
 
@@ -1311,20 +1315,34 @@ export default function CrewJobPage({
 
       {!isCompleted &&
         job &&
-        job.estimatedDurationMinutes != null &&
-        job.estimatedDurationMinutes > 0 && (
-          <CrewJobTimer
-            elapsedMs={session?.isActive ? elapsedMs : 0}
-            estimatedMinutes={job.estimatedDurationMinutes}
-            marginAlertMinutes={
-              job.marginAlertMinutes != null && job.marginAlertMinutes > 0
-                ? job.marginAlertMinutes
-                : job.estimatedDurationMinutes
-            }
-            startedAtIso={session?.startedAt ?? null}
-            operationalAlerts={job.operationalAlerts ?? null}
-          />
-        )}
+        (() => {
+          // On a multi-day project, budget the timer against THIS day's hours
+          // (pack day ≠ move day) — not the move-level single-day estimate,
+          // which fired a false "over allocated / critical path" alarm on a
+          // legitimately long pack day (MV-30282: 5.5h move estimate applied to
+          // an 8h pack day). Fall back to the move estimate for single-day jobs.
+          const dayHours = job.moveProjectDay?.estimatedHours ?? null;
+          const dayEstMinutes =
+            dayHours != null && dayHours > 0
+              ? Math.round(dayHours * 60)
+              : job.estimatedDurationMinutes ?? 0;
+          if (!(dayEstMinutes > 0)) return null;
+          return (
+            <CrewJobTimer
+              elapsedMs={session?.isActive ? elapsedMs : 0}
+              estimatedMinutes={dayEstMinutes}
+              marginAlertMinutes={
+                job.moveProjectDay
+                  ? dayEstMinutes
+                  : job.marginAlertMinutes != null && job.marginAlertMinutes > 0
+                    ? job.marginAlertMinutes
+                    : dayEstMinutes
+              }
+              startedAtIso={session?.startedAt ?? null}
+              operationalAlerts={job.moveProjectDay ? null : job.operationalAlerts ?? null}
+            />
+          );
+        })()}
 
       {showStartButton &&
         (locationPermission === "prompt" ||
@@ -1547,10 +1565,17 @@ export default function CrewJobPage({
               </p>
             )}
             {(() => {
+              // On a multi-day project each day has its own crew (pack day = 3,
+              // move day = 4) — show THIS day's headcount, not the move-level
+              // number, so the crew isn't told "4-person crew" on a 3-person
+              // pack day.
+              const dayCrew = job.moveProjectDay?.crewSize ?? null;
               const n =
-                job.estCrewSize != null && Number.isFinite(job.estCrewSize)
-                  ? Math.max(0, Math.round(job.estCrewSize))
-                  : null;
+                dayCrew != null && Number.isFinite(dayCrew)
+                  ? Math.max(0, Math.round(dayCrew))
+                  : job.estCrewSize != null && Number.isFinite(job.estCrewSize)
+                    ? Math.max(0, Math.round(job.estCrewSize))
+                    : null;
               const badges = Array.isArray(job.complexityBadges)
                 ? job.complexityBadges
                 : [];
@@ -1984,7 +2009,9 @@ export default function CrewJobPage({
                     ? jobType === "delivery"
                       ? "Complete before you leave origin for drop-off"
                       : "Complete before loading starts"
-                    : "Complete before loading starts"}
+                    : job?.moveProjectDay?.dayType === "pack"
+                      ? "Complete before packing starts"
+                      : "Complete before loading starts"}
                 </p>
               </div>
               <p className="text-[12px] text-[var(--yu3-ink-muted)] leading-relaxed">
