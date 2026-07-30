@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { normalizeDeliveryStatus } from "@/lib/crew-tracking-status";
+import { getAppTimezone, ymdPartsInTimeZone } from "@/lib/business-timezone";
 
 /** GET tracking session for crew portal (uses crew auth). */
 export async function GET(
@@ -46,6 +47,23 @@ export async function GET(
 
   if (!session) {
     return NextResponse.json({ session: null, checkpoints: [], lastLocation: null });
+  }
+
+  // Multi-day guard: a project day (e.g. pack day) closes its own tracking
+  // session, but the move stays in_progress for day 2. Without this, day 2
+  // would load YESTERDAY's completed session — showing its elapsed/GPS and
+  // suppressing a fresh start. So if the most recent session is completed and
+  // finished on a PRIOR day, treat it as no session: day 2 gets a new track.
+  if (!session.is_active && session.completed_at) {
+    const tz = getAppTimezone();
+    const doneMs = new Date(session.completed_at).getTime();
+    if (Number.isFinite(doneMs)) {
+      const doneYmd = ymdPartsInTimeZone(doneMs, tz);
+      const nowYmd = ymdPartsInTimeZone(Date.now(), tz);
+      if (doneYmd !== nowYmd) {
+        return NextResponse.json({ session: null, checkpoints: [], lastLocation: null });
+      }
+    }
   }
 
   const normalize = jobType === "delivery"
