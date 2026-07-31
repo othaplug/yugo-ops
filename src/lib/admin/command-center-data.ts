@@ -17,6 +17,7 @@ import {
   pickLatestTrackingSession,
   resolveAdminMoveListDisplayStatus,
 } from "@/lib/move-status"
+import { moveIdsWithOpenProjectDay } from "@/lib/move-projects/active-day"
 import { isMoveWeatherBrief, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief"
 import {
   deliveryPreTaxForAdminList,
@@ -442,10 +443,15 @@ export const loadCommandCenterData = async () => {
     }
   }
 
+  // Multi-day guard: a completed pack-day session must not read as a completed
+  // MOVE while a later project day is still open. See moveIdsWithOpenProjectDay.
+  const openProjectDaySet = await moveIdsWithOpenProjectDay(admin, moveIdList)
+
   const effectiveMoveListStatus = (m: Record<string, unknown>) =>
     resolveAdminMoveListDisplayStatus(
       String(m.status ?? ""),
       latestSessionByMoveId[String(m.id)]?.status ?? null,
+      openProjectDaySet.has(String(m.id)),
     )
       .toLowerCase()
       .trim()

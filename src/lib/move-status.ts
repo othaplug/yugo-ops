@@ -198,15 +198,26 @@ export function normalizeStatus(status: string | null | undefined): string | nul
 /**
  * Aligns admin list status with GET /api/admin/moves/[id]/stage: when the move row is not
  * terminal but the latest tracking session is completed, treat as completed for display.
+ *
+ * MULTI-DAY GUARD: a completed tracking session is a completed DAY, not a
+ * completed MOVE. On a multi-day project (pack day + move day, etc.) the pack
+ * day's session completes while the move is still in progress. Pass
+ * `hasOpenProjectDay = true` whenever the move has any non-terminal
+ * move_project_days row so this never reports the move complete between days.
+ * A move is complete only when EVERY project day is complete. See
+ * `moveIdsWithOpenProjectDay` in src/lib/move-projects/active-day.ts — every
+ * surface that derives completion from a session MUST feed this flag.
  */
 export function resolveAdminMoveListDisplayStatus(
   moveStatus: string | null | undefined,
   latestSessionStatus: string | null | undefined,
+  hasOpenProjectDay = false,
 ): string {
   const raw = (moveStatus || "").trim();
   const st = raw.toLowerCase();
   const terminal = st === "completed" || st === "cancelled" || st === "delivered";
   if (terminal) return raw;
+  if (hasOpenProjectDay) return raw; // between days on a multi-day project
   if ((latestSessionStatus || "").toLowerCase().trim() === "completed") return "completed";
   return raw;
 }

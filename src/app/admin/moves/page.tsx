@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { pickLatestTrackingSession, resolveAdminMoveListDisplayStatus } from "@/lib/move-status";
+import { moveIdsWithOpenProjectDay } from "@/lib/move-projects/active-day";
 import AllMovesV3Client from "./AllMovesV3Client";
 import { calculateMoveProfitability } from "@/lib/finance/calculateProfit";
 
@@ -90,6 +91,9 @@ export default async function AllMovesPage() {
   }
 
   const moveIdList = moves.map((m) => m.id).filter(Boolean) as string[];
+  // Multi-day guard: moves still between project days must not read as
+  // "completed" off a finished pack-day session. See moveIdsWithOpenProjectDay.
+  const openProjectDaySet = await moveIdsWithOpenProjectDay(db, moveIdList);
   const latestSessionByMoveId: Record<string, { status: string; updated_at: string; created_at: string }> = {};
   // Actual tracked hours per move — used to recalculate margin for completed moves
   const sessionHoursMap: Record<string, number> = {};
@@ -171,6 +175,7 @@ export default async function AllMovesPage() {
     const display_status = resolveAdminMoveListDisplayStatus(
       m.status,
       latestSessionByMoveId[m.id]?.status ?? null,
+      openProjectDaySet.has(m.id),
     );
     // Always recompute from the shared calculateMoveProfitability
     // (2026-07-06 fix — MV-30348 pill showed stale 55 % vs 69.7 %
