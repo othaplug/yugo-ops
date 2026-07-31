@@ -48,9 +48,28 @@ export async function GET(
       .eq("job_type", "move");
     const best = pickLatestTrackingSession(sessionRows || []);
     const bestRow = best as { status?: string; completed_at?: string | null } | null;
-    const sessionCompleted =
+    let sessionCompleted =
       !!bestRow &&
       ((bestRow.status || "").toLowerCase() === "completed" || !!bestRow.completed_at);
+
+    // Multi-day guard: a completed tracking session means a completed DAY, not a
+    // completed MOVE. If the project still has non-terminal days (e.g. pack day
+    // is done but move day is scheduled), the move is between days — do NOT
+    // report it complete, or the admin locks the move and the crew can't start
+    // day 2. The move is only complete once every project day is complete.
+    const mpId = (data as { move_project_id?: string | null }).move_project_id;
+    if (sessionCompleted && mpId) {
+      const { data: pdays } = await admin
+        .from("move_project_days")
+        .select("status")
+        .eq("move_id", id);
+      const hasRemaining = (pdays ?? []).some(
+        (d) =>
+          !["completed", "cancelled"].includes(String(d.status || "").toLowerCase()),
+      );
+      if (hasRemaining) sessionCompleted = false;
+    }
+
     if (sessionCompleted) {
       return NextResponse.json(
         {

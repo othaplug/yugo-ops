@@ -50,19 +50,33 @@ export async function GET(
   }
 
   // Multi-day guard: a project day (e.g. pack day) closes its own tracking
-  // session, but the move stays in_progress for day 2. Without this, day 2
-  // would load YESTERDAY's completed session — showing its elapsed/GPS and
-  // suppressing a fresh start. So if the most recent session is completed and
-  // finished on a PRIOR day, treat it as no session: day 2 gets a new track.
-  if (!session.is_active && session.completed_at) {
-    const tz = getAppTimezone();
+  // session, but the move stays in_progress for the next day. Without this the
+  // crew app would load a PRIOR day's completed session — showing its elapsed
+  // and, worse, reading the move as finished so the next day never appears.
+  // A completed session yields to a new track when EITHER (a) the move still
+  // has a non-terminal project day pending (day 2 is coming — regardless of
+  // when the prior day closed), or (b) it simply finished on an earlier day.
+  if (!session.is_active && session.completed_at && jobType === "move") {
+    let remainingDay = false;
+    const { data: pdays } = await admin
+      .from("move_project_days")
+      .select("status")
+      .eq("move_id", entityId);
+    if (pdays && pdays.length > 0) {
+      remainingDay = pdays.some(
+        (d) =>
+          !["completed", "cancelled"].includes(String(d.status || "").toLowerCase()),
+      );
+    }
+    let priorDay = false;
     const doneMs = new Date(session.completed_at).getTime();
     if (Number.isFinite(doneMs)) {
-      const doneYmd = ymdPartsInTimeZone(doneMs, tz);
-      const nowYmd = ymdPartsInTimeZone(Date.now(), tz);
-      if (doneYmd !== nowYmd) {
-        return NextResponse.json({ session: null, checkpoints: [], lastLocation: null });
-      }
+      const tz = getAppTimezone();
+      priorDay =
+        ymdPartsInTimeZone(doneMs, tz) !== ymdPartsInTimeZone(Date.now(), tz);
+    }
+    if (remainingDay || priorDay) {
+      return NextResponse.json({ session: null, checkpoints: [], lastLocation: null });
     }
   }
 
