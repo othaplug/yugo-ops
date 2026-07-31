@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { computeOperationalJobAlerts } from "@/lib/jobs/operational-alerts";
 import { estimateDurationFromMoveRow } from "@/lib/jobs/duration-estimate";
+import { resolveActiveProjectDay } from "@/lib/move-projects/active-day";
 import { maybeNotifyOperationalInJobAlerts } from "@/lib/jobs/operational-alert-notifications";
 import { isMoveIdUuid } from "@/lib/move-code";
 import { pickLatestTrackingSession } from "@/lib/move-status";
@@ -76,6 +77,24 @@ export async function GET(
     if (allocated == null) {
       const dEst = estimateDurationFromMoveRow(row);
       if (dEst) allocated = dEst.totalMinutes;
+    }
+
+    // Multi-day: budget the alert against the ACTIVE project day's hours
+    // (pack day ≠ move day), not the move-level single-day estimate — otherwise
+    // it fires "projected ~18h vs 5:30 allocated" on a legitimately long pack or
+    // move day. See src/lib/move-projects/active-day.ts.
+    const mpId = (row as { move_project_id?: string | null }).move_project_id;
+    if (mpId) {
+      const { data: mpDays } = await admin
+        .from("move_project_days")
+        .select("date, status, day_type, estimated_hours")
+        .eq("move_id", id);
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const activeDay = resolveActiveProjectDay(mpDays ?? [], todayKey);
+      const dayHrs = activeDay?.estimated_hours;
+      if (dayHrs != null && Number(dayHrs) > 0) {
+        allocated = Math.round(Number(dayHrs) * 60);
+      }
     }
 
     const { data: activeSess } = await admin
