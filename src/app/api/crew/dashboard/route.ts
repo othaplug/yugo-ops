@@ -103,14 +103,24 @@ export async function GET(req: NextRequest) {
   // didn't already return (crew-scoped). projectDayTodaySet also lets the
   // stale-completion filter below treat these like a "today" job.
   const projectDayTodaySet = new Set<string>();
+  // Moves whose TODAY project day is still non-terminal (work remains today).
+  // These must never be hidden by the stale-completion filter just because a
+  // PRIOR day's tracking session is completed (pack day done, move day today).
+  const projectDayTodayActiveSet = new Set<string>();
   {
     const { data: todayProjectDays } = await supabase
       .from("move_project_days")
-      .select("move_id")
+      .select("move_id, status")
       .eq("date", today);
     for (const r of todayProjectDays || []) {
       const id = (r as { move_id?: string | null }).move_id;
-      if (typeof id === "string" && id) projectDayTodaySet.add(id);
+      if (typeof id === "string" && id) {
+        projectDayTodaySet.add(id);
+        const st = String((r as { status?: string }).status || "").toLowerCase();
+        if (!["completed", "cancelled"].includes(st)) {
+          projectDayTodayActiveSet.add(id);
+        }
+      }
     }
     const haveIds = new Set(moves.map((m) => m.id));
     const missingIds = [...projectDayTodaySet].filter((id) => !haveIds.has(id));
@@ -263,7 +273,10 @@ export async function GET(req: NextRequest) {
     const rawStatus = (m.status || "scheduled").toLowerCase();
     const sessionSnap = latestSessionByMoveId.get(m.id);
     const sessionSaysDone =
-      (sessionSnap?.status || "").toLowerCase() === "completed";
+      (sessionSnap?.status || "").toLowerCase() === "completed" &&
+      // On a multi-day move a completed session is a completed prior DAY, not a
+      // completed move — don't mark it done while today's day is still open.
+      !projectDayTodayActiveSet.has(m.id);
     const moveRowSaysDone =
       rawStatus === "completed" || rawStatus === "cancelled";
     const effectiveStatus =
@@ -278,7 +291,13 @@ export async function GET(req: NextRequest) {
     const completionForStaleCheck = isMoveClosedForStaleListFilter(effectiveStatus, completedAtFromRow)
       ? completedAtFromRow ?? sessionSnap?.completed_at ?? null
       : null;
-    if ((schedYmd === today || projectDayTodaySet.has(m.id)) && completionForStaleCheck) {
+    if (
+      (schedYmd === today || projectDayTodaySet.has(m.id)) &&
+      completionForStaleCheck &&
+      // A multi-day move with a still-open project day TODAY is not "done" —
+      // never hide it because a PRIOR day's session is complete.
+      !projectDayTodayActiveSet.has(m.id)
+    ) {
       const doneMs = Date.parse(completionForStaleCheck);
       if (!Number.isNaN(doneMs) && ymdPartsInTimeZone(doneMs, tz) < today) {
         continue;
