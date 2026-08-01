@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { createMoveFromQuote } from "@/lib/automations/create-move-from-quote";
 import { runPostPaymentActions } from "@/lib/automations/post-payment";
+import { recordExternalSquarePayment } from "@/lib/payments/record-external-square-payment";
+import { recordMovePaymentLedgerEntry } from "@/lib/payments/record-move-payment";
 import { logActivity } from "@/lib/activity";
 import {
   isQuoteExpiredForBooking,
@@ -144,7 +146,22 @@ export async function POST(
     );
   }
 
-  const paymentId = `offline-external-${quoteId}-${Date.now()}`;
+  // Record the externally-collected deposit as a real EXTERNAL payment in
+  // Square so it lands in the seller account with a genuine receipt URL that
+  // reaches the client's Files tab. Best-effort; fall back to a local id.
+  const ext = await recordExternalSquarePayment({
+    amountInclusive: deposit_amount,
+    referenceId: humanQuoteId,
+    note: `Deposit for ${humanQuoteId} — ${deposit_method} via ${booked_via} (recorded by Yugo)`,
+    method: deposit_method,
+    buyerEmail: clientEmail,
+    idempotencySuffix: `external-${quoteId}`,
+  });
+  if (!ext.ok) {
+    console.error(`[book-external] Square external payment failed: ${ext.error}`);
+  }
+  const paymentId = ext.ok ? ext.paymentId : `offline-external-${quoteId}-${Date.now()}`;
+  const receiptUrl = ext.ok ? ext.receiptUrl : null;
 
   try {
     const moveResult = await createMoveFromQuote({
@@ -157,7 +174,20 @@ export async function POST(
       squareCustomerId: undefined,
       squareCardId: undefined,
       squarePaymentId: paymentId,
-      squareReceiptUrl: null,
+      squareReceiptUrl: receiptUrl,
+    });
+
+    // Mirror the online flow: record the deposit in the ledger so its receipt
+    // surfaces in the client's Files tab.
+    await recordMovePaymentLedgerEntry(admin, {
+      moveId: moveResult.moveId,
+      entryType: "deposit",
+      label: "Contract deposit",
+      amountInclusive: deposit_amount,
+      squarePaymentId: paymentId,
+      squareReceiptUrl: receiptUrl,
+      settlementMethod: "offline",
+      dedupeByEntryType: true,
     });
 
     // Update the quote with confirmed values

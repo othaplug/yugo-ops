@@ -405,6 +405,27 @@ export async function notifyPartnerMoveBooked(opts: {
     .filter(Boolean)
     .join(" · ") || "Scheduled";
   const cn = (move.client_name || "Client").trim();
+  // Property manager orgs get a PM-scoped booking email — no live
+  // tracking URL (PMs are building admins, not the customer), one
+  // clear "here's what's scheduled at your property" message.
+  if (org.type === "property_manager") {
+    const { partnerPropertyManagerBookingEmail } = await import(
+      "@/lib/email-templates"
+    );
+    const html = partnerPropertyManagerBookingEmail({
+      customerName: cn,
+      whenLabel: String(when),
+      buildingAddress: move.from_address || move.to_address || null,
+      moveCode: move.move_code || moveId,
+    });
+    await sendEmail({
+      to: orgEmail,
+      subject: "A Yugo move is booked at your property",
+      html,
+    }).catch(() => {});
+    return;
+  }
+
   const subj = "Your move is scheduled";
   const { partnerBookingScheduledEmail } = await import("@/lib/email-templates");
   const html = partnerBookingScheduledEmail({

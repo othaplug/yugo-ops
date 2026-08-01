@@ -22,6 +22,8 @@ import {
   getOfflineDepositInclusiveFromQuote,
   getQuoteTotalWithTaxFromRow,
 } from "@/app/quote/[quoteId]/quote-shared";
+import { recordExternalSquarePayment } from "@/lib/payments/record-external-square-payment";
+import { recordMovePaymentLedgerEntry } from "@/lib/payments/record-move-payment";
 
 /**
  * POST /api/admin/quotes/[quoteId]/confirm-offline-payment
@@ -173,7 +175,26 @@ export async function POST(
     );
   }
 
-  const paymentId = `offline-admin-${quoteId}-${Date.now()}`;
+  // Record the received cash/wire/cheque as a REAL external payment in Square
+  // so it lands in the Square seller account AND returns a genuine receipt URL.
+  // That receipt then flows through the move/delivery + payment ledger into the
+  // client's track-portal Files tab, exactly like a card payment. Best-effort:
+  // if Square is unreachable we fall back to a local offline id (no receipt)
+  // rather than block the operator from recording a payment already in hand.
+  const isFullPayment = kind === "full" || mode === "full_upfront";
+  const ext = await recordExternalSquarePayment({
+    amountInclusive: payAmount,
+    referenceId: humanQuoteId,
+    note: `${isFullPayment ? "Full payment" : "Deposit"} for ${humanQuoteId} — recorded by Yugo (offline)`,
+    method: (quote.deposit_method as string | null) ?? "other",
+    buyerEmail: clientEmail,
+    idempotencySuffix: `offline-${quoteId}-${kind}`,
+  });
+  if (!ext.ok) {
+    console.error(`[confirm-offline-payment] Square external payment failed: ${ext.error}`);
+  }
+  const paymentId = ext.ok ? ext.paymentId : `offline-admin-${quoteId}-${Date.now()}`;
+  const receiptUrl = ext.ok ? ext.receiptUrl : null;
   const selectedTier = quote.selected_tier ?? null;
   const selectedAddons = quote.selected_addons ?? [];
 
@@ -208,7 +229,7 @@ export async function POST(
         squareCustomerId: undefined,
         squareCardId: undefined,
         squarePaymentId: paymentId,
-        squareReceiptUrl: null,
+        squareReceiptUrl: receiptUrl,
       });
 
       await admin
@@ -271,7 +292,22 @@ export async function POST(
       squareCustomerId: undefined,
       squareCardId: undefined,
       squarePaymentId: paymentId,
-      squareReceiptUrl: null,
+      squareReceiptUrl: receiptUrl,
+    });
+
+    // Record the payment in the ledger so its receipt shows in the client's
+    // Files tab next to any later balance/adjustment receipts. Mirrors the
+    // online card flow (payments/process), which the offline path never did —
+    // that is why manually-booked deposits used to show no receipt at all.
+    await recordMovePaymentLedgerEntry(admin, {
+      moveId: moveResult.moveId,
+      entryType: "deposit",
+      label: isFullPayment ? "Full payment" : "Contract deposit",
+      amountInclusive: payAmount,
+      squarePaymentId: paymentId,
+      squareReceiptUrl: receiptUrl,
+      settlementMethod: "offline",
+      dedupeByEntryType: true,
     });
 
     await admin

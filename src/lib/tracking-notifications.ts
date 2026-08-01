@@ -404,6 +404,10 @@ export async function notifyOnCheckpoint(
   let eventMove = false;
   let eventPhase: string | null = null;
   let movePartnerEligible = false;
+  /** Property manager org (organizations.type = 'property_manager') — receives
+   * only booking + completion + morning digest, never mid-move emails, and
+   * never the customer's live tracking URL. */
+  let partnerIsPropertyManager = false;
   let moveRowForSms: {
     id: string;
     organization_id?: string | null;
@@ -488,6 +492,10 @@ export async function notifyOnCheckpoint(
         if (org && org.type !== "b2c") {
           movePartnerEligible = true;
           partnerEmail = (org.email || "").trim() || null;
+          // Property management orgs are handled separately below: they
+          // only get booking + completion + a morning digest (see cron
+          // pm-daily-digest). Everything mid-move is noise for them.
+          partnerIsPropertyManager = org.type === "property_manager";
         }
       }
       trackUrl = buildPublicMoveTrackUrl({
@@ -669,12 +677,19 @@ export async function notifyOnCheckpoint(
 
   const toSend: string[] = [];
   if (cfg.notifyClient && clientEmail) toSend.push(clientEmail);
-  if (
+  // Partner recipients — property manager orgs skip every checkpoint
+  // except `completed`. Mid-move progress emails to PMs read as spam
+  // (they only care that a move is scheduled and that it's done);
+  // this mirrors the SMS-side short-circuit at partner-job-comms.ts:
+  // 275-283. Non-PM partners (corporate accounts, referral orgs) keep
+  // the existing behavior.
+  const shouldEmailPartner =
     cfg.notifyPartner &&
     partnerEmail &&
-    !toSend.some((e) => e.toLowerCase() === partnerEmail!.toLowerCase())
-  ) {
-    toSend.push(partnerEmail);
+    (!partnerIsPropertyManager || status === "completed") &&
+    !toSend.some((e) => e.toLowerCase() === partnerEmail!.toLowerCase());
+  if (shouldEmailPartner) {
+    toSend.push(partnerEmail!);
   }
 
   if (resend && toSend.length > 0) {
@@ -711,6 +726,34 @@ export async function notifyOnCheckpoint(
     const emailFrom = await getEmailFrom();
     for (const to of toSendGeneric) {
       try {
+        const isPmRecipient =
+          partnerIsPropertyManager &&
+          !!partnerEmail &&
+          to.toLowerCase() === partnerEmail.toLowerCase();
+        // PM completion email: PM-scoped template with no live tracking
+        // URL. PMs should never receive the customer-scoped GPS view —
+        // they're a building admin, not the customer.
+        if (isPmRecipient) {
+          const pmSubject = `Move complete | ${formatJobId(moveCode || jobId, jobType)}`;
+          const { partnerPropertyManagerMoveCompletedEmail } = await import(
+            "@/lib/email-templates"
+          );
+          const pmHtml = partnerPropertyManagerMoveCompletedEmail({
+            customerName: moveClientName || deliveryClientName || "Customer",
+            moveCode: moveCode || jobId,
+            fromAddress: moveFromAddress ?? null,
+            toAddress: moveToAddress ?? null,
+            completedAt: new Date().toISOString(),
+          });
+          await resend.emails.send({
+            from: emailFrom,
+            to,
+            subject: pmSubject,
+            html: pmHtml,
+            headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
+          });
+          continue;
+        }
         const useEstateSkin =
           estateMove && jobType === "move" && to === clientEmail;
         await resend.emails.send({

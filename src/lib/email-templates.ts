@@ -982,6 +982,150 @@ export function partnerBookingScheduledEmail(params: {
   return emailLayout(inner, "booking");
 }
 
+/**
+ * Property-manager scoped emails.
+ *
+ * PMs get exactly three emails per move (booking, morning-of digest,
+ * completion) and NEVER receive the customer's live tracking URL.
+ * A building admin isn't the customer — showing them GPS + real-time
+ * ETA is a privacy leak. These templates render address + timing +
+ * a completion stamp only, with a contact line for the coordinator.
+ *
+ * Rendered by tracking-notifications.ts (completion) and the
+ * /api/cron/pm-daily-digest endpoint (morning digest).
+ */
+export function partnerPropertyManagerBookingEmail(params: {
+  customerName: string;
+  whenLabel: string;
+  buildingAddress: string | null;
+  moveCode: string;
+}): string {
+  const { customerName, whenLabel, buildingAddress, moveCode } = params;
+  const cn = escapeHtmlEmail(customerName);
+  const w = escapeHtmlEmail(whenLabel);
+  const bldg = buildingAddress ? escapeHtmlEmail(buildingAddress) : null;
+  const inner = `
+    <div style="${PREMIUM_EYEBROW_UPPER};margin-bottom:8px;">Move scheduled</div>
+    <div style="font-size:20px;font-weight:700;margin:0 0 8px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};letter-spacing:0;text-transform:none;">A Yugo move is booked at your property</div>
+    <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 20px;">Your building is on our calendar for <strong>${cn}</strong>. We'll send one more note when the move is complete, plus a morning digest on the day of.</p>
+    ${premiumSectionRule()}
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;">
+      ${emailNestedKvRow({ borderTop: "none", labelStyle: `padding:4px 8px 4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`, valueStyle: `padding:4px 0;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`, label: "Resident", valueHtml: `<span style="font-family:${PREMIUM_FONT}">${cn}</span>` })}
+      ${emailNestedKvRow({ borderTop: `1px solid ${PREMIUM_RULE}`, labelStyle: `padding:8px 8px 4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`, valueStyle: `padding:8px 0 4px;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`, label: "Move ID", valueHtml: `<span style="font-family:${PREMIUM_FONT}">${escapeHtmlEmail(moveCode)}</span>` })}
+      ${emailNestedKvRow({ borderTop: `1px solid ${PREMIUM_RULE}`, labelStyle: `padding:8px 8px 4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`, valueStyle: `padding:8px 0 4px;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`, label: "Date and window", valueHtml: `<span style="font-family:${PREMIUM_FONT}">${w}</span>` })}
+      ${bldg ? emailNestedKvRow({ borderTop: `1px solid ${PREMIUM_RULE}`, labelStyle: `padding:8px 8px 4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`, valueStyle: `padding:8px 0 4px;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`, label: "Building", valueHtml: `<span style="font-family:${PREMIUM_FONT}">${bldg}</span>` }) : ""}
+    </table>
+    <p style="font-size:12px;color:${PREMIUM_BODY_MUTED};line-height:1.5;margin:24px 0 0;">Questions about the schedule? Reply to this email or reach the coordinator directly.</p>
+  `;
+  return emailLayout(inner, "booking");
+}
+
+export function partnerPropertyManagerMoveCompletedEmail(params: {
+  customerName: string;
+  moveCode: string;
+  fromAddress: string | null;
+  toAddress: string | null;
+  completedAt: string;
+}): string {
+  const { customerName, moveCode, fromAddress, toAddress, completedAt } = params;
+  const cn = escapeHtmlEmail(customerName);
+  const finishedLabel = (() => {
+    try {
+      const d = new Date(completedAt);
+      return d.toLocaleString("en-CA", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: "America/Toronto",
+      });
+    } catch {
+      return "Today";
+    }
+  })();
+  const finishedEsc = escapeHtmlEmail(finishedLabel);
+  // Route rows only when addresses are present. PMs get the addresses
+  // because they operate the buildings involved — this is not the same
+  // privacy concern as the live tracking URL (a static address is
+  // information they already have; live GPS is not).
+  const routeRow = (label: string, addr: string | null) =>
+    addr && addr.trim()
+      ? emailNestedKvRow({
+          borderTop: `1px solid ${PREMIUM_RULE}`,
+          labelStyle: `padding:8px 8px 4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`,
+          valueStyle: `padding:8px 0 4px;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`,
+          label,
+          valueHtml: `<span style="font-family:${PREMIUM_FONT}">${escapeHtmlEmail(addr)}</span>`,
+        })
+      : "";
+  const inner = `
+    <div style="${PREMIUM_EYEBROW_UPPER};margin-bottom:8px;">Complete</div>
+    <div style="font-size:20px;font-weight:700;margin:0 0 8px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};letter-spacing:0;text-transform:none;">A move at your property is complete</div>
+    <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 20px;">The crew has wrapped up. Your building is clear.</p>
+    ${premiumSectionRule()}
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;">
+      ${emailNestedKvRow({ borderTop: "none", labelStyle: `padding:4px 8px 4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`, valueStyle: `padding:4px 0;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`, label: "Resident", valueHtml: `<span style="font-family:${PREMIUM_FONT}">${cn}</span>` })}
+      ${emailNestedKvRow({ borderTop: `1px solid ${PREMIUM_RULE}`, labelStyle: `padding:8px 8px 4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`, valueStyle: `padding:8px 0 4px;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`, label: "Move ID", valueHtml: `<span style="font-family:${PREMIUM_FONT}">${escapeHtmlEmail(moveCode)}</span>` })}
+      ${emailNestedKvRow({ borderTop: `1px solid ${PREMIUM_RULE}`, labelStyle: `padding:8px 8px 4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`, valueStyle: `padding:8px 0 4px;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`, label: "Finished", valueHtml: `<span style="font-family:${PREMIUM_FONT}">${finishedEsc}</span>` })}
+      ${routeRow("From", fromAddress)}
+      ${routeRow("To", toAddress)}
+    </table>
+    <p style="font-size:12px;color:${PREMIUM_BODY_MUTED};line-height:1.5;margin:24px 0 0;">If you noticed any building concerns during the move, reply to this email and we'll follow up.</p>
+  `;
+  return emailLayout(inner, "status");
+}
+
+export function partnerPropertyManagerDailyDigestEmail(params: {
+  dateLabel: string;
+  moves: Array<{
+    moveCode: string;
+    customerName: string;
+    whenLabel: string;
+    fromAddress: string | null;
+    toAddress: string | null;
+  }>;
+}): string {
+  const { dateLabel, moves } = params;
+  const dateEsc = escapeHtmlEmail(dateLabel);
+  const countLabel =
+    moves.length === 1 ? "1 move scheduled today" : `${moves.length} moves scheduled today`;
+  const rows = moves
+    .map((m) => {
+      const cn = escapeHtmlEmail(m.customerName || "Resident");
+      const w = escapeHtmlEmail(m.whenLabel || "TBD");
+      const code = escapeHtmlEmail(m.moveCode);
+      const addr =
+        m.fromAddress?.trim() ||
+        m.toAddress?.trim() ||
+        "";
+      const addrLine = addr
+        ? `<div style="font-size:11px;color:${PREMIUM_BODY_MUTED};margin-top:2px;">${escapeHtmlEmail(addr)}</div>`
+        : "";
+      return `
+        <tr>
+          <td style="padding:12px 0;border-top:1px solid ${PREMIUM_RULE};font-family:${PREMIUM_FONT};">
+            <div style="font-size:13px;font-weight:600;color:${PREMIUM_BODY};">${cn} <span style="color:${PREMIUM_BODY_MUTED};font-weight:400;">· ${code}</span></div>
+            <div style="font-size:12px;color:${PREMIUM_BODY};margin-top:2px;">${w}</div>
+            ${addrLine}
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+  const inner = `
+    <div style="${PREMIUM_EYEBROW_UPPER};margin-bottom:8px;">Today's activity</div>
+    <div style="font-size:20px;font-weight:700;margin:0 0 8px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};letter-spacing:0;text-transform:none;">Yugo moves at your properties</div>
+    <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 4px;"><strong>${dateEsc}</strong> · ${countLabel}</p>
+    <p style="font-size:12px;color:${PREMIUM_BODY_MUTED};line-height:1.5;margin:0 0 20px;">You'll get a separate note as each move completes.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;">
+      ${rows}
+    </table>
+    <p style="font-size:11px;color:${PREMIUM_BODY_MUTED};line-height:1.5;margin:24px 0 0;">Reply to this email for anything urgent.</p>
+  `;
+  return emailLayout(inner, "digest");
+}
+
 /** Partner portal: share a live tracking link by email (cream shell, logo in wrapper). */
 export function shareTrackingPremiumEmail(params: {
   eyebrow: string;
