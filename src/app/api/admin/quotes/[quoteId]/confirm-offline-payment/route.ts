@@ -14,10 +14,6 @@ import {
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { logActivity } from "@/lib/activity";
 import {
-  isQuoteExpiredForBooking,
-  quoteExpiryBlockedStatuses,
-} from "@/lib/quote-expiry";
-import {
   expectedB2BCardGrandTotalCad,
   isB2BDeliveryQuoteServiceType,
 } from "@/lib/quotes/b2b-quote-copy";
@@ -71,21 +67,22 @@ export async function POST(
   }
 
   const status = String(quote.status || "").toLowerCase();
-  if (quoteExpiryBlockedStatuses().includes(status)) {
+  // Recording an offline payment is a STAFF action confirming money already
+  // received (cash / wire / cheque). It is authoritative and must NOT be blocked
+  // by quote expiry — a business client's finance team routinely pays after the
+  // quote's expiry date, and blocking the operator from recording a real deposit
+  // is the reported failure (YG-30369). Only deliberately-dead states, which
+  // need an explicit recovery decision first, are blocked here. Expiry stays
+  // enforced on the CLIENT self-serve payment path (that guards stale pricing).
+  if (status === "declined" || status === "cancelled") {
     return NextResponse.json(
-      { error: "This quote cannot be booked in its current status" },
+      { error: "Change this quote's status out of Declined/Cancelled before booking it offline" },
       { status: 400 },
     );
   }
   if (status === "lost") {
     return NextResponse.json(
       { error: "Recover this quote from Lost before booking offline" },
-      { status: 400 },
-    );
-  }
-  if (isQuoteExpiredForBooking(quote)) {
-    return NextResponse.json(
-      { error: "Quote has expired. Reactivate or send a new quote before booking" },
       { status: 400 },
     );
   }
