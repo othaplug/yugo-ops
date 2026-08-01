@@ -495,7 +495,9 @@ export default function EventTrackDashboard({
               alignItems: "flex-start",
             }}
           >
-            <span style={{ fontWeight: 800 }}>✓</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flex: "none", marginTop: 1 }} aria-hidden>
+              <path d="M5 12.5 10 17.5 19 6.5" stroke={FOREST} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             <span>
               <b>We handle the venue&rsquo;s certificate of insurance.</b> Yugo carries full
               commercial coverage and provides the COI directly to your venue — nothing needed from you.
@@ -604,9 +606,10 @@ export default function EventTrackDashboard({
               boxShadow: "0 1px 2px rgba(43,4,22,.04)",
             }}
           >
-            <div style={{ fontSize: 20, marginBottom: 8 }} aria-hidden>
-              🧾
-            </div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ marginBottom: 8, display: "block" }} aria-hidden>
+              <path d="M6 3.5h12v17l-2.4-1.5L13.2 20l-2.4-1.5L8.4 20 6 20.5V3.5Z" stroke={ROSE} strokeWidth="1.5" strokeLinejoin="round" />
+              <path d="M9 8h6M9 11.5h6M9 15h3.5" stroke={ROSE} strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
             <div className="font-hero" style={{ fontSize: 16, color: WINE }}>
               Receipts &amp; documents
             </div>
@@ -628,9 +631,10 @@ export default function EventTrackDashboard({
               boxShadow: "0 1px 2px rgba(43,4,22,.04)",
             }}
           >
-            <div style={{ fontSize: 20, marginBottom: 8 }} aria-hidden>
-              📍
-            </div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ marginBottom: 8, display: "block" }} aria-hidden>
+              <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" stroke={ROSE} strokeWidth="1.5" strokeLinejoin="round" />
+              <circle cx="12" cy="11" r="2.2" stroke={ROSE} strokeWidth="1.5" />
+            </svg>
             <div className="font-hero" style={{ fontSize: 16, color: WINE }}>
               Live tracking
             </div>
