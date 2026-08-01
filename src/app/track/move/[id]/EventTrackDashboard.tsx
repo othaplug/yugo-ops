@@ -50,6 +50,10 @@ export interface EventTrackDashboardProps {
   arrivalWindow: string | null;
   hasCardOnFile: boolean;
   onAddCard: () => void;
+  /** Jump to the Files tab (receipts, photos, documents). */
+  onViewFiles: () => void;
+  /** Jump to the Live Tracking tab (crew map on delivery / return day). */
+  onViewTracking: () => void;
 }
 
 const fmtDate = (d?: string | null) => {
@@ -70,6 +74,8 @@ export default function EventTrackDashboard({
   arrivalWindow,
   hasCardOnFile,
   onAddCard,
+  onViewFiles,
+  onViewTracking,
 }: EventTrackDashboardProps) {
   const factors =
     move.factors_applied && typeof move.factors_applied === "object" && !Array.isArray(move.factors_applied)
@@ -432,42 +438,69 @@ export default function EventTrackDashboard({
           </ol>
         </Card>
 
-        {/* WHAT WE NEED FROM YOU */}
+        {/* WHAT WE NEED FROM YOU — only genuinely client-side items. Yugo
+            provides the venue's COI, so it is NOT requested here (that reassurance
+            is stated below instead of asked for). */}
         <Card>
           <SHead title="What we need from you" meta="Before load-in" />
-          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column" }}>
-            {[
-              { t: "Certificate of insurance (COI)", s: "Most venues require this before the crew can load in" },
+          {(() => {
+            const items = [
               { t: "Venue load-in contact & dock access", s: "Who lets the crew in, and where the dock or elevator is" },
               { t: `On-site contact for delivery day${deliveryDate ? ` (${fmtDate(deliveryDate)})` : ""}`, s: "A name and number we can reach on the day" },
-            ].map((it, i) => (
-              <li
-                key={i}
-                style={{
-                  display: "flex",
-                  gap: 12,
-                  alignItems: "flex-start",
-                  padding: "11px 0",
-                  borderBottom: i < 2 ? `1px solid ${LINE2}` : "none",
-                }}
-              >
-                <span
-                  style={{
-                    flex: "none",
-                    width: 19,
-                    height: 19,
-                    borderRadius: 6,
-                    border: `2px solid ${LINE}`,
-                    marginTop: 1,
-                  }}
-                />
-                <div>
-                  <div style={{ fontWeight: 600, color: WINE, fontSize: 14 }}>{it.t}</div>
-                  <div style={{ fontSize: 12, color: MUTED, marginTop: 1 }}>{it.s}</div>
-                </div>
-              </li>
-            ))}
-          </ul>
+              { t: "Final item list & setup layout", s: "Confirm what's coming and where it goes, so the crew places everything right" },
+            ];
+            return (
+              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column" }}>
+                {items.map((it, i) => (
+                  <li
+                    key={i}
+                    style={{
+                      display: "flex",
+                      gap: 12,
+                      alignItems: "flex-start",
+                      padding: "11px 0",
+                      borderBottom: i < items.length - 1 ? `1px solid ${LINE2}` : "none",
+                    }}
+                  >
+                    <span
+                      style={{
+                        flex: "none",
+                        width: 19,
+                        height: 19,
+                        borderRadius: 6,
+                        border: `2px solid ${LINE}`,
+                        marginTop: 1,
+                      }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: 600, color: WINE, fontSize: 14 }}>{it.t}</div>
+                      <div style={{ fontSize: 12, color: MUTED, marginTop: 1 }}>{it.s}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            );
+          })()}
+          <div
+            style={{
+              marginTop: 12,
+              padding: "10px 13px",
+              background: GREEN_SOFT,
+              border: `1px solid ${FOREST}22`,
+              borderRadius: 10,
+              fontSize: 12.5,
+              color: FOREST,
+              display: "flex",
+              gap: 8,
+              alignItems: "flex-start",
+            }}
+          >
+            <span style={{ fontWeight: 800 }}>✓</span>
+            <span>
+              <b>We handle the venue&rsquo;s certificate of insurance.</b> Yugo carries full
+              commercial coverage and provides the COI directly to your venue — nothing needed from you.
+            </span>
+          </div>
           {telHref ? (
             <a
               href={telHref}
@@ -553,6 +586,62 @@ export default function EventTrackDashboard({
             </div>
           ) : null}
         </Card>
+
+        {/* FILES + LIVE TRACKING — the two things a client comes back for.
+            These route to the existing Files (receipts/photos/documents) and
+            Live Tracking (crew map) tabs, so the ops record is never buried. */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <button
+            type="button"
+            onClick={onViewFiles}
+            style={{
+              textAlign: "left",
+              background: CARD,
+              border: `1px solid ${LINE}`,
+              borderRadius: 16,
+              padding: "16px 16px 15px",
+              cursor: "pointer",
+              boxShadow: "0 1px 2px rgba(43,4,22,.04)",
+            }}
+          >
+            <div style={{ fontSize: 20, marginBottom: 8 }} aria-hidden>
+              🧾
+            </div>
+            <div className="font-hero" style={{ fontSize: 16, color: WINE }}>
+              Receipts &amp; documents
+            </div>
+            <div style={{ fontSize: 12, color: MUTED, marginTop: 3, lineHeight: 1.45 }}>
+              Deposit &amp; balance receipts, photos and paperwork
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: ROSE, marginTop: 10 }}>Open files →</div>
+          </button>
+          <button
+            type="button"
+            onClick={onViewTracking}
+            style={{
+              textAlign: "left",
+              background: CARD,
+              border: `1px solid ${LINE}`,
+              borderRadius: 16,
+              padding: "16px 16px 15px",
+              cursor: "pointer",
+              boxShadow: "0 1px 2px rgba(43,4,22,.04)",
+            }}
+          >
+            <div style={{ fontSize: 20, marginBottom: 8 }} aria-hidden>
+              📍
+            </div>
+            <div className="font-hero" style={{ fontSize: 16, color: WINE }}>
+              Live tracking
+            </div>
+            <div style={{ fontSize: 12, color: MUTED, marginTop: 3, lineHeight: 1.45 }}>
+              Follow the crew on the map on delivery &amp; return day
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: ROSE, marginTop: 10 }}>
+              {daysUntil != null && daysUntil <= 1 ? "Track now →" : "View tracking →"}
+            </div>
+          </button>
+        </div>
 
         {/* EVENT TEAM */}
         <Card>

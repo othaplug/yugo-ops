@@ -1746,28 +1746,6 @@ export default function TrackMoveClient({
           </div>
         )}
         <main className="flex-1 max-w-[800px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-6 min-w-0 w-full pb-8 scroll-pb-8">
-          {serviceType === "event" ? (
-            /* Events get a purpose-built logistics dashboard: one unified
-               two-leg timeline (delivery + return), a concrete "what we need
-               from you" checklist, calm balance with the 48h due date, and the
-               event team. Residential move framing (rooms, packing, supplies)
-               does not apply, so we branch the entire main body rather than
-               patch dozens of copy sites. Payment modal lives outside <main>
-               and is driven by onAddCard -> setPaymentModalOpen. */
-            <EventTrackDashboard
-              move={move as never}
-              eventSibling={eventSibling}
-              clientFirstName={move.client_name?.split(" ")[0] || ""}
-              coordinatorName={coordinatorName}
-              coordinatorPhone={coordinatorPhone}
-              totalBalance={totalBalance}
-              daysUntil={daysUntil}
-              arrivalWindow={arrivalWindow}
-              hasCardOnFile={hasCardOnFile}
-              onAddCard={() => setPaymentModalOpen(true)}
-            />
-          ) : (
-          <>
           {/* Office-specific hero + Day 1 / Day 2 phased view. Renders
              ONLY for office_move service type; residential/other flows
              skip it and go straight to the existing content below. */}
@@ -3909,6 +3887,27 @@ export default function TrackMoveClient({
 
           {/* Tab content */}
           {activeTab === "dash" && !isCompleted && (
+            serviceType === "event" ? (
+              /* Events get a purpose-built logistics overview on the Dashboard
+                 tab: unified two-leg timeline (delivery + return), the concrete
+                 pre-load-in checklist, calm balance with the 48h due date, and
+                 the event team. Live Tracking + Files tabs stay intact, so the
+                 client keeps the live crew map and all receipts/documents. */
+              <EventTrackDashboard
+                move={move as never}
+                eventSibling={eventSibling}
+                clientFirstName={move.client_name?.split(" ")[0] || ""}
+                coordinatorName={coordinatorName}
+                coordinatorPhone={coordinatorPhone}
+                totalBalance={totalBalance}
+                daysUntil={daysUntil}
+                arrivalWindow={arrivalWindow}
+                hasCardOnFile={hasCardOnFile}
+                onAddCard={() => setPaymentModalOpen(true)}
+                onViewFiles={() => setActiveTab("files")}
+                onViewTracking={() => setActiveTab("track")}
+              />
+            ) : (
             <>
               {/* Activity feed — chronological audit of everything that has
                   happened since the quote was accepted. Default-open so the
@@ -5158,6 +5157,7 @@ export default function TrackMoveClient({
                 </details>
               )}
             </>
+            )
           )}
 
           {activeTab === "track" && (
@@ -5189,11 +5189,14 @@ export default function TrackMoveClient({
                   }}
                 >
                   <p className="text-[13px] font-semibold mb-2" style={{ color: WINE }}>
-                    Live map rests on prep days
+                    {serviceType === "event"
+                      ? "Live tracking opens on delivery day"
+                      : "Live map rests on prep days"}
                   </p>
                   <p className="text-[12px] leading-relaxed px-2" style={{ color: FOREST }}>
-                    Tracking opens when crews are hauling between homes. Packing, unpacking,
-                    or staging visits stay off the map so you always see meaningful movement.
+                    {serviceType === "event"
+                      ? "On delivery and return day you'll follow the crew on the map from dispatch to your venue. Until then, your full plan and timeline live on the Dashboard."
+                      : "Tracking opens when crews are hauling between homes. Packing, unpacking, or staging visits stay off the map so you always see meaningful movement."}
                   </p>
                 </div>
               )}
@@ -5233,8 +5236,6 @@ export default function TrackMoveClient({
                 refreshTrigger={paymentRecorded}
               />
             </div>
-          )}
-          </>
           )}
         </main>
 
