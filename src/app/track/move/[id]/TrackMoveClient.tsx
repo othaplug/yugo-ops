@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { OfficeTrackHero } from "./OfficeTrackHero";
 import OfficeReservationCard from "./OfficeReservationCard";
+import EventTrackDashboard from "./EventTrackDashboard";
 import {
   OFFICE_TOKENS,
   OfficeCard,
@@ -1745,6 +1746,28 @@ export default function TrackMoveClient({
           </div>
         )}
         <main className="flex-1 max-w-[800px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-6 min-w-0 w-full pb-8 scroll-pb-8">
+          {serviceType === "event" ? (
+            /* Events get a purpose-built logistics dashboard: one unified
+               two-leg timeline (delivery + return), a concrete "what we need
+               from you" checklist, calm balance with the 48h due date, and the
+               event team. Residential move framing (rooms, packing, supplies)
+               does not apply, so we branch the entire main body rather than
+               patch dozens of copy sites. Payment modal lives outside <main>
+               and is driven by onAddCard -> setPaymentModalOpen. */
+            <EventTrackDashboard
+              move={move as never}
+              eventSibling={eventSibling}
+              clientFirstName={move.client_name?.split(" ")[0] || ""}
+              coordinatorName={coordinatorName}
+              coordinatorPhone={coordinatorPhone}
+              totalBalance={totalBalance}
+              daysUntil={daysUntil}
+              arrivalWindow={arrivalWindow}
+              hasCardOnFile={hasCardOnFile}
+              onAddCard={() => setPaymentModalOpen(true)}
+            />
+          ) : (
+          <>
           {/* Office-specific hero + Day 1 / Day 2 phased view. Renders
              ONLY for office_move service type; residential/other flows
              skip it and go straight to the existing content below. */}
@@ -5210,6 +5233,8 @@ export default function TrackMoveClient({
                 refreshTrigger={paymentRecorded}
               />
             </div>
+          )}
+          </>
           )}
         </main>
 
