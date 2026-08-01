@@ -14,11 +14,7 @@ import {
   runDeliveryCompletionFollowUp,
   runMoveCompletionFollowUp,
 } from "@/lib/moves/complete-move-job";
-import {
-  EN_ROUTE_CHECKIN_DELAY_MS,
-  scheduleEnRouteMidMoveCheckin,
-  scheduleLongUnloadCheckinIfNeeded,
-} from "@/lib/moves/schedule-mid-move-client-sms";
+import { scheduleLongUnloadCheckinIfNeeded } from "@/lib/moves/schedule-mid-move-client-sms";
 import {
   persistDeliveryArrivedLateIfNeeded,
   persistMoveArrivalOnTimeIfNeeded,
@@ -404,13 +400,14 @@ export async function POST(req: NextRequest) {
     });
     if (applied && session.job_type === "move") {
       try {
-        if (status === "en_route_to_destination") {
-          await scheduleEnRouteMidMoveCheckin(
-            admin,
-            session.job_id,
-            new Date(Date.now() + EN_ROUTE_CHECKIN_DELAY_MS),
-          );
-        }
+        // en_route_to_destination — the mid-move check-in used to
+        // schedule a second SMS 15 min later ("belongings on the way,
+        // making excellent progress"). Customers received it back-to-
+        // back with the immediate checkpoint SMS ("belongings are on
+        // the way to your new home. Track here…") — same milestone,
+        // two messages, reads amateur. `notifyOnCheckpoint` below
+        // already covers the transition; drop the scheduler here so
+        // it stays one message per event.
         if (status === "unloading") {
           await scheduleLongUnloadCheckinIfNeeded(
             admin,
