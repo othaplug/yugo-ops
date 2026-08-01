@@ -186,7 +186,7 @@ export async function POST(
       amountInclusive: deposit_amount,
       squarePaymentId: paymentId,
       squareReceiptUrl: receiptUrl,
-      settlementMethod: "offline",
+      settlementMethod: "admin",
       dedupeByEntryType: true,
     });
 

@@ -1298,6 +1298,10 @@ export default function TrackMoveClient({
   const isB2BOneOff =
     serviceType === "b2b_oneoff" || serviceType === "b2b_delivery";
   const isSingleItem = serviceType === "single_item";
+  // Events own the Dashboard tab via EventTrackDashboard, which is the hero.
+  // Suppress the residential greeting hero / scheduling note / "days until
+  // move day" countdown above the tabs so an event never shows move framing.
+  const isEvent = serviceType === "event";
   const isLogisticsDeliveryTrack = isMoveRowLogisticsDelivery({
     service_type: move.service_type,
     move_type: move.move_type,
@@ -1831,7 +1835,7 @@ export default function TrackMoveClient({
           {/* Office: OfficeTrackHero already renders the Move Plan +
               Day 1 / Day 2 timeline. Suppress the residential project-
               schedule section so the page doesn't repeat itself. */}
-          {serviceType !== "office_move" && moveProjectTrackSection}
+          {serviceType !== "office_move" && !isEvent && moveProjectTrackSection}
 
           {/* ── Move-Day Crew Change Request Banner ── */}
           {crewChangeRequest && crewCrApprovalState === "idle" && (
@@ -1962,8 +1966,10 @@ export default function TrackMoveClient({
               (mounted at top of <main>) is the sole hero for office
               relocations. Rendering both produced the "double hero" bug
               (screenshot: OfficeTrackHero + "Good afternoon · COMMERCIAL
-              MOVE · CONFIRMED"). */}
-          {serviceType !== "office_move" && (
+              MOVE · CONFIRMED"). Events likewise own the Dashboard tab via
+              EventTrackDashboard, so the residential greeting hero is
+              suppressed for them too. */}
+          {serviceType !== "office_move" && !isEvent && (
           <div className="flex items-center justify-between gap-3 mb-2">
             <div className="min-w-0">
               <h1
@@ -2334,8 +2340,11 @@ export default function TrackMoveClient({
 
           {/* Countdown / hero, hidden for completed moves; perks hub renders instead.
               Office relocations already show the phased "9 days" story
-              inside OfficeTrackHero, so this big counter would repeat it. */}
-          {!isCompleted && serviceType !== "office_move" && (
+              inside OfficeTrackHero, so this big counter would repeat it.
+              Events show their own confirmed/days-out state + dates in
+              EventTrackDashboard, so the "days until move day" counter (wrong
+              framing for an event) is suppressed for them too. */}
+          {!isCompleted && serviceType !== "office_move" && !isEvent && (
             <div className="py-3 sm:py-5 mb-2">
               {isCompleted ? (
                 <div className="text-center">
