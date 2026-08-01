@@ -212,19 +212,54 @@ export async function sendClientTrackingCheckpointSms(opts: {
     opts.projectManagerName ?? null,
   ).slice(0, 1500);
 
-  const result = await sendSMS(raw, body);
-  try {
-    const admin = createAdminClient();
-    await admin.from("notification_log").insert({
+  // Cross-pipeline dedup: reserve the milestone in notification_log
+  // before hitting the SMS provider. If any other pipeline (mid-move
+  // cron, manual retry, future checkpoint kind) tries to claim the
+  // same {jobId}:{status} tuple, its insert hits the unique index and
+  // this caller skips silently. Prevents the historical
+  // "belongings-on-the-way sent twice" flavor of bug from ever
+  // resurfacing across pipelines.
+  const admin = createAdminClient();
+  const notificationKey = `${opts.jobType}:${opts.jobUuid}:tracking:${opts.status}`;
+  const { data: reserved, error: reserveErr } = await admin
+    .from("notification_log")
+    .insert({
       channel: "sms",
       event: `tracking_${opts.status}`,
       recipient_phone: raw,
       message: body,
-      status: result.success ? "sent" : "failed",
-      error: result.success ? null : result.error ?? "send failed",
+      status: "pending",
       job_id: opts.jobUuid,
       job_type: opts.jobType,
-    });
+      notification_key: notificationKey,
+    })
+    .select("id")
+    .single();
+  if (reserveErr || !reserved) {
+    // Unique-index conflict (code 23505) means another pipeline
+    // already sent for this milestone. Any other error we log and
+    // fall back to send-without-reservation so we never miss a
+    // customer-facing SMS on infra hiccups.
+    if ((reserveErr as { code?: string } | null)?.code === "23505") {
+      return;
+    }
+    console.warn(
+      "[client-tracking-sms] reserve failed, sending unguarded:",
+      reserveErr?.message,
+    );
+    await sendSMS(raw, body);
+    return;
+  }
+
+  const result = await sendSMS(raw, body);
+  try {
+    await admin
+      .from("notification_log")
+      .update({
+        status: result.success ? "sent" : "failed",
+        error: result.success ? null : result.error ?? "send failed",
+      })
+      .eq("id", reserved.id);
   } catch {
     /* logging is best-effort */
   }
