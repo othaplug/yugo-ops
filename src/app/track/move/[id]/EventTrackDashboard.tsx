@@ -650,23 +650,7 @@ export default function EventTrackDashboard({
         {/* EVENT TEAM */}
         <Card>
           <SHead title="Your event team" />
-          <div style={{ display: "flex", alignItems: "center", gap: 13, padding: "12px 0" }}>
-            <div
-              style={{
-                flex: "none",
-                width: 42,
-                height: 42,
-                borderRadius: "50%",
-                display: "grid",
-                placeItems: "center",
-                background: ROSE_SOFT,
-                color: ROSE,
-                fontSize: 17,
-              }}
-              className="font-hero"
-            >
-              {(coordinatorName || "Y").trim().charAt(0).toUpperCase()}
-            </div>
+          <div style={{ padding: "12px 0" }}>
             <div>
               <div style={{ fontWeight: 650, color: WINE, fontSize: 14.5 }}>
                 {coordinatorName || "Yugo Operations"} · Coordinator
@@ -684,24 +668,7 @@ export default function EventTrackDashboard({
               </div>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 13, padding: "12px 0", borderTop: `1px solid ${LINE2}` }}>
-            <div
-              style={{
-                flex: "none",
-                width: 42,
-                height: 42,
-                borderRadius: "50%",
-                display: "grid",
-                placeItems: "center",
-                background: SUNKEN,
-                color: MUTED,
-                border: `1px dashed ${LINE}`,
-                fontSize: 15,
-              }}
-              className="font-hero"
-            >
-              {crew || "•"}
-            </div>
+          <div style={{ padding: "12px 0", borderTop: `1px solid ${LINE2}` }}>
             <div>
               <div style={{ fontWeight: 650, color: WINE, fontSize: 14.5 }}>
                 On-site crew{crew ? ` of ${crew}` : ""}
