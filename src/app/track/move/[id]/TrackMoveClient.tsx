@@ -2301,6 +2301,9 @@ export default function TrackMoveClient({
             const hints = ind
               .map((k) => complexityLabels[k])
               .filter(Boolean) as string[];
+            // Events show crew + handling in EventTrackDashboard; this move-framed
+            // "Scheduling note" doesn't belong on the event track page.
+            if (isEvent) return null;
             if (isNonMoveProductTrack) return null;
             if ((est == null || est < 3) && hints.length === 0) return null;
             return (
