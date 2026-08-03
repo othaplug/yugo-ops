@@ -231,10 +231,37 @@ export async function GET(req: NextRequest) {
     if (d?.id && !seenDeliveries.has(d.id as string)) { seenDeliveries.add(d.id as string); mergedDeliveries.push(d as AnyRow); }
   }
 
+  // ── Single recognition date per job (revenue recognition = SERVICE date) ──
+  // The three union queries above (scheduled_date / completed_at /
+  // payment_marked_paid_at) cast a wide net so a job near a month boundary
+  // isn't missed, but a job must then be ATTRIBUTED to exactly one month, by
+  // the same date the per-job table shows (scheduled_date first). Without this,
+  // a move serviced July 30 but whose completed_at timestamp is 2026-08-01T01:41Z
+  // (i.e. the night of July 31 in Toronto, rolled past UTC midnight) leaked into
+  // August AND July at once — double-counted and giving a false August P&L
+  // (MV-30282, Grant McAdam). Recognition falls back to completed_at, then
+  // payment date, only when scheduled_date is null. Comparisons are on the
+  // YYYY-MM-DD day so they line up with the DATE-typed scheduled_date and dodge
+  // the completed_at timezone-rollover entirely.
+  const recognitionDayKey = (row: AnyRow): string | null => {
+    for (const v of [row.scheduled_date, row.completed_at, row.payment_marked_paid_at]) {
+      if (v == null) continue;
+      const s = String(v).trim().slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    }
+    return null;
+  };
+  const inRecognitionRange = (row: AnyRow): boolean => {
+    const day = recognitionDayKey(row);
+    return day != null && day >= fromDate && day <= toDate;
+  };
+
   const completedMoves = mergedMoves.filter((m) =>
-    trackingMoveIds.has(m.id) || m.payment_marked_paid === true || performedMoveStatuses.has((m.status || "").toLowerCase())
+    inRecognitionRange(m) &&
+    (trackingMoveIds.has(m.id) || m.payment_marked_paid === true || performedMoveStatuses.has((m.status || "").toLowerCase()))
   );
   const completedDeliveries = mergedDeliveries.filter((d) => {
+    if (!inRecognitionRange(d)) return false;
     if (trackingDeliveryIds.has(d.id)) return true;
     const status = (d.status || "").toLowerCase();
     if (cancelledStatuses.has(status)) return false;
