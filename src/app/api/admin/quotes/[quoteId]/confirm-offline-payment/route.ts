@@ -310,6 +310,17 @@ export async function POST(
       dedupeByEntryType: true,
     });
 
+    // Snap est_crew_size to the selected tier's crew (crew_by_tier) so the
+    // quote row + admin detail match the booked move (which already stamps from
+    // crew_by_tier[selectedTier]). Otherwise a lighter tier keeps the heavier
+    // recommended crew on the quote.
+    const offlineCrewByTier = (
+      quote.factors_applied as Record<string, unknown> | null
+    )?.crew_by_tier as Record<string, unknown> | undefined;
+    const offlineTierCrew =
+      selectedTier && offlineCrewByTier
+        ? Number(offlineCrewByTier[String(selectedTier).toLowerCase()])
+        : NaN;
     await admin
       .from("quotes")
       .update({
@@ -320,6 +331,9 @@ export async function POST(
         payment_error: null,
         payment_failed_at: null,
         updated_at: new Date().toISOString(),
+        ...(Number.isFinite(offlineTierCrew)
+          ? { est_crew_size: offlineTierCrew }
+          : {}),
       })
       .eq("id", quoteId);
 

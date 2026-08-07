@@ -678,6 +678,19 @@ export async function POST(req: Request) {
       }
 
       // ── 5. Update quote → accepted (only after successful move/delivery creation) ──
+      // Snap est_crew_size to the SELECTED tier's crew (crew_by_tier) so the
+      // admin quote detail + any est_crew_size reader match what was actually
+      // booked. Previously est_crew_size kept the recommended/base crew, so a
+      // client who locked Essential still showed the heavier Estate crew (4)
+      // on a light 2-bedroom that runs with 3. The move already books from
+      // crew_by_tier[selectedTier]; this keeps the quote row consistent.
+      const acceptCrewByTier = (
+        quote.factors_applied as Record<string, unknown> | null
+      )?.crew_by_tier as Record<string, unknown> | undefined;
+      const acceptTierCrew =
+        selectedTier && acceptCrewByTier
+          ? Number(acceptCrewByTier[String(selectedTier).toLowerCase()])
+          : NaN;
       await supabase
         .from("quotes")
         .update({
@@ -687,6 +700,9 @@ export async function POST(req: Request) {
           selected_addons: selectedAddons ?? [],
           payment_error: null,
           payment_failed_at: null,
+          ...(Number.isFinite(acceptTierCrew)
+            ? { est_crew_size: acceptTierCrew }
+            : {}),
         })
         .eq("id", quote.id);
     } catch (jobErr) {

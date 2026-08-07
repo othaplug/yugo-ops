@@ -491,14 +491,34 @@ export default function QuotePageClient({
     "4br": 4,
     "5br_plus": 4,
   };
-  const flooredCrewSize = ((): number | null => {
-    const stored = quote.est_crew_size;
+  // Per-tier crew. The engine records each tier's crew in
+  // factors_applied.crew_by_tier (Estate carries the full size-based crew;
+  // Essential/Signature run lighter). Reading the scalar est_crew_size for
+  // every tier is what showed "crew of 4" on a booked Essential 2-bedroom that
+  // only needs 3. crewForTier resolves a given tier's crew (falling back to the
+  // scalar est_crew_size for older quotes) with the same move-size floor.
+  const crewByTierMap: Record<string, number> = (() => {
+    const fa = quote.factors_applied as Record<string, unknown> | null;
+    const raw = fa?.crew_by_tier;
+    if (!raw || typeof raw !== "object") return {};
+    const out: Record<string, number> = {};
+    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+      const n = Number(v);
+      if (Number.isFinite(n)) out[k.toLowerCase()] = n;
+    }
+    return out;
+  })();
+  const crewForTier = (tierKey: string | null | undefined): number | null => {
     const key = String(quote.move_size ?? "").toLowerCase();
     const floor = CREW_FLOOR_BY_MOVE_SIZE[key];
+    const perTier = tierKey
+      ? crewByTierMap[String(tierKey).toLowerCase()]
+      : undefined;
+    const stored = typeof perTier === "number" ? perTier : quote.est_crew_size;
     if (typeof floor !== "number") return stored ?? null;
     if (typeof stored !== "number" || !Number.isFinite(stored)) return floor;
     return Math.max(floor, stored);
-  })();
+  };
   const flooredPackCrewSize = ((): number | null => {
     const key = String(quote.move_size ?? "").toLowerCase();
     const floor = PACK_CREW_FLOOR_BY_MOVE_SIZE[key];
@@ -591,6 +611,9 @@ export default function QuotePageClient({
     if (st && String(st).trim()) return String(st).toLowerCase().trim();
     return null;
   });
+  // Crew shown across "your plan" surfaces reflects the SELECTED tier, not the
+  // recommended/base. Falls back to the recommended tier before the client picks.
+  const flooredCrewSize = crewForTier(selectedTier ?? recommendedTierNorm);
   const [confirmed, setConfirmed] = useState(quote.status === "accepted");
   const [currentStep, setCurrentStep] = useState(1);
   /** Highest step the client has reached; never reduced on Back so sections below tiers stay mounted. */
