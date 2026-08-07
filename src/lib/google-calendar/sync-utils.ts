@@ -25,9 +25,10 @@ const GCAL_PENDING = "__gcal_pending__";
  */
 export async function syncMoveGCalNow(
   moveId: string,
+  includeEventLegs = true,
 ): Promise<"created" | "updated" | "deleted" | "skipped" | "error" | "not_configured" | "not_found"> {
   if (!isGCalConfigured()) return "not_configured";
-  return await runMoveGCalSync(moveId);
+  return await runMoveGCalSync(moveId, includeEventLegs);
 }
 
 /** Fire-and-forget GCal sync for a move row. Reads fresh from DB, updates gcal_event_id. */
@@ -38,6 +39,12 @@ export function triggerMoveGCalSync(moveId: string): void {
 
 async function runMoveGCalSync(
   moveId: string,
+  // Events are two linked move rows (delivery + return) sharing an
+  // event_group_id. Each is its own calendar day, so syncing one must sync the
+  // sibling — otherwise only the delivery landed on Google Calendar and the
+  // return day was missing (MV-30369, Elevate Festival). Guarded to one hop so
+  // the sibling's own sync doesn't loop back.
+  includeEventLegs = true,
 ): Promise<"created" | "updated" | "deleted" | "skipped" | "error" | "not_found"> {
   try {
     const db = createAdminClient();
@@ -51,7 +58,7 @@ async function runMoveGCalSync(
       const { data: m } = await db
         .from("moves")
         .select(
-          "id, move_code, move_size, est_hours, est_crew_size, client_name, client_phone, client_email, service_type, move_type, status, scheduled_date, scheduled_start, scheduled_end, scheduled_time, preferred_time, arrival_window, estimated_duration_minutes, from_address, to_address, crew_id, notes, gcal_event_id, is_pm_move, pm_move_kind, pm_reason_code, pm_building_code, pm_zone, pm_urgency, pm_packing_required, partner_property_id, contract_id, tier_selected, total_price",
+          "id, move_code, move_size, est_hours, est_crew_size, client_name, client_phone, client_email, service_type, move_type, status, scheduled_date, scheduled_start, scheduled_end, scheduled_time, preferred_time, arrival_window, estimated_duration_minutes, from_address, to_address, crew_id, notes, gcal_event_id, is_pm_move, pm_move_kind, pm_reason_code, pm_building_code, pm_zone, pm_urgency, pm_packing_required, partner_property_id, contract_id, tier_selected, total_price, event_group_id, event_phase",
         )
         .eq("id", moveId)
         .single();
@@ -118,6 +125,23 @@ async function runMoveGCalSync(
     if (result.eventId !== undefined) {
       await db.from("moves").update({ gcal_event_id: result.eventId }).eq("id", moveId);
     }
+
+    // Event: sync the linked leg(s) too (delivery <-> return) so BOTH days land
+    // on the calendar. One hop only (includeEventLegs=false on the sibling call).
+    if (includeEventLegs) {
+      const egid = (m as { event_group_id?: string | null }).event_group_id;
+      if (egid) {
+        const { data: sibs } = await db
+          .from("moves")
+          .select("id")
+          .eq("event_group_id", egid)
+          .neq("id", moveId);
+        for (const s of sibs ?? []) {
+          await runMoveGCalSync(s.id as string, false);
+        }
+      }
+    }
+
     return result.action;
   } catch {
     return "error";

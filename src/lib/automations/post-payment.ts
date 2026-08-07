@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import { syncJobToGCal } from "@/lib/google-calendar/sync-job";
-import { syncDeliveryGCalNow } from "@/lib/google-calendar/sync-utils";
+import { syncDeliveryGCalNow, syncMoveGCalNow } from "@/lib/google-calendar/sync-utils";
 import { isGCalConfigured } from "@/lib/google-calendar/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
@@ -1314,6 +1314,21 @@ export async function runPostPaymentActions(
         });
         if (result.eventId !== undefined) {
           await supabase.from("moves").update({ gcal_event_id: result.eventId }).eq("id", input.moveId);
+        }
+        // Events are two linked move rows (delivery + return). The sync above
+        // only covers this leg; sync the sibling leg(s) so BOTH event days land
+        // on the calendar (MV-30369 return day was missing). `false` = don't
+        // let the sibling re-sync back to this leg.
+        const egid = (move as { event_group_id?: string | null }).event_group_id;
+        if (egid) {
+          const { data: legs } = await supabase
+            .from("moves")
+            .select("id")
+            .eq("event_group_id", egid)
+            .neq("id", input.moveId);
+          for (const leg of legs ?? []) {
+            await syncMoveGCalNow(leg.id as string, false);
+          }
         }
       },
     },

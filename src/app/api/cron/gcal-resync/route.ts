@@ -58,11 +58,14 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 2. PM moves missing a GCal event.
+  // 2. PM moves AND event legs missing a GCal event. Events are two linked move
+  //    rows (delivery + return); the return leg used to be left off the calendar
+  //    entirely (MV-30369). event_group_id catches any leg still missing its
+  //    event; syncMoveGCalNow also re-syncs the sibling, so both days land.
   const { data: missingPmMoves } = await db
     .from("moves")
     .select("id")
-    .eq("is_pm_move", true)
+    .or("is_pm_move.eq.true,event_group_id.not.is.null")
     .is("gcal_event_id", null)
     .order("scheduled_date", { ascending: false })
     .limit(300);
