@@ -9,6 +9,7 @@ import {
   type B2BQuoteLineItem,
 } from "@/lib/pricing/b2b-dimensional";
 import { loadB2BVerticalPricing } from "@/lib/pricing/b2b-vertical-load";
+import { applyProcessingRecoveryAndRound } from "@/lib/pricing/processing-recovery";
 import {
   mergedRatesWithBundleTiers,
   prepareB2bLineItemsForDimensionalEngine,
@@ -238,8 +239,17 @@ export async function POST(req: NextRequest) {
 
       const taxRate = cfgNum(config, "tax_rate", TAX_FALLBACK);
       const preRoundSubtotal = result.total;
-      const rounding = cfgNum(config, "rounding_nearest", 25);
-      const roundedPreTax = roundTo(preRoundSubtotal, rounding);
+      // Bake CC processing recovery + round, identically to /api/quotes/generate
+      // (which applies applyProcessingRecoveryToTier to every non-residential
+      // quote at $50). Without this the previewed price was the pre-recovery
+      // engine number ($850 → $961) while the saved/sent quote was recovery-
+      // inclusive ($900 → $1,017) — the operator saw one price and the client
+      // another. Always $50 to match generate's non-single-item rounding.
+      const roundedPreTax = applyProcessingRecoveryAndRound(
+        preRoundSubtotal,
+        config,
+        50,
+      );
       const hst = Math.round(roundedPreTax * taxRate * 100) / 100;
 
       return NextResponse.json({
@@ -347,9 +357,12 @@ export async function POST(req: NextRequest) {
         : 0;
 
     const engineSubtotal = dim.subtotal;
-    const roundedSubtotal = roundTo(
+    // Bake CC processing recovery + round, identically to /api/quotes/generate
+    // so the previewed price equals the saved/sent quote (see block above).
+    const roundedSubtotal = applyProcessingRecoveryAndRound(
       engineSubtotal + accessSurcharge + multiStopLineAmount,
-      rounding,
+      config,
+      50,
     );
     const hst = Math.round(roundedSubtotal * taxRate * 100) / 100;
 

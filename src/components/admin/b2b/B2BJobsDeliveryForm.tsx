@@ -128,6 +128,22 @@ const TRUCK_OPTIONS = ["sprinter", "16ft", "20ft", "24ft", "26ft"] as const;
 
 const TAX_RATE_CLIENT = 0.13;
 const ROUNDING_NEAREST_CLIENT = 25;
+// Client mirror of @/lib/pricing/processing-recovery so the LIVE b2b estimate
+// already includes the CC processing recovery that /api/quotes/generate bakes
+// into every non-residential quote. Without this the live estimate showed the
+// pre-recovery price (e.g. $850/$961) while the saved quote was $900/$1,017.
+// The server "GET EXACT PRICE" stays authoritative; these mirror platform_config
+// defaults. $50 round matches generate's non-single-item rounding.
+const PROCESSING_RECOVERY_RATE_CLIENT = 0.033;
+const PROCESSING_RECOVERY_FLAT_CLIENT = 0.15;
+function applyClientProcessingRecovery(preTax: number, roundNearest = 50): number {
+  if (!(preTax > 0)) return preTax;
+  const grossed = Math.ceil(
+    (preTax + PROCESSING_RECOVERY_FLAT_CLIENT) /
+      (1 - PROCESSING_RECOVERY_RATE_CLIENT),
+  );
+  return Math.round(grossed / roundNearest) * roundNearest;
+}
 
 function roundToNearest(amount: number, nearest: number): number {
   if (!nearest || nearest <= 0) return Math.round(amount * 100) / 100;
@@ -1336,9 +1352,9 @@ export default function B2BJobsDeliveryForm({
         : 0;
     const multiSurchargeClient =
       routeMode === "multi" && extraPuClient > 0 ? extraPuClient * 75 : 0;
-    const roundedPreTax = roundToNearest(
+    const roundedPreTax = applyClientProcessingRecovery(
       dim.subtotal + access + multiSurchargeClient,
-      ROUNDING_NEAREST_CLIENT,
+      50,
     );
     const hst = Math.round(roundedPreTax * TAX_RATE_CLIENT * 100) / 100;
     const bd = [...dim.breakdown];
