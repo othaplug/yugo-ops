@@ -18,8 +18,17 @@ import MultiStopAddressField, {
 } from "@/components/ui/MultiStopAddressField";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
-import { useFormDraft } from "@/hooks/useFormDraft";
+import {
+  useFormDraft,
+  buildDraftResumePath,
+  getAllDraftMetas,
+} from "@/hooks/useFormDraft";
 import { useUnsavedNavGuard } from "@/hooks/useUnsavedNavGuard";
+import {
+  useServerDraftAutosave,
+  fetchServerDraftSnapshot,
+  deleteServerDraft,
+} from "@/hooks/useServerDraftAutosave";
 import DraftBanner from "@/components/ui/DraftBanner";
 import { toTitleCase } from "@/lib/format-text";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
@@ -2654,6 +2663,7 @@ export default function QuoteFormClient({
   );
 
   const {
+    draftId: quoteDraftId,
     hasDraft: quoteHasDraft,
     restoreDraft: quoteRestoreDraft,
     dismissDraft: quoteDismissDraft,
@@ -2664,6 +2674,33 @@ export default function QuoteFormClient({
     ) => void,
     isDirty: () => quoteHasRealContent,
   });
+
+  // Phase 2: mirror the local draft to the server (same draftId) so it survives
+  // a cleared cache and resumes on any device. Best-effort; degrades to the
+  // localStorage draft if the endpoint/table is unavailable.
+  useServerDraftAutosave({
+    draftId: quoteDraftId,
+    formType: "quote",
+    title: quoteDraftTitleFn(quoteDraftState),
+    path: buildDraftResumePath("quote", quoteDraftId),
+    snapshot: quoteDraftState,
+    enabled: quoteHasRealContent,
+  });
+
+  // Cross-device / cleared-cache resume: when the URL carries a draftId that the
+  // local store doesn't have, pull the snapshot from the server and apply it.
+  const serverResumeDoneRef = useRef(false);
+  useEffect(() => {
+    if (serverResumeDoneRef.current || typeof window === "undefined") return;
+    const id = new URLSearchParams(window.location.search).get("draftId");
+    if (!id) return;
+    // Same-browser drafts are auto-restored by useFormDraft — don't double-apply.
+    if (getAllDraftMetas().some((d) => d.id === id)) return;
+    serverResumeDoneRef.current = true;
+    fetchServerDraftSnapshot(id).then((snap) => {
+      if (snap) applyQuoteDraftFromStorage(snap);
+    });
+  }, [applyQuoteDraftFromStorage]);
 
   const handleRestoreQuoteDraft = useCallback(() => {
     const d = quoteRestoreDraft();
@@ -6351,6 +6388,7 @@ export default function QuoteFormClient({
         typeof data.move_project_id === "string" ? data.move_project_id : null,
       );
       quoteClearDraft();
+      deleteServerDraft(quoteDraftId);
       toast(`Quote ${id} generated`, "check");
 
       // Persist additional stops if any were added

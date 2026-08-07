@@ -14,6 +14,20 @@ import {
   getDraftLabel,
   type DraftMeta,
 } from "@/hooks/useFormDraft";
+import {
+  fetchServerDraftMetas,
+  deleteServerDraft,
+} from "@/hooks/useServerDraftAutosave";
+
+/** Merge local + server drafts, deduped by id (newer wins), newest first. */
+function mergeDraftMetas(local: DraftMeta[], server: DraftMeta[]): DraftMeta[] {
+  const byId = new Map<string, DraftMeta>();
+  for (const d of [...local, ...server]) {
+    const prev = byId.get(d.id);
+    if (!prev || d.updatedAt.localeCompare(prev.updatedAt) > 0) byId.set(d.id, d);
+  }
+  return [...byId.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
 
 const TYPE_COLORS: Record<string, string> = {
   delivery: "text-blue-700 dark:text-blue-400",
@@ -40,16 +54,23 @@ export default function DraftsClient() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // Local drafts render instantly; server drafts (cross-device / cleared
+    // cache) merge in when they arrive.
     setDrafts(getAllDraftMetas());
     setMounted(true);
+    fetchServerDraftMetas().then((server) => {
+      setDrafts((local) => mergeDraftMetas(getAllDraftMetas().length ? getAllDraftMetas() : local, server));
+    });
   }, []);
 
   const handleDelete = (id: string) => {
     deleteDraft(id);
-    setDrafts(getAllDraftMetas());
+    deleteServerDraft(id);
+    setDrafts((prev) => prev.filter((d) => d.id !== id));
   };
 
   const handleClearAll = () => {
+    drafts.forEach((d) => deleteServerDraft(d.id));
     clearAllDrafts();
     setDrafts([]);
   };
