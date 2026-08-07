@@ -129,6 +129,9 @@ function statusTone(
   s: string,
 ): React.ComponentProps<typeof StatusPill>["tone"] {
   const k = s.toLowerCase();
+  // Confirmed = booked-but-not-yet-done. Give it its own brand-wine chip so it
+  // never reads as green like Completed (the two were indistinguishable).
+  if (k === "confirmed") return "wine";
   if (
     [
       "completed",
@@ -136,7 +139,6 @@ function statusTone(
       "paid",
       "accepted",
       "active",
-      "confirmed",
     ].includes(k)
   )
     return "success";
