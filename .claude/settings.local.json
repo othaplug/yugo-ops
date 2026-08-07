@@ -212,7 +212,8 @@
       "Skill(artifact-design)",
       "Skill(artifact-design:*)",
       "Bash(xargs -I{} sed -n '1,12p' {})",
-      "Bash(grep -rhA2 \"settlement_method\" supabase/migrations)"
+      "Bash(grep -rhA2 \"settlement_method\" supabase/migrations)",
+      "Bash(awk 'NR>=3018 && NR<=3390 && /setInventoryItems|inventory_items/' /Users/kog/Developer/yugo-ops/src/app/admin/quotes/new/QuoteFormClient.tsx)"
     ]
   }
 }

@@ -127,6 +127,14 @@ export type UseFormDraftUrlRestore<T extends Record<string, unknown>> = {
   applySaved: (data: T) => void;
   /** Debounce before writing localStorage (default 1500ms). */
   debounceMs?: number;
+  /**
+   * Custom "has the user done real work?" predicate. Gates BOTH the autosave and
+   * the before-unload warning. Without it, the generic check treats any non-empty
+   * field as content — which is wrong for forms that default a field (e.g. a quote
+   * defaults serviceType to "local_move"), so it would autosave/warn on an
+   * untouched form. Provide this to only persist/warn once there's genuine input.
+   */
+  isDirty?: (state: T) => boolean;
 };
 
 export function useFormDraft<T extends Record<string, unknown>>(
@@ -190,12 +198,14 @@ export function useFormDraft<T extends Record<string, unknown>>(
 
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      const hasContent = Object.values(formState).some((v) => {
-        if (typeof v === "string") return v.trim().length > 0;
-        if (typeof v === "number") return v !== 0;
-        if (Array.isArray(v)) return v.length > 0;
-        return false;
-      });
+      const hasContent = urlAutoRestore?.isDirty
+        ? urlAutoRestore.isDirty(formState)
+        : Object.values(formState).some((v) => {
+            if (typeof v === "string") return v.trim().length > 0;
+            if (typeof v === "number") return v !== 0;
+            if (Array.isArray(v)) return v.length > 0;
+            return false;
+          });
       if (!hasContent) return;
 
       const drafts = readDrafts().filter((d) => d.id !== draftId);
@@ -217,12 +227,14 @@ export function useFormDraft<T extends Record<string, unknown>>(
 
   // Warn on page close / refresh
   useEffect(() => {
-    const hasContent = Object.values(formState).some((v) => {
-      if (typeof v === "string") return v.trim().length > 0;
-      if (typeof v === "number") return v !== 0;
-      if (Array.isArray(v)) return v.length > 0;
-      return false;
-    });
+    const hasContent = urlAutoRestore?.isDirty
+      ? urlAutoRestore.isDirty(formState)
+      : Object.values(formState).some((v) => {
+          if (typeof v === "string") return v.trim().length > 0;
+          if (typeof v === "number") return v !== 0;
+          if (Array.isArray(v)) return v.length > 0;
+          return false;
+        });
     if (!hasContent) return;
 
     const handler = (e: BeforeUnloadEvent) => {

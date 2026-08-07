@@ -19,6 +19,7 @@ import MultiStopAddressField, {
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { useFormDraft } from "@/hooks/useFormDraft";
+import { useUnsavedNavGuard } from "@/hooks/useUnsavedNavGuard";
 import DraftBanner from "@/components/ui/DraftBanner";
 import { toTitleCase } from "@/lib/format-text";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
@@ -1376,6 +1377,9 @@ export default function QuoteFormClient({
   // quote (createMoveFromQuote).
   const [coordinatorName, setCoordinatorName] = useState(operatorName ?? "");
   const [quoteFlowStep, setQuoteFlowStep] = useState(0);
+  // Set by a draft restore so the [serviceType] reset effect keeps the restored
+  // step instead of slamming it back to 0. Null when not restoring.
+  const restoringStepRef = useRef<number | null>(null);
   const quoteFlowContentRef = useRef<HTMLDivElement>(null);
 
   // ── Client dedup / contact search state ──────────────────────────────────
@@ -2247,54 +2251,210 @@ export default function QuoteFormClient({
   const [moveScopeExtraVolumeDay, setMoveScopeExtraVolumeDay] = useState(false);
 
   // Draft auto-save
-  const quoteDraftState = useMemo(
-    () => ({
+  // Full wizard snapshot for draft autosave + restore. EVERY user-input field
+  // is included, and the SAME object drives both save (here) and restore
+  // (applyQuoteDraftFromStorage below), so the old "saved but never restored"
+  // drift that silently lost the inventory and the step cannot recur. Ephemeral
+  // UI, derived pricing, and client-lookup state are intentionally excluded.
+  // Recomputed each render (cheap); useFormDraft debounces the actual write.
+  const quoteDraftState = {
       serviceType,
+      jobScope,
+      inboundDraft,
       firstName,
       lastName,
       email,
       phone,
+      coordinatorName,
+      quoteFlowStep,
+      clientSquareId,
+      clientSquareCardId,
+      clientHubspotId,
+      clientCardOnFile,
+      clientCardLastFour,
+      clientCardBrand,
       fromAddress,
       toAddress,
+      extraFromStops,
+      extraToStops,
       fromAccess,
       toAccess,
+      fromUnit,
+      fromFloor,
+      toUnit,
+      toFloor,
+      fromParking,
+      toParking,
+      fromLongCarry,
+      toLongCarry,
+      fromLat,
+      fromLng,
+      toLat,
+      toLng,
+      originFloor,
+      destFloor,
       moveDate,
       preferredTime,
       arrivalWindow,
       moveSize,
-      b2bBusinessName,
+      clientBoxCount,
+      serviceAreaOverride,
+      specialtyItems,
+      sqft,
+      wsCount,
+      companyName,
+      hasIt,
+      hasConf,
+      hasReception,
+      timingPref,
+      officeCrewSize,
+      officeEstHours,
+      officeDesks,
+      officeChairs,
+      officeFiling,
+      officeBoardroomCount,
+      officeKitchen,
+      officeInventory,
+      officeTruckCount,
+      assemblyOverride,
+      sizeOverrideConfirmed,
+      itemDescription,
+      itemCategory,
+      itemWeight,
+      assembly,
+      stairCarry,
+      stairFlights,
+      numItems,
+      singleItemRows,
+      junkPickupFrom,
+      junkItemsDescription,
+      junkItemsCount,
+      whiteGloveKind,
+      declaredValue,
+      whiteGloveItemRows,
+      wgGuaranteedWindow,
+      wgGuaranteedWindowHours,
+      wgDebrisRemoval,
+      wgBuildingReqs,
+      wgBuildingNote,
+      wgDeliveryInstructions,
+      specialtyType,
+      specialtyItemDescription,
+      specialtyDimL,
+      specialtyDimW,
+      specialtyDimH,
+      specialtyWeightClass,
+      specialtyRequirements,
+      specialtyNotes,
+      specialtyBuildingReqs,
       eventName,
+      venueAddress,
+      extraVenueStops,
+      eventReturnDate,
+      eventSetupRequired,
+      eventTeardownRequired,
+      eventSetupHours,
+      eventSetupInstructions,
+      eventSameDay,
+      eventItems,
+      eventCrewOverride,
+      eventHoursOverride,
+      eventPreTaxOverride,
+      eventOverrideReason,
+      eventAdditionalServices,
+      eventMulti,
+      eventLuxury,
+      eventComplexSetup,
+      eventTruckType,
+      eventTruckCount,
+      eventPallets,
+      eventPalletJack,
+      eventLiftgate,
+      eventDollies,
+      eventArrivalWindow,
+      eventHardCutoff,
+      eventAfterHours,
+      eventSameLocationSingle,
+      eventReturnRateSingle,
       eventIsB2b,
       eventB2bInvoiceTerms,
-      labourDescription,
-      itemDescription,
-      specialtyType,
-      declaredValue,
-    }),
-    [
-      serviceType,
-      firstName,
-      lastName,
-      email,
-      phone,
-      fromAddress,
-      toAddress,
-      fromAccess,
-      toAccess,
-      moveDate,
-      preferredTime,
-      arrivalWindow,
-      moveSize,
+      eventLegs,
       b2bBusinessName,
-      eventName,
-      eventIsB2b,
-      eventB2bInvoiceTerms,
+      b2bVerticalCode,
+      b2bPartnerOrgId,
+      b2bLines,
+      b2bTimeBand,
+      b2bPriceOverrideOn,
+      b2bPreTaxOverrideAmount,
+      b2bWeightCategory,
+      b2bSpecialInstructions,
+      b2bOverrideReason,
+      b2bArtHangingCount,
+      b2bCratingPieces,
+      workAddress,
+      extraWorkStops,
+      workAccess,
       labourDescription,
-      itemDescription,
-      specialtyType,
-      declaredValue,
-    ],
-  );
+      labourCrewSize,
+      labourHours,
+      labourTruckRequired,
+      labourVisits,
+      labourSecondVisitDate,
+      labourStorageNeeded,
+      labourStorageWeeks,
+      labourWeekend,
+      labourAfterHours,
+      labourJobCategory,
+      labourComplexity,
+      labourWeightClass,
+      binPickupSameAsDelivery,
+      binBundleType,
+      binCustomCount,
+      binExtraBins,
+      binPackingPaper,
+      binMaterialDelivery,
+      binLinkedMoveId,
+      binDeliveryNotes,
+      binInternalNotes,
+      cratingRequired,
+      cratingItems,
+      recommendedTier,
+      quotePreTaxOverride,
+      tierPriceOverrides,
+      selectedAddons,
+      inventoryItems,
+      perPickupInventory,
+      perPickupBoxCount,
+      referralCode,
+      referralId,
+      moveScopeDaysOverride,
+      moveScopeExtraVolumeDay,
+  };
+
+  // Only autosave / warn-on-leave once there is genuine input, so an untouched
+  // form (serviceType defaults to "local_move", coordinator prefilled) never
+  // creates a draft or prompts on exit.
+  const quoteHasRealContent =
+    firstName.trim().length > 0 ||
+    lastName.trim().length > 0 ||
+    email.trim().length > 0 ||
+    phone.trim().length > 0 ||
+    fromAddress.trim().length > 0 ||
+    toAddress.trim().length > 0 ||
+    workAddress.trim().length > 0 ||
+    venueAddress.trim().length > 0 ||
+    companyName.trim().length > 0 ||
+    b2bBusinessName.trim().length > 0 ||
+    eventName.trim().length > 0 ||
+    itemDescription.trim().length > 0 ||
+    labourDescription.trim().length > 0 ||
+    specialtyItemDescription.trim().length > 0 ||
+    inventoryItems.length > 0 ||
+    singleItemRows.length > 0 ||
+    officeInventory.length > 0 ||
+    eventItems.length > 0 ||
+    b2bLines.length > 0 ||
+    quoteFlowStep > 0;
 
   const quoteDraftTitleFn = useCallback((s: typeof quoteDraftState) => {
     const name = [s.firstName, s.lastName].filter(Boolean).join(" ");
@@ -2302,34 +2462,195 @@ export default function QuoteFormClient({
   }, []);
 
   const applyQuoteDraftFromStorage = useCallback(
-    (d: Record<string, unknown>) => {
-      if (d.serviceType) setServiceType(d.serviceType as string);
-      if (d.firstName) setFirstName(d.firstName as string);
-      if (d.lastName) setLastName(d.lastName as string);
-      if (d.email) setEmail(d.email as string);
-      if (d.phone) setPhone(d.phone as string);
-      if (d.fromAddress) setFromAddress(d.fromAddress as string);
-      if (d.toAddress) setToAddress(d.toAddress as string);
-      if (d.fromAccess) setFromAccess(d.fromAccess as string);
-      if (d.toAccess) setToAccess(d.toAccess as string);
-      if (d.moveDate) setMoveDate(d.moveDate as string);
-      if (d.preferredTime) setPreferredTime(d.preferredTime as string);
-      if (d.arrivalWindow) setArrivalWindow(d.arrivalWindow as string);
-      if (d.moveSize) {
-        setMoveSize(d.moveSize as string);
-        moveSizeUserTouchedRef.current = true;
+    (s: Record<string, unknown>) => {
+      // Restore the step ACROSS the [serviceType] reset effect. Setting
+      // serviceType queues that effect, which would slam the step back to 0;
+      // when the service actually changes we stash the target step in a ref and
+      // the effect restores it. When the service is unchanged the effect never
+      // fires, so we set the step directly at the end instead.
+      const restoredStep =
+        typeof s.quoteFlowStep === "number" ? (s.quoteFlowStep as number) : null;
+      const nextService =
+        typeof s.serviceType === "string" ? (s.serviceType as string) : null;
+      const serviceWillChange = !!nextService && nextService !== serviceType;
+      if (restoredStep != null && restoredStep > 0 && serviceWillChange) {
+        restoringStepRef.current = restoredStep;
       }
-      if (d.b2bBusinessName) setB2bBusinessName(d.b2bBusinessName as string);
-      if (d.eventName) setEventName(d.eventName as string);
-      if (d.eventIsB2b) setEventIsB2b(d.eventIsB2b as boolean);
-      if (d.eventB2bInvoiceTerms) setEventB2bInvoiceTerms(d.eventB2bInvoiceTerms as "on_completion" | "net_15");
-      if (d.labourDescription)
-        setLabourDescription(d.labourDescription as string);
-      if (d.itemDescription) setItemDescription(d.itemDescription as string);
-      if (d.specialtyType) setSpecialtyType(d.specialtyType as string);
-      if (d.declaredValue) setDeclaredValue(d.declaredValue as string);
+      if (s.serviceType !== undefined) setServiceType(s.serviceType as Parameters<typeof setServiceType>[0]);
+      if (s.jobScope !== undefined) setJobScope(s.jobScope as Parameters<typeof setJobScope>[0]);
+      if (s.inboundDraft !== undefined) setInboundDraft(s.inboundDraft as Parameters<typeof setInboundDraft>[0]);
+      if (s.firstName !== undefined) setFirstName(s.firstName as Parameters<typeof setFirstName>[0]);
+      if (s.lastName !== undefined) setLastName(s.lastName as Parameters<typeof setLastName>[0]);
+      if (s.email !== undefined) setEmail(s.email as Parameters<typeof setEmail>[0]);
+      if (s.phone !== undefined) setPhone(s.phone as Parameters<typeof setPhone>[0]);
+      if (s.coordinatorName !== undefined) setCoordinatorName(s.coordinatorName as Parameters<typeof setCoordinatorName>[0]);
+      if (s.clientSquareId !== undefined) setClientSquareId(s.clientSquareId as Parameters<typeof setClientSquareId>[0]);
+      if (s.clientSquareCardId !== undefined) setClientSquareCardId(s.clientSquareCardId as Parameters<typeof setClientSquareCardId>[0]);
+      if (s.clientHubspotId !== undefined) setClientHubspotId(s.clientHubspotId as Parameters<typeof setClientHubspotId>[0]);
+      if (s.clientCardOnFile !== undefined) setClientCardOnFile(s.clientCardOnFile as Parameters<typeof setClientCardOnFile>[0]);
+      if (s.clientCardLastFour !== undefined) setClientCardLastFour(s.clientCardLastFour as Parameters<typeof setClientCardLastFour>[0]);
+      if (s.clientCardBrand !== undefined) setClientCardBrand(s.clientCardBrand as Parameters<typeof setClientCardBrand>[0]);
+      if (s.fromAddress !== undefined) setFromAddress(s.fromAddress as Parameters<typeof setFromAddress>[0]);
+      if (s.toAddress !== undefined) setToAddress(s.toAddress as Parameters<typeof setToAddress>[0]);
+      if (s.extraFromStops !== undefined) setExtraFromStops(s.extraFromStops as Parameters<typeof setExtraFromStops>[0]);
+      if (s.extraToStops !== undefined) setExtraToStops(s.extraToStops as Parameters<typeof setExtraToStops>[0]);
+      if (s.fromAccess !== undefined) setFromAccess(s.fromAccess as Parameters<typeof setFromAccess>[0]);
+      if (s.toAccess !== undefined) setToAccess(s.toAccess as Parameters<typeof setToAccess>[0]);
+      if (s.fromUnit !== undefined) setFromUnit(s.fromUnit as Parameters<typeof setFromUnit>[0]);
+      if (s.fromFloor !== undefined) setFromFloor(s.fromFloor as Parameters<typeof setFromFloor>[0]);
+      if (s.toUnit !== undefined) setToUnit(s.toUnit as Parameters<typeof setToUnit>[0]);
+      if (s.toFloor !== undefined) setToFloor(s.toFloor as Parameters<typeof setToFloor>[0]);
+      if (s.fromParking !== undefined) setFromParking(s.fromParking as Parameters<typeof setFromParking>[0]);
+      if (s.toParking !== undefined) setToParking(s.toParking as Parameters<typeof setToParking>[0]);
+      if (s.fromLongCarry !== undefined) setFromLongCarry(s.fromLongCarry as Parameters<typeof setFromLongCarry>[0]);
+      if (s.toLongCarry !== undefined) setToLongCarry(s.toLongCarry as Parameters<typeof setToLongCarry>[0]);
+      if (s.fromLat !== undefined) setFromLat(s.fromLat as Parameters<typeof setFromLat>[0]);
+      if (s.fromLng !== undefined) setFromLng(s.fromLng as Parameters<typeof setFromLng>[0]);
+      if (s.toLat !== undefined) setToLat(s.toLat as Parameters<typeof setToLat>[0]);
+      if (s.toLng !== undefined) setToLng(s.toLng as Parameters<typeof setToLng>[0]);
+      if (s.originFloor !== undefined) setOriginFloor(s.originFloor as Parameters<typeof setOriginFloor>[0]);
+      if (s.destFloor !== undefined) setDestFloor(s.destFloor as Parameters<typeof setDestFloor>[0]);
+      if (s.moveDate !== undefined) setMoveDate(s.moveDate as Parameters<typeof setMoveDate>[0]);
+      if (s.preferredTime !== undefined) setPreferredTime(s.preferredTime as Parameters<typeof setPreferredTime>[0]);
+      if (s.arrivalWindow !== undefined) setArrivalWindow(s.arrivalWindow as Parameters<typeof setArrivalWindow>[0]);
+      if (s.moveSize !== undefined) setMoveSize(s.moveSize as Parameters<typeof setMoveSize>[0]);
+      if (s.clientBoxCount !== undefined) setClientBoxCount(s.clientBoxCount as Parameters<typeof setClientBoxCount>[0]);
+      if (s.serviceAreaOverride !== undefined) setServiceAreaOverride(s.serviceAreaOverride as Parameters<typeof setServiceAreaOverride>[0]);
+      if (s.specialtyItems !== undefined) setSpecialtyItems(s.specialtyItems as Parameters<typeof setSpecialtyItems>[0]);
+      if (s.sqft !== undefined) setSqft(s.sqft as Parameters<typeof setSqft>[0]);
+      if (s.wsCount !== undefined) setWsCount(s.wsCount as Parameters<typeof setWsCount>[0]);
+      if (s.companyName !== undefined) setCompanyName(s.companyName as Parameters<typeof setCompanyName>[0]);
+      if (s.hasIt !== undefined) setHasIt(s.hasIt as Parameters<typeof setHasIt>[0]);
+      if (s.hasConf !== undefined) setHasConf(s.hasConf as Parameters<typeof setHasConf>[0]);
+      if (s.hasReception !== undefined) setHasReception(s.hasReception as Parameters<typeof setHasReception>[0]);
+      if (s.timingPref !== undefined) setTimingPref(s.timingPref as Parameters<typeof setTimingPref>[0]);
+      if (s.officeCrewSize !== undefined) setOfficeCrewSize(s.officeCrewSize as Parameters<typeof setOfficeCrewSize>[0]);
+      if (s.officeEstHours !== undefined) setOfficeEstHours(s.officeEstHours as Parameters<typeof setOfficeEstHours>[0]);
+      if (s.officeDesks !== undefined) setOfficeDesks(s.officeDesks as Parameters<typeof setOfficeDesks>[0]);
+      if (s.officeChairs !== undefined) setOfficeChairs(s.officeChairs as Parameters<typeof setOfficeChairs>[0]);
+      if (s.officeFiling !== undefined) setOfficeFiling(s.officeFiling as Parameters<typeof setOfficeFiling>[0]);
+      if (s.officeBoardroomCount !== undefined) setOfficeBoardroomCount(s.officeBoardroomCount as Parameters<typeof setOfficeBoardroomCount>[0]);
+      if (s.officeKitchen !== undefined) setOfficeKitchen(s.officeKitchen as Parameters<typeof setOfficeKitchen>[0]);
+      if (s.officeInventory !== undefined) setOfficeInventory(s.officeInventory as Parameters<typeof setOfficeInventory>[0]);
+      if (s.officeTruckCount !== undefined) setOfficeTruckCount(s.officeTruckCount as Parameters<typeof setOfficeTruckCount>[0]);
+      if (s.assemblyOverride !== undefined) setAssemblyOverride(s.assemblyOverride as Parameters<typeof setAssemblyOverride>[0]);
+      if (s.sizeOverrideConfirmed !== undefined) setSizeOverrideConfirmed(s.sizeOverrideConfirmed as Parameters<typeof setSizeOverrideConfirmed>[0]);
+      if (s.itemDescription !== undefined) setItemDescription(s.itemDescription as Parameters<typeof setItemDescription>[0]);
+      if (s.itemCategory !== undefined) setItemCategory(s.itemCategory as Parameters<typeof setItemCategory>[0]);
+      if (s.itemWeight !== undefined) setItemWeight(s.itemWeight as Parameters<typeof setItemWeight>[0]);
+      if (s.assembly !== undefined) setAssembly(s.assembly as Parameters<typeof setAssembly>[0]);
+      if (s.stairCarry !== undefined) setStairCarry(s.stairCarry as Parameters<typeof setStairCarry>[0]);
+      if (s.stairFlights !== undefined) setStairFlights(s.stairFlights as Parameters<typeof setStairFlights>[0]);
+      if (s.numItems !== undefined) setNumItems(s.numItems as Parameters<typeof setNumItems>[0]);
+      if (s.singleItemRows !== undefined) setSingleItemRows(s.singleItemRows as Parameters<typeof setSingleItemRows>[0]);
+      if (s.junkPickupFrom !== undefined) setJunkPickupFrom(s.junkPickupFrom as Parameters<typeof setJunkPickupFrom>[0]);
+      if (s.junkItemsDescription !== undefined) setJunkItemsDescription(s.junkItemsDescription as Parameters<typeof setJunkItemsDescription>[0]);
+      if (s.junkItemsCount !== undefined) setJunkItemsCount(s.junkItemsCount as Parameters<typeof setJunkItemsCount>[0]);
+      if (s.whiteGloveKind !== undefined) setWhiteGloveKind(s.whiteGloveKind as Parameters<typeof setWhiteGloveKind>[0]);
+      if (s.declaredValue !== undefined) setDeclaredValue(s.declaredValue as Parameters<typeof setDeclaredValue>[0]);
+      if (s.whiteGloveItemRows !== undefined) setWhiteGloveItemRows(s.whiteGloveItemRows as Parameters<typeof setWhiteGloveItemRows>[0]);
+      if (s.wgGuaranteedWindow !== undefined) setWgGuaranteedWindow(s.wgGuaranteedWindow as Parameters<typeof setWgGuaranteedWindow>[0]);
+      if (s.wgGuaranteedWindowHours !== undefined) setWgGuaranteedWindowHours(s.wgGuaranteedWindowHours as Parameters<typeof setWgGuaranteedWindowHours>[0]);
+      if (s.wgDebrisRemoval !== undefined) setWgDebrisRemoval(s.wgDebrisRemoval as Parameters<typeof setWgDebrisRemoval>[0]);
+      if (s.wgBuildingReqs !== undefined) setWgBuildingReqs(s.wgBuildingReqs as Parameters<typeof setWgBuildingReqs>[0]);
+      if (s.wgBuildingNote !== undefined) setWgBuildingNote(s.wgBuildingNote as Parameters<typeof setWgBuildingNote>[0]);
+      if (s.wgDeliveryInstructions !== undefined) setWgDeliveryInstructions(s.wgDeliveryInstructions as Parameters<typeof setWgDeliveryInstructions>[0]);
+      if (s.specialtyType !== undefined) setSpecialtyType(s.specialtyType as Parameters<typeof setSpecialtyType>[0]);
+      if (s.specialtyItemDescription !== undefined) setSpecialtyItemDescription(s.specialtyItemDescription as Parameters<typeof setSpecialtyItemDescription>[0]);
+      if (s.specialtyDimL !== undefined) setSpecialtyDimL(s.specialtyDimL as Parameters<typeof setSpecialtyDimL>[0]);
+      if (s.specialtyDimW !== undefined) setSpecialtyDimW(s.specialtyDimW as Parameters<typeof setSpecialtyDimW>[0]);
+      if (s.specialtyDimH !== undefined) setSpecialtyDimH(s.specialtyDimH as Parameters<typeof setSpecialtyDimH>[0]);
+      if (s.specialtyWeightClass !== undefined) setSpecialtyWeightClass(s.specialtyWeightClass as Parameters<typeof setSpecialtyWeightClass>[0]);
+      if (s.specialtyRequirements !== undefined) setSpecialtyRequirements(s.specialtyRequirements as Parameters<typeof setSpecialtyRequirements>[0]);
+      if (s.specialtyNotes !== undefined) setSpecialtyNotes(s.specialtyNotes as Parameters<typeof setSpecialtyNotes>[0]);
+      if (s.specialtyBuildingReqs !== undefined) setSpecialtyBuildingReqs(s.specialtyBuildingReqs as Parameters<typeof setSpecialtyBuildingReqs>[0]);
+      if (s.eventName !== undefined) setEventName(s.eventName as Parameters<typeof setEventName>[0]);
+      if (s.venueAddress !== undefined) setVenueAddress(s.venueAddress as Parameters<typeof setVenueAddress>[0]);
+      if (s.extraVenueStops !== undefined) setExtraVenueStops(s.extraVenueStops as Parameters<typeof setExtraVenueStops>[0]);
+      if (s.eventReturnDate !== undefined) setEventReturnDate(s.eventReturnDate as Parameters<typeof setEventReturnDate>[0]);
+      if (s.eventSetupRequired !== undefined) setEventSetupRequired(s.eventSetupRequired as Parameters<typeof setEventSetupRequired>[0]);
+      if (s.eventTeardownRequired !== undefined) setEventTeardownRequired(s.eventTeardownRequired as Parameters<typeof setEventTeardownRequired>[0]);
+      if (s.eventSetupHours !== undefined) setEventSetupHours(s.eventSetupHours as Parameters<typeof setEventSetupHours>[0]);
+      if (s.eventSetupInstructions !== undefined) setEventSetupInstructions(s.eventSetupInstructions as Parameters<typeof setEventSetupInstructions>[0]);
+      if (s.eventSameDay !== undefined) setEventSameDay(s.eventSameDay as Parameters<typeof setEventSameDay>[0]);
+      if (s.eventItems !== undefined) setEventItems(s.eventItems as Parameters<typeof setEventItems>[0]);
+      if (s.eventCrewOverride !== undefined) setEventCrewOverride(s.eventCrewOverride as Parameters<typeof setEventCrewOverride>[0]);
+      if (s.eventHoursOverride !== undefined) setEventHoursOverride(s.eventHoursOverride as Parameters<typeof setEventHoursOverride>[0]);
+      if (s.eventPreTaxOverride !== undefined) setEventPreTaxOverride(s.eventPreTaxOverride as Parameters<typeof setEventPreTaxOverride>[0]);
+      if (s.eventOverrideReason !== undefined) setEventOverrideReason(s.eventOverrideReason as Parameters<typeof setEventOverrideReason>[0]);
+      if (s.eventAdditionalServices !== undefined) setEventAdditionalServices(s.eventAdditionalServices as Parameters<typeof setEventAdditionalServices>[0]);
+      if (s.eventMulti !== undefined) setEventMulti(s.eventMulti as Parameters<typeof setEventMulti>[0]);
+      if (s.eventLuxury !== undefined) setEventLuxury(s.eventLuxury as Parameters<typeof setEventLuxury>[0]);
+      if (s.eventComplexSetup !== undefined) setEventComplexSetup(s.eventComplexSetup as Parameters<typeof setEventComplexSetup>[0]);
+      if (s.eventTruckType !== undefined) setEventTruckType(s.eventTruckType as Parameters<typeof setEventTruckType>[0]);
+      if (s.eventTruckCount !== undefined) setEventTruckCount(s.eventTruckCount as Parameters<typeof setEventTruckCount>[0]);
+      if (s.eventPallets !== undefined) setEventPallets(s.eventPallets as Parameters<typeof setEventPallets>[0]);
+      if (s.eventPalletJack !== undefined) setEventPalletJack(s.eventPalletJack as Parameters<typeof setEventPalletJack>[0]);
+      if (s.eventLiftgate !== undefined) setEventLiftgate(s.eventLiftgate as Parameters<typeof setEventLiftgate>[0]);
+      if (s.eventDollies !== undefined) setEventDollies(s.eventDollies as Parameters<typeof setEventDollies>[0]);
+      if (s.eventArrivalWindow !== undefined) setEventArrivalWindow(s.eventArrivalWindow as Parameters<typeof setEventArrivalWindow>[0]);
+      if (s.eventHardCutoff !== undefined) setEventHardCutoff(s.eventHardCutoff as Parameters<typeof setEventHardCutoff>[0]);
+      if (s.eventAfterHours !== undefined) setEventAfterHours(s.eventAfterHours as Parameters<typeof setEventAfterHours>[0]);
+      if (s.eventSameLocationSingle !== undefined) setEventSameLocationSingle(s.eventSameLocationSingle as Parameters<typeof setEventSameLocationSingle>[0]);
+      if (s.eventReturnRateSingle !== undefined) setEventReturnRateSingle(s.eventReturnRateSingle as Parameters<typeof setEventReturnRateSingle>[0]);
+      if (s.eventIsB2b !== undefined) setEventIsB2b(s.eventIsB2b as Parameters<typeof setEventIsB2b>[0]);
+      if (s.eventB2bInvoiceTerms !== undefined) setEventB2bInvoiceTerms(s.eventB2bInvoiceTerms as Parameters<typeof setEventB2bInvoiceTerms>[0]);
+      if (s.eventLegs !== undefined) setEventLegs(s.eventLegs as Parameters<typeof setEventLegs>[0]);
+      if (s.b2bBusinessName !== undefined) setB2bBusinessName(s.b2bBusinessName as Parameters<typeof setB2bBusinessName>[0]);
+      if (s.b2bVerticalCode !== undefined) setB2bVerticalCode(s.b2bVerticalCode as Parameters<typeof setB2bVerticalCode>[0]);
+      if (s.b2bPartnerOrgId !== undefined) setB2bPartnerOrgId(s.b2bPartnerOrgId as Parameters<typeof setB2bPartnerOrgId>[0]);
+      if (s.b2bLines !== undefined) setB2bLines(s.b2bLines as Parameters<typeof setB2bLines>[0]);
+      if (s.b2bTimeBand !== undefined) setB2bTimeBand(s.b2bTimeBand as Parameters<typeof setB2bTimeBand>[0]);
+      if (s.b2bPriceOverrideOn !== undefined) setB2bPriceOverrideOn(s.b2bPriceOverrideOn as Parameters<typeof setB2bPriceOverrideOn>[0]);
+      if (s.b2bPreTaxOverrideAmount !== undefined) setB2bPreTaxOverrideAmount(s.b2bPreTaxOverrideAmount as Parameters<typeof setB2bPreTaxOverrideAmount>[0]);
+      if (s.b2bWeightCategory !== undefined) setB2bWeightCategory(s.b2bWeightCategory as Parameters<typeof setB2bWeightCategory>[0]);
+      if (s.b2bSpecialInstructions !== undefined) setB2bSpecialInstructions(s.b2bSpecialInstructions as Parameters<typeof setB2bSpecialInstructions>[0]);
+      if (s.b2bOverrideReason !== undefined) setB2bOverrideReason(s.b2bOverrideReason as Parameters<typeof setB2bOverrideReason>[0]);
+      if (s.b2bArtHangingCount !== undefined) setB2bArtHangingCount(s.b2bArtHangingCount as Parameters<typeof setB2bArtHangingCount>[0]);
+      if (s.b2bCratingPieces !== undefined) setB2bCratingPieces(s.b2bCratingPieces as Parameters<typeof setB2bCratingPieces>[0]);
+      if (s.workAddress !== undefined) setWorkAddress(s.workAddress as Parameters<typeof setWorkAddress>[0]);
+      if (s.extraWorkStops !== undefined) setExtraWorkStops(s.extraWorkStops as Parameters<typeof setExtraWorkStops>[0]);
+      if (s.workAccess !== undefined) setWorkAccess(s.workAccess as Parameters<typeof setWorkAccess>[0]);
+      if (s.labourDescription !== undefined) setLabourDescription(s.labourDescription as Parameters<typeof setLabourDescription>[0]);
+      if (s.labourCrewSize !== undefined) setLabourCrewSize(s.labourCrewSize as Parameters<typeof setLabourCrewSize>[0]);
+      if (s.labourHours !== undefined) setLabourHours(s.labourHours as Parameters<typeof setLabourHours>[0]);
+      if (s.labourTruckRequired !== undefined) setLabourTruckRequired(s.labourTruckRequired as Parameters<typeof setLabourTruckRequired>[0]);
+      if (s.labourVisits !== undefined) setLabourVisits(s.labourVisits as Parameters<typeof setLabourVisits>[0]);
+      if (s.labourSecondVisitDate !== undefined) setLabourSecondVisitDate(s.labourSecondVisitDate as Parameters<typeof setLabourSecondVisitDate>[0]);
+      if (s.labourStorageNeeded !== undefined) setLabourStorageNeeded(s.labourStorageNeeded as Parameters<typeof setLabourStorageNeeded>[0]);
+      if (s.labourStorageWeeks !== undefined) setLabourStorageWeeks(s.labourStorageWeeks as Parameters<typeof setLabourStorageWeeks>[0]);
+      if (s.labourWeekend !== undefined) setLabourWeekend(s.labourWeekend as Parameters<typeof setLabourWeekend>[0]);
+      if (s.labourAfterHours !== undefined) setLabourAfterHours(s.labourAfterHours as Parameters<typeof setLabourAfterHours>[0]);
+      if (s.labourJobCategory !== undefined) setLabourJobCategory(s.labourJobCategory as Parameters<typeof setLabourJobCategory>[0]);
+      if (s.labourComplexity !== undefined) setLabourComplexity(s.labourComplexity as Parameters<typeof setLabourComplexity>[0]);
+      if (s.labourWeightClass !== undefined) setLabourWeightClass(s.labourWeightClass as Parameters<typeof setLabourWeightClass>[0]);
+      if (s.binPickupSameAsDelivery !== undefined) setBinPickupSameAsDelivery(s.binPickupSameAsDelivery as Parameters<typeof setBinPickupSameAsDelivery>[0]);
+      if (s.binBundleType !== undefined) setBinBundleType(s.binBundleType as Parameters<typeof setBinBundleType>[0]);
+      if (s.binCustomCount !== undefined) setBinCustomCount(s.binCustomCount as Parameters<typeof setBinCustomCount>[0]);
+      if (s.binExtraBins !== undefined) setBinExtraBins(s.binExtraBins as Parameters<typeof setBinExtraBins>[0]);
+      if (s.binPackingPaper !== undefined) setBinPackingPaper(s.binPackingPaper as Parameters<typeof setBinPackingPaper>[0]);
+      if (s.binMaterialDelivery !== undefined) setBinMaterialDelivery(s.binMaterialDelivery as Parameters<typeof setBinMaterialDelivery>[0]);
+      if (s.binLinkedMoveId !== undefined) setBinLinkedMoveId(s.binLinkedMoveId as Parameters<typeof setBinLinkedMoveId>[0]);
+      if (s.binDeliveryNotes !== undefined) setBinDeliveryNotes(s.binDeliveryNotes as Parameters<typeof setBinDeliveryNotes>[0]);
+      if (s.binInternalNotes !== undefined) setBinInternalNotes(s.binInternalNotes as Parameters<typeof setBinInternalNotes>[0]);
+      if (s.cratingRequired !== undefined) setCratingRequired(s.cratingRequired as Parameters<typeof setCratingRequired>[0]);
+      if (s.cratingItems !== undefined) setCratingItems(s.cratingItems as Parameters<typeof setCratingItems>[0]);
+      if (s.recommendedTier !== undefined) setRecommendedTier(s.recommendedTier as Parameters<typeof setRecommendedTier>[0]);
+      if (s.quotePreTaxOverride !== undefined) setQuotePreTaxOverride(s.quotePreTaxOverride as Parameters<typeof setQuotePreTaxOverride>[0]);
+      if (s.tierPriceOverrides !== undefined) setTierPriceOverrides(s.tierPriceOverrides as Parameters<typeof setTierPriceOverrides>[0]);
+      if (s.selectedAddons !== undefined) setSelectedAddons(s.selectedAddons as Parameters<typeof setSelectedAddons>[0]);
+      if (s.inventoryItems !== undefined) setInventoryItems(s.inventoryItems as Parameters<typeof setInventoryItems>[0]);
+      if (s.perPickupInventory !== undefined) setPerPickupInventory(s.perPickupInventory as Parameters<typeof setPerPickupInventory>[0]);
+      if (s.perPickupBoxCount !== undefined) setPerPickupBoxCount(s.perPickupBoxCount as Parameters<typeof setPerPickupBoxCount>[0]);
+      if (s.referralCode !== undefined) setReferralCode(s.referralCode as Parameters<typeof setReferralCode>[0]);
+      if (s.referralId !== undefined) setReferralId(s.referralId as Parameters<typeof setReferralId>[0]);
+      if (s.moveScopeDaysOverride !== undefined) setMoveScopeDaysOverride(s.moveScopeDaysOverride as Parameters<typeof setMoveScopeDaysOverride>[0]);
+      if (s.moveScopeExtraVolumeDay !== undefined) setMoveScopeExtraVolumeDay(s.moveScopeExtraVolumeDay as Parameters<typeof setMoveScopeExtraVolumeDay>[0]);
+      if (restoredStep != null && !serviceWillChange) {
+        setQuoteFlowStep(restoredStep);
+      }
     },
-    [],
+    [serviceType],
   );
 
   const {
@@ -2341,6 +2662,7 @@ export default function QuoteFormClient({
     applySaved: applyQuoteDraftFromStorage as (
       data: typeof quoteDraftState,
     ) => void,
+    isDirty: () => quoteHasRealContent,
   });
 
   const handleRestoreQuoteDraft = useCallback(() => {
@@ -6417,8 +6739,25 @@ export default function QuoteFormClient({
     SKIP_CATALOG_ADDONS_QUOTE_STEP.has(serviceType);
 
   useEffect(() => {
+    // A draft restore that changed serviceType stashes the target step here so
+    // this reset keeps it instead of forcing the user back to service selection.
+    if (restoringStepRef.current != null) {
+      const step = restoringStepRef.current;
+      restoringStepRef.current = null;
+      setQuoteFlowStep(step);
+      return;
+    }
     setQuoteFlowStep(0);
   }, [serviceType]);
+
+  // Confirm before navigating away in-app (sidebar, links) while a quote is
+  // genuinely in progress and not yet sent. The draft is autosaved, so the
+  // prompt reassures rather than threatens loss. Tab close / refresh is covered
+  // by useFormDraft's beforeunload.
+  useUnsavedNavGuard(
+    quoteHasRealContent && !sendSuccess,
+    "You have a quote in progress. Your draft is saved and you can resume it from where you left off. Leave this screen?",
+  );
 
   useEffect(() => {
     if (!skipsCatalogAddonsQuoteStep) return;
