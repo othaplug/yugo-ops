@@ -35,7 +35,14 @@ function quoteStageFromStatus(status: string | null | undefined): string | null 
   if (s === "cancelled") return "cancelled"
   if (s === "declined" || s === "lost") return "lost"
   if (s === "expired") return "expired"
-  // sent / viewed / draft — already handled by live hooks on the way in; skip
+  // Cold quotes previously slipped through drift repair: if the live
+  // sync from admin PATCH missed (transient HubSpot error, network
+  // blip) they'd stay stuck in whatever stage HubSpot had before.
+  // Include here so hourly reconcile self-heals.
+  if (s === "cold") return "cold"
+  if (s === "superseded") return "cancelled"
+  if (s === "payment_failed") return "lost"
+  // sent / viewed / draft / reactivated — already handled by live hooks on the way in; skip
   return null
 }
 

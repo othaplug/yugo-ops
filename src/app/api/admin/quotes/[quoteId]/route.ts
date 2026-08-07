@@ -69,6 +69,11 @@ export async function PATCH(
   // value in the past. When the operator reopens an already-expired
   // quote we also flip status from 'expired' back to 'sent' so the
   // pipeline reflects the new state.
+  // When an operator extends expiry on an already-expired quote we
+  // flip it back to "sent" — mirror that on the HubSpot side (was
+  // silently updating the DB only, so HubSpot kept the deal in
+  // Closed Lost after the reactivation).
+  let didReactivate = false;
   if (typeof body.expires_at === "string" && body.expires_at.trim()) {
     const next = new Date(body.expires_at.trim());
     if (Number.isNaN(next.getTime())) {
@@ -86,6 +91,7 @@ export async function PATCH(
     patch.expires_at = next.toISOString();
     if (prevStatus === "expired") {
       patch.status = "sent";
+      didReactivate = true;
     }
   }
 
@@ -109,8 +115,6 @@ export async function PATCH(
         typeof body.loss_reason === "string" && body.loss_reason.trim()
           ? body.loss_reason.trim()
           : null;
-      const hid = quote.hubspot_deal_id?.trim();
-      if (hid) syncDealStage(hid, "lost").catch(() => {});
     }
 
     if (next === "cold") {
@@ -120,8 +124,6 @@ export async function PATCH(
         typeof body.cold_reason === "string" && body.cold_reason.trim()
           ? body.cold_reason.trim()
           : "coordinator_marked";
-      const hid = quote.hubspot_deal_id?.trim();
-      if (hid) syncDealStage(hid, "cold").catch(() => {});
     }
 
     if (prevStatus === "cold" && next !== "cold") {
@@ -137,6 +139,24 @@ export async function PATCH(
   const { error: upErr } = await admin.from("quotes").update(patch).eq("id", quoteId);
   if (upErr) {
     return NextResponse.json({ error: upErr.message }, { status: 500 });
+  }
+
+  // Sync EVERY status transition to HubSpot, not just cold/lost.
+  // Previously only two triggers fired (cold + lost), which left
+  // expired, declined, superseded, reactivated, and payment_failed
+  // silently out of sync — HubSpot showed a deal still "Quote Sent"
+  // long after Ops had marked it Expired. Plus the extend-expiry
+  // reactivation path (expired → sent) never told HubSpot the deal
+  // was live again. The syncDealStage trigger table already knows
+  // how to map each status; just pass it through.
+  const finalStatus =
+    typeof patch.status === "string" ? patch.status : null;
+  const hid = quote.hubspot_deal_id?.trim();
+  if (hid && finalStatus && finalStatus !== prevStatus) {
+    // reactivated → HubSpot's "quote_sent" stage; everything else
+    // uses its own name (cold, lost, expired, declined, ...).
+    const trigger = didReactivate ? "quote_sent" : finalStatus;
+    syncDealStage(hid, trigger).catch(() => {});
   }
 
   if (body.status !== undefined) {
