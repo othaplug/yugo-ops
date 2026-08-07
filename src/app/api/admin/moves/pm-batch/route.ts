@@ -237,11 +237,25 @@ export async function POST(req: NextRequest) {
   const batchMailRows: PmBatchMailDetailRow[] = [];
 
   const status = draft ? "pending_approval" : "confirmed";
-  // Store the coordinator's NAME, not their email. Falls back to the email's
-  // local part, then a generic label.
+  // Source of truth for the coordinator's display name is
+  // platform_users.name — that's the field Settings → Personal &
+  // profile → "Full Name" writes to. auth.user_metadata is stale
+  // (only ever populated at signup, never updated by Settings) and
+  // email.split("@")[0] produces "othaplug" which shows up on every
+  // PM move as the coordinator name.  See project memory
+  // project_coordinator_source.md.
+  const { data: puRow } = user?.id
+    ? await admin
+        .from("platform_users")
+        .select("name")
+        .eq("user_id", user.id)
+        .maybeSingle()
+    : { data: null };
+  const puName = ((puRow as { name?: string | null } | null)?.name ?? "").trim();
   const coordinatorMeta = (user as { user_metadata?: { full_name?: string } } | null)
     ?.user_metadata?.full_name;
   const coordinatorName =
+    puName ||
     (typeof coordinatorMeta === "string" && coordinatorMeta.trim()) ||
     user?.email?.split("@")[0]?.trim() ||
     "Coordinator";
