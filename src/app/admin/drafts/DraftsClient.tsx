@@ -59,7 +59,7 @@ export default function DraftsClient() {
     setDrafts(getAllDraftMetas());
     setMounted(true);
     fetchServerDraftMetas().then((server) => {
-      setDrafts((local) => mergeDraftMetas(getAllDraftMetas().length ? getAllDraftMetas() : local, server));
+      setDrafts((local) => mergeDraftMetas(local, server));
     });
   }, []);
 

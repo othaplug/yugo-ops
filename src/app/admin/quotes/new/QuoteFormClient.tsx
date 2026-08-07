@@ -2655,6 +2655,12 @@ export default function QuoteFormClient({
       if (s.referralId !== undefined) setReferralId(s.referralId as Parameters<typeof setReferralId>[0]);
       if (s.moveScopeDaysOverride !== undefined) setMoveScopeDaysOverride(s.moveScopeDaysOverride as Parameters<typeof setMoveScopeDaysOverride>[0]);
       if (s.moveScopeExtraVolumeDay !== undefined) setMoveScopeExtraVolumeDay(s.moveScopeExtraVolumeDay as Parameters<typeof setMoveScopeExtraVolumeDay>[0]);
+      // A restored move size is an explicit operator choice — mark it "touched"
+      // so the auto-size-from-inventory effect (guarded by this ref) doesn't
+      // recompute and clobber it after restore.
+      if (typeof s.moveSize === "string" && s.moveSize) {
+        moveSizeUserTouchedRef.current = true;
+      }
       if (restoredStep != null && !serviceWillChange) {
         setQuoteFlowStep(restoredStep);
       }

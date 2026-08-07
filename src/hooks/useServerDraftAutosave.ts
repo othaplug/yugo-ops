@@ -32,11 +32,13 @@ export function useServerDraftAutosave(opts: {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       lastSentRef.current = serialized;
+      // No keepalive: a full snapshot can exceed the 64KB keepalive body cap,
+      // which would silently drop large inventories. This runs during active
+      // editing (not on unload), and the localStorage draft covers the gap.
       fetch("/api/admin/quote-drafts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: draftId, formType, title, path, snapshot }),
-        keepalive: true,
       }).catch(() => {
         // best-effort; local draft is the safety net
         lastSentRef.current = "";
