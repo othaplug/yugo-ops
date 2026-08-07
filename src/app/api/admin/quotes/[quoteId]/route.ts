@@ -284,8 +284,17 @@ export async function DELETE(
     );
   }
 
+  // Delete in Ops → archive the HubSpot deal (was previously a soft
+  // "move to closed_lost" which left the deal visible in reports
+  // forever). Quotes don't have a calendar event so nothing to clean
+  // up on Google Calendar.
   const hid = (quote.hubspot_deal_id as string | null)?.trim();
-  if (hid) syncDealStage(hid, "lost").catch(() => {});
+  if (hid) {
+    const { hubspotArchiveOnDelete } = await import(
+      "@/lib/hubspot/archive-on-delete"
+    );
+    hubspotArchiveOnDelete(hid).catch(() => {});
+  }
 
   return NextResponse.json({ ok: true });
 }

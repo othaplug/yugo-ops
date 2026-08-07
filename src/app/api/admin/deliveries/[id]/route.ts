@@ -313,6 +313,68 @@ export async function PATCH(
     triggerDeliveryGCalSync(id);
   }
 
+  // HubSpot property sync — mirror the same admin edits (route,
+  // access, date, override price) into the HubSpot deal so the CRM
+  // stays truthful. Fire-and-forget: HubSpot outages never block the
+  // Ops edit. Only fires when a HubSpot-relevant field is touched.
+  const hsRelevantKeys = [
+    "pickup_address",
+    "delivery_address",
+    "from_address",
+    "to_address",
+    "pickup_access",
+    "delivery_access",
+    "from_access",
+    "to_access",
+    "scheduled_date",
+    "override_price",
+    "quoted_price",
+    "customer_name",
+  ];
+  if (hsRelevantKeys.some((k) => k in updates)) {
+    const dHsId = (
+      (data as { hubspot_deal_id?: string | null } | null)?.hubspot_deal_id ??
+      (existing as { hubspot_deal_id?: string | null } | null)?.hubspot_deal_id ??
+      ""
+    ).trim();
+    const hsToken = process.env.HUBSPOT_ACCESS_TOKEN;
+    if (dHsId && hsToken) {
+      try {
+        const { buildAllDealProperties } = await import(
+          "@/lib/hubspot/deal-properties-builder"
+        );
+        const { safePatchDeal } = await import(
+          "@/lib/hubspot/safe-deal-write"
+        );
+        const d = (data ?? existing) as Record<string, unknown>;
+        const dealProps = buildAllDealProperties({
+          jobId: (d.delivery_number as string) || id,
+          fromAddress:
+            (d.pickup_address as string) ||
+            (d.from_address as string) ||
+            undefined,
+          toAddress:
+            (d.delivery_address as string) ||
+            (d.to_address as string) ||
+            undefined,
+          fromAccess:
+            (d.pickup_access as string) ||
+            (d.from_access as string) ||
+            undefined,
+          toAccess:
+            (d.delivery_access as string) ||
+            (d.to_access as string) ||
+            undefined,
+          serviceType: "delivery",
+          moveDate: (d.scheduled_date as string) || undefined,
+        });
+        safePatchDeal(hsToken, dHsId, dealProps).catch(() => {});
+      } catch (e) {
+        console.error("[delivery PATCH] hubspot patch failed:", e);
+      }
+    }
+  }
+
   const { data: refreshed } = await admin.from("deliveries").select("*").eq("id", id).single();
 
   return NextResponse.json({ ok: true, delivery: refreshed ?? data });
@@ -334,7 +396,7 @@ export async function DELETE(
 
   const { data: delivery, error: fetchErr } = await admin
     .from("deliveries")
-    .select("id, status, delivery_number")
+    .select("id, status, delivery_number, hubspot_deal_id, gcal_event_id")
     .eq("id", id)
     .single();
 
@@ -350,6 +412,9 @@ export async function DELETE(
     );
   }
 
+  const dHsId = ((delivery as { hubspot_deal_id?: string | null }).hubspot_deal_id ?? "").trim();
+  const dGcalId = ((delivery as { gcal_event_id?: string | null }).gcal_event_id ?? "").trim();
+
   await admin.from("proof_of_delivery").delete().eq("delivery_id", id);
   await admin.from("invoices").update({ delivery_id: null }).eq("delivery_id", id);
 
@@ -362,6 +427,24 @@ export async function DELETE(
     return NextResponse.json(
       { error: deleteErr.message || "Failed to delete delivery" },
       { status: 500 },
+    );
+  }
+
+  // Delete in Ops → delete everywhere. Deliveries previously had NO
+  // HubSpot cleanup and NO calendar cleanup on delete; deals lingered
+  // in active pipelines and orphaned events stayed on crew calendars.
+  if (dHsId) {
+    const { hubspotArchiveOnDelete } = await import(
+      "@/lib/hubspot/archive-on-delete"
+    );
+    hubspotArchiveOnDelete(dHsId).catch(() => {});
+  }
+  if (dGcalId) {
+    const { deleteGCalEvent } = await import(
+      "@/lib/google-calendar/sync-job"
+    );
+    deleteGCalEvent(dGcalId).catch((e) =>
+      console.error("[gcal] deleteEvent on delivery delete:", e),
     );
   }
 

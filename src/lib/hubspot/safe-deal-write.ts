@@ -136,6 +136,35 @@ export async function safePatchDeal(
   return res
 }
 
+/**
+ * Archive (soft-delete) a HubSpot deal. HubSpot's DELETE endpoint is a
+ * soft-delete: the deal is hidden from the UI + reports, but persists
+ * in the archive for ~90 days and can be restored via portal. This is
+ * what we want when an operator deletes the corresponding record in
+ * Ops — hard-remove from active pipelines, keep an audit trail.
+ *
+ * Returns the Response so callers can log / decide. 404 (already gone)
+ * is treated as success — matches how safePatchDeal handles stale IDs.
+ */
+export async function archiveHubSpotDeal(
+  token: string,
+  dealId: string,
+): Promise<Response> {
+  const res = await fetch(`${HS_DEAL_BASE}/${dealId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  // 204 = archived; 404 = already gone (treat as success). Anything else
+  // is an unexpected failure — log with body for diagnostics.
+  if (!res.ok && res.status !== 404) {
+    const text = await res.clone().text().catch(() => "");
+    console.error(
+      `[hubspot] archiveHubSpotDeal failed: deal=${dealId} status=${res.status} body=${text.slice(0, 400)}`,
+    );
+  }
+  return res;
+}
+
 /** POST a new deal with sanitized properties. */
 export async function safeCreateDeal(
   token: string,

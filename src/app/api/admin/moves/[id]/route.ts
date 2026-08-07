@@ -465,7 +465,7 @@ export async function PATCH(
       // you should communicate that with me before I have to reach out."
       const { data: preUpdate } = await admin
         .from("moves")
-        .select("scheduled_date, arrival_window, client_name, client_email, client_phone, move_code")
+        .select("scheduled_date, arrival_window, client_name, client_email, client_phone, move_code, hubspot_deal_id, service_type, move_size, is_pm_move")
         .eq("id", id)
         .maybeSingle();
       const {
@@ -627,6 +627,64 @@ export async function PATCH(
         }
       }
 
+      // Sync out — every admin edit to a move should reach HubSpot
+      // (deal properties) and Google Calendar (event on the crew
+      // calendar). Prior behavior only synced HubSpot on status /
+      // price / scope changes; scheduling + address edits on the
+      // move detail page never reached either surface. Both are
+      // fire-and-forget so an outage never blocks the admin edit.
+      const hsDealId = (
+        (preUpdate as { hubspot_deal_id?: string | null } | null)
+          ?.hubspot_deal_id ?? ""
+      ).trim();
+      const hsToken = process.env.HUBSPOT_ACCESS_TOKEN;
+      if (hsDealId && hsToken) {
+        try {
+          const { buildAllDealProperties } = await import(
+            "@/lib/hubspot/deal-properties-builder"
+          );
+          const { safePatchDeal } = await import(
+            "@/lib/hubspot/safe-deal-write"
+          );
+          const u = updated as Record<string, unknown>;
+          const dealProps = buildAllDealProperties({
+            jobId: (u.move_code as string) || id,
+            fromAddress: (u.from_address as string) || undefined,
+            toAddress: (u.to_address as string) || undefined,
+            fromAccess: (u.from_access as string) || undefined,
+            toAccess: (u.to_access as string) || undefined,
+            serviceType: (preUpdate?.service_type as string) || undefined,
+            moveDate: (u.scheduled_date as string) || undefined,
+            moveSize: (preUpdate?.move_size as string) || undefined,
+            isPmMove: !!preUpdate?.is_pm_move,
+          });
+          safePatchDeal(hsToken, hsDealId, dealProps).catch(() => {});
+        } catch (e) {
+          console.error("[move PATCH] hubspot patch failed:", e);
+        }
+      }
+      // Only fire the calendar sync when a field the event actually
+      // renders changed — date/window/addresses/crew/duration. Field
+      // edits like internal_notes shouldn't churn the calendar API.
+      const gcalRelevant =
+        scheduled_date !== undefined ||
+        arrival_window !== undefined ||
+        from_address !== undefined ||
+        to_address !== undefined ||
+        crew_id !== undefined ||
+        est_hours !== undefined ||
+        estimated_duration_minutes !== undefined;
+      if (gcalRelevant) {
+        try {
+          const { triggerMoveGCalSync } = await import(
+            "@/lib/google-calendar/sync-utils"
+          );
+          triggerMoveGCalSync(id);
+        } catch (e) {
+          console.error("[move PATCH] gcal sync failed:", e);
+        }
+      }
+
       await logAudit({
         userId: authUser?.id,
         userEmail: authUser?.email,
@@ -697,10 +755,11 @@ export async function DELETE(
 
     const { data: moveMeta } = await admin
       .from("moves")
-      .select("hubspot_deal_id")
+      .select("hubspot_deal_id, gcal_event_id")
       .eq("id", id)
       .maybeSingle();
     const moveHsId = ((moveMeta as { hubspot_deal_id?: string | null } | null)?.hubspot_deal_id ?? "").trim();
+    const moveGcalId = ((moveMeta as { gcal_event_id?: string | null } | null)?.gcal_event_id ?? "").trim();
 
     await admin.from("move_inventory").delete().eq("move_id", id);
     await admin.from("move_documents").delete().eq("move_id", id);
@@ -720,7 +779,25 @@ export async function DELETE(
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-    if (moveHsId) syncDealStage(moveHsId, "lost").catch(() => {});
+    // Delete in Ops means delete everywhere: archive the HubSpot deal
+    // (removes from active pipelines; portal keeps a 90-day restore
+    // window) and drop the Google Calendar event so it doesn't linger
+    // on crew calendars. Fire-and-forget — HubSpot/GCal outages must
+    // never block a successful Ops delete.
+    if (moveHsId) {
+      const { hubspotArchiveOnDelete } = await import(
+        "@/lib/hubspot/archive-on-delete"
+      );
+      hubspotArchiveOnDelete(moveHsId).catch(() => {});
+    }
+    if (moveGcalId) {
+      const { deleteGCalEvent } = await import(
+        "@/lib/google-calendar/sync-job"
+      );
+      deleteGCalEvent(moveGcalId).catch((e) =>
+        console.error("[gcal] deleteEvent on move delete:", e),
+      );
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
