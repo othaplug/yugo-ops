@@ -324,7 +324,7 @@ import {
   contractTaxFromMove,
   splitOntarioTaxInclusive,
 } from "@/lib/format-currency";
-import { portfolioPmMoveServiceLabel, serviceTypeDisplayLabel } from "@/lib/displayLabels";
+import { portfolioPmMoveServiceLabel, serviceTypeDisplayLabel, moveSizeDisplayLabel } from "@/lib/displayLabels";
 import { serviceTypeHasTiers } from "@/lib/quote-service-types";
 import { portfolioPmStatementInvoiceDueIso } from "@/lib/partners/portfolio-pm-statement-due-date";
 import { formatAccessForDisplay, toTitleCase } from "@/lib/format-text";
@@ -1747,6 +1747,16 @@ export default function MoveDetailClient({
                   );
                 })()}
               </div>
+              {move.move_size?.trim() ? (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
+                    Size
+                  </p>
+                  <p className="text-[var(--yu3-ink)]">
+                    {moveSizeDisplayLabel(move.move_size)}
+                  </p>
+                </div>
+              ) : null}
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
                   Crew
