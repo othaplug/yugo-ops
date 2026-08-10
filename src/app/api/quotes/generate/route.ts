@@ -2805,6 +2805,19 @@ async function calcLongDistance(
   const truckLd = normalizeTruckType(input.truck_type ?? "20ft");
   price += plcLd.total + getTruckFeeSync(truckLd, config);
 
+  // Access Profile → derived complexity surcharge per address (primary + extra
+  // stops). Long distance previously charged nothing for access; only applies
+  // when a profile is captured, so untouched quotes are unchanged.
+  const accessSurchargeLd = [
+    input.from_access_profile,
+    input.to_access_profile,
+    ...(input.additional_pickup_addresses ?? []).map((a) => a?.access_profile),
+    ...(input.additional_dropoff_addresses ?? []).map((a) => a?.access_profile),
+  ]
+    .filter((p): p is AccessProfile => !!p)
+    .reduce((s, p) => s + accessProfileSurcharge(p, config), 0);
+  price += accessSurchargeLd;
+
   price += addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
@@ -2835,6 +2848,7 @@ async function calcLongDistance(
       neighbourhood_multiplier: neighbourhood.multiplier,
       neighbourhood_tier: neighbourhood.tier,
       parking_long_carry_total: plcLd.total,
+      access_surcharge: accessSurchargeLd,
       truck_recommended: truckLd,
       truck_surcharge: getTruckFeeSync(truckLd, config),
     },
@@ -3195,10 +3209,22 @@ async function calcWhiteGlove(
   );
   const distKm = distInfo?.distance_km ?? 0;
 
-  const [fromWg, toWg] = await Promise.all([
+  const [fromWgLegacy, toWgLegacy] = await Promise.all([
     getAccessSurcharge(sb, input.from_access),
     getAccessSurcharge(sb, input.to_access),
   ]);
+  // Access Profile → derived complexity surcharge (same model as residential).
+  const fromWgProfile = input.from_access_profile as AccessProfile | undefined;
+  const toWgProfile = input.to_access_profile as AccessProfile | undefined;
+  const fromWg = fromWgProfile ? accessProfileSurcharge(fromWgProfile, config) : fromWgLegacy;
+  const toWg = toWgProfile ? accessProfileSurcharge(toWgProfile, config) : toWgLegacy;
+  const extraStopAccessWg = [
+    ...(input.additional_pickup_addresses ?? []),
+    ...(input.additional_dropoff_addresses ?? []),
+  ]
+    .map((a) => a?.access_profile)
+    .filter((p): p is AccessProfile => !!p)
+    .reduce((s, p) => s + accessProfileSurcharge(p, config), 0);
   const plcWg = parkingLongCarryLineTotal(config, input, "both");
 
   const gwRaw = input.white_glove_guaranteed_window_hours;
@@ -3220,6 +3246,7 @@ async function calcWhiteGlove(
 
   let price = breakdown.subtotalPreTax;
 
+  price += extraStopAccessWg;
   price += addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
