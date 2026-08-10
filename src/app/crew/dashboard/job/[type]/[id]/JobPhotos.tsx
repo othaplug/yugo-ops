@@ -97,6 +97,13 @@ interface JobPhotosProps {
    * When set, the arrived-at-photo gate and skip control do not apply.
    */
   uploadOverride?: { category: string; checkpoint: string };
+  /**
+   * Multi-stop delivery: scope uploads AND the fetched photo grid to a
+   * specific delivery_stops row. Enables per-vendor chain of custody
+   * on jobs with more than one pickup (see DayRateStopFlow inline
+   * usage). Non-multi-stop callers leave undefined.
+   */
+  stopId?: string;
 }
 
 interface PhotoItem {
@@ -113,7 +120,7 @@ const ARRIVED_CHECKPOINTS = ["arrived_at_pickup", "arrived_at_destination", "arr
 /** No add-photo while crew is in transit (driving). Photos only at pickup/destination. */
 const NO_PHOTO_STATUSES = ["en_route_to_pickup", "en_route", "en_route_to_destination"];
 
-export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, onPhotoTaken, onPhotoCountChange, onCanAdvanceFromArrivedChange, finalWalkPhotoAtLoading = false, readOnly = false, uploadOverride }: JobPhotosProps) {
+export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, onPhotoTaken, onPhotoCountChange, onCanAdvanceFromArrivedChange, finalWalkPhotoAtLoading = false, readOnly = false, uploadOverride, stopId }: JobPhotosProps) {
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [photosAtArrived, setPhotosAtArrived] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -142,7 +149,10 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
   const [photosSkipped, setPhotosSkipped] = useState(false);
 
   const fetchPhotos = () => {
-    fetch(`/api/crew/photos/${jobId}?jobType=${jobType}`)
+    const qs = stopId
+      ? `?jobType=${jobType}&stopId=${encodeURIComponent(stopId)}`
+      : `?jobType=${jobType}`;
+    fetch(`/api/crew/photos/${jobId}${qs}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.photos) {
@@ -158,7 +168,8 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
 
   useEffect(() => {
     if (jobId && jobType) fetchPhotos();
-  }, [jobId, jobType]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobId, jobType, stopId]);
 
   useEffect(() => {
     setUploadError(null);
@@ -183,6 +194,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
       if (sessionId) form.append("sessionId", sessionId);
       form.append("checkpoint", uploadCheckpoint);
       form.append("category", category);
+      if (stopId) form.append("stopId", stopId);
       const res = await fetch("/api/crew/photos/upload", { method: "POST", body: form });
       const data = await parseCrewPhotoUploadResponse(res);
       if (!res.ok) throw new Error(data.error || "Upload failed");

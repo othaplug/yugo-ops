@@ -1181,6 +1181,8 @@ export default function CrewJobPage({
           onStopUpdated={() => {
             fetchJob();
           }}
+          jobIdForPhotos={id}
+          sessionIdForPhotos={session?.id ?? null}
         />
         {allB2bStopsDone && (
           <B2bMultiStopJobWrapUp

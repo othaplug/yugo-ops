@@ -8,6 +8,7 @@ import {
   formatStopReadiness,
   formatDeliveryStopItemStatus,
 } from "@/lib/delivery-stop-ui-labels";
+import JobPhotos from "./JobPhotos";
 
 interface StopItemRow {
   id: string;
@@ -62,6 +63,14 @@ interface Props {
   vehicleType?: string | null;
   flowKind?: "day_rate" | "b2b_multi";
   onStopUpdated?: () => void;
+  /**
+   * Job id + session id for per-stop photo uploads (JobPhotos). When
+   * omitted, per-stop photos are simply not rendered — DayRateStopFlow
+   * still works. jobType is always "delivery" here (single-move flow
+   * uses the standard timeline, not this component).
+   */
+  jobIdForPhotos?: string;
+  sessionIdForPhotos?: string | null;
 }
 
 const STOP_STATUS_CONFIG: Record<
@@ -121,6 +130,8 @@ export default function DayRateStopFlow({
   vehicleType,
   flowKind = "day_rate",
   onStopUpdated,
+  jobIdForPhotos,
+  sessionIdForPhotos,
 }: Props) {
   const [advancing, setAdvancing] = useState<string | null>(null);
   const [itemBusy, setItemBusy] = useState<string | null>(null);
@@ -653,6 +664,55 @@ export default function DayRateStopFlow({
                       </div>
                     );
                   })()}
+
+                  {/*
+                    Per-stop chain-of-custody photos. On multi-vendor
+                    B2B jobs (DLV-30389 pattern: Unique Cabinets → Anton
+                    → Anthony) each stop needs its own timestamped photo
+                    trail so damage claims can be attributed to the
+                    right vendor. Previously JobPhotos only mounted
+                    once at wrap-up with a single walkthrough_final
+                    bucket — no per-vendor separation possible.
+
+                    Category: "loading" while the crew is at a pickup
+                    (documents what was loaded from that vendor),
+                    "delivery_placement" on the final drop-off (final
+                    condition at customer's home). Only rendered while
+                    the stop is active so pending stops stay clean and
+                    completed stops become read-only.
+                  */}
+                  {jobIdForPhotos &&
+                    (stop.stop_status === "arrived" ||
+                      stop.stop_status === "in_progress" ||
+                      stop.stop_status === "completed") && (() => {
+                        const isPickup =
+                          String(stop.stop_type || "").toLowerCase() === "pickup";
+                        const overrideCategory = isPickup
+                          ? "loading"
+                          : "delivery_placement";
+                        return (
+                          <div className="rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)]/40 px-3 py-3">
+                            <JobPhotos
+                              jobId={jobIdForPhotos}
+                              jobType="delivery"
+                              sessionId={sessionIdForPhotos ?? null}
+                              currentStatus={
+                                isPickup
+                                  ? "loading"
+                                  : "arrived_at_destination"
+                              }
+                              stopId={stop.id}
+                              readOnly={stop.stop_status === "completed"}
+                              uploadOverride={{
+                                category: overrideCategory,
+                                checkpoint: isPickup
+                                  ? "loading"
+                                  : "arrived_at_destination",
+                              }}
+                            />
+                          </div>
+                        );
+                      })()}
 
                   {!isDone && !isPending && (
                     <div className="flex flex-wrap gap-2 pt-1">

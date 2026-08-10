@@ -32,6 +32,15 @@ export async function POST(req: NextRequest) {
     const checkpoint = (formData.get("checkpoint") as string)?.trim() || null;
     const category = (formData.get("category") as string)?.trim() || "other";
     const note = (formData.get("note") as string)?.trim() || null;
+    // stopId is optional — set on multi-stop deliveries so each vendor
+    // pickup's photos stay attributable per-stop for chain-of-custody
+    // (Unique Cabinets vs Anton's unit on DLV-30389, etc.). Bare
+    // format check only; foreign key validity is enforced by the DB.
+    const stopIdRaw = (formData.get("stopId") as string)?.trim() || null;
+    const stopId =
+      stopIdRaw && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stopIdRaw)
+        ? stopIdRaw
+        : null;
 
     if (!file || !file.size) return NextResponse.json({ error: "No file" }, { status: 400 });
     if (file.size > MAX_FILE_BYTES) {
@@ -96,8 +105,9 @@ export async function POST(req: NextRequest) {
         taken_by: payload.crewMemberId,
         is_client_visible: true,
         note,
+        stop_id: stopId,
       })
-      .select("id, storage_path, category, checkpoint, taken_at")
+      .select("id, storage_path, category, checkpoint, taken_at, stop_id")
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

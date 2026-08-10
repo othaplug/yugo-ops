@@ -19,6 +19,17 @@ export async function GET(
   if (!["move", "delivery"].includes(jobType)) {
     return NextResponse.json({ error: "Invalid jobType" }, { status: 400 });
   }
+  // Optional per-stop filter. Passing ?stopId=<uuid> narrows the
+  // response to just that stop's photos so a JobPhotos instance
+  // mounted inside a specific stop card only sees its own uploads
+  // (vs a mixed feed of every vendor's shots).
+  const stopIdFilterRaw =
+    req.nextUrl.searchParams.get("stopId")?.trim() || null;
+  const stopIdFilter =
+    stopIdFilterRaw &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stopIdFilterRaw)
+      ? stopIdFilterRaw
+      : null;
 
   const admin = createAdminClient();
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId);
@@ -40,16 +51,28 @@ export async function GET(
     entityId = delivery.id;
   }
 
-  const { data: photos, error } = await admin
+  let query = admin
     .from("job_photos")
-    .select("id, storage_path, thumbnail_path, category, checkpoint, taken_at, note")
+    .select("id, storage_path, thumbnail_path, category, checkpoint, taken_at, note, stop_id")
     .eq("job_id", entityId)
     .eq("job_type", jobType)
     .order("taken_at", { ascending: true });
+  if (stopIdFilter) {
+    query = query.eq("stop_id", stopIdFilter);
+  }
+  const { data: photos, error } = await query;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const urls: { id: string; url: string; category: string; checkpoint: string | null; takenAt: string; note: string | null }[] = [];
+  const urls: {
+    id: string;
+    url: string;
+    category: string;
+    checkpoint: string | null;
+    takenAt: string;
+    note: string | null;
+    stopId: string | null;
+  }[] = [];
   for (const p of photos ?? []) {
     const path = p.thumbnail_path || p.storage_path;
     const { data: signed } = await admin.storage.from(BUCKET).createSignedUrl(path, 3600);
@@ -60,6 +83,7 @@ export async function GET(
       checkpoint: p.checkpoint,
       takenAt: p.taken_at,
       note: p.note,
+      stopId: (p as { stop_id?: string | null }).stop_id ?? null,
     });
   }
 
