@@ -6,6 +6,7 @@ import {
   accessModelFromProfile,
   defaultProfile,
   fieldValueAsString,
+  profileToBuildingBody,
   specForType,
   type AccessFieldSpec,
   type AccessProfile,
@@ -59,13 +60,31 @@ export function AccessProfileField({
   value,
   onChange,
   endLabel,
+  address,
 }: {
   value: AccessProfile | null;
   onChange: (p: AccessProfile) => void;
   endLabel: string;
+  address?: string;
 }) {
   const model = value ? accessModelFromProfile(value) : null;
   const spec = value ? specForType(value.property_type) : null;
+  const [saveState, setSaveState] = React.useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  async function saveAsBuilding() {
+    if (!value || !address?.trim()) return;
+    setSaveState("saving");
+    try {
+      const res = await fetch("/api/admin/buildings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileToBuildingBody(value, address.trim())),
+      });
+      setSaveState(res.ok ? "saved" : "error");
+    } catch {
+      setSaveState("error");
+    }
+  }
 
   return (
     <div className="rounded-xl border border-[var(--ln)] bg-[var(--bg1)] p-3 sm:p-4">
@@ -210,6 +229,28 @@ export function AccessProfileField({
           Pick a property type to capture access.
         </p>
       )}
+
+      {value && address?.trim() ? (
+        <div className="mt-3 flex items-center gap-3 border-t border-[var(--ln)] pt-3">
+          <button
+            type="button"
+            onClick={saveAsBuilding}
+            disabled={saveState === "saving" || saveState === "saved"}
+            className="rounded-md border border-[var(--ln)] bg-[var(--bg2)] px-3 py-1.5 text-[12px] font-semibold text-[var(--tx1)] transition hover:border-[var(--wine)] disabled:opacity-60"
+          >
+            {saveState === "saving"
+              ? "Saving…"
+              : saveState === "saved"
+                ? "Saved to buildings"
+                : "Save as building profile"}
+          </button>
+          {saveState === "error" ? (
+            <span className="text-[12px] text-[var(--amber)]">Could not save — try again</span>
+          ) : (
+            <span className="text-[12px] text-[var(--tx3)]">Reuse this access on future quotes</span>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

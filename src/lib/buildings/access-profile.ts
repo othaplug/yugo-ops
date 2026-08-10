@@ -230,3 +230,35 @@ export function profileToLegacyAccess(p: AccessProfile): {
     p.truck_spot === "far" || p.truck_spot === "laneway" ? "no_dedicated" : "dedicated";
   return { access, parking, longCarry };
 }
+
+const PT_TO_BUILDING_TYPE: Record<AccessPropertyType, string> = {
+  house: "detached_house",
+  town: "townhouse",
+  condo: "high_rise",
+  walkup: "walk_up",
+  ground: "other",
+};
+
+/**
+ * Ship 4: map a captured profile + address to the POST body for
+ * /api/admin/buildings, so an operator can promote a quote's access capture
+ * into a reusable building profile. Carries the derived minutes/complexity so
+ * the saved profile prices consistently.
+ */
+export function profileToBuildingBody(
+  p: AccessProfile,
+  address: string,
+  extra?: Record<string, unknown>,
+): Record<string, unknown> {
+  const row = profileToAccessRow(p);
+  const model = deriveAccessModel(row);
+  return {
+    address,
+    building_type: PT_TO_BUILDING_TYPE[p.property_type],
+    estimated_extra_minutes_per_trip: model.estimatedExtraMinutesPerTrip,
+    complexity_rating: model.complexityRating,
+    source: "quote_capture",
+    ...row,
+    ...(extra ?? {}),
+  };
+}
