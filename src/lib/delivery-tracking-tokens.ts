@@ -109,6 +109,13 @@ export async function sendB2BTrackingNotifications(
   const base = getEmailBaseUrl().replace(/\/$/, "");
   const bizUrl = `${base}/delivery/track/${encodeURIComponent(d.tracking_token)}`;
   const brand = (d.business_name || "Your business").trim();
+  // Greet the business contact by first name (the SMS used to open with a bare
+  // "Hi," even when we had the name on file). Prefer the contact person, then
+  // the billing customer name.
+  const bizContactFirst = String(d.contact_name || d.customer_name || "")
+    .split(" ")[0]
+    .trim();
+  const bizGreet = bizContactFirst ? `Hi ${bizContactFirst},` : "Hi,";
 
   if (audiences.includes("business")) {
     const subj = "Your delivery is confirmed";
@@ -123,7 +130,7 @@ export async function sendB2BTrackingNotifications(
     if (d.contact_phone) {
       await sendSMS(
         d.contact_phone,
-        [`Hi,`, `Your Yugo delivery is confirmed.`, `Track anytime:\n${bizUrl}`].join("\n\n"),
+        [bizGreet, `Your Yugo delivery is confirmed.`, `Track anytime:\n${bizUrl}`].join("\n\n"),
       ).catch(() => {});
     }
   }

@@ -154,6 +154,53 @@ export async function ensureMultiStopDeliveryTrackingSessionFromStops(
     checkpointStatus: derived,
     now,
   })
+
+  // Notify the client/partner that the job has started (crew heading to the
+  // first pickup). Previously the auto-created session wrote the
+  // `en_route_to_pickup` checkpoint but never pushed it, so multi-stop
+  // deliveries were silent from booking until the first pickup completed —
+  // even though this checkpoint is configured to notify. Dedupe keeps it to a
+  // single send if the advance path also reports the same status later.
+  const skipStartNotify = await shouldSkipDuplicateDeliveryTrackingNotify(
+    admin,
+    deliveryId,
+    derived,
+  )
+  if (!skipStartNotify) {
+    try {
+      const crewId = d.crew_id as string | null
+      let teamName = "Crew"
+      if (crewId) {
+        const { data: crew } = await admin
+          .from("crews")
+          .select("name")
+          .eq("id", crewId)
+          .maybeSingle()
+        if (crew?.name) teamName = crew.name
+      }
+      const { data: dj } = await admin
+        .from("deliveries")
+        .select("customer_name, client_name, delivery_number, pickup_address, delivery_address")
+        .eq("id", deliveryId)
+        .maybeSingle()
+      const jobName =
+        `${dj?.customer_name || ""}${dj?.client_name ? ` (${dj.client_name})` : ""}`.trim() ||
+        dj?.delivery_number ||
+        deliveryId
+      await notifyOnCheckpoint(
+        derived,
+        deliveryId,
+        "delivery",
+        teamName,
+        jobName,
+        dj?.pickup_address || undefined,
+        dj?.delivery_address || undefined,
+      )
+      await recordDeliveryTrackingNotifyDedupe(admin, deliveryId, derived)
+    } catch (e) {
+      console.error("[multi-stop-tracking] start notify:", e)
+    }
+  }
 }
 
 /**
