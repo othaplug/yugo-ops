@@ -228,8 +228,13 @@ export default function DayRateStopFlow({
     [flowKind, stops],
   );
 
+  // Universal maps deeplink — Google Maps' /?api=1 URL scheme opens the
+  // native Google Maps app on Android and Google Maps for Web on iPhones
+  // that don't have the app installed (falling back to Apple Maps via
+  // the OS). Was hard-coded Apple Maps which silently fails on Android
+  // crew phones — real bug for any crew member on a Pixel/Samsung.
   const navigateUrl = (address: string) =>
-    `https://maps.apple.com/?daddr=${encodeURIComponent(address)}`;
+    `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
 
   const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
@@ -474,9 +479,18 @@ export default function DayRateStopFlow({
                             st === "loaded" ||
                             st === "delivered";
                           const doneDel = st === "delivered";
+                          // Also allow item pre-check while the stop is
+                          // `current` — the crew is on the way and often
+                          // wants to scan the manifest / cross off items
+                          // they've already staged. Server accepts it;
+                          // the UI was the only thing blocking. Prevents
+                          // a "why can't I tap this?" moment when they
+                          // arrive and everything is still un-checkable
+                          // for the split second before status flips.
                           const canToggle =
-                            stop.stop_status === "in_progress" ||
-                            stop.stop_status === "arrived";
+                            stop.stop_status === "current" ||
+                            stop.stop_status === "arrived" ||
+                            stop.stop_status === "in_progress";
                           const isPickupStop =
                             String(stop.stop_type || "").toLowerCase() === "pickup";
                           const targetStatus =
@@ -611,11 +625,34 @@ export default function DayRateStopFlow({
                     </div>
                   )}
 
-                  {(stop.special_instructions || stop.notes) && (
-                    <div className="rounded-lg bg-[var(--yu3-bg-surface-sunken)]/90 px-3 py-2 text-[11px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
-                      {stop.special_instructions || stop.notes}
-                    </div>
-                  )}
+                  {(() => {
+                    // Render both special_instructions AND notes when
+                    // both are populated (dedupe when identical). Was
+                    // showing only special_instructions when both
+                    // existed — the operator-added note (e.g. "Elevator
+                    // booked from 12:30 PM to 1:30 PM") could be
+                    // silently hidden behind the vendor-facing script
+                    // (e.g. "Tell them pick up for Arima Kitchens…").
+                    const si = (stop.special_instructions ?? "").trim();
+                    const nt = (stop.notes ?? "").trim();
+                    const both =
+                      si && nt && si.toLowerCase() !== nt.toLowerCase();
+                    if (!si && !nt) return null;
+                    return (
+                      <div className="space-y-1.5">
+                        {si && (
+                          <div className="rounded-lg bg-[var(--yu3-bg-surface-sunken)]/90 px-3 py-2 text-[11px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+                            {si}
+                          </div>
+                        )}
+                        {(both || (!si && nt)) && (
+                          <div className="rounded-lg bg-[var(--yu3-bg-surface-sunken)]/90 px-3 py-2 text-[11px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+                            {nt}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {!isDone && !isPending && (
                     <div className="flex flex-wrap gap-2 pt-1">
