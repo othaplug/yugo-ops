@@ -126,6 +126,11 @@ import {
   type DeliveryVerticalRow,
 } from "@/lib/pricing/b2b-dimensional";
 import { priceCabinetryFlatBand } from "@/lib/pricing/b2b-flatband";
+import { AccessProfileField } from "@/components/admin/quotes/AccessProfileField";
+import {
+  profileToLegacyAccess,
+  type AccessProfile,
+} from "@/lib/buildings/access-profile";
 import { formatTruckOptionLabel } from "@/lib/pricing/truck-fees";
 import { mergeBundleTierIntoMergedRates } from "@/lib/b2b-bundle-line-items";
 import { prepareB2bLineItemsForDimensionalEngine } from "@/lib/b2b-dimensional-quote-prep";
@@ -1360,6 +1365,13 @@ export default function QuoteFormClient({
   /** Deep link from admin (e.g. Bin Rentals → Generate quote uses `?service=bin_rental`). */
   const serviceTypeFromUrl = searchParams.get("service")?.trim() || "";
   const fromPhotoReview = searchParams.get("from_photo_review") === "1";
+  /**
+   * Address & Access redesign — Ship 1 flag. Dark by default; append
+   * `?accessv2=1` to capture the type-aware Access Profile per address. Pricing
+   * is unchanged: the profile drives the legacy access/parking/long-carry state
+   * via profileToLegacyAccess, and the richer JSON is persisted for Ship 2.
+   */
+  const accessV2 = searchParams.get("accessv2") === "1";
   /** Re-run handoff when Next hydrates `useSearchParams` (first paint can be empty). */
   const photoHandoffQueryKey = [
     searchParams.get("lead_id") ?? "",
@@ -1435,6 +1447,9 @@ export default function QuoteFormClient({
   const [extraToStops, setExtraToStops] = useState<StopEntry[]>([]);
   const [fromAccess, setFromAccess] = useState("");
   const [toAccess, setToAccess] = useState("");
+  // Address & Access redesign (Ship 1): type-aware capture per address.
+  const [fromAccessProfile, setFromAccessProfile] = useState<AccessProfile | null>(null);
+  const [toAccessProfile, setToAccessProfile] = useState<AccessProfile | null>(null);
   const [fromUnit, setFromUnit] = useState("");
   const [fromFloor, setFromFloor] = useState("");
   const [toUnit, setToUnit] = useState("");
@@ -2289,6 +2304,8 @@ export default function QuoteFormClient({
       extraToStops,
       fromAccess,
       toAccess,
+      fromAccessProfile,
+      toAccessProfile,
       fromUnit,
       fromFloor,
       toUnit,
@@ -2506,6 +2523,8 @@ export default function QuoteFormClient({
       if (s.extraToStops !== undefined) setExtraToStops(s.extraToStops as Parameters<typeof setExtraToStops>[0]);
       if (s.fromAccess !== undefined) setFromAccess(s.fromAccess as Parameters<typeof setFromAccess>[0]);
       if (s.toAccess !== undefined) setToAccess(s.toAccess as Parameters<typeof setToAccess>[0]);
+      if (s.fromAccessProfile !== undefined) setFromAccessProfile(s.fromAccessProfile as AccessProfile | null);
+      if (s.toAccessProfile !== undefined) setToAccessProfile(s.toAccessProfile as AccessProfile | null);
       if (s.fromUnit !== undefined) setFromUnit(s.fromUnit as Parameters<typeof setFromUnit>[0]);
       if (s.fromFloor !== undefined) setFromFloor(s.fromFloor as Parameters<typeof setFromFloor>[0]);
       if (s.toUnit !== undefined) setToUnit(s.toUnit as Parameters<typeof setToUnit>[0]);
@@ -5461,6 +5480,8 @@ export default function QuoteFormClient({
         to_address: toAddress,
         from_access: fromAccess || undefined,
         to_access: toAccess || undefined,
+        from_access_profile: fromAccessProfile || undefined,
+        to_access_profile: toAccessProfile || undefined,
         from_unit: fromUnit || undefined,
         from_floor: fromFloor || undefined,
         to_unit: toUnit || undefined,
@@ -7855,6 +7876,19 @@ export default function QuoteFormClient({
                           }}
                           inputClassName={fieldInput}
                         />
+                        {accessV2 ? (
+                          <AccessProfileField
+                            value={fromAccessProfile}
+                            endLabel="Pickup"
+                            onChange={(p) => {
+                              setFromAccessProfile(p);
+                              const la = profileToLegacyAccess(p);
+                              setFromAccess(la.access);
+                              setFromParking(la.parking);
+                              setFromLongCarry(la.longCarry);
+                            }}
+                          />
+                        ) : (
                         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4">
                           <div className="w-full min-w-0 sm:w-[7.25rem] sm:shrink-0">
                             <label
@@ -7964,6 +7998,7 @@ export default function QuoteFormClient({
                             </span>
                           </label>
                         </div>
+                        )}
                       </div>
                     )}
                   {serviceType === "event" &&
@@ -8051,6 +8086,19 @@ export default function QuoteFormClient({
                           }}
                           inputClassName={fieldInput}
                         />
+                        {accessV2 ? (
+                          <AccessProfileField
+                            value={toAccessProfile}
+                            endLabel="Destination"
+                            onChange={(p) => {
+                              setToAccessProfile(p);
+                              const la = profileToLegacyAccess(p);
+                              setToAccess(la.access);
+                              setToParking(la.parking);
+                              setToLongCarry(la.longCarry);
+                            }}
+                          />
+                        ) : (
                         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4">
                           <div className="w-full min-w-0 sm:w-[7.25rem] sm:shrink-0">
                             <label
@@ -8160,6 +8208,7 @@ export default function QuoteFormClient({
                             </span>
                           </label>
                         </div>
+                        )}
                       </div>
                     )}
                   {serviceType === "event" &&

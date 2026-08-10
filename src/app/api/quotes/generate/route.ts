@@ -164,6 +164,9 @@ interface QuoteInput {
   to_address: string;
   from_access?: string;
   to_access?: string;
+  /** Ship 1: type-aware access capture (property_type + typed dimensions). Persisted; not yet priced. */
+  from_access_profile?: unknown;
+  to_access_profile?: unknown;
   move_date: string;
   /** Coordinator time input (legacy / supplemental). */
   preferred_time?: string;
@@ -6584,6 +6587,8 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
           : null,
       from_address: input.from_address,
       from_access: input.from_access || null,
+      from_access_profile: input.from_access_profile ?? null,
+      to_access_profile: input.to_access_profile ?? null,
       from_postal: neighbourhood.postalPrefix || null,
       from_parking: input.from_parking ?? "dedicated",
       to_parking: input.to_parking ?? "dedicated",
