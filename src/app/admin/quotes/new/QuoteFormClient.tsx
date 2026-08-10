@@ -5578,10 +5578,10 @@ export default function QuoteFormClient({
         serviceType === "white_glove"
       ) {
         const extraPick = extraFromStops
-          .map((s) => ({ address: s.address.trim() }))
+          .map((s) => ({ address: s.address.trim(), access_profile: s.accessProfile ?? undefined }))
           .filter((x) => x.address.length > 0);
         const extraDrop = extraToStops
-          .map((s) => ({ address: s.address.trim() }))
+          .map((s) => ({ address: s.address.trim(), access_profile: s.accessProfile ?? undefined }))
           .filter((x) => x.address.length > 0);
         if (extraPick.length > 0) base.additional_pickup_addresses = extraPick;
         if (extraDrop.length > 0) base.additional_dropoff_addresses = extraDrop;
@@ -7878,6 +7878,7 @@ export default function QuoteFormClient({
                           inputClassName={fieldInput}
                         />
                         {accessV2 ? (
+                          <div className="flex flex-col gap-3">
                           <AccessProfileField
                             value={fromAccessProfile}
                             endLabel="Pickup"
@@ -7892,6 +7893,22 @@ export default function QuoteFormClient({
                               setFromLongCarry(false);
                             }}
                           />
+                          {extraFromStops.map((stop, i) =>
+                            (stop.address ?? "").trim() ? (
+                              <AccessProfileField
+                                key={`fromstop-${i}`}
+                                value={(stop.accessProfile as AccessProfile) ?? null}
+                                endLabel={`Pickup ${i + 2}`}
+                                address={stop.address}
+                                onChange={(p) => {
+                                  const next = [...extraFromStops];
+                                  next[i] = { ...next[i], accessProfile: p };
+                                  setExtraFromStops(next);
+                                }}
+                              />
+                            ) : null,
+                          )}
+                          </div>
                         ) : (
                         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4">
                           <div className="w-full min-w-0 sm:w-[7.25rem] sm:shrink-0">
@@ -8091,6 +8108,7 @@ export default function QuoteFormClient({
                           inputClassName={fieldInput}
                         />
                         {accessV2 ? (
+                          <div className="flex flex-col gap-3">
                           <AccessProfileField
                             value={toAccessProfile}
                             endLabel="Destination"
@@ -8105,6 +8123,22 @@ export default function QuoteFormClient({
                               setToLongCarry(false);
                             }}
                           />
+                          {extraToStops.map((stop, i) =>
+                            (stop.address ?? "").trim() ? (
+                              <AccessProfileField
+                                key={`tostop-${i}`}
+                                value={(stop.accessProfile as AccessProfile) ?? null}
+                                endLabel={`Destination ${i + 2}`}
+                                address={stop.address}
+                                onChange={(p) => {
+                                  const next = [...extraToStops];
+                                  next[i] = { ...next[i], accessProfile: p };
+                                  setExtraToStops(next);
+                                }}
+                              />
+                            ) : null,
+                          )}
+                          </div>
                         ) : (
                         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4">
                           <div className="w-full min-w-0 sm:w-[7.25rem] sm:shrink-0">

@@ -509,9 +509,9 @@ interface QuoteInput {
   to_long_carry?: boolean;
   truck_type?: string;
   /** Extra pickup stops after primary `from_address` (local / long distance / white glove). */
-  additional_pickup_addresses?: { address?: string }[];
+  additional_pickup_addresses?: { address?: string; access_profile?: unknown }[];
   /** Extra drop-off stops after primary `to_address`. */
-  additional_dropoff_addresses?: { address?: string }[];
+  additional_dropoff_addresses?: { address?: string; access_profile?: unknown }[];
   /** When true, logs full residential pricing steps to the server console (also set PRICING_DEBUG=1). */
   debug_pricing?: boolean;
   /** Coordinator acknowledges out-of-service-area moves (subcontract / remote crew). */
@@ -1728,7 +1728,16 @@ async function calcResidential(
   const toAccess = toAccessProfile
     ? accessProfileSurcharge(toAccessProfile, config)
     : toAccessLegacy;
-  const accessSurcharge = fromAccess + toAccess;
+  // Extra pickup/drop stops each carry their own Access Profile → each adds its
+  // derived complexity surcharge (same model as the primary addresses).
+  const extraStopAccessSurcharge = [
+    ...(input.additional_pickup_addresses ?? []),
+    ...(input.additional_dropoff_addresses ?? []),
+  ]
+    .map((a) => a?.access_profile)
+    .filter((p): p is AccessProfile => !!p)
+    .reduce((sum, p) => sum + accessProfileSurcharge(p, config), 0);
+  const accessSurcharge = fromAccess + toAccess + extraStopAccessSurcharge;
 
   const specialtySurcharge = await getSpecialtySurcharge(sb, input.specialty_items ?? []);
 

@@ -24,6 +24,8 @@ export interface StopEntry {
   address: string;
   lat?: number | null;
   lng?: number | null;
+  /** Type-aware Access Profile for this stop (residential quote capture). */
+  accessProfile?: unknown;
 }
 
 interface Props {
