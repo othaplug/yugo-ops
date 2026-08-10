@@ -17,6 +17,7 @@ import {
 import { getZoneFromDistance } from "@/lib/b2b/zone-detector";
 import { parseRateCard } from "@/lib/b2b/rate-card-types";
 import { calcCabinetPrice, calcAppliancePrice } from "@/lib/b2b/cabinet-pricing";
+import { priceCabinetryFlatBand } from "@/lib/pricing/b2b-flatband";
 import { calcFlooringPrice, type FlooringMaterial, type FlooringHandling } from "@/lib/b2b/flooring-pricing";
 
 /** Vertical codes that use flat-band rate card instead of the dimensional engine. */
@@ -126,7 +127,62 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // ── Flat-band rate card path (cabinetry, flooring, appliance) ────────────
+    // ── Cabinetry: continuous cabinet-unit engine (shared with generate) ─────
+    // The single source of truth for cabinetry pricing. /api/quotes/generate
+    // calls the SAME priceCabinetryFlatBand, so the previewed price and the
+    // saved/sent quote can never diverge, and the old dimensional per-piece
+    // engine never touches cabinetry again.
+    if (verticalCode === "cabinetry") {
+      const deliveryKmFromOffice = await straightLineKmFromGtaCore(deliveryMain);
+      const stairFlights =
+        typeof body.stairs_flights === "number" && body.stairs_flights > 0
+          ? Math.floor(body.stairs_flights)
+          : 0;
+      const fb = priceCabinetryFlatBand(
+        {
+          lines: lines.map((l) => ({
+            description: l.description,
+            quantity: l.quantity,
+            weight_category: l.weight_category,
+            unit_type: l.unit_type,
+            declared_value: l.declared_value,
+          })),
+          deliveryKmFromOffice: deliveryKmFromOffice ?? 0,
+          extraPickupStops: extraP.length,
+          handlingType,
+          isPartner: !!orgId,
+          weekend: scheduledDate ? isMoveDateWeekend(scheduledDate) : false,
+          longCarry:
+            pickupAccess === "long_carry" || deliveryAccess === "long_carry",
+          stairsFlights: stairFlights,
+        },
+        config,
+      );
+      const cabTaxRate = cfgNum(config, "tax_rate", TAX_FALLBACK);
+      const hst = Math.round(fb.roundedPreTax * cabTaxRate * 100) / 100;
+      return NextResponse.json({
+        ok: true,
+        subtotal_pre_round: fb.subtotalPreRound,
+        access_surcharge: 0,
+        multi_stop_surcharge: 0,
+        rounded_pre_tax: fb.roundedPreTax,
+        hst,
+        total_with_tax: Math.round((fb.roundedPreTax + hst) * 100) / 100,
+        breakdown: fb.breakdown,
+        includes: fb.includes,
+        truck: fb.truck,
+        crew: fb.crew,
+        estimated_hours: null,
+        total_distance_km: distKm,
+        stop_count: 2 + extraP.length + extraD.length,
+        requires_custom_quote: fb.requiresCustomQuote,
+        pricing_engine: "cabinetry_flatband",
+        weighted_units: fb.weightedUnits,
+        raw_piece_count: fb.rawPieceCount,
+      });
+    }
+
+    // ── Flat-band rate card path (flooring, appliance) ───────────────────────
     if (FLAT_BAND_VERTICALS.has(verticalCode)) {
       const rcRaw = config.get("b2b_rate_card");
       const rateCard = rcRaw ? parseRateCard(JSON.parse(rcRaw)) : null;

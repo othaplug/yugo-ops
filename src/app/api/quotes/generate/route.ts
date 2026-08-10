@@ -711,8 +711,10 @@ function residentialTierCrew(
 // single source of truth shared by every quote/price-emitting path.
 import {
   applyProcessingRecoveryToTier as applyProcessingRecoveryToTierShared,
+  applyProcessingRecoveryAndRound,
   grossUpForProcessing,
 } from "@/lib/pricing/processing-recovery";
+import { priceCabinetryFlatBand } from "@/lib/pricing/b2b-flatband";
 
 function applyProcessingRecoveryToTier(
   t: TierResult,
@@ -3499,6 +3501,130 @@ async function calcB2bOneoff(
   if (loaded) {
     const items = lineItemsFromQuotePayload(input);
     const stops = stopsFromQuotePayload(input);
+
+    // ── Cabinetry: continuous cabinet-unit engine ───────────────────────────
+    // Cabinetry is priced by the SAME priceCabinetryFlatBand the admin preview
+    // calls, so the saved/sent quote equals what the operator previewed. The
+    // old per-piece dimensional engine no longer touches cabinetry (it over-
+    // quoted a normal kitchen past $1,600); it stays only for the other B2B
+    // verticals below.
+    if (loaded.vertical.code === "cabinetry") {
+      const partnerOrgIdCab = input.b2b_partner_organization_id?.trim() || null;
+      const extraPickupStops = Math.max(
+        0,
+        stops.filter((s) => s.type === "pickup").length - 1,
+      );
+      const fb = priceCabinetryFlatBand(
+        {
+          lines: items.map((i) => ({
+            description: i.description,
+            quantity: i.quantity,
+            weight_category: i.weight_category,
+            unit_type: i.unit_type,
+            declared_value: i.declared_value,
+          })),
+          deliveryKmFromOffice: b2bLocationExtras.deliveryKmFromGta ?? 0,
+          extraPickupStops,
+          handlingType: (input.b2b_handling_type || "threshold").toLowerCase(),
+          isPartner: !!partnerOrgIdCab,
+          weekend: isMoveDateWeekend(input.move_date),
+          longCarry:
+            input.from_access === "long_carry" || input.to_access === "long_carry",
+          stairsFlights: input.b2b_stairs_flights ?? 0,
+        },
+        config,
+      );
+
+      const engineSubtotal = fb.roundedPreTax;
+      const subOvr = parsePositivePreTaxOverride(input.b2b_subtotal_override);
+      const useSubtotalOverride = subOvr !== undefined;
+      let price = useSubtotalOverride
+        ? applyProcessingRecoveryAndRound(Math.round(subOvr as number), config, 50)
+        : engineSubtotal;
+      const calculatedPreTaxBeforeFullOverride = price;
+      const fullOv = parsePositivePreTaxOverride(input.b2b_full_pre_tax_override);
+      const useFullPreTaxOverride = fullOv !== undefined;
+      if (useFullPreTaxOverride) {
+        price = roundTo(fullOv as number, rounding);
+      }
+      const tax = Math.round(price * taxRate);
+      const deposit = price < 300 ? price : 150;
+
+      const truckKeyCab = normalizeTruckType(fb.truck);
+      const b2bFeaturesCab = await fetchTierFeatures(sb, "b2b_delivery", "custom");
+      const includesCab = [
+        ...fb.includes,
+        ...(b2bFeaturesCab.length > 0
+          ? b2bFeaturesCab
+          : ["Loading and unloading", "Basic protection"]),
+      ];
+
+      return {
+        custom_price: {
+          price,
+          deposit,
+          tax,
+          total: price + tax,
+          includes: includesCab,
+        } as TierResult,
+        factors: {
+          b2b_dimensional: false,
+          b2b_flatband: true,
+          b2b_vertical_code: loaded.vertical.code,
+          b2b_vertical_name: loaded.vertical.name,
+          item_description: loaded.vertical.name,
+          item_category: loaded.vertical.code,
+          distance_km: distKm,
+          drive_time_min: distInfo?.drive_time_min ?? null,
+          access_surcharge: 0,
+          parking_long_carry_total: 0,
+          b2b_price_breakdown: fb.breakdown,
+          b2b_line_items: items,
+          b2b_has_extreme_weight: hasExtremeWeightCategory(
+            items.map((it) => ({ weight_category: it.weight_category })),
+          ),
+          b2b_stops: stops,
+          b2b_handling_type: (input.b2b_handling_type || "threshold").toLowerCase(),
+          b2b_weighted_units: fb.weightedUnits,
+          b2b_raw_piece_count: fb.rawPieceCount,
+          b2b_zone: fb.zone,
+          b2b_requires_custom_quote: fb.requiresCustomQuote,
+          b2b_using_partner_rates: Boolean(partnerOrgIdCab),
+          b2b_partner_organization_id: partnerOrgIdCab,
+          b2b_delivery_window: input.b2b_delivery_window?.trim() || null,
+          b2b_time_sensitive: !!input.b2b_time_sensitive,
+          truck_recommended: truckKeyCab,
+          truck_surcharge: 0,
+          b2b_estimated_hours: null,
+          b2b_crew: fb.crew,
+          b2b_business_name: input.b2b_business_name || null,
+          b2b_items: input.b2b_items || null,
+          b2b_payment_method: input.b2b_payment_method ?? "card",
+          b2b_invoice_terms:
+            input.b2b_payment_method === "invoice"
+              ? (input.b2b_invoice_terms?.trim() || "on_completion")
+              : null,
+          b2b_retailer_source: input.b2b_retailer_source?.trim() || null,
+          weight_surcharge: 0,
+          weight_category: input.b2b_weight_category || null,
+          includes: includesCab,
+          b2b_delivery_km_from_gta_core: b2bLocationExtras.deliveryKmFromGta,
+          b2b_gta_zone: b2bLocationExtras.gtaZone,
+          b2b_weekend_surcharge: 0,
+          b2b_engine_subtotal: fb.subtotalPreRound,
+          b2b_subtotal_override: useSubtotalOverride ? Math.round(subOvr as number) : null,
+          b2b_subtotal_override_reason:
+            useSubtotalOverride || useFullPreTaxOverride
+              ? (input.b2b_subtotal_override_reason?.trim() || null)
+              : null,
+          b2b_calculated_pre_tax: calculatedPreTaxBeforeFullOverride,
+          b2b_full_pre_tax_override_applied: useFullPreTaxOverride,
+          b2b_full_pre_tax_override: useFullPreTaxOverride ? fullOv : null,
+          b2b_monthly_volume_estimate: input.b2b_monthly_delivery_volume_estimate ?? null,
+        },
+      };
+    }
+
     const merged = mergedRatesWithBundleTiers(loaded.mergedRates as Record<string, unknown>);
     const useVerticalZoneSchedule = String(merged.distance_mode || "") === "zones";
     const itemsForEngine = prepareB2bLineItemsForDimensionalEngine(

@@ -125,6 +125,7 @@ import {
   type B2BQuoteLineItem,
   type DeliveryVerticalRow,
 } from "@/lib/pricing/b2b-dimensional";
+import { priceCabinetryFlatBand } from "@/lib/pricing/b2b-flatband";
 import { formatTruckOptionLabel } from "@/lib/pricing/truck-fees";
 import { mergeBundleTierIntoMergedRates } from "@/lib/b2b-bundle-line-items";
 import { prepareB2bLineItemsForDimensionalEngine } from "@/lib/b2b-dimensional-quote-prep";
@@ -5106,6 +5107,67 @@ export default function QuoteFormClient({
       toLongCarry,
     );
     const rounding = cfgNum(config, "rounding_nearest", 25);
+
+    // Cabinetry: shared cabinet-unit engine (same as the B2B delivery form,
+    // the admin price preview, and /api/quotes/generate). The old per-piece
+    // dimensional engine no longer prices cabinetry anywhere.
+    if (selectedB2bVertical.code === "cabinetry") {
+      const cabTaxRate = cfgNum(config, "tax_rate", TAX_RATE);
+      const extraPickupsCab = Math.max(
+        0,
+        stops.filter((s) => s.type === "pickup").length - 1,
+      );
+      const fb = priceCabinetryFlatBand(
+        {
+          lines: rawItems.map((i) => ({
+            description: i.description,
+            quantity: i.quantity,
+            weight_category: i.weight_category,
+            unit_type: i.unit_type,
+            declared_value: i.declared_value,
+          })),
+          deliveryKmFromOffice: distKm,
+          extraPickupStops: extraPickupsCab,
+          handlingType: handlingForEngine,
+          isPartner: false,
+          weekend: isMoveDateWeekend(moveDate),
+          longCarry: !!fromLongCarry || !!toLongCarry,
+          stairsFlights:
+            Number.isFinite(stairsParsed) && stairsParsed > 0 ? stairsParsed : 0,
+        },
+        config,
+      );
+      const fullOvCab = b2bPriceOverrideOn
+        ? parsePositivePreTaxOverride(b2bPreTaxOverrideAmount)
+        : undefined;
+      const preTaxTotalCab =
+        fullOvCab !== undefined ? roundTo(fullOvCab, rounding) : fb.roundedPreTax;
+      const taxCab = Math.round(preTaxTotalCab * cabTaxRate);
+      return {
+        dim: {
+          subtotal: fb.roundedPreTax,
+          breakdown: fb.breakdown,
+          includes: fb.includes,
+          truck: fb.truck,
+          crew: fb.crew,
+          estimatedHours: 0,
+        },
+        access: 0,
+        engineSubtotal: fb.roundedPreTax,
+        dimensionalPreTax: fb.roundedPreTax,
+        preTaxTotal: preTaxTotalCab,
+        tax: taxCab,
+        total: preTaxTotalCab + taxCab,
+        hasRealItems: rawItems.length > 0,
+        fullOverrideApplied: fullOvCab !== undefined,
+        overrideReason:
+          fullOvCab !== undefined && b2bOverrideReason.trim().length >= 3
+            ? b2bOverrideReason.trim()
+            : "",
+        calculatedPreTaxBeforeOverride: fb.roundedPreTax,
+      };
+    }
+
     const dim = calculateB2BDimensionalPrice({
       vertical: toDeliveryVerticalRow(selectedB2bVertical),
       mergedRates: merged,

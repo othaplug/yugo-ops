@@ -1,9 +1,10 @@
-import { getDrivingDistance } from "@/lib/mapbox/driving-distance";
+import { getDrivingDistance, straightLineKmFromGtaCore } from "@/lib/mapbox/driving-distance";
 import {
   calculateB2BDimensionalPrice,
   type B2BDimensionalQuoteInput,
   type B2BQuoteLineItem,
 } from "@/lib/pricing/b2b-dimensional";
+import { priceCabinetryFlatBand } from "@/lib/pricing/b2b-flatband";
 import { loadB2BVerticalPricing } from "@/lib/pricing/b2b-vertical-load";
 import {
   mergedRatesWithBundleTiers,
@@ -36,6 +37,58 @@ export async function computeB2BDimensionalForOrg(
 
   const loaded = await loadB2BVerticalPricing(admin, opts.verticalCode, opts.partnerOrganizationId);
   if (!loaded) return null;
+
+  // Cabinetry: shared cabinet-unit engine (same as the admin preview + generate),
+  // so partner self-serve previews never show the old per-piece over-quote.
+  if (loaded.vertical.code === "cabinetry") {
+    const { data: cabCfgRows } = await admin
+      .from("platform_config")
+      .select("key, value")
+      .in("key", [
+        "b2b_cabinetry_rate",
+        "processing_recovery_rate",
+        "processing_recovery_flat",
+        "tax_rate",
+      ]);
+    const cabCfg = new Map<string, string>(
+      (cabCfgRows ?? []).map((r) => [r.key, String(r.value ?? "")]),
+    );
+    const deliveryKmFromOffice = (await straightLineKmFromGtaCore(to)) ?? 0;
+    const rawCab = opts.items.filter((i) => i.quantity > 0 && i.description.trim());
+    const fb = priceCabinetryFlatBand(
+      {
+        lines: rawCab.map((i) => ({
+          description: i.description,
+          quantity: i.quantity,
+          weight_category: i.weight_category,
+          unit_type: i.unit_type,
+          declared_value: i.declared_value,
+        })),
+        deliveryKmFromOffice,
+        extraPickupStops: 0,
+        handlingType: (opts.handlingType || "threshold").toLowerCase(),
+        isPartner: !!opts.partnerOrganizationId,
+        weekend: false,
+        longCarry: opts.deliveryAccess === "long_carry",
+        stairsFlights: opts.stairsFlights ?? 0,
+      },
+      cabCfg,
+    );
+    return {
+      vertical: loaded.vertical,
+      mergedRates: loaded.mergedRates,
+      dim: {
+        subtotal: fb.roundedPreTax,
+        breakdown: fb.breakdown,
+        includes: fb.includes,
+        truck: fb.truck,
+        crew: fb.crew,
+        estimatedHours: 0,
+      },
+      distKm,
+      driveTimeMin: dist?.drive_time_min ?? null,
+    };
+  }
 
   const { data: cfgRows } = await admin.from("platform_config").select("key, value").like("key", "truck_fee_%");
   const platformConfig: Record<string, string> = Object.fromEntries(

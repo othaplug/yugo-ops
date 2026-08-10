@@ -58,6 +58,7 @@ import {
   type B2BQuoteLineItem,
 } from "@/lib/pricing/b2b-dimensional";
 import { getMultiStopDrivingDistance } from "@/lib/mapbox/driving-distance";
+import { priceCabinetryFlatBand } from "@/lib/pricing/b2b-flatband";
 import {
   mergedRatesWithBundleTiers,
   prepareB2bLineItemsForDimensionalEngine,
@@ -1332,6 +1333,54 @@ export default function B2BJobsDeliveryForm({
     };
 
     const distKm = estimatedDistanceKm ?? 0;
+
+    // Cabinetry uses the shared cabinet-unit engine (same one the server preview
+    // + /api/quotes/generate run), so the live estimate matches the exact price
+    // and never shows the old per-piece over-quote. Server refines the zone from
+    // the true office distance.
+    if (verticalCode === "cabinetry") {
+      const cabCfg = new Map<string, string>([
+        ["processing_recovery_rate", String(PROCESSING_RECOVERY_RATE_CLIENT)],
+        ["processing_recovery_flat", String(PROCESSING_RECOVERY_FLAT_CLIENT)],
+        ["tax_rate", String(TAX_RATE_CLIENT)],
+      ]);
+      const extraPickupsCab = Math.max(
+        0,
+        routeStops.filter((s) => s.type === "pickup").length - 1,
+      );
+      const fbCab = priceCabinetryFlatBand(
+        {
+          lines: rawItems.map((i) => ({
+            description: i.description,
+            quantity: i.quantity,
+            weight_category: i.weight_category,
+            unit_type: i.unit_type,
+            declared_value: i.declared_value,
+          })),
+          deliveryKmFromOffice: distKm,
+          extraPickupStops: extraPickupsCab,
+          handlingType,
+          isPartner: false,
+          weekend: scheduledDate ? isMoveDateWeekend(scheduledDate) : false,
+          longCarry: false,
+          stairsFlights: stairsFlights ? Number(stairsFlights) : 0,
+        },
+        cabCfg,
+      );
+      const hstCab = Math.round(fbCab.roundedPreTax * TAX_RATE_CLIENT * 100) / 100;
+      setClientEstimate({
+        rounded_pre_tax: fbCab.roundedPreTax,
+        hst: hstCab,
+        total_with_tax: Math.round((fbCab.roundedPreTax + hstCab) * 100) / 100,
+        breakdown: fbCab.breakdown,
+        truck: fbCab.truck,
+        crew: fbCab.crew,
+        estimated_hours: 0,
+        access_surcharge: 0,
+      });
+      return;
+    }
+
     const dim = calculateB2BDimensionalPrice({
       vertical: b2bOptionToVerticalRow(selectedVertical),
       mergedRates: merged,
