@@ -718,6 +718,10 @@ import {
   grossUpForProcessing,
 } from "@/lib/pricing/processing-recovery";
 import { priceCabinetryFlatBand } from "@/lib/pricing/b2b-flatband";
+import {
+  accessProfileSurcharge,
+  type AccessProfile,
+} from "@/lib/buildings/access-profile";
 
 function applyProcessingRecoveryToTier(
   t: TierResult,
@@ -1708,10 +1712,22 @@ async function calcResidential(
   pd("Step 2 — distance_modifier (applied):", distanceModifier);
 
   // ── Access + specialty surcharges (flat — not multiplied by tier) ──────────
-  const [fromAccess, toAccess] = await Promise.all([
+  const [fromAccessLegacy, toAccessLegacy] = await Promise.all([
     getAccessSurcharge(sb, input.from_access),
     getAccessSurcharge(sb, input.to_access),
   ]);
+  // When a type-aware Access Profile is captured, price the address from its
+  // derived complexity (accessProfileSurcharge) instead of the flat access enum
+  // + long-carry — the client zeroes long-carry when a profile is set, so no
+  // double-charge. No profile → unchanged legacy pricing.
+  const fromAccessProfile = input.from_access_profile as AccessProfile | undefined;
+  const toAccessProfile = input.to_access_profile as AccessProfile | undefined;
+  const fromAccess = fromAccessProfile
+    ? accessProfileSurcharge(fromAccessProfile, config)
+    : fromAccessLegacy;
+  const toAccess = toAccessProfile
+    ? accessProfileSurcharge(toAccessProfile, config)
+    : toAccessLegacy;
   const accessSurcharge = fromAccess + toAccess;
 
   const specialtySurcharge = await getSpecialtySurcharge(sb, input.specialty_items ?? []);

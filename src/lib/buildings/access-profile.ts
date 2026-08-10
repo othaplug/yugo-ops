@@ -13,6 +13,16 @@
 
 import { deriveAccessModel, type AccessModel } from "./access-model";
 
+/** Platform-config as a Map or plain object (both call shapes). */
+type ConfigLike =
+  | Map<string, string>
+  | Record<string, string | number | null | undefined>;
+
+function cfgGet(config: ConfigLike, key: string): string | undefined {
+  const v = config instanceof Map ? config.get(key) : config[key];
+  return v === undefined || v === null ? undefined : String(v);
+}
+
 export type AccessPropertyType = "house" | "town" | "condo" | "walkup" | "ground";
 
 export type EntranceStepsBand = "none" | "few" | "porch" | "many";
@@ -204,6 +214,41 @@ function carryToTruckSpot(c: CarryBand | undefined): TruckSpot {
 /** Convenience: derive the access model straight from a captured profile. */
 export function accessModelFromProfile(p: AccessProfile): AccessModel {
   return deriveAccessModel(profileToAccessRow(p));
+}
+
+/**
+ * Per-end access surcharge from a captured profile, driven by the derived
+ * complexity rating (1–5). Conservative by default: easy access (ground floor,
+ * standard elevator, 2nd-floor walk-up) stays $0 so honest jobs are never
+ * penalised; genuinely hard access (higher walk-ups, two-stage, long carries)
+ * earns a real, bounded premium. Tunable via the `access_profile_surcharge`
+ * platform-config JSON (a {complexityRating: dollars} map). This REPLACES the
+ * legacy flat access fee + long-carry toggle for a profiled address.
+ */
+const DEFAULT_COMPLEXITY_SURCHARGE: Record<string, number> = {
+  "1": 0,
+  "2": 0,
+  "3": 100,
+  "4": 200,
+  "5": 300,
+};
+
+export function accessProfileSurcharge(
+  p: AccessProfile,
+  config?: ConfigLike,
+): number {
+  const model = accessModelFromProfile(p);
+  let table = DEFAULT_COMPLEXITY_SURCHARGE;
+  if (config) {
+    try {
+      const raw = cfgGet(config, "access_profile_surcharge");
+      if (raw) table = { ...DEFAULT_COMPLEXITY_SURCHARGE, ...JSON.parse(raw) };
+    } catch {
+      /* keep defaults */
+    }
+  }
+  const amt = table[String(model.complexityRating)] ?? 0;
+  return Math.max(0, Math.round(Number(amt) || 0));
 }
 
 /**

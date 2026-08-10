@@ -1366,12 +1366,13 @@ export default function QuoteFormClient({
   const serviceTypeFromUrl = searchParams.get("service")?.trim() || "";
   const fromPhotoReview = searchParams.get("from_photo_review") === "1";
   /**
-   * Address & Access redesign — Ship 1 flag. Dark by default; append
-   * `?accessv2=1` to capture the type-aware Access Profile per address. Pricing
-   * is unchanged: the profile drives the legacy access/parking/long-carry state
-   * via profileToLegacyAccess, and the richer JSON is persisted for Ship 2.
+   * Address & Access redesign — now ON by default (type-aware capture is the
+   * standard). Append `?accessv2=0` to fall back to the legacy access/parking
+   * dropdowns. The profile drives pricing via the derived complexity surcharge
+   * (see accessProfileSurcharge) and still sets the legacy access enum for crew
+   * + time; long-carry is folded into the model (see onChange below).
    */
-  const accessV2 = searchParams.get("accessv2") === "1";
+  const accessV2 = searchParams.get("accessv2") !== "0";
   /** Re-run handoff when Next hydrates `useSearchParams` (first paint can be empty). */
   const photoHandoffQueryKey = [
     searchParams.get("lead_id") ?? "",
@@ -7886,7 +7887,9 @@ export default function QuoteFormClient({
                               const la = profileToLegacyAccess(p);
                               setFromAccess(la.access);
                               setFromParking(la.parking);
-                              setFromLongCarry(la.longCarry);
+                              // Carry is priced inside the access model (complexity
+                              // surcharge), so never also apply the legacy long-carry.
+                              setFromLongCarry(false);
                             }}
                           />
                         ) : (
@@ -8097,7 +8100,9 @@ export default function QuoteFormClient({
                               const la = profileToLegacyAccess(p);
                               setToAccess(la.access);
                               setToParking(la.parking);
-                              setToLongCarry(la.longCarry);
+                              // Carry is priced inside the access model (complexity
+                              // surcharge), so never also apply the legacy long-carry.
+                              setToLongCarry(false);
                             }}
                           />
                         ) : (
