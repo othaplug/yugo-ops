@@ -87,7 +87,7 @@ export function AccessProfileField({
   }
 
   return (
-    <div className="rounded-xl border border-[var(--ln)] bg-[var(--bg1)] p-3 sm:p-4">
+    <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-3 sm:p-4">
       <div className="mb-3">
         <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--tx3)]">
           {endLabel} access
@@ -105,8 +105,8 @@ export function AccessProfileField({
               onClick={() => onChange(defaultProfile(t.key))}
               className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-[13px] font-semibold transition ${
                 on
-                  ? "border-[var(--wine)] bg-[var(--wine-tint)] text-[var(--wine)]"
-                  : "border-[var(--ln)] bg-[var(--bg2)] text-[var(--tx1)] hover:border-[var(--wine)]"
+                  ? "border-[var(--admin-primary-fill)] bg-[var(--gdim)] text-[var(--admin-primary-fill)]"
+                  : "border-[var(--brd)] bg-[var(--bg2)] text-[var(--tx)] hover:border-[var(--admin-primary-fill)]"
               }`}
               aria-pressed={on}
             >
@@ -138,8 +138,8 @@ export function AccessProfileField({
                           onClick={() => onChange(setField(value, f, v))}
                           className={`rounded-md border px-2.5 py-1.5 text-[13px] transition ${
                             on
-                              ? "border-[var(--wine)] bg-[var(--wine)] text-white"
-                              : "border-[var(--ln)] bg-[var(--bg2)] text-[var(--tx1)] hover:border-[var(--wine)]"
+                              ? "border-[var(--admin-primary-fill)] bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
+                              : "border-[var(--brd)] bg-[var(--bg2)] text-[var(--tx)] hover:border-[var(--admin-primary-fill)]"
                           }`}
                           aria-pressed={on}
                         >
@@ -155,19 +155,19 @@ export function AccessProfileField({
 
           {/* readout */}
           {model ? (
-            <div className="rounded-lg border border-[var(--ln)] bg-[var(--bg2)] p-3">
-              <div className="text-[12px] font-semibold text-[var(--tx1)]">
+            <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg2)] p-3">
+              <div className="text-[12px] font-semibold text-[var(--tx)]">
                 What the crew &amp; engine see
               </div>
-              <div className="mt-2 flex items-baseline justify-between border-b border-dashed border-[var(--ln)] pb-2">
+              <div className="mt-2 flex items-baseline justify-between border-b border-dashed border-[var(--brd)] pb-2">
                 <span className="text-[12px] text-[var(--tx3)]">Extra time / trip</span>
-                <span className="text-[16px] font-semibold tabular-nums text-[var(--tx1)]">
+                <span className="text-[16px] font-semibold tabular-nums text-[var(--tx)]">
                   +{model.estimatedExtraMinutesPerTrip} min
                 </span>
               </div>
               <div className="mt-2 flex items-baseline justify-between">
                 <span className="text-[12px] text-[var(--tx3)]">Complexity</span>
-                <span className="text-[12px] font-semibold text-[var(--tx1)]">
+                <span className="text-[12px] font-semibold text-[var(--tx)]">
                   {CX_LABEL[model.complexityRating]} · {model.complexityRating}/5
                 </span>
               </div>
@@ -177,8 +177,8 @@ export function AccessProfileField({
                     key={i}
                     className={`h-1.5 flex-1 rounded-sm ${
                       i <= model.complexityRating
-                        ? "bg-[var(--wine)]"
-                        : "bg-[var(--ln)]"
+                        ? "bg-[var(--admin-primary-fill)]"
+                        : "bg-[var(--brd)]"
                     }`}
                   />
                 ))}
@@ -187,8 +187,8 @@ export function AccessProfileField({
                 <span
                   className={`inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-semibold ${
                     model.recommendExtraCrew
-                      ? "bg-[var(--forest-tint)] text-[var(--forest)]"
-                      : "bg-[var(--bg1)] text-[var(--tx3)]"
+                      ? "bg-[var(--bg2)] text-[var(--grn)]"
+                      : "bg-[var(--card)] text-[var(--tx3)]"
                   }`}
                 >
                   {model.recommendExtraCrew ? "+1 mover at this end" : "Standard crew"}
@@ -202,7 +202,7 @@ export function AccessProfileField({
                       className="flex justify-between text-[12px] text-[var(--tx3)]"
                     >
                       <span>{d.label}</span>
-                      <span className="font-semibold tabular-nums text-[var(--tx1)]">
+                      <span className="font-semibold tabular-nums text-[var(--tx)]">
                         +{d.minutesPerTrip} min
                       </span>
                     </li>
@@ -214,7 +214,7 @@ export function AccessProfileField({
                   {model.schedulingFlags.map((fl) => (
                     <div
                       key={fl.key}
-                      className="rounded-md bg-[var(--amber-tint)] px-2.5 py-1.5 text-[12px] text-[var(--amber)]"
+                      className="rounded-md bg-[var(--ordim)] px-2.5 py-1.5 text-[12px] text-[var(--org)]"
                     >
                       {fl.label}
                     </div>
@@ -231,12 +231,12 @@ export function AccessProfileField({
       )}
 
       {value && address?.trim() ? (
-        <div className="mt-3 flex items-center gap-3 border-t border-[var(--ln)] pt-3">
+        <div className="mt-3 flex items-center gap-3 border-t border-[var(--brd)] pt-3">
           <button
             type="button"
             onClick={saveAsBuilding}
             disabled={saveState === "saving" || saveState === "saved"}
-            className="rounded-md border border-[var(--ln)] bg-[var(--bg2)] px-3 py-1.5 text-[12px] font-semibold text-[var(--tx1)] transition hover:border-[var(--wine)] disabled:opacity-60"
+            className="rounded-md border border-[var(--brd)] bg-[var(--bg2)] px-3 py-1.5 text-[12px] font-semibold text-[var(--tx)] transition hover:border-[var(--admin-primary-fill)] disabled:opacity-60"
           >
             {saveState === "saving"
               ? "Saving…"
@@ -245,7 +245,7 @@ export function AccessProfileField({
                 : "Save as building profile"}
           </button>
           {saveState === "error" ? (
-            <span className="text-[12px] text-[var(--amber)]">Could not save — try again</span>
+            <span className="text-[12px] text-[var(--org)]">Could not save — try again</span>
           ) : (
             <span className="text-[12px] text-[var(--tx3)]">Reuse this access on future quotes</span>
           )}
