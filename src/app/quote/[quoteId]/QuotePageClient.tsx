@@ -404,7 +404,13 @@ export default function QuotePageClient({
   /** Suppress all engagement tracking when admin is previewing the quote */
   isAdminPreview?: boolean;
 }) {
-  const isResidential = quote.service_type === "local_move" && !!quote.tiers;
+  // Long-distance now runs the residential tier engine, so it renders the same
+  // premium ResidentialLayout (with a transit surcharge + a few LD-aware copy
+  // deltas gated on is_long_distance). Falls back to LongDistanceLayout only
+  // for a legacy LD quote that has no tiers.
+  const isResidential =
+    (quote.service_type === "local_move" || quote.service_type === "long_distance") &&
+    !!quote.tiers;
   /**
    * White Glove is a unique, premium service (it can be a move OR a delivery).
    * It gets the same dark-green Signature shell + flow as the residential
@@ -2112,8 +2118,29 @@ export default function QuotePageClient({
     }
     return base;
   }, [quote]);
+  // Long-distance shows a delivery WINDOW (pickup → arrival) instead of a single
+  // date, spanning the transit nights the engine computed.
+  const ldDeliveryWindow = (() => {
+    if (quote.service_type !== "long_distance" || !quote.move_date) return null;
+    const fa = quote.factors_applied as Record<string, unknown> | null;
+    const nights = Number(
+      (fa?.ld_transit as Record<string, unknown> | undefined)?.nights ?? 0,
+    );
+    const spanDays = Math.max(1, nights);
+    try {
+      const start = new Date(`${quote.move_date}T12:00:00`);
+      const end = new Date(start.getTime() + spanDays * 86_400_000);
+      return `${formatMoveDate(quote.move_date)} – ${formatMoveDate(
+        end.toISOString().slice(0, 10),
+      )}`;
+    } catch {
+      return null;
+    }
+  })();
   const dateLabel =
-    quote.service_type === "white_glove"
+    quote.service_type === "long_distance"
+      ? "Delivery Window"
+      : quote.service_type === "white_glove"
       ? wgKind === "service"
         ? "Service Date"
         : "Delivery Date"
@@ -2319,7 +2346,11 @@ export default function QuotePageClient({
                 className="text-[14px] font-semibold"
                 style={{ color: HERO_META_VALUE }}
               >
-                {quote.move_date ? formatMoveDate(quote.move_date) : "TBD"}
+                {ldDeliveryWindow
+                  ? ldDeliveryWindow
+                  : quote.move_date
+                    ? formatMoveDate(quote.move_date)
+                    : "TBD"}
               </p>
             </div>
             {quote.expires_at && (

@@ -61,6 +61,7 @@ import {
   expectedInventoryScoreForMoveSize,
 } from "@/lib/pricing/margin-cost-model";
 import { calcThreeLegFuelCost } from "@/lib/pricing/three-leg-fuel";
+import { calcLongDistanceTransit, type LongDistanceTransit } from "@/lib/pricing/long-distance";
 import { evaluateServiceAreaForQuote } from "@/lib/pricing/service-area";
 import {
   aggregateAccessSurchargesForLabourValidation,
@@ -1692,6 +1693,12 @@ async function calcResidential(
   } else {
     distanceModifier = distModExtreme;     // 35% surcharge (>100 km)
   }
+  // Long-distance moves price distance explicitly via the transit surcharge
+  // (drive labour + fuel + overnight). Cap the market distance modifier at the
+  // 100 km band so the two don't compound into a double distance charge.
+  if (input.service_type === "long_distance" && distanceModifier > distModVeryLong) {
+    distanceModifier = distModVeryLong;
+  }
 
   pd("Step 2 — distance_km:", distKm, "| buckets (km):", {
     ultraShort: `≤${distUltraShortKm}`,
@@ -2313,27 +2320,55 @@ async function calcResidential(
     effectiveAssemblyRequired,
   );
 
+  // ── Long-distance transit surcharge (per tier — Estate carries more crew) ──
+  // Runs only for long_distance beyond the km threshold; local moves untouched.
+  // Every figure is sourced (see src/lib/pricing/long-distance.ts).
+  const isLongDistanceMove = input.service_type === "long_distance";
+  const ldOneWayKm = distInfo?.distance_km ?? 0;
+  const ldDriveMin = distInfo?.drive_time_min ?? 0;
+  const ldLoadedRate = crewLoadedHourlyRate(config);
+  const ldTransit = isLongDistanceMove
+    ? {
+        essential: calcLongDistanceTransit({ crew: tierCrew.essential, distKm: ldOneWayKm, driveTimeMin: ldDriveMin, truck: recTruck, loadedRate: ldLoadedRate, config }),
+        signature: calcLongDistanceTransit({ crew: tierCrew.signature, distKm: ldOneWayKm, driveTimeMin: ldDriveMin, truck: recTruck, loadedRate: ldLoadedRate, config }),
+        estate: calcLongDistanceTransit({ crew: tierCrew.estate, distKm: ldOneWayKm, driveTimeMin: ldDriveMin, truck: recTruck, loadedRate: ldLoadedRate, config }),
+      }
+    : null;
+  const ldDepositPct = cfgNum(config, "ld_deposit_pct", 0.25);
+  const ldApplies = !!ldTransit?.estate.applies;
+  const ldAdd = (base: number, t: LongDistanceTransit | undefined): number => base + (t?.total ?? 0);
+  const ldTax = (p: number): number => Math.round(p * taxRate);
+  const ldDep = (p: number, fallback: number): number =>
+    ldApplies ? Math.round(p * ldDepositPct) : fallback;
+  const ldInc = (arr: string[], t: LongDistanceTransit | undefined): string[] =>
+    t?.applies
+      ? ["Dedicated truck & crew, door to door", "Guaranteed delivery window", ...arr]
+      : arr;
+  const curPriceLd = ldAdd(curPrice, ldTransit?.essential);
+  const sigPriceLd = ldAdd(sigPrice, ldTransit?.signature);
+  const estPriceLd = ldAdd(estPrice, ldTransit?.estate);
+
   const tiers = {
     essential: {
-      price: curPrice,
-      deposit: curDep,
-      tax: curTax,
-      total: curPrice + curTax,
-      includes: inc.essential,
+      price: curPriceLd,
+      deposit: ldDep(curPriceLd, curDep),
+      tax: ldTax(curPriceLd),
+      total: curPriceLd + ldTax(curPriceLd),
+      includes: ldInc(inc.essential, ldTransit?.essential),
     } as TierResult,
     signature: {
-      price: sigPrice,
-      deposit: sigDep,
-      tax: sigTax,
-      total: sigPrice + sigTax,
-      includes: inc.signature,
+      price: sigPriceLd,
+      deposit: ldDep(sigPriceLd, sigDep),
+      tax: ldTax(sigPriceLd),
+      total: sigPriceLd + ldTax(sigPriceLd),
+      includes: ldInc(inc.signature, ldTransit?.signature),
     } as TierResult,
     estate: {
-      price: estPrice,
-      deposit: estDep,
-      tax: estTax,
-      total: estPrice + estTax,
-      includes: inc.estate,
+      price: estPriceLd,
+      deposit: ldDep(estPriceLd, estDep),
+      tax: ldTax(estPriceLd),
+      total: estPriceLd + ldTax(estPriceLd),
+      includes: ldInc(inc.estate, ldTransit?.estate),
     } as TierResult,
   };
 
@@ -2456,6 +2491,20 @@ async function calcResidential(
       base_rate: baseRate,
       inventory_modifier: invResult.modifier,
       distance_modifier: distanceModifier,
+      // Long-distance: flags the premium page's transit treatment + records the
+      // per-tier transit surcharge for the admin/audit view. Only set when the
+      // move actually crosses the km threshold.
+      is_long_distance: ldApplies,
+      route_km: isLongDistanceMove ? Math.round(ldOneWayKm) : undefined,
+      ld_transit: ldApplies
+        ? {
+            nights: ldTransit?.estate.nights ?? 0,
+            essential: ldTransit?.essential.total ?? 0,
+            signature: ldTransit?.signature.total ?? 0,
+            estate: ldTransit?.estate.total ?? 0,
+            breakdown: ldTransit?.estate.breakdown ?? [],
+          }
+        : undefined,
       // v2: cost stack and market stack separated
       cost_stack: costStack,
       market_stack: marketStack,
@@ -5403,6 +5452,10 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   const truckResult = await allocateTruck(sb, truckMoveSize, invResult.modifier);
 
   switch (svcType) {
+    // Long-distance is a residential relocation with a transit surcharge — it
+    // runs the SAME tiered engine and renders the SAME premium page. The old
+    // single-price calcLongDistance stub is retired (0 quotes ever used it).
+    case "long_distance":
     case "local_move": {
       const res = await calcResidential(
         sb,
@@ -5508,22 +5561,6 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
           filing: input.office_filing_cabinets_count ?? 0,
         },
       };
-      break;
-    }
-    case "long_distance": {
-      const res = await calcLongDistance(sb, input, config, distInfo, neighbourhood, dateMult, addonResult);
-      custom_price = res.custom_price;
-      factors = res.factors;
-      // Operator overrides audit (same shape as local_move). Long-
-      // distance doesn't currently consume labour overrides in its own
-      // calc, but we still surface the audit trail so the operator can
-      // see what they pinned.
-      if (Object.keys(operatorOverridesApplied).length > 0) {
-        factors = {
-          ...factors,
-          operator_overrides: operatorOverridesApplied,
-        };
-      }
       break;
     }
     case "single_item": {
@@ -5635,7 +5672,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   let estimatedDaysForQuoteRow = 1;
   let dayBreakdownForQuoteRow: unknown[] = [];
 
-  if (svcType === "local_move" && tiers) {
+  if ((svcType === "local_move" || svcType === "long_distance") && tiers) {
     const addonSlugs = addonResult.breakdown.map((b) => b.slug);
     const msScope = computeMoveScopeAddonPreTax(config, {
       tier: normalizeRecommendedTierForDb(input.recommended_tier),
@@ -5904,7 +5941,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  if (svcType === "local_move" && tiers?.estate && factors && typeof factors === "object") {
+  if ((svcType === "local_move" || svcType === "long_distance") && tiers?.estate && factors && typeof factors === "object") {
     const fObj = factors as Record<string, unknown>;
     const ep = fObj.estate_day_plan as { days?: number } | undefined;
     if (ep && typeof ep.days === "number" && ep.days > 1) {

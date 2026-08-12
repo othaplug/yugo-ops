@@ -42,7 +42,7 @@ export const SERVICE_TYPE_LABELS: Record<string, string> = {
   labour_only: "Labour Service",
   bin_rental: "Bin Rental",
   local_move: "Local Move",
-  long_distance: "Long Distance Move",
+  long_distance: "Long-Distance Relocation",
   /** Lead inbox / coordinator (not a quote service_type, but shown on same admin surfaces) */
   pm_inquiry: "Property management inquiry",
   /** Virtual slug used when is_pm_move=true to override b2b_oneoff labels */
