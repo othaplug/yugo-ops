@@ -2329,9 +2329,9 @@ async function calcResidential(
   const ldLoadedRate = crewLoadedHourlyRate(config);
   const ldTransit = isLongDistanceMove
     ? {
-        essential: calcLongDistanceTransit({ crew: tierCrew.essential, distKm: ldOneWayKm, driveTimeMin: ldDriveMin, truck: recTruck, loadedRate: ldLoadedRate, config }),
-        signature: calcLongDistanceTransit({ crew: tierCrew.signature, distKm: ldOneWayKm, driveTimeMin: ldDriveMin, truck: recTruck, loadedRate: ldLoadedRate, config }),
-        estate: calcLongDistanceTransit({ crew: tierCrew.estate, distKm: ldOneWayKm, driveTimeMin: ldDriveMin, truck: recTruck, loadedRate: ldLoadedRate, config }),
+        essential: calcLongDistanceTransit({ crew: tierCrew.essential, distKm: ldOneWayKm, driveTimeMin: ldDriveMin, truck: recTruck, moveSize: input.move_size, loadedRate: ldLoadedRate, config }),
+        signature: calcLongDistanceTransit({ crew: tierCrew.signature, distKm: ldOneWayKm, driveTimeMin: ldDriveMin, truck: recTruck, moveSize: input.move_size, loadedRate: ldLoadedRate, config }),
+        estate: calcLongDistanceTransit({ crew: tierCrew.estate, distKm: ldOneWayKm, driveTimeMin: ldDriveMin, truck: recTruck, moveSize: input.move_size, loadedRate: ldLoadedRate, config }),
       }
     : null;
   const ldDepositPct = cfgNum(config, "ld_deposit_pct", 0.25);

@@ -12,9 +12,14 @@
  *     crew × per-diem, near pass-through. Hotel ~$140 (Ontario budget-mid),
  *     per-diem $69 (CRA simplified meal max), 2 crew per room.
  *
- * Everything scales with crew, distance, truck, nights, and move size (via the
- * per-tier crew the caller passes). Below the km threshold it returns zero, so
- * ordinary local moves are untouched.
+ * Everything scales with crew, distance, truck, nights, and move size. Move
+ * size enters two ways: (1) the caller passes the per-tier crew, which already
+ * grows with the home; (2) truckloads — a 5-bedroom estate does not fit in one
+ * 26ft truck, and on a cross-province route you cannot make a second trip, so a
+ * large home dispatches a second truck. That doubles the route's fuel (two
+ * trucks burn two tanks) and, when it forces more crew than one truck seats,
+ * more overnight rooms. Below the km threshold it returns zero, so ordinary
+ * local moves are untouched.
  */
 
 type ConfigLike = Map<string, string> | Record<string, string | number | null | undefined>;
@@ -46,6 +51,28 @@ function truckFuelPerKm(truck: string | null | undefined, config: ConfigLike): n
   return cfgNum(config, `fuel_rate_${key}_per_km`, TRUCK_FUEL_PER_KM[key] ?? 0.52);
 }
 
+/**
+ * Truck-runs the home needs door-to-door. A 26ft truck (~1,700 cu ft) holds up
+ * to a 4-bedroom home; a 5+ bedroom / estate exceeds one load, and on a long
+ * route you can't make a return trip, so it dispatches a second truck. Tunable
+ * per size via `ld_truckloads_<size>`.
+ */
+const TRUCKLOADS_BY_SIZE: Record<string, number> = {
+  studio: 1,
+  "1br": 1,
+  "2br": 1,
+  "3br": 1,
+  "4br": 1,
+  "5br_plus": 2,
+  office: 2,
+};
+
+function truckloadsForSize(moveSize: string | null | undefined, config: ConfigLike): number {
+  const key = String(moveSize ?? "2br").toLowerCase().trim();
+  const fallback = TRUCKLOADS_BY_SIZE[key] ?? 1;
+  return Math.max(1, Math.round(cfgNum(config, `ld_truckloads_${key}`, fallback)));
+}
+
 export type LongDistanceTransit = {
   applies: boolean;
   transitLabour: number;
@@ -65,11 +92,13 @@ export function calcLongDistanceTransit(params: {
   driveTimeMin: number;
   /** Recommended truck for the move. */
   truck: string | null | undefined;
+  /** Move size (studio/1br/.../5br_plus) — drives how many trucks the route needs. */
+  moveSize?: string | null;
   /** Loaded crew rate ($/mover-hr) from crewLoadedHourlyRate(config). */
   loadedRate: number;
   config: ConfigLike;
 }): LongDistanceTransit {
-  const { crew, distKm, driveTimeMin, truck, loadedRate, config } = params;
+  const { crew, distKm, driveTimeMin, truck, moveSize, loadedRate, config } = params;
   const threshold = cfgNum(config, "long_distance_km_threshold", 100);
   const empty: LongDistanceTransit = {
     applies: false, transitLabour: 0, fuel: 0, overnight: 0, nights: 0, total: 0, breakdown: [],
@@ -78,21 +107,25 @@ export function calcLongDistanceTransit(params: {
 
   const oneWayHours = Math.max(0, driveTimeMin) / 60;
   const roundTripHours = oneWayHours * 2;
+  // How many trucks the home fills. On a long route each truck drives its own
+  // round trip, so a second truck is a second tank of fuel over the distance.
+  const truckloads = truckloadsForSize(moveSize, config);
 
-  // 1) Transit labour — the crew is paid to drive there and back (a real cost
-  //    a local move never incurs). Service component, marked up.
+  // 1) Transit labour — the whole crew is paid to drive there and back (a real
+  //    cost a local move never incurs), regardless of how many trucks they
+  //    split across. Service component, marked up.
   const labourMargin = cfgNum(config, "ld_transit_labour_margin", 1.45);
   const transitLabour = Math.round(roundTripHours * crew * loadedRate * labourMargin);
 
   // 2) Fuel — loaded run out + empty return (73% burn), at the truck's per-km
-  //    fuel cost. Cost + light surcharge.
+  //    fuel cost, once per truckload. Cost + light surcharge.
   const perKm = truckFuelPerKm(truck, config);
   const emptyReturnFactor = cfgNum(config, "fuel_empty_leg_multiplier", 0.73);
   const fuelMargin = cfgNum(config, "ld_fuel_margin", 1.2);
-  const fuel = Math.round(distKm * perKm * (1 + emptyReturnFactor) * fuelMargin);
+  const fuel = Math.round(distKm * perKm * (1 + emptyReturnFactor) * fuelMargin * truckloads);
 
   // 3) Overnight — only when a one-day round trip isn't safe/legal. Near
-  //    pass-through (not a service you'd mark up).
+  //    pass-through (not a service you'd mark up). Rooms scale with crew.
   const triggerH = cfgNum(config, "ld_overnight_trigger_hours", 5);
   const nights = oneWayHours >= triggerH ? Math.max(1, Math.ceil(oneWayHours / 10)) : 0;
   const crewPerRoom = Math.max(1, cfgNum(config, "ld_crew_per_room", 2));
@@ -108,7 +141,7 @@ export function calcLongDistanceTransit(params: {
   const total = transitLabour + fuel + overnight;
   const breakdown: { label: string; amount: number }[] = [
     { label: `Transit crew (${roundTripHours.toFixed(1)} hr round trip × ${crew})`, amount: transitLabour },
-    { label: "Fuel (loaded + return)", amount: fuel },
+    { label: truckloads > 1 ? `Fuel (loaded + return, ${truckloads} trucks)` : "Fuel (loaded + return)", amount: fuel },
   ];
   if (overnight > 0) {
     breakdown.push({ label: `Overnight (${nights} night${nights !== 1 ? "s" : ""}, ${rooms} room${rooms !== 1 ? "s" : ""})`, amount: overnight });
