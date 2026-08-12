@@ -755,6 +755,19 @@ export default function QuoteDetailClient({
       await patchQuote({ status: "cold", cold_reason: "coordinator_marked" });
       return;
     }
+    if (pipelineStatus === "reactivated") {
+      // Reactivating must ALSO push the expiry forward. The client quote page
+      // gates on expires_at (isQuoteExpiredForBooking), not just status, so a
+      // status flip alone still renders "This Quote Has Expired" and blocks
+      // booking. Give the quote a fresh 14-day validity window from now (or
+      // from its current expiry if that's somehow still in the future).
+      const days = 14;
+      const baseMs = quote.expires_at ? new Date(quote.expires_at).getTime() : Date.now();
+      const startMs = baseMs > Date.now() ? baseMs : Date.now();
+      const nextExpiry = new Date(startMs + days * 86_400_000).toISOString();
+      await patchQuote({ status: "reactivated", expires_at: nextExpiry });
+      return;
+    }
     await patchQuote({ status: pipelineStatus });
   }
 
