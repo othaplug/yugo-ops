@@ -5141,6 +5141,18 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     needsDeadheadReturn ? getDistance(input.to_address, YUGO_BASE_ADDRESS) : Promise.resolve(null),
   ]);
 
+  // A move beyond the long-distance threshold is a long haul, not a local move,
+  // no matter which service button the coordinator clicked. Reclassify here so
+  // the transit surcharge, the 25% deposit, the Long-Distance presentation and
+  // Essential suppression all engage from a single source of truth. Local moves
+  // under the threshold are untouched. (long_distance stays long_distance.)
+  if (input.service_type === "local_move") {
+    const ldThresholdKm = cfgNum(config, "long_distance_km_threshold", 100);
+    if ((distInfo?.distance_km ?? 0) >= ldThresholdKm) {
+      input.service_type = "long_distance";
+    }
+  }
+
   // Pre-compute a rough base for percent-type add-ons (use base_rate as proxy)
   let roughBase = 1000;
   if (isLocalMove || isLongDistance) {
@@ -5444,6 +5456,13 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   let displayHours: number | null = null;
 
   const svcType = input.service_type;
+  // Long-distance suppresses the Essential tier entirely — nothing fragile
+  // survives a multi-hundred-km haul on the lightest crew/protection, and the
+  // liability isn't worth it. Signature is the floor. The headline price and
+  // recommended tier follow suit, and the stored tiers omit Essential so every
+  // client surface (page + email, which both render only present tiers) drops it.
+  const isLdMove = svcType === "long_distance";
+  const headlineTierKey: "essential" | "signature" = isLdMove ? "signature" : "essential";
 
   // Truck allocation
   const truckMoveSize = (svcType === "single_item" || svcType === "white_glove")
@@ -6045,8 +6064,12 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const enginePreTaxHeadline = tiers ? tiers.essential.price : custom_price?.price ?? 0;
-  factors = { ...factors, system_price: enginePreTaxHeadline };
+  const enginePreTaxHeadline = tiers ? tiers[headlineTierKey].price : custom_price?.price ?? 0;
+  factors = {
+    ...factors,
+    system_price: enginePreTaxHeadline,
+    ...(isLdMove && tiers ? { offered_tiers: ["signature", "estate"] } : {}),
+  };
 
   // ── Per-tier price overrides ────────────────────────────────────────
   // Apply BEFORE the global ratio-based override so the two systems
@@ -6588,10 +6611,10 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     quoteId = await generateNextQuoteId(sb, nextQuoteIdOpts);
   }
 
-  const primaryPrice = tiers ? tiers.essential.price : custom_price!.price;
+  const primaryPrice = tiers ? tiers[headlineTierKey].price : custom_price!.price;
   const storedTaxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const primaryTotal = primaryPrice + Math.round(primaryPrice * storedTaxRate);
-  const computedDeposit = tiers ? tiers.essential.deposit : custom_price!.deposit;
+  const computedDeposit = tiers ? tiers[headlineTierKey].deposit : custom_price!.deposit;
   // Global rule: any quote under $550 (total with tax) requires full payment at booking.
   const depositAmount = primaryTotal < 550 ? primaryTotal : computedDeposit;
 
@@ -6692,7 +6715,9 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       distance_km: distInfo?.distance_km ?? null,
       drive_time_min: distInfo?.drive_time_min ?? null,
       specialty_items: input.specialty_items ?? [],
-      tiers: tiers ?? officeTiers ?? null,
+      tiers: tiers
+        ? (isLdMove ? { signature: tiers.signature, estate: tiers.estate } : tiers)
+        : officeTiers ?? null,
       custom_price: custom_price?.price ?? null,
       system_price: enginePreTaxHeadline,
       override_price: quoteOvr !== undefined ? quoteOvr : null,
@@ -6823,7 +6848,9 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       recommended_tier:
         svcType === "single_item"
           ? null
-          : normalizeRecommendedTierForDb(input.recommended_tier),
+          : isLdMove && normalizeRecommendedTierForDb(input.recommended_tier) === "essential"
+            ? "estate"
+            : normalizeRecommendedTierForDb(input.recommended_tier),
       crating_pieces: input.crating_pieces ?? [],
       crating_total: cratingForDisplay,
       supplies_allowance: estateSuppliesAllowance,

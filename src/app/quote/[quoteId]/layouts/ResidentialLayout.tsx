@@ -130,14 +130,21 @@ export default function ResidentialLayout({
   // For estate_featured: render Estate first as a hero card, then
   // Essential + Signature in a collapsible "Compare with other
   // packages" section below.
-  const heroTiers: readonly string[] = isEstateOnly
-    ? ["estate"]
-    : isEstateFeatured
+  // Only render tiers the quote actually carries. Long-distance quotes omit
+  // Essential entirely (it isn't offered on a long haul), so it must never
+  // render an empty/undefined card.
+  const tierExists = (k: string): boolean =>
+    !!(tiers as Record<string, unknown>)[k];
+  const heroTiers: readonly string[] = (
+    isEstateOnly
       ? ["estate"]
-      : (TIER_ORDER as readonly string[]);
-  const compareTiers: readonly string[] = isEstateFeatured
-    ? ["essential", "signature"]
-    : [];
+      : isEstateFeatured
+        ? ["estate"]
+        : (TIER_ORDER as readonly string[])
+  ).filter(tierExists);
+  const compareTiers: readonly string[] = (
+    isEstateFeatured ? ["essential", "signature"] : []
+  ).filter(tierExists);
   const d = darkShellInk;
   /** Selected tier CTA on premium shell: rose on wine, forest on Signature; cream page stays FOREST */
   const selectedTierCtaBg = d
