@@ -2491,6 +2491,23 @@ export default function QuoteFormClient({
 
   const applyQuoteDraftFromStorage = useCallback(
     (s: Record<string, unknown>) => {
+      // Defensive guard for array-typed state. Old drafts (pre-Access
+      // Profile ship / pre-multi-stop) sometimes persisted these
+      // fields as `null` or a plain object instead of an array. When
+      // the setter then received the non-array and downstream code
+      // did `[...arr]` / destructured it, the whole quote page
+      // vaporised into the segment-level error boundary
+      // ("Quotes failed to load — object is not iterable").
+      //
+      // Rule of thumb: if a state slot IS an array, we only ever set
+      // it from an actual array. When the draft has null or an object
+      // there, we substitute `[]` so downstream spread/map/destructure
+      // stays safe. Non-array fields are unaffected.
+      const arr = <T,>(v: unknown, ifOk: (x: T[]) => void): void => {
+        if (v === undefined) return;
+        if (Array.isArray(v)) ifOk(v as T[]);
+        else ifOk([] as T[]);
+      };
       // Restore the step ACROSS the [serviceType] reset effect. Setting
       // serviceType queues that effect, which would slam the step back to 0;
       // when the service actually changes we stash the target step in a ref and
@@ -2520,8 +2537,8 @@ export default function QuoteFormClient({
       if (s.clientCardBrand !== undefined) setClientCardBrand(s.clientCardBrand as Parameters<typeof setClientCardBrand>[0]);
       if (s.fromAddress !== undefined) setFromAddress(s.fromAddress as Parameters<typeof setFromAddress>[0]);
       if (s.toAddress !== undefined) setToAddress(s.toAddress as Parameters<typeof setToAddress>[0]);
-      if (s.extraFromStops !== undefined) setExtraFromStops(s.extraFromStops as Parameters<typeof setExtraFromStops>[0]);
-      if (s.extraToStops !== undefined) setExtraToStops(s.extraToStops as Parameters<typeof setExtraToStops>[0]);
+      arr<StopEntry>(s.extraFromStops, (v) => setExtraFromStops(v));
+      arr<StopEntry>(s.extraToStops, (v) => setExtraToStops(v));
       if (s.fromAccess !== undefined) setFromAccess(s.fromAccess as Parameters<typeof setFromAccess>[0]);
       if (s.toAccess !== undefined) setToAccess(s.toAccess as Parameters<typeof setToAccess>[0]);
       if (s.fromAccessProfile !== undefined) setFromAccessProfile(s.fromAccessProfile as AccessProfile | null);
@@ -2546,7 +2563,7 @@ export default function QuoteFormClient({
       if (s.moveSize !== undefined) setMoveSize(s.moveSize as Parameters<typeof setMoveSize>[0]);
       if (s.clientBoxCount !== undefined) setClientBoxCount(s.clientBoxCount as Parameters<typeof setClientBoxCount>[0]);
       if (s.serviceAreaOverride !== undefined) setServiceAreaOverride(s.serviceAreaOverride as Parameters<typeof setServiceAreaOverride>[0]);
-      if (s.specialtyItems !== undefined) setSpecialtyItems(s.specialtyItems as Parameters<typeof setSpecialtyItems>[0]);
+      arr(s.specialtyItems, (v) => setSpecialtyItems(v as Parameters<typeof setSpecialtyItems>[0]));
       if (s.sqft !== undefined) setSqft(s.sqft as Parameters<typeof setSqft>[0]);
       if (s.wsCount !== undefined) setWsCount(s.wsCount as Parameters<typeof setWsCount>[0]);
       if (s.companyName !== undefined) setCompanyName(s.companyName as Parameters<typeof setCompanyName>[0]);
@@ -2561,7 +2578,7 @@ export default function QuoteFormClient({
       if (s.officeFiling !== undefined) setOfficeFiling(s.officeFiling as Parameters<typeof setOfficeFiling>[0]);
       if (s.officeBoardroomCount !== undefined) setOfficeBoardroomCount(s.officeBoardroomCount as Parameters<typeof setOfficeBoardroomCount>[0]);
       if (s.officeKitchen !== undefined) setOfficeKitchen(s.officeKitchen as Parameters<typeof setOfficeKitchen>[0]);
-      if (s.officeInventory !== undefined) setOfficeInventory(s.officeInventory as Parameters<typeof setOfficeInventory>[0]);
+      arr(s.officeInventory, (v) => setOfficeInventory(v as Parameters<typeof setOfficeInventory>[0]));
       if (s.officeTruckCount !== undefined) setOfficeTruckCount(s.officeTruckCount as Parameters<typeof setOfficeTruckCount>[0]);
       if (s.assemblyOverride !== undefined) setAssemblyOverride(s.assemblyOverride as Parameters<typeof setAssemblyOverride>[0]);
       if (s.sizeOverrideConfirmed !== undefined) setSizeOverrideConfirmed(s.sizeOverrideConfirmed as Parameters<typeof setSizeOverrideConfirmed>[0]);
@@ -2572,17 +2589,17 @@ export default function QuoteFormClient({
       if (s.stairCarry !== undefined) setStairCarry(s.stairCarry as Parameters<typeof setStairCarry>[0]);
       if (s.stairFlights !== undefined) setStairFlights(s.stairFlights as Parameters<typeof setStairFlights>[0]);
       if (s.numItems !== undefined) setNumItems(s.numItems as Parameters<typeof setNumItems>[0]);
-      if (s.singleItemRows !== undefined) setSingleItemRows(s.singleItemRows as Parameters<typeof setSingleItemRows>[0]);
+      arr(s.singleItemRows, (v) => setSingleItemRows(v as Parameters<typeof setSingleItemRows>[0]));
       if (s.junkPickupFrom !== undefined) setJunkPickupFrom(s.junkPickupFrom as Parameters<typeof setJunkPickupFrom>[0]);
       if (s.junkItemsDescription !== undefined) setJunkItemsDescription(s.junkItemsDescription as Parameters<typeof setJunkItemsDescription>[0]);
       if (s.junkItemsCount !== undefined) setJunkItemsCount(s.junkItemsCount as Parameters<typeof setJunkItemsCount>[0]);
       if (s.whiteGloveKind !== undefined) setWhiteGloveKind(s.whiteGloveKind as Parameters<typeof setWhiteGloveKind>[0]);
       if (s.declaredValue !== undefined) setDeclaredValue(s.declaredValue as Parameters<typeof setDeclaredValue>[0]);
-      if (s.whiteGloveItemRows !== undefined) setWhiteGloveItemRows(s.whiteGloveItemRows as Parameters<typeof setWhiteGloveItemRows>[0]);
+      arr(s.whiteGloveItemRows, (v) => setWhiteGloveItemRows(v as Parameters<typeof setWhiteGloveItemRows>[0]));
       if (s.wgGuaranteedWindow !== undefined) setWgGuaranteedWindow(s.wgGuaranteedWindow as Parameters<typeof setWgGuaranteedWindow>[0]);
       if (s.wgGuaranteedWindowHours !== undefined) setWgGuaranteedWindowHours(s.wgGuaranteedWindowHours as Parameters<typeof setWgGuaranteedWindowHours>[0]);
       if (s.wgDebrisRemoval !== undefined) setWgDebrisRemoval(s.wgDebrisRemoval as Parameters<typeof setWgDebrisRemoval>[0]);
-      if (s.wgBuildingReqs !== undefined) setWgBuildingReqs(s.wgBuildingReqs as Parameters<typeof setWgBuildingReqs>[0]);
+      arr(s.wgBuildingReqs, (v) => setWgBuildingReqs(v as Parameters<typeof setWgBuildingReqs>[0]));
       if (s.wgBuildingNote !== undefined) setWgBuildingNote(s.wgBuildingNote as Parameters<typeof setWgBuildingNote>[0]);
       if (s.wgDeliveryInstructions !== undefined) setWgDeliveryInstructions(s.wgDeliveryInstructions as Parameters<typeof setWgDeliveryInstructions>[0]);
       if (s.specialtyType !== undefined) setSpecialtyType(s.specialtyType as Parameters<typeof setSpecialtyType>[0]);
@@ -2591,24 +2608,24 @@ export default function QuoteFormClient({
       if (s.specialtyDimW !== undefined) setSpecialtyDimW(s.specialtyDimW as Parameters<typeof setSpecialtyDimW>[0]);
       if (s.specialtyDimH !== undefined) setSpecialtyDimH(s.specialtyDimH as Parameters<typeof setSpecialtyDimH>[0]);
       if (s.specialtyWeightClass !== undefined) setSpecialtyWeightClass(s.specialtyWeightClass as Parameters<typeof setSpecialtyWeightClass>[0]);
-      if (s.specialtyRequirements !== undefined) setSpecialtyRequirements(s.specialtyRequirements as Parameters<typeof setSpecialtyRequirements>[0]);
+      arr(s.specialtyRequirements, (v) => setSpecialtyRequirements(v as Parameters<typeof setSpecialtyRequirements>[0]));
       if (s.specialtyNotes !== undefined) setSpecialtyNotes(s.specialtyNotes as Parameters<typeof setSpecialtyNotes>[0]);
-      if (s.specialtyBuildingReqs !== undefined) setSpecialtyBuildingReqs(s.specialtyBuildingReqs as Parameters<typeof setSpecialtyBuildingReqs>[0]);
+      arr(s.specialtyBuildingReqs, (v) => setSpecialtyBuildingReqs(v as Parameters<typeof setSpecialtyBuildingReqs>[0]));
       if (s.eventName !== undefined) setEventName(s.eventName as Parameters<typeof setEventName>[0]);
       if (s.venueAddress !== undefined) setVenueAddress(s.venueAddress as Parameters<typeof setVenueAddress>[0]);
-      if (s.extraVenueStops !== undefined) setExtraVenueStops(s.extraVenueStops as Parameters<typeof setExtraVenueStops>[0]);
+      arr(s.extraVenueStops, (v) => setExtraVenueStops(v as Parameters<typeof setExtraVenueStops>[0]));
       if (s.eventReturnDate !== undefined) setEventReturnDate(s.eventReturnDate as Parameters<typeof setEventReturnDate>[0]);
       if (s.eventSetupRequired !== undefined) setEventSetupRequired(s.eventSetupRequired as Parameters<typeof setEventSetupRequired>[0]);
       if (s.eventTeardownRequired !== undefined) setEventTeardownRequired(s.eventTeardownRequired as Parameters<typeof setEventTeardownRequired>[0]);
       if (s.eventSetupHours !== undefined) setEventSetupHours(s.eventSetupHours as Parameters<typeof setEventSetupHours>[0]);
       if (s.eventSetupInstructions !== undefined) setEventSetupInstructions(s.eventSetupInstructions as Parameters<typeof setEventSetupInstructions>[0]);
       if (s.eventSameDay !== undefined) setEventSameDay(s.eventSameDay as Parameters<typeof setEventSameDay>[0]);
-      if (s.eventItems !== undefined) setEventItems(s.eventItems as Parameters<typeof setEventItems>[0]);
+      arr(s.eventItems, (v) => setEventItems(v as Parameters<typeof setEventItems>[0]));
       if (s.eventCrewOverride !== undefined) setEventCrewOverride(s.eventCrewOverride as Parameters<typeof setEventCrewOverride>[0]);
       if (s.eventHoursOverride !== undefined) setEventHoursOverride(s.eventHoursOverride as Parameters<typeof setEventHoursOverride>[0]);
       if (s.eventPreTaxOverride !== undefined) setEventPreTaxOverride(s.eventPreTaxOverride as Parameters<typeof setEventPreTaxOverride>[0]);
       if (s.eventOverrideReason !== undefined) setEventOverrideReason(s.eventOverrideReason as Parameters<typeof setEventOverrideReason>[0]);
-      if (s.eventAdditionalServices !== undefined) setEventAdditionalServices(s.eventAdditionalServices as Parameters<typeof setEventAdditionalServices>[0]);
+      arr(s.eventAdditionalServices, (v) => setEventAdditionalServices(v as Parameters<typeof setEventAdditionalServices>[0]));
       if (s.eventMulti !== undefined) setEventMulti(s.eventMulti as Parameters<typeof setEventMulti>[0]);
       if (s.eventLuxury !== undefined) setEventLuxury(s.eventLuxury as Parameters<typeof setEventLuxury>[0]);
       if (s.eventComplexSetup !== undefined) setEventComplexSetup(s.eventComplexSetup as Parameters<typeof setEventComplexSetup>[0]);
@@ -2625,11 +2642,11 @@ export default function QuoteFormClient({
       if (s.eventReturnRateSingle !== undefined) setEventReturnRateSingle(s.eventReturnRateSingle as Parameters<typeof setEventReturnRateSingle>[0]);
       if (s.eventIsB2b !== undefined) setEventIsB2b(s.eventIsB2b as Parameters<typeof setEventIsB2b>[0]);
       if (s.eventB2bInvoiceTerms !== undefined) setEventB2bInvoiceTerms(s.eventB2bInvoiceTerms as Parameters<typeof setEventB2bInvoiceTerms>[0]);
-      if (s.eventLegs !== undefined) setEventLegs(s.eventLegs as Parameters<typeof setEventLegs>[0]);
+      arr(s.eventLegs, (v) => setEventLegs(v as Parameters<typeof setEventLegs>[0]));
       if (s.b2bBusinessName !== undefined) setB2bBusinessName(s.b2bBusinessName as Parameters<typeof setB2bBusinessName>[0]);
       if (s.b2bVerticalCode !== undefined) setB2bVerticalCode(s.b2bVerticalCode as Parameters<typeof setB2bVerticalCode>[0]);
       if (s.b2bPartnerOrgId !== undefined) setB2bPartnerOrgId(s.b2bPartnerOrgId as Parameters<typeof setB2bPartnerOrgId>[0]);
-      if (s.b2bLines !== undefined) setB2bLines(s.b2bLines as Parameters<typeof setB2bLines>[0]);
+      arr(s.b2bLines, (v) => setB2bLines(v as Parameters<typeof setB2bLines>[0]));
       if (s.b2bTimeBand !== undefined) setB2bTimeBand(s.b2bTimeBand as Parameters<typeof setB2bTimeBand>[0]);
       if (s.b2bPriceOverrideOn !== undefined) setB2bPriceOverrideOn(s.b2bPriceOverrideOn as Parameters<typeof setB2bPriceOverrideOn>[0]);
       if (s.b2bPreTaxOverrideAmount !== undefined) setB2bPreTaxOverrideAmount(s.b2bPreTaxOverrideAmount as Parameters<typeof setB2bPreTaxOverrideAmount>[0]);
@@ -2639,7 +2656,7 @@ export default function QuoteFormClient({
       if (s.b2bArtHangingCount !== undefined) setB2bArtHangingCount(s.b2bArtHangingCount as Parameters<typeof setB2bArtHangingCount>[0]);
       if (s.b2bCratingPieces !== undefined) setB2bCratingPieces(s.b2bCratingPieces as Parameters<typeof setB2bCratingPieces>[0]);
       if (s.workAddress !== undefined) setWorkAddress(s.workAddress as Parameters<typeof setWorkAddress>[0]);
-      if (s.extraWorkStops !== undefined) setExtraWorkStops(s.extraWorkStops as Parameters<typeof setExtraWorkStops>[0]);
+      arr(s.extraWorkStops, (v) => setExtraWorkStops(v as Parameters<typeof setExtraWorkStops>[0]));
       if (s.workAccess !== undefined) setWorkAccess(s.workAccess as Parameters<typeof setWorkAccess>[0]);
       if (s.labourDescription !== undefined) setLabourDescription(s.labourDescription as Parameters<typeof setLabourDescription>[0]);
       if (s.labourCrewSize !== undefined) setLabourCrewSize(s.labourCrewSize as Parameters<typeof setLabourCrewSize>[0]);
@@ -2664,14 +2681,43 @@ export default function QuoteFormClient({
       if (s.binDeliveryNotes !== undefined) setBinDeliveryNotes(s.binDeliveryNotes as Parameters<typeof setBinDeliveryNotes>[0]);
       if (s.binInternalNotes !== undefined) setBinInternalNotes(s.binInternalNotes as Parameters<typeof setBinInternalNotes>[0]);
       if (s.cratingRequired !== undefined) setCratingRequired(s.cratingRequired as Parameters<typeof setCratingRequired>[0]);
-      if (s.cratingItems !== undefined) setCratingItems(s.cratingItems as Parameters<typeof setCratingItems>[0]);
+      arr(s.cratingItems, (v) => setCratingItems(v as Parameters<typeof setCratingItems>[0]));
       if (s.recommendedTier !== undefined) setRecommendedTier(s.recommendedTier as Parameters<typeof setRecommendedTier>[0]);
       if (s.quotePreTaxOverride !== undefined) setQuotePreTaxOverride(s.quotePreTaxOverride as Parameters<typeof setQuotePreTaxOverride>[0]);
       if (s.tierPriceOverrides !== undefined) setTierPriceOverrides(s.tierPriceOverrides as Parameters<typeof setTierPriceOverrides>[0]);
-      if (s.selectedAddons !== undefined) setSelectedAddons(s.selectedAddons as Parameters<typeof setSelectedAddons>[0]);
-      if (s.inventoryItems !== undefined) setInventoryItems(s.inventoryItems as Parameters<typeof setInventoryItems>[0]);
-      if (s.perPickupInventory !== undefined) setPerPickupInventory(s.perPickupInventory as Parameters<typeof setPerPickupInventory>[0]);
-      if (s.perPickupBoxCount !== undefined) setPerPickupBoxCount(s.perPickupBoxCount as Parameters<typeof setPerPickupBoxCount>[0]);
+      // selectedAddons is a Map<string, AddonSelection>. JSON.stringify
+      // turns a Map into `{}`, so a server-hydrated snapshot arrives as
+      // a plain object (or nested pairs, or an array-of-pairs — depending
+      // on how it was persisted). Feeding a plain object back through
+      // setSelectedAddons breaks any later `new Map(prev)` call at
+      // toggleAddon / updateAddonQty / updateVariantRow — the exact
+      // "cannot read property Symbol(Symbol.iterator)" crash the quote
+      // page hit for draftId 704d95b6…. Coerce anything back into a
+      // real Map before setting.
+      if (s.selectedAddons !== undefined) {
+        const raw = s.selectedAddons;
+        let restored: Map<string, AddonSelection>;
+        if (raw instanceof Map) {
+          restored = raw as Map<string, AddonSelection>;
+        } else if (Array.isArray(raw)) {
+          // Draft may have serialized as [[k,v], ...]. new Map accepts that.
+          try {
+            restored = new Map(raw as [string, AddonSelection][]);
+          } catch {
+            restored = new Map();
+          }
+        } else if (raw && typeof raw === "object") {
+          restored = new Map(
+            Object.entries(raw as Record<string, AddonSelection>),
+          );
+        } else {
+          restored = new Map();
+        }
+        setSelectedAddons(restored);
+      }
+      arr(s.inventoryItems, (v) => setInventoryItems(v as Parameters<typeof setInventoryItems>[0]));
+      arr(s.perPickupInventory, (v) => setPerPickupInventory(v as Parameters<typeof setPerPickupInventory>[0]));
+      arr(s.perPickupBoxCount, (v) => setPerPickupBoxCount(v as Parameters<typeof setPerPickupBoxCount>[0]));
       if (s.referralCode !== undefined) setReferralCode(s.referralCode as Parameters<typeof setReferralCode>[0]);
       if (s.referralId !== undefined) setReferralId(s.referralId as Parameters<typeof setReferralId>[0]);
       if (s.moveScopeDaysOverride !== undefined) setMoveScopeDaysOverride(s.moveScopeDaysOverride as Parameters<typeof setMoveScopeDaysOverride>[0]);
@@ -2724,9 +2770,26 @@ export default function QuoteFormClient({
     // Same-browser drafts are auto-restored by useFormDraft — don't double-apply.
     if (getAllDraftMetas().some((d) => d.id === id)) return;
     serverResumeDoneRef.current = true;
-    fetchServerDraftSnapshot(id).then((snap) => {
-      if (snap) applyQuoteDraftFromStorage(snap);
-    });
+    fetchServerDraftSnapshot(id)
+      .then((snap) => {
+        if (!snap) return;
+        try {
+          applyQuoteDraftFromStorage(snap);
+        } catch (e) {
+          // Never let a malformed server draft take down the whole quote
+          // page (segment error boundary → "Quotes failed to load").
+          // Log the specific error so we can trace which field was
+          // wrong, and let the operator start fresh instead.
+          console.error(
+            "[quote-draft] server-resume apply failed for draft",
+            id,
+            e,
+          );
+        }
+      })
+      .catch((e) => {
+        console.error("[quote-draft] server-resume fetch failed", id, e);
+      });
   }, [applyQuoteDraftFromStorage]);
 
   const handleRestoreQuoteDraft = useCallback(() => {
