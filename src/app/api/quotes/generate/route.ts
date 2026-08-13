@@ -5463,6 +5463,14 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   // client surface (page + email, which both render only present tiers) drops it.
   const isLdMove = svcType === "long_distance";
   const headlineTierKey: "essential" | "signature" = isLdMove ? "signature" : "essential";
+  // Deposit is single-sourced for LD: 25% of each tier's FINAL price, applied as
+  // the last step before persist so nothing upstream (move-scope recompute at
+  // tier %, per-tier overrides) can leave the tier card, the row deposit, and the
+  // reserve page disagreeing. The row deposit tracks the recommended tier (the
+  // pre-selected one the client reserves against), never the suppressed Essential.
+  const ldDepPctFinal = cfgNum(config, "ld_deposit_pct", 0.25);
+  const ldRecTier: "signature" | "estate" =
+    normalizeRecommendedTierForDb(input.recommended_tier) === "estate" ? "estate" : "signature";
 
   // Truck allocation
   const truckMoveSize = (svcType === "single_item" || svcType === "white_glove")
@@ -6614,7 +6622,11 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   const primaryPrice = tiers ? tiers[headlineTierKey].price : custom_price!.price;
   const storedTaxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const primaryTotal = primaryPrice + Math.round(primaryPrice * storedTaxRate);
-  const computedDeposit = tiers ? tiers[headlineTierKey].deposit : custom_price!.deposit;
+  const computedDeposit = tiers
+    ? isLdMove
+      ? Math.round(tiers[ldRecTier].price * ldDepPctFinal)
+      : tiers[headlineTierKey].deposit
+    : custom_price!.deposit;
   // Global rule: any quote under $550 (total with tax) requires full payment at booking.
   const depositAmount = primaryTotal < 550 ? primaryTotal : computedDeposit;
 
@@ -6716,7 +6728,12 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       drive_time_min: distInfo?.drive_time_min ?? null,
       specialty_items: input.specialty_items ?? [],
       tiers: tiers
-        ? (isLdMove ? { signature: tiers.signature, estate: tiers.estate } : tiers)
+        ? (isLdMove
+            ? {
+                signature: { ...tiers.signature, deposit: Math.round(tiers.signature.price * ldDepPctFinal) },
+                estate: { ...tiers.estate, deposit: Math.round(tiers.estate.price * ldDepPctFinal) },
+              }
+            : tiers)
         : officeTiers ?? null,
       custom_price: custom_price?.price ?? null,
       system_price: enginePreTaxHeadline,

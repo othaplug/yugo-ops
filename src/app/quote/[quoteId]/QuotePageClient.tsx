@@ -2611,6 +2611,7 @@ export default function QuotePageClient({
                     <InventoryCollapsible
                       quote={quoteForDisplay}
                       selectedAddons={selectedAddons}
+                      selectedTier={selectedTier}
                       omitOuterChrome
                       premiumShellKind={shellKind}
                     />
@@ -4329,11 +4330,14 @@ function WalkthroughDetails({
 function InventoryCollapsible({
   quote,
   selectedAddons,
+  selectedTier,
   omitOuterChrome = false,
   premiumShellKind = "none",
 }: {
   quote: Quote;
   selectedAddons?: Map<string, AddonSelection>;
+  /** Client's chosen tier; falls back to the quote's selected/recommended tier. */
+  selectedTier?: string | null;
   /** Parent supplies section border + “Your inventory” label */
   omitOuterChrome?: boolean;
   premiumShellKind?: PremiumShellKind;
@@ -4463,7 +4467,17 @@ function InventoryCollapsible({
                       (s) => s.slug === "packing_materials",
                     )
                   : false;
-                return packingSelected
+                // Estate includes complete professional packing and materials
+                // by definition (the packing add-on is baked in, not selectable),
+                // so the boxes are Yugo-packed regardless of the add-on flag.
+                const effectiveTier = String(
+                  selectedTier ??
+                    (quote as { selected_tier?: string | null }).selected_tier ??
+                    (quote as { recommended_tier?: string | null }).recommended_tier ??
+                    "",
+                ).toLowerCase();
+                const packingIncludedInTier = effectiveTier === "estate";
+                return packingSelected || packingIncludedInTier
                   ? "Boxes packed & supplied by Yugo"
                   : "Boxes packed & supplied by owner";
               })()}
