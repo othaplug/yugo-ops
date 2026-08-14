@@ -6699,6 +6699,69 @@ export default function QuoteFormClient({
     return () => clearTimeout(timer);
   }, [eventPreTaxOverride, eventOverrideReason, quoteResult?.factors, quoteId, serviceType]);
 
+  // Live estimate for event / office BEFORE the first Generate. quickEstimate
+  // only covers residential, so these types otherwise show an empty right rail
+  // until Generate. Hit the non-persisting /generate?preview=true endpoint on a
+  // debounce and drop the result into the same right rail. No quote is saved
+  // (the response comes back quote_id="PREVIEW", so we never setQuoteId), and the
+  // server skips the contacts upsert in preview, so typing creates nothing.
+  const lastPreviewKeyRef = useRef<string>("");
+  const previewSignature =
+    serviceType === "event" || serviceType === "office_move"
+      ? JSON.stringify([
+          serviceType,
+          moveDate,
+          fromAddress.trim(),
+          toAddress.trim(),
+          venueAddress.trim(),
+          eventCrewOverride,
+          eventHoursOverride,
+          eventTruckType,
+          eventTruckCount,
+          eventLuxury,
+          eventSetupRequired,
+          eventReturnLeg,
+          eventPreTaxOverride,
+          (eventItems ?? []).length,
+          officeCrewSize,
+          officeEstHours,
+        ])
+      : "";
+  useEffect(() => {
+    if (quoteId) return; // once a real quote exists, the normal flow drives the rail
+    if (serviceType !== "event" && serviceType !== "office_move") return;
+    const ready =
+      serviceType === "event"
+        ? !!(moveDate && fromAddress.trim() && venueAddress.trim())
+        : !!(moveDate && fromAddress.trim() && toAddress.trim());
+    if (!ready) return;
+    let payload: unknown;
+    try {
+      payload = buildPayload();
+    } catch {
+      return;
+    }
+    if (previewSignature === lastPreviewKeyRef.current) return;
+    const timer = setTimeout(async () => {
+      lastPreviewKeyRef.current = previewSignature;
+      try {
+        const res = await fetch("/api/quotes/generate?preview=true", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (res.ok && (data.quote_id === "PREVIEW" || data.quoteId === "PREVIEW")) {
+          setQuoteResult(data);
+        }
+      } catch {
+        /* preview is best-effort; ignore failures */
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewSignature, quoteId, serviceType]);
+
   // ── Send quote (Step 2: only after generate; requires quoteId from state) ────────────────────────────
   const handleSend = async () => {
     if (!quoteId) {
@@ -13294,7 +13357,9 @@ export default function QuoteFormClient({
                       }
                     >
                       {serviceType === "local_move" ||
-                      serviceType === "long_distance"
+                      serviceType === "long_distance" ||
+                      serviceType === "event" ||
+                      serviceType === "office_move"
                         ? "Updates as you fill in the form"
                         : "Complete the details, then Generate"}
                     </p>
@@ -14233,7 +14298,9 @@ export default function QuoteFormClient({
                         </div>
                         <p className="text-[11px] text-[var(--tx3)]">
                           {serviceType === "local_move" ||
-                          serviceType === "long_distance"
+                          serviceType === "long_distance" ||
+                          serviceType === "event" ||
+                          serviceType === "office_move"
                             ? "Fill in the form to see a live estimate"
                             : "Complete the details, then Generate to see the quote"}
                         </p>

@@ -6655,9 +6655,11 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   // Global rule: any quote under $550 (total with tax) requires full payment at booking.
   const depositAmount = primaryTotal < 550 ? primaryTotal : computedDeposit;
 
-  // Resolve contact: use provided contact_id, or look up / create from client info
+  // Resolve contact: use provided contact_id, or look up / create from client info.
+  // Skipped entirely in preview so debounced live-estimate calls never touch the
+  // contacts table (no stray rows from typing).
   let contactId = input.contact_id || null;
-  if (!contactId && input.client_email) {
+  if (!isPreview && !contactId && input.client_email) {
     const { data: existing } = await sb
       .from("contacts")
       .select("id")
