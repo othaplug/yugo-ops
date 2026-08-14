@@ -2702,9 +2702,11 @@ export default function QuotePageClient({
                 quote={quoteForDisplay}
                 onConfirm={handleConfirm}
                 confirmed={confirmed}
-                /* Events carry their own cargo coverage; suppress the residential
-                   Released/Enhanced/Full Replacement valuation ladder. */
-                protectionSlot={null}
+                /* $5M cargo coverage is included; this slot is the OPTIONAL
+                   additional-coverage riders + high-value declarations (the WG
+                   rider ladder, not the residential tier valuation ladder). */
+                protectionSlot={protectionSlotForLayout}
+                coverageCost={valuationCost}
                 premiumShellKind={shellKind}
               />
             </>

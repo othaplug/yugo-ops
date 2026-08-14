@@ -23,6 +23,8 @@ interface Props {
   confirmed: boolean;
   /** Optional Your Protection card rendered above Investment Summary. */
   protectionSlot?: React.ReactNode;
+  /** Client-selected additional coverage (rider + declarations), pre-tax. */
+  coverageCost?: number;
   /** Premium shell (deep-green Signature) or "none" for the cream fallback. */
   premiumShellKind?: PremiumShellKind;
 }
@@ -69,6 +71,7 @@ export default function EventLayout({
   onConfirm,
   confirmed,
   protectionSlot,
+  coverageCost = 0,
   premiumShellKind = "none",
 }: Props) {
   /* ── Premium-shell palette (deep-green Signature) with cream fallback,
@@ -92,12 +95,19 @@ export default function EventLayout({
   };
 
   const f = (quote.factors_applied ?? {}) as Record<string, unknown>;
-  const price = quote.custom_price ?? 0;
+  const basePrice = quote.custom_price ?? 0;
+  // Additional coverage the client selected on the page (rider + high-value
+  // declarations) is paid in full at booking, so it lands in both the total and
+  // the deposit — keeping this displayed summary in step with what's charged.
+  const coverage = Math.max(0, coverageCost);
+  const price = basePrice + coverage;
   const tax = Math.round(price * TAX_RATE);
   const grandTotal = price + tax;
   const serverDeposit = quote.deposit_amount != null ? Number(quote.deposit_amount) : null;
+  const baseDeposit =
+    serverDeposit != null && serverDeposit > 0 ? serverDeposit : calculateDeposit("event", basePrice);
   const deposit =
-    serverDeposit != null && serverDeposit > 0 ? serverDeposit : calculateDeposit("event", price);
+    coverage > 0 ? baseDeposit + coverage + Math.round(coverage * TAX_RATE) : baseDeposit;
 
   // Deposit-vs-full copy that reflects the real amount, not a hardcoded line.
   const bookingDecision = decideBookingPayment({
