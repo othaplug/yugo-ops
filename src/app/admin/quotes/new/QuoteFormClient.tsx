@@ -3722,7 +3722,16 @@ export default function QuoteFormClient({
         if (nextService === "event") {
           const evName = cStr(fa.event_name);
           if (evName) setEventName(evName);
-          const venue = cStr(Q.venue_address) || cStr(fa.venue_address);
+          // Events store the venue in to_address (there is no venue_address
+          // column), so resume must fall back to it — otherwise editing an event
+          // loaded the venue blank and Generate/preview couldn't reprice. Skip
+          // the fallback for an on-site event where to_address == origin.
+          const venue =
+            cStr(Q.venue_address) ||
+            cStr(fa.venue_address) ||
+            (cStr(Q.to_address) && cStr(Q.to_address) !== cStr(Q.from_address)
+              ? cStr(Q.to_address)
+              : "");
           if (venue) setVenueAddress(venue);
           const evReturn = cStr(fa.event_return_date);
           if (evReturn) setEventReturnDate(evReturn.slice(0, 10));
