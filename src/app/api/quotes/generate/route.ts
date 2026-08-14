@@ -5704,6 +5704,18 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     const tierRounding = svcType === "single_item" ? 25 : 50;
     if (custom_price) {
       custom_price = applyProcessingRecoveryToTier(custom_price, config, tierRounding);
+      // The CC-recovery gross-up bumps the price but leaves the event deposit
+      // computed on the pre-recovery number, so a full-payment event showed a
+      // stale deposit + a phantom balance (e.g. $1,356 dep on a $1,413 total that
+      // is under the full-payment threshold and should be $0 balance). Recompute
+      // the event deposit on the FINAL price so custom_price.deposit (what the
+      // summary displays) matches the total.
+      if (svcType === "event") {
+        custom_price = {
+          ...custom_price,
+          deposit: eventDeposit(custom_price.price, config, input.move_date),
+        };
+      }
     }
     if (officeTiers) {
       const next: Record<string, TierResult> = {};

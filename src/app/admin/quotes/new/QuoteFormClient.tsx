@@ -10866,7 +10866,7 @@ export default function QuoteFormClient({
                             className={`${checkboxAccentClass} w-3.5 h-3.5`}
                           />
                           <span className="text-[11px] text-[var(--tx2)]">
-                            On-site event (no transit — items repositioned within venue)
+                            On-site event (no transit; items repositioned within venue)
                           </span>
                         </label>
 
@@ -11288,7 +11288,7 @@ export default function QuoteFormClient({
                                   className={`${checkboxAccentClass} w-3.5 h-3.5`}
                                 />
                                 <span className="text-[11px] text-[var(--tx2)]">
-                                  On-site (no transit — items stay at venue)
+                                  On-site (no transit; items stay at venue)
                                 </span>
                               </label>
 
