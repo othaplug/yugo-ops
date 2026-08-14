@@ -10377,7 +10377,7 @@ export default function QuoteFormClient({
                       <span className="text-[11px] text-[var(--tx2)]">Commercial / B2B client</span>
                     </label>
                     {eventIsB2b && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-5">
+                      <div className="grid grid-cols-1 gap-3 pl-5">
                         <Field label="Business name">
                           <input
                             value={b2bBusinessName}
@@ -10386,20 +10386,8 @@ export default function QuoteFormClient({
                             className={fieldInput}
                           />
                         </Field>
-                        <Field label="Payment terms (partners only)">
-                          <select
-                            value={eventB2bInvoiceTerms}
-                            onChange={(e) =>
-                              setEventB2bInvoiceTerms(
-                                e.target.value as "on_completion" | "net_15",
-                              )
-                            }
-                            className={fieldInput}
-                          >
-                            <option value="on_completion">Pay on completion</option>
-                            <option value="net_15">Net 15 invoice</option>
-                          </select>
-                        </Field>
+                        {/* Events use one payment model only: deposit at booking +
+                            balance 48h before. No net-15 / pay-on-completion split. */}
                       </div>
                     )}
 

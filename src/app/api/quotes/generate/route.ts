@@ -6626,7 +6626,14 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     ? isLdMove
       ? Math.round(tiers[ldRecTier].price * ldDepPctFinal)
       : tiers[headlineTierKey].deposit
-    : custom_price!.deposit;
+    : svcType === "event"
+      // Single-source the event deposit from the FINAL price (recovery/override/
+      // scope can move the price after the first eventDeposit call, leaving a
+      // stale deposit and a phantom balance on a full-payment event). Recompute
+      // here so deposit and total always agree: full under threshold (balance $0),
+      // else the configured percentage.
+      ? eventDeposit(custom_price!.price, config, input.move_date)
+      : custom_price!.deposit;
   // Global rule: any quote under $550 (total with tax) requires full payment at booking.
   const depositAmount = primaryTotal < 550 ? primaryTotal : computedDeposit;
 
