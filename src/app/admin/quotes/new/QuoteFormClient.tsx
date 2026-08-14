@@ -6395,11 +6395,12 @@ export default function QuoteFormClient({
           );
           return;
         }
-        if (!eventSameDay && !eventReturnDate) {
+        if (eventReturnLeg && !eventSameDay && !eventReturnDate) {
           toast("Please fill Return date (or check Same Day)", "alertTriangle");
           return;
         }
         if (
+          eventReturnLeg &&
           !eventSameDay &&
           eventReturnDate &&
           moveDate &&
@@ -11540,7 +11541,9 @@ export default function QuoteFormClient({
                       </div>
                     )}
 
-                    {/* Teardown (return leg) — optional */}
+                    {/* Teardown happens ON the return leg, so it only makes
+                        sense when the event has one. */}
+                    {eventReturnLeg && (
                     <label className="flex items-start gap-2 cursor-pointer pt-1">
                       <input
                         type="checkbox"
@@ -11555,6 +11558,7 @@ export default function QuoteFormClient({
                         </span>
                       </span>
                     </label>
+                    )}
 
                     {/* Additional services */}
                     <div className="space-y-1.5 pt-1">
@@ -12832,7 +12836,11 @@ export default function QuoteFormClient({
 
           {serviceType !== "bin_rental" &&
             serviceType !== "b2b_delivery" &&
-            serviceType !== "b2b_oneoff" && (
+            serviceType !== "b2b_oneoff" &&
+            /* Events have their own event-specific pre-tax override on the Job
+               Details step (with the send-freshness + deposit recompute); don't
+               show a second, generic override here or the two conflict. */
+            serviceType !== "event" && (
               <div className="px-0 sm:px-0 pb-3 space-y-2 pt-4 mt-2">
                 <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
                   Coordinator price override (pre-tax)
