@@ -2692,6 +2692,10 @@ export default function QuotePageClient({
                       ?.setup_fee,
                   ) > 0
                 }
+                showEventTeardownFeature={
+                  (quote.factors_applied as Record<string, unknown> | null)
+                    ?.event_has_return_leg !== false
+                }
                 truckPricingNote={truckBreakdownClientNote}
               />
               <EventLayout
@@ -3760,6 +3764,8 @@ const InclusionsShowcase = React.forwardRef<
     logisticsB2bHandling?: string | null;
     eventFeatures?: TierFeature[] | null;
     showEventSetupFeature?: boolean;
+    /** Teardown/return inclusion only shows when the event has a return leg. */
+    showEventTeardownFeature?: boolean;
     /** e.g. Truck: 20ft (+$150) from factors_applied */
     truckPricingNote?: string | null;
     /** Estate wine / Signature green shell, use cream ink, not WINE/forest on dark */
@@ -3787,6 +3793,7 @@ const InclusionsShowcase = React.forwardRef<
     logisticsB2bHandling = null,
     eventFeatures = null,
     showEventSetupFeature = false,
+    showEventTeardownFeature = true,
     truckPricingNote = null,
     premiumShellKind = "none",
     logisticsClientPreset = "standard",
@@ -3834,8 +3841,10 @@ const InclusionsShowcase = React.forwardRef<
       : variant === "event" && eventFeatures && eventFeatures.length > 0
         ? eventFeatures.filter(
             (feat) =>
-              feat.title !== "On-site setup and arrangement" ||
-              showEventSetupFeature,
+              (feat.title !== "On-site setup and arrangement" ||
+                showEventSetupFeature) &&
+              (feat.title !== "Post-event teardown and return" ||
+                showEventTeardownFeature),
           )
         : variant === "residential"
           ? getResolvedMoveIncludes(tier, truckLabel, crewSize, assemblyRequired)

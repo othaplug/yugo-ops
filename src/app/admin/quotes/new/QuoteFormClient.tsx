@@ -6674,6 +6674,31 @@ export default function QuoteFormClient({
     return () => clearTimeout(timer);
   }, [tierPriceOverrides, quoteResult?.tiers, quoteId, serviceType]);
 
+  // Events use a single pre-tax override (not per-tier), which the loop above
+  // skips. Auto-apply it the same way: once a quote exists and a valid override
+  // (amount + reason) differs from the price baked into the last generated
+  // quote, regenerate on a debounce so the operator doesn't type an override
+  // and keep seeing the old price. (Previously events only applied on Send.)
+  const lastEventOverrideKeyRef = useRef<string>("");
+  useEffect(() => {
+    if (!quoteId || serviceType !== "event") return;
+    const typed = Number(eventPreTaxOverride);
+    if (!(eventPreTaxOverride.trim() !== "" && Number.isFinite(typed) && typed > 0)) return;
+    if (eventOverrideReason.trim().length < 3) return;
+    const applied = (quoteResult?.factors as Record<string, unknown> | undefined)
+      ?.event_pre_tax_override;
+    const appliedNum = typeof applied === "number" ? applied : null;
+    if (appliedNum !== null && Math.abs(typed - appliedNum) < 1) return; // already baked in
+    const key = `${Math.round(typed)}`;
+    if (key === lastEventOverrideKeyRef.current) return;
+    const timer = setTimeout(() => {
+      if (generatingRef.current) return;
+      lastEventOverrideKeyRef.current = key;
+      void handleGenerateRef.current();
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [eventPreTaxOverride, eventOverrideReason, quoteResult?.factors, quoteId, serviceType]);
+
   // ── Send quote (Step 2: only after generate; requires quoteId from state) ────────────────────────────
   const handleSend = async () => {
     if (!quoteId) {

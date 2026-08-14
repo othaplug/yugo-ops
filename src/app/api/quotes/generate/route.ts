@@ -4129,7 +4129,11 @@ function buildEventIncludesList(input: QuoteInput): string[] {
   const legCutoff = (input.event_legs ?? []).map((l) => (l.event_leg_hard_cutoff || "").trim()).find(Boolean);
   const hardCutoff = cutoff || legCutoff;
   if (hardCutoff) lines.push(`Guaranteed loaded and off-site by ${hardCutoff}`);
-  lines.push("Post-event teardown and return", "Real-time coordination");
+  // Teardown/return only applies when the event actually has a return leg.
+  if (input.event_has_return_leg !== false) {
+    lines.push("Post-event teardown and return");
+  }
+  lines.push("Real-time coordination");
   return lines;
 }
 
@@ -4439,6 +4443,7 @@ async function calcEvent(
       delivery_date: input.move_date || null,
       return_date: input.event_return_date || null,
       event_scope_details: input.event_scope_details?.trim() || null,
+      event_has_return_leg: input.event_has_return_leg !== false,
       delivery_charge: del,
       return_charge: ret,
       return_discount: core.returnDiscount,
@@ -4652,6 +4657,7 @@ async function calcMultiEvent(
       delivery_date: first.move_date,
       return_date: firstReturn,
       event_scope_details: input.event_scope_details?.trim() || null,
+      event_has_return_leg: input.event_has_return_leg !== false,
       delivery_charge: totalDelivery,
       return_charge: totalReturn,
       setup_fee: setupFee,
