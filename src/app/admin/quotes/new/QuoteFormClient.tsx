@@ -5938,6 +5938,16 @@ export default function QuoteFormClient({
         if (eventHoursOverride !== "" && Number.isFinite(hoursN) && hoursN > 0) {
           base.event_hours_override = hoursN;
         }
+        // Admin pre-tax price override. Without this the operator could type an
+        // override, watch the live preview (and the real generate) keep quoting
+        // the model price, and never see it apply. The engine grosses it up for
+        // processing and re-derives tax + deposit from it.
+        const preTaxN = Number(eventPreTaxOverride);
+        if (eventPreTaxOverride.trim() !== "" && Number.isFinite(preTaxN) && preTaxN > 0) {
+          base.event_pre_tax_override = preTaxN;
+          const reason = eventOverrideReason.trim();
+          if (reason) base.event_pre_tax_override_reason = reason;
+        }
       }
       if (serviceType === "labour_only") {
         base.labour_weekend = labourWeekend || undefined;
