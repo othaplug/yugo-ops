@@ -110,6 +110,10 @@ export default function EventLayout({
   const paidInFull = balanceDue < 2;
 
   const eventName = (f.event_name as string) ?? null;
+  const eventScopeDetails =
+    typeof f.event_scope_details === "string" && f.event_scope_details.trim()
+      ? f.event_scope_details.trim()
+      : null;
   const deliveryDate = (f.delivery_date as string) ?? quote.move_date ?? null;
   const returnDate = (f.return_date as string) ?? null;
   const setupFee = (f.setup_fee as number) ?? 0;
@@ -344,6 +348,30 @@ export default function EventLayout({
           )}
         </div>
       </div>
+
+      {/* Job details — the exact scope the coordinator prepared, so the client
+          sees what they are booking, not a bare price. */}
+      {eventScopeDetails && (
+        <div
+          className="rounded-2xl overflow-hidden mb-4"
+          style={{ border: `1px solid ${C.rule}` }}
+        >
+          <div className="px-5 py-4">
+            <p
+              className="text-[11px] font-bold tracking-[0.14em] uppercase"
+              style={{ color: C.strong }}
+            >
+              Job details
+            </p>
+            <p
+              className="text-[12px] mt-2 whitespace-pre-line leading-relaxed"
+              style={{ color: C.muted }}
+            >
+              {eventScopeDetails}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Protection slot renders here (above Investment Summary) so the
           client sees coverage next to the price, not below the confirm CTA. */}

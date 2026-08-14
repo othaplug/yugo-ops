@@ -434,6 +434,8 @@ interface QuoteInput {
   b2b_full_pre_tax_override?: number;
   // Event (round-trip venue delivery)
   event_name?: string;
+  event_scope_details?: string;
+  event_has_return_leg?: boolean;
   event_return_date?: string;
   event_setup_required?: boolean;
   event_setup_hours?: number; // 1, 2, 3, or 99 = half-day
@@ -4180,6 +4182,8 @@ async function computeEventLegPrice(
     returnDiscount: number;
     skipTruckSurcharge?: boolean;
     sameDayReturn?: boolean;
+    /** When false, the event has no return/pickup leg at all (delivery only). */
+    hasReturnLeg?: boolean;
     hoursOverride?: number;
     crewOverride?: number;
     venueSetupComplex: boolean;
@@ -4284,11 +4288,15 @@ async function computeEventLegPrice(
   let deliveryCharge = roundTo(Math.round(rawDelivery), rounding);
 
   const returnDiscount = Math.min(1, Math.max(0, input.returnDiscount));
+  // No return leg at all (delivery only) → no return charge or hours, regardless
+  // of the same-day setting.
+  const hasReturnLeg = input.hasReturnLeg !== false;
   const returnCharge =
-    input.sameDayReturn
+    !hasReturnLeg || input.sameDayReturn
       ? 0
       : roundTo(Math.round(deliveryCharge * returnDiscount), rounding);
-  const returnHours = input.sameDayReturn ? 0 : Math.ceil(billableHours * returnDiscount);
+  const returnHours =
+    !hasReturnLeg || input.sameDayReturn ? 0 : Math.ceil(billableHours * returnDiscount);
 
   const labour = {
     crewSize,
@@ -4376,6 +4384,7 @@ async function calcEvent(
     returnDiscount: rd,
     skipTruckSurcharge: onSite,
     sameDayReturn: !!input.event_same_day,
+    hasReturnLeg: input.event_has_return_leg !== false,
     hoursOverride: input.event_hours_override,
     crewOverride: input.event_crew_override,
     venueSetupComplex,
@@ -4429,6 +4438,7 @@ async function calcEvent(
       b2b_invoice_terms: input.b2b_payment_method === "invoice" ? (input.b2b_invoice_terms?.trim() || "on_completion") : null,
       delivery_date: input.move_date || null,
       return_date: input.event_return_date || null,
+      event_scope_details: input.event_scope_details?.trim() || null,
       delivery_charge: del,
       return_charge: ret,
       return_discount: core.returnDiscount,
@@ -4538,6 +4548,7 @@ async function calcMultiEvent(
       returnDiscount: rd,
       skipTruckSurcharge: onSite,
       sameDayReturn: !!leg.event_same_day,
+      hasReturnLeg: input.event_has_return_leg !== false,
       hoursOverride: input.event_hours_override,
       crewOverride: input.event_crew_override,
       venueSetupComplex,
@@ -4640,6 +4651,7 @@ async function calcMultiEvent(
       event_has_on_site_leg: hasOnSiteLeg,
       delivery_date: first.move_date,
       return_date: firstReturn,
+      event_scope_details: input.event_scope_details?.trim() || null,
       delivery_charge: totalDelivery,
       return_charge: totalReturn,
       setup_fee: setupFee,

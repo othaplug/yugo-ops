@@ -1679,6 +1679,7 @@ export default function QuoteFormClient({
 
   // Event fields
   const [eventName, setEventName] = useState("");
+  const [eventScopeDetails, setEventScopeDetails] = useState("");
   const [venueAddress, setVenueAddress] = useState("");
   const [extraVenueStops, setExtraVenueStops] = useState<StopEntry[]>([]);
   const [eventReturnDate, setEventReturnDate] = useState("");
@@ -1689,6 +1690,7 @@ export default function QuoteFormClient({
   const [eventSetupHours, setEventSetupHours] = useState(2);
   const [eventSetupInstructions, setEventSetupInstructions] = useState("");
   const [eventSameDay, setEventSameDay] = useState(false);
+  const [eventReturnLeg, setEventReturnLeg] = useState(true);
   const [eventPickupTimeAfter, setEventPickupTimeAfter] =
     useState("Evening 6–9 PM");
   const [eventItems, setEventItems] = useState<EventItemFormRow[]>([]);
@@ -5813,6 +5815,8 @@ export default function QuoteFormClient({
             ? 1
             : Math.min(4, Math.max(1, Number(eventTruckCount) || 1));
         base.event_name = eventName.trim() || undefined;
+        base.event_scope_details = eventScopeDetails.trim() || undefined;
+        base.event_has_return_leg = eventReturnLeg;
         base.event_complex_setup_required = eventLuxury
           ? eventComplexSetup
           : undefined;
@@ -7940,7 +7944,11 @@ export default function QuoteFormClient({
                           }}
                           inputClassName={fieldInput}
                         />
-                        {accessV2 ? (
+                        {/* Events are at venues, not homes: no residential
+                            building-type access model or complexity meter. Event
+                            venue access is captured by the Origin/Venue access
+                            dropdowns in the event Logistics section below. */}
+                        {serviceType === "event" ? null : accessV2 ? (
                           <div className="flex flex-col gap-3">
                           <AccessProfileField
                             value={fromAccessProfile}
@@ -8170,7 +8178,11 @@ export default function QuoteFormClient({
                           }}
                           inputClassName={fieldInput}
                         />
-                        {accessV2 ? (
+                        {/* Events are at venues, not homes: no residential
+                            building-type access model or complexity meter. Event
+                            venue access is captured by the Origin/Venue access
+                            dropdowns in the event Logistics section below. */}
+                        {serviceType === "event" ? null : accessV2 ? (
                           <div className="flex flex-col gap-3">
                           <AccessProfileField
                             value={toAccessProfile}
@@ -10366,6 +10378,18 @@ export default function QuoteFormClient({
                       </Field>
                     </div>
 
+                    {/* Job details — rendered on the client quote so they see
+                        the exact scope, not a bare price. */}
+                    <Field label="Job details (shown on the client quote)">
+                      <textarea
+                        value={eventScopeDetails}
+                        onChange={(e) => setEventScopeDetails(e.target.value)}
+                        placeholder="What the crew will do, sequencing, timing, access notes. The client sees this on their quote."
+                        rows={3}
+                        className={fieldInput}
+                      />
+                    </Field>
+
                     {/* B2B */}
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -10940,6 +10964,22 @@ export default function QuoteFormClient({
                               </label>
                             </div>
 
+                            {/* Return / pickup leg — uncheck for a delivery-only
+                                event (no return charge or teardown). */}
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={eventReturnLeg}
+                                onChange={(e) => setEventReturnLeg(e.target.checked)}
+                                className={`${checkboxAccentClass} w-3.5 h-3.5`}
+                              />
+                              <span className="text-[11px] text-[var(--tx2)]">
+                                This event has a return / pickup leg
+                              </span>
+                            </label>
+
+                            {eventReturnLeg && (
+                              <>
                             {/* Same-day return */}
                             <label className="flex items-center gap-2 cursor-pointer">
                               <input
@@ -11009,6 +11049,8 @@ export default function QuoteFormClient({
                                   )}
                                 </Field>
                               </div>
+                            )}
+                              </>
                             )}
                           </>
                         )}
