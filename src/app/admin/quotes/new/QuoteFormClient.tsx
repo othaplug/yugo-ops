@@ -1102,6 +1102,12 @@ const ACCESS_PENALTY: Record<string, number> = {
  * Uses estimateLabourFromScore for inventory/crew/access accuracy.
  * No distance factor (only available after API call with actual addresses).
  */
+/** Legacy standalone "Destination / venue" parking box for events — retired.
+ *  Venue parking + long-carry now live inline in the event Logistics section
+ *  with the venue address and access. Flag kept so the old block stays in the
+ *  tree (re-enable only if that consolidation is ever reverted). */
+const EVENT_LEGACY_VENUE_PARKING_BOX = false;
+
 function quickEstimate(
   config: Record<string, string>,
   serviceType: string,
@@ -7921,7 +7927,7 @@ export default function QuoteFormClient({
                         <MultiStopAddressField
                           label={
                             serviceType === "event"
-                              ? "Origin Address *"
+                              ? "Origin"
                               : "From"
                           }
                           labelVisibility="sr-only"
@@ -8094,7 +8100,11 @@ export default function QuoteFormClient({
                         )}
                       </div>
                     )}
-                  {serviceType === "event" &&
+                  {/* Venue parking + long-carry now live in the Logistics
+                      section (with the venue address + access), so this
+                      standalone residential-style box no longer renders. */}
+                  {EVENT_LEGACY_VENUE_PARKING_BOX &&
+                    serviceType === "event" &&
                     !eventMulti && (
                       <div className="max-w-4xl space-y-3">
                         <p className={addressStopTitleClass}>
@@ -10785,6 +10795,42 @@ export default function QuoteFormClient({
                               className={fieldInput}
                             />
 
+                            {/* Venue parking lives here with the venue address +
+                                access, not in a separate residential-style
+                                "Destination / venue" box. */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <Field label="Venue parking">
+                                <select
+                                  value={toParking}
+                                  onChange={(e) =>
+                                    setToParking(
+                                      e.target.value as
+                                        | "dedicated"
+                                        | "street"
+                                        | "no_dedicated",
+                                    )
+                                  }
+                                  className={fieldInput}
+                                  aria-label="Venue parking"
+                                >
+                                  {PARKING_OPTIONS.map((o) => (
+                                    <option key={`vp-${o.value || "empty"}`} value={o.value}>
+                                      {o.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </Field>
+                              <label className="flex cursor-pointer items-end gap-2 text-[11px] text-[var(--tx2)] pb-1.5">
+                                <input
+                                  type="checkbox"
+                                  checked={toLongCarry}
+                                  onChange={(e) => setToLongCarry(e.target.checked)}
+                                  className={`${checkboxAccentClass}`}
+                                />
+                                <span>$75 long-carry (truck 50m+ from venue entrance)</span>
+                              </label>
+                            </div>
+
                             {/* Access */}
                             <div className="grid grid-cols-2 gap-2">
                               <Field label="Origin access">
@@ -13222,7 +13268,10 @@ export default function QuoteFormClient({
                           : "text-[10px] text-[var(--tx2)] mt-0.5"
                       }
                     >
-                      Updates as you fill in the form
+                      {serviceType === "local_move" ||
+                      serviceType === "long_distance"
+                        ? "Updates as you fill in the form"
+                        : "Complete the details, then Generate"}
                     </p>
                   )}
                 </div>
@@ -14158,7 +14207,10 @@ export default function QuoteFormClient({
                           <ChevronDown className="w-4 h-4 text-[var(--tx3)]" />
                         </div>
                         <p className="text-[11px] text-[var(--tx3)]">
-                          Fill in the form to see a live estimate
+                          {serviceType === "local_move" ||
+                          serviceType === "long_distance"
+                            ? "Fill in the form to see a live estimate"
+                            : "Complete the details, then Generate to see the quote"}
                         </p>
                       </div>
                     )}
