@@ -552,7 +552,7 @@ const EVENT_QUICK_ADD_PRESETS: {
     requires_wrapping: false,
   },
   {
-    name: "Tables (fragile — glass, porcelain, marble)",
+    name: "Tables (fragile: glass, porcelain, marble)",
     item_type: "fragile",
     weight_category: "heavy",
     requires_wrapping: true,
@@ -14151,20 +14151,19 @@ export default function QuoteFormClient({
                   <span className="text-[var(--tx3)]">Expires</span>
                   <ExpiryLabel expiresAt={quoteResult.expires_at} />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[var(--tx3)]">Distance</span>
-                  <span className="text-[var(--tx)]">
-                    {quoteResult.service_type === "event" &&
-                    typeof quoteResult.factors?.event_distance_summary ===
-                      "string" &&
-                    quoteResult.factors.event_distance_summary.trim()
-                      ? String(quoteResult.factors.event_distance_summary)
-                      : quoteResult.distance_km
+                {/* Distance / Drive Time are residential-route framing and are
+                    meaningless for an event at a venue; hide them for events. */}
+                {serviceType !== "event" && (
+                  <div className="flex justify-between">
+                    <span className="text-[var(--tx3)]">Distance</span>
+                    <span className="text-[var(--tx)]">
+                      {quoteResult.distance_km
                         ? `${quoteResult.distance_km} km`
                         : "-"}
-                  </span>
-                </div>
-                {!(quoteResult.service_type === "event" && quoteResult.factors?.event_mode === "multi") && (
+                    </span>
+                  </div>
+                )}
+                {serviceType !== "event" && (
                   <div className="flex justify-between">
                     <span className="text-[var(--tx3)]">Drive Time</span>
                     <span className="text-[var(--tx)]">
@@ -14540,8 +14539,10 @@ export default function QuoteFormClient({
               );
             })()}
 
-            {/* ── Valuation protection (after generate); not applicable to bin rental ── */}
-            {quoteResult?.valuation && serviceType !== "bin_rental" && (
+            {/* ── Valuation protection (after generate); not applicable to bin
+                rental, and events carry their own cargo coverage (no residential
+                Released/Enhanced/Full Replacement ladder). ── */}
+            {quoteResult?.valuation && serviceType !== "bin_rental" && serviceType !== "event" && (
               <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-[11px]">
                 <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
                   Valuation Protection
@@ -15096,9 +15097,10 @@ export default function QuoteFormClient({
                 );
               })()}
 
-            {/* Office is priced by inventory scope, not crew-hours, so the
-                residential labour-rate ceiling check does not apply. */}
-            {quoteResult?.labour_validation && serviceType !== "office_move" && (
+            {/* Office is priced by inventory scope, and events are flat-rate
+                (crew is coordinator-set), so the residential labour-rate ceiling
+                check does not apply and only misleads. */}
+            {quoteResult?.labour_validation && serviceType !== "office_move" && serviceType !== "event" && (
               <div
                 className={[
                   "p-3 rounded-lg mt-3 text-sm border",

@@ -19,6 +19,7 @@ export function quoteDetailDateLabel(serviceType: string): string {
     return "Delivery Date";
   }
   if (serviceType === "office_move") return "Relocation Date";
+  if (serviceType === "event") return "Event Date";
   return "Move Date";
 }
 

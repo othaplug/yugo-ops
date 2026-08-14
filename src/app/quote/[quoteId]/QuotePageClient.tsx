@@ -2696,7 +2696,9 @@ export default function QuotePageClient({
                 quote={quoteForDisplay}
                 onConfirm={handleConfirm}
                 confirmed={confirmed}
-                protectionSlot={protectionSlotForLayout}
+                /* Events carry their own cargo coverage; suppress the residential
+                   Released/Enhanced/Full Replacement valuation ladder. */
+                protectionSlot={null}
                 premiumShellKind={shellKind}
               />
             </>
