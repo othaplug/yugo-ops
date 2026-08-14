@@ -6400,15 +6400,12 @@ export default function QuoteFormClient({
           }
         }
       } else {
-        if (
-          !fromAddress ||
-          (!eventSameLocationSingle && !venueAddress) ||
-          !moveDate
-        ) {
-          toast(
-            "Please fill Origin, Venue address and Delivery date",
-            "alertTriangle",
-          );
+        if (!fromAddress || !moveDate) {
+          // Venue is optional for events — an internal same-building transfer has
+          // no separate destination, and the engine prices without one. Blocking
+          // Generate on a missing venue meant a venue-less event could never save
+          // an override (the persisted quote stayed at the old price).
+          toast("Please fill Origin and Delivery date", "alertTriangle");
           return;
         }
         if (eventReturnLeg && !eventSameDay && !eventReturnDate) {
@@ -6750,13 +6747,13 @@ export default function QuoteFormClient({
     if (generatingRef.current) return;
     const ready =
       serviceType === "event"
-        ? !!(
-            moveDate &&
-            fromAddress.trim() &&
-            // A same-location on-site event has no separate venue (the transfer
-            // happens inside one building), so don't gate it on venueAddress.
-            (venueAddress.trim() || eventSameLocationSingle || eventMulti)
-          )
+        ? // Events price on crew x hours x truck x items, NOT on a destination
+          // address. Many real events have no separate venue (an internal
+          // same-building transfer, e.g. MTCC checkroom -> Room 205), so gating
+          // the live preview on a venue address left the rail frozen — the
+          // operator typed a price override and nothing moved. Only origin +
+          // date are needed to price.
+          !!((moveDate && fromAddress.trim()) || eventMulti)
         : !!(moveDate && fromAddress.trim() && toAddress.trim());
     if (!ready) return;
     let payload: unknown;

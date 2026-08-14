@@ -5978,6 +5978,28 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     else custom_price.includes.unshift(fallbackTruckLine);
   }
 
+  // Events pick their truck explicitly (event_truck_type x event_truck_count),
+  // NOT via the residential inventory allocator that runs above — which was
+  // stamping "16ft fully equipped truck" onto a 2 x 26ft event. Override the
+  // truck line with the operator's actual selection (or drop it for an on-site
+  // event that uses no transit truck).
+  if (svcType === "event" && custom_price) {
+    const evKey = String(input.event_truck_type || "").toLowerCase();
+    const evCount = Math.max(1, Math.min(4, Number(input.event_truck_count) || 1));
+    const idx = custom_price.includes.findIndex(
+      (s: string) => /truck|sprinter|transport|\bvan\b/i.test(s),
+    );
+    if (evKey && evKey !== "none") {
+      const label = TRUCK_DISPLAY[evKey] || `${evKey} truck`;
+      const line = evCount > 1 ? `${evCount} × ${label}` : label;
+      if (idx >= 0) custom_price.includes[idx] = line;
+      else custom_price.includes.unshift(line);
+    } else if (idx >= 0) {
+      // On-site event: no transit truck, so no truck line.
+      custom_price.includes.splice(idx, 1);
+    }
+  }
+
   // When labour exists (inventory-based or base_rates fallback), use it for tier includes so the public quote page shows crew/hours that match the estimate
   if (labour && tiers) {
     const crewLineStandard = `Professional crew of ${labour.crewSize}`;
