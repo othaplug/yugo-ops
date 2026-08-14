@@ -6738,11 +6738,25 @@ export default function QuoteFormClient({
         ])
       : "";
   useEffect(() => {
-    if (quoteId) return; // once a real quote exists, the normal flow drives the rail
     if (serviceType !== "event" && serviceType !== "office_move") return;
+    // The rail must reflect the current inputs — including the admin price
+    // override — the instant they change, even on a LOADED/draft quote
+    // (quoteId set). Previously this bailed on quoteId, so a loaded event only
+    // repriced through the heavy auto-regen, which silently does nothing without
+    // a >=3-char reason: the operator typed an override and saw the old price
+    // with no feedback (the recurring "override doesn't apply" report). Now the
+    // non-persisting preview always runs; it just skips while a real Generate is
+    // in flight so it never fights the authoritative result.
+    if (generatingRef.current) return;
     const ready =
       serviceType === "event"
-        ? !!(moveDate && fromAddress.trim() && venueAddress.trim())
+        ? !!(
+            moveDate &&
+            fromAddress.trim() &&
+            // A same-location on-site event has no separate venue (the transfer
+            // happens inside one building), so don't gate it on venueAddress.
+            (venueAddress.trim() || eventSameLocationSingle || eventMulti)
+          )
         : !!(moveDate && fromAddress.trim() && toAddress.trim());
     if (!ready) return;
     let payload: unknown;
@@ -6753,6 +6767,7 @@ export default function QuoteFormClient({
     }
     if (previewSignature === lastPreviewKeyRef.current) return;
     const timer = setTimeout(async () => {
+      if (generatingRef.current) return;
       lastPreviewKeyRef.current = previewSignature;
       try {
         const res = await fetch("/api/quotes/generate?preview=true", {
@@ -6762,7 +6777,12 @@ export default function QuoteFormClient({
         });
         const data = await res.json();
         if (res.ok && (data.quote_id === "PREVIEW" || data.quoteId === "PREVIEW")) {
-          setQuoteResult(data);
+          // On a loaded/draft quote keep the id already shown in the rail
+          // (YG-####) rather than flipping the label to "PREVIEW"; the pricing
+          // and factors come from the preview.
+          setQuoteResult(
+            quoteId ? { ...data, quote_id: quoteId, quoteId } : data,
+          );
         }
       } catch {
         /* preview is best-effort; ignore failures */
