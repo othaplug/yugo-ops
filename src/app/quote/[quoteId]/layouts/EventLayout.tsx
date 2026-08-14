@@ -119,7 +119,12 @@ export default function EventLayout({
   const setupFee = (f.setup_fee as number) ?? 0;
   const returnCharge = (f.return_charge as number) ?? 0;
   const crewSize = (f.event_crew as number) ?? (f.crew_size as number) ?? quote.est_crew_size ?? 2;
-  const truckSize = quote.truck_primary ?? null;
+  const truckCount = Math.max(1, (f.event_truck_count as number) ?? 1);
+  const truckSize = quote.truck_primary
+    ? truckCount > 1
+      ? `${truckCount} × ${quote.truck_primary}`
+      : quote.truck_primary
+    : null;
   const arrivalWindow = (f.event_arrival_window as string) ?? null;
   const hardCutoff = (f.event_hard_cutoff as string) ?? null;
 
