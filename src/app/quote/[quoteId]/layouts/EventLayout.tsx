@@ -428,7 +428,7 @@ export default function EventLayout({
               className={`w-full max-w-xs mx-auto py-3.5 rounded-none border-0 text-[10px] font-bold tracking-[0.14em] uppercase text-white transition-opacity hover:opacity-90 ${confirmed ? "opacity-80" : ""}`}
               style={{ backgroundColor: C.ctaFill }}
             >
-              {confirmed ? "Confirmed" : `Confirm & Book — ${fmtPrice(dueToday)}`}
+              {confirmed ? "Confirmed" : `Confirm & Book · ${fmtPrice(dueToday)}`}
             </button>
             <p className="text-[10px] mt-2.5" style={{ color: C.muted }}>
               {paidInFull

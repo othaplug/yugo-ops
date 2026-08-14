@@ -2150,7 +2150,9 @@ export default function QuotePageClient({
         ? "Delivery Date"
         : quote.service_type === "office_move"
           ? "Relocation Date"
-          : "Move Date";
+          : quote.service_type === "event"
+            ? "Event Date"
+            : "Move Date";
 
   /* ── Expiry check ── */
   const expiringSoon = useMemo(() => {
