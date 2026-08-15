@@ -110,6 +110,31 @@ function PhotoLightbox({
   onIndex: (next: number) => void;
 }) {
   const current = files[index];
+
+  /**
+   * Zoom + pan state. `zoom` is a multiplier on the natural fit-to-
+   * screen size (1 = fit, MAX_ZOOM cap keeps performance sane). `pan`
+   * is a translation in stage pixels applied to the image element via
+   * CSS transform.
+   *
+   * The critical math is in the wheel/pinch handler: when zoom changes
+   * we adjust pan so the pixel under the cursor stays put. Otherwise
+   * zooming feels like scrolling — the image jumps around.
+   */
+  const MIN_ZOOM = 1;
+  const MAX_ZOOM = 5;
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef<
+    | { pointerId: number; startX: number; startY: number; startPanX: number; startPanY: number }
+    | null
+  >(null);
+  const pinchStateRef = useRef<
+    | { pointers: Map<number, { x: number; y: number }>; startDist: number; startZoom: number; centerX: number; centerY: number }
+    | null
+  >(null);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -119,6 +144,158 @@ function PhotoLightbox({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [index, files.length, onClose, onIndex]);
+
+  // Reset zoom + pan whenever the photo changes — nothing worse than
+  // paging to a new photo and having it appear pre-zoomed to a random
+  // spot the last photo was framed at.
+  useEffect(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, [index]);
+
+  // Trackpad pinch and mouse wheel both dispatch `wheel` events (pinch
+  // sets ctrlKey=true on Chrome/Safari). Attach as non-passive so we
+  // can preventDefault the page zoom that Chrome otherwise applies.
+  // React onWheel is passive, so we attach through a ref.
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = stage.getBoundingClientRect();
+      const cx = e.clientX - rect.left - rect.width / 2;
+      const cy = e.clientY - rect.top - rect.height / 2;
+      setZoom((prevZoom) => {
+        const delta = -e.deltaY * (e.ctrlKey ? 0.02 : 0.005);
+        const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prevZoom + delta * prevZoom));
+        if (nextZoom === prevZoom) return prevZoom;
+        setPan((prevPan) => {
+          if (nextZoom <= MIN_ZOOM) return { x: 0, y: 0 };
+          const ratio = nextZoom / prevZoom;
+          return {
+            x: cx - (cx - prevPan.x) * ratio,
+            y: cy - (cy - prevPan.y) * ratio,
+          };
+        });
+        return nextZoom;
+      });
+    };
+    stage.addEventListener("wheel", onWheel, { passive: false });
+    return () => stage.removeEventListener("wheel", onWheel);
+  }, []);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    // Ignore modifier + right clicks.
+    if (e.button !== 0 && e.pointerType !== "touch") return;
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    // Two-finger touch → pinch. Track both pointers and the starting
+    // distance so we can compute a zoom ratio in pointermove.
+    if (e.pointerType === "touch" && pinchStateRef.current) {
+      pinchStateRef.current.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinchStateRef.current.pointers.size >= 2) {
+        const [a, b] = Array.from(pinchStateRef.current.pointers.values());
+        pinchStateRef.current.startDist = Math.hypot(a.x - b.x, a.y - b.y);
+        pinchStateRef.current.startZoom = zoom;
+        pinchStateRef.current.centerX = (a.x + b.x) / 2;
+        pinchStateRef.current.centerY = (a.y + b.y) / 2;
+      }
+      return;
+    }
+    if (e.pointerType === "touch") {
+      pinchStateRef.current = {
+        pointers: new Map([[e.pointerId, { x: e.clientX, y: e.clientY }]]),
+        startDist: 0,
+        startZoom: zoom,
+        centerX: e.clientX,
+        centerY: e.clientY,
+      };
+      return;
+    }
+    // Mouse: only pan when zoomed in; otherwise let click-outside close.
+    if (zoom <= MIN_ZOOM) return;
+    dragStateRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      startPanX: pan.x,
+      startPanY: pan.y,
+    };
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    // Touch pinch — two active pointers.
+    if (e.pointerType === "touch" && pinchStateRef.current) {
+      const state = pinchStateRef.current;
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (state.pointers.size < 2 || state.startDist === 0) return;
+      const [a, b] = Array.from(state.pointers.values());
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      const nextZoom = Math.min(
+        MAX_ZOOM,
+        Math.max(MIN_ZOOM, (state.startZoom * dist) / state.startDist),
+      );
+      const stage = stageRef.current;
+      if (!stage) return;
+      const rect = stage.getBoundingClientRect();
+      const cx = state.centerX - rect.left - rect.width / 2;
+      const cy = state.centerY - rect.top - rect.height / 2;
+      setZoom((prevZoom) => {
+        if (nextZoom === prevZoom) return prevZoom;
+        setPan((prevPan) => {
+          if (nextZoom <= MIN_ZOOM) return { x: 0, y: 0 };
+          const ratio = nextZoom / prevZoom;
+          return {
+            x: cx - (cx - prevPan.x) * ratio,
+            y: cy - (cy - prevPan.y) * ratio,
+          };
+        });
+        return nextZoom;
+      });
+      return;
+    }
+    // Mouse pan while zoomed.
+    const drag = dragStateRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    setPan({
+      x: drag.startPanX + (e.clientX - drag.startX),
+      y: drag.startPanY + (e.clientY - drag.startY),
+    });
+  };
+
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (e.pointerType === "touch" && pinchStateRef.current) {
+      pinchStateRef.current.pointers.delete(e.pointerId);
+      if (pinchStateRef.current.pointers.size === 0) {
+        pinchStateRef.current = null;
+      }
+      return;
+    }
+    if (dragStateRef.current?.pointerId === e.pointerId) {
+      dragStateRef.current = null;
+    }
+  };
+
+  const onDoubleClick = (e: React.MouseEvent) => {
+    // Double-click toggles between fit (1x) and a comfortable read-in
+    // zoom (2.5x) centered on the point clicked. Faster than
+    // wheel-scrolling to the same zoom every time.
+    e.stopPropagation();
+    const stage = stageRef.current;
+    if (!stage) return;
+    const rect = stage.getBoundingClientRect();
+    const cx = e.clientX - rect.left - rect.width / 2;
+    const cy = e.clientY - rect.top - rect.height / 2;
+    if (zoom > MIN_ZOOM + 0.01) {
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+    } else {
+      const target = 2.5;
+      setZoom(target);
+      setPan({ x: cx - cx * target, y: cy - cy * target });
+    }
+  };
+
+  const isZoomed = zoom > MIN_ZOOM + 0.01;
 
   if (!current) return null;
 
@@ -150,7 +327,18 @@ function PhotoLightbox({
     <div
       className="fixed inset-0 z-[99999] flex flex-col bg-black/90 backdrop-blur-sm"
       style={{ height: "100dvh", width: "100vw", overflow: "hidden" }}
-      onClick={onClose}
+      onClick={() => {
+        // Backdrop-close only makes sense at fit-to-screen. When the
+        // user is zoomed in and clicks-drags around, a click on the
+        // backdrop-that-wasn't-really-backdrop shouldn't close. Reset
+        // to fit first — second click closes.
+        if (isZoomed) {
+          setZoom(1);
+          setPan({ x: 0, y: 0 });
+        } else {
+          onClose();
+        }
+      }}
     >
       {/* Header strip — caption + counter + close */}
       <div
@@ -164,6 +352,21 @@ function PhotoLightbox({
           <p className="text-[10px] text-white/70 mt-0.5">{formatShort(current.date)}</p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
+          {isZoomed && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setZoom(1);
+                setPan({ x: 0, y: 0 });
+              }}
+              className="px-2 py-1 rounded-md bg-white/10 hover:bg-white/20 text-[11px] text-white/90 tabular-nums"
+              aria-label="Reset zoom"
+              title="Reset zoom (or double-click the image)"
+            >
+              {Math.round(zoom * 100)}%
+            </button>
+          )}
           <span className="text-[11px] text-white/80 tabular-nums">
             {index + 1} / {files.length}
           </span>
@@ -182,15 +385,27 @@ function PhotoLightbox({
           and thumbnail strip. `min-h-0` lets the child img shrink correctly
           inside a flex column (without it Tailwind's default min-height
           keeps tall portraits from contracting). `overflow: hidden` on the
-          stage clamps any residual overflow from the img element. */}
+          stage clamps any residual overflow from the zoomed image.
+          touch-action: none disables the browser's native pinch-zoom so
+          our custom pinch handler owns two-finger gestures cleanly. */}
       <div
+        ref={stageRef}
         className="relative flex-1 min-h-0 flex items-center justify-center px-4 py-4"
-        style={{ overflow: "hidden" }}
+        style={{
+          overflow: "hidden",
+          touchAction: "none",
+          cursor: isZoomed ? (dragStateRef.current ? "grabbing" : "grab") : "zoom-in",
+        }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onDoubleClick={onDoubleClick}
       >
         <img
           src={current.url}
           alt={current.caption || current.name || "Photo"}
-          className="rounded-xl shadow-2xl"
+          className="rounded-xl shadow-2xl select-none"
           style={{
             maxWidth: "100%",
             maxHeight: "100%",
@@ -198,7 +413,15 @@ function PhotoLightbox({
             height: "auto",
             objectFit: "contain",
             display: "block",
-          }}
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: "center center",
+            transition: dragStateRef.current || pinchStateRef.current ? "none" : "transform 120ms ease-out",
+            willChange: "transform",
+            userSelect: "none",
+            WebkitUserSelect: "none",
+            WebkitUserDrag: "none",
+          } as React.CSSProperties}
+          draggable={false}
           onClick={(e) => e.stopPropagation()}
         />
 
