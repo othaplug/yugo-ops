@@ -554,11 +554,21 @@ export default function EditQuoteClient({
   // override_price_pre_tax + override_reason. Pre-fill so editing the
   // quote keeps the operator's earlier override intact unless they
   // explicitly clear it.
-  const [quotePreTaxOverride, setQuotePreTaxOverride] = useState<string>(
-    typeof oq.override_price_pre_tax === "number" &&
+  // The stored pre-tax override lives in factors.event_pre_tax_override —
+  // override_price_pre_tax is a phantom column (doesn't exist), so reading it
+  // always yielded "" and the field never pre-filled on an already-overridden
+  // quote. Prefer the factors value.
+  const storedEventOverride = (() => {
+    const fa = (oq.factors_applied ?? {}) as Record<string, unknown>;
+    const v = fa.event_pre_tax_override;
+    if (typeof v === "number" && v > 0) return v;
+    return typeof oq.override_price_pre_tax === "number" &&
       oq.override_price_pre_tax > 0
-      ? String(oq.override_price_pre_tax)
-      : "",
+      ? oq.override_price_pre_tax
+      : null;
+  })();
+  const [quotePreTaxOverride, setQuotePreTaxOverride] = useState<string>(
+    storedEventOverride != null ? String(storedEventOverride) : "",
   );
   const [quotePreTaxOverrideReason, setQuotePreTaxOverrideReason] =
     useState<string>(
@@ -1757,9 +1767,7 @@ export default function EditQuoteClient({
   // new price and nothing happened. Detect it against the stored value.
   const overrideAmountNum = Number(quotePreTaxOverride);
   const storedOverrideStr =
-    typeof oq.override_price_pre_tax === "number" && oq.override_price_pre_tax > 0
-      ? String(oq.override_price_pre_tax)
-      : "";
+    storedEventOverride != null ? String(storedEventOverride) : "";
   const overrideChanged =
     serviceType === "event" &&
     quotePreTaxOverride.trim() !== "" &&

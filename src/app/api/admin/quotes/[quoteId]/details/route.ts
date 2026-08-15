@@ -205,10 +205,12 @@ export async function POST(
         : typeof q.custom_price === "number"
           ? q.custom_price
           : grossed;
+    // NOTE: there is no override_price_pre_tax COLUMN on quotes (it's a phantom
+    // — writing it 500s the whole update). The pre-tax override value lives in
+    // factors.event_pre_tax_override below; the columns store the applied price.
     patch.custom_price = grossed;
     patch.system_price = priorSystemPrice;
     patch.override_price = grossed;
-    patch.override_price_pre_tax = ov;
     patch.override_reason = body.override_reason.trim();
     patch.deposit_amount = deposit;
     factors.event_pre_tax_override_applied = true;
