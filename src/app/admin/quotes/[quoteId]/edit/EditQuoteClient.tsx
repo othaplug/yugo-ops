@@ -1752,10 +1752,35 @@ export default function EditQuoteClient({
   ]);
   const hasDetailChanges = Object.keys(detailPatch).length > 0;
 
+  // The "Direct price override" on this metadata-only save path (event quotes)
+  // is a real, savable change — previously it was ignored, so operators typed a
+  // new price and nothing happened. Detect it against the stored value.
+  const overrideAmountNum = Number(quotePreTaxOverride);
+  const storedOverrideStr =
+    typeof oq.override_price_pre_tax === "number" && oq.override_price_pre_tax > 0
+      ? String(oq.override_price_pre_tax)
+      : "";
+  const overrideChanged =
+    serviceType === "event" &&
+    quotePreTaxOverride.trim() !== "" &&
+    Number.isFinite(overrideAmountNum) &&
+    overrideAmountNum > 0 &&
+    String(Math.round(overrideAmountNum)) !== storedOverrideStr;
+  const hasSavableDetailChanges = hasDetailChanges || overrideChanged;
+
   const handleSaveDetails = useCallback(
     async (resend: boolean) => {
-      if (!hasDetailChanges) return;
+      if (!hasDetailChanges && !overrideChanged) return;
       setError(null);
+      if (
+        overrideChanged &&
+        (!quotePreTaxOverrideReason || quotePreTaxOverrideReason.trim().length < 3)
+      ) {
+        setError(
+          "Pick a reason for the price override (the dropdown next to the amount) before saving.",
+        );
+        return;
+      }
       if (resend && (!reason || reason.length < 3)) {
         setError(
           "Pick a reason for the update before resending — the client sees it in the email.",
@@ -1772,6 +1797,12 @@ export default function EditQuoteClient({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               ...detailPatch,
+              override_price_pre_tax: overrideChanged
+                ? Math.round(overrideAmountNum)
+                : undefined,
+              override_reason: overrideChanged
+                ? quotePreTaxOverrideReason.trim()
+                : undefined,
               reason: resend ? reason : undefined,
               reason_code: resend ? reasonValue || null : undefined,
               resend,
@@ -1798,7 +1829,17 @@ export default function EditQuoteClient({
         setGenerating(false);
       }
     },
-    [hasDetailChanges, reason, reasonValue, detailPatch, oq.quote_id, router],
+    [
+      hasDetailChanges,
+      overrideChanged,
+      overrideAmountNum,
+      quotePreTaxOverrideReason,
+      reason,
+      reasonValue,
+      detailPatch,
+      oq.quote_id,
+      router,
+    ],
   );
 
   if (done) {
@@ -1848,7 +1889,7 @@ export default function EditQuoteClient({
         moveDate={oq.move_date}
         generating={generating}
         linking={linking}
-        hasChanges={blockMoveEngineRegen ? hasDetailChanges : hasChanges}
+        hasChanges={blockMoveEngineRegen ? hasSavableDetailChanges : hasChanges}
         detailsMode={blockMoveEngineRegen}
         onBack={() => router.back()}
         onSaveChanges={

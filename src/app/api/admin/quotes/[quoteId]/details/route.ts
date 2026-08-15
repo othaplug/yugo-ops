@@ -6,6 +6,44 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { sendQuoteLinkSms } from "@/lib/quote-sms";
 import { safePatchDeal } from "@/lib/hubspot/safe-deal-write";
 import { buildAllDealProperties } from "@/lib/hubspot/deal-properties-builder";
+import { grossUpForProcessing } from "@/lib/pricing/processing-recovery";
+
+/**
+ * Event deposit rule — mirrors eventDeposit() in the quote engine so a price
+ * override applied HERE (edit form) produces the same deposit the Generate flow
+ * would. Takes the pre-tax (already grossed-up) amount.
+ */
+function cfgNum(config: Map<string, string>, key: string, fallback: number): number {
+  const v = config.get(key);
+  return v !== undefined && v !== "" ? Number(v) : fallback;
+}
+function eventDepositForOverride(
+  amount: number,
+  config: Map<string, string>,
+  moveDate?: string | null,
+): number {
+  const preTax = Math.round(amount);
+  if (preTax <= 0) return 0;
+  const taxRate = cfgNum(config, "tax_rate", 0.13);
+  const inclusive = preTax + Math.round(preTax * taxRate);
+  if (moveDate) {
+    const target = new Date(`${String(moveDate).trim().slice(0, 10)}T00:00:00`);
+    if (!Number.isNaN(target.getTime())) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const daysOut = Math.floor(
+        (target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
+      );
+      if (daysOut < 4) return inclusive;
+    }
+  }
+  const fullUnder = cfgNum(config, "event_full_payment_under", 2500);
+  if (inclusive < fullUnder) return inclusive;
+  const pct = cfgNum(config, "event_deposit_pct", 25);
+  const step = Math.max(1, cfgNum(config, "event_deposit_round", 25));
+  const dep = Math.round((preTax * pct) / 100 / step) * step;
+  return Math.min(inclusive, Math.max(step, dep));
+}
 
 /**
  * POST /api/admin/quotes/[quoteId]/details
@@ -51,6 +89,8 @@ export async function POST(
     arrival_window?: string;
     preferred_time?: string;
     coordinator_name?: string;
+    override_price_pre_tax?: number;
+    override_reason?: string;
     reason?: string;
     reason_code?: string | null;
     resend?: boolean;
@@ -126,6 +166,63 @@ export async function POST(
       factorsChanged = true;
     }
   }
+  // ── Direct price override for EVENT quotes ──
+  // The edit form's "Direct price override" used to be dropped here entirely
+  // (this path only touched logistics), so an operator typed a new price and
+  // nothing changed. Events are priced outside the move engine, so applying a
+  // fixed pre-tax total is safe and needs no re-run: gross it up for card fees
+  // and recompute tax + deposit exactly like the Generate engine does.
+  const ovRaw = body.override_price_pre_tax;
+  const ov =
+    typeof ovRaw === "number" && Number.isFinite(ovRaw) && ovRaw > 0
+      ? Math.round(ovRaw)
+      : null;
+  const currentOv =
+    typeof (q as Record<string, unknown>).override_price_pre_tax === "number"
+      ? ((q as Record<string, unknown>).override_price_pre_tax as number)
+      : null;
+  if (q.service_type === "event" && ov !== null && ov !== currentOv) {
+    if (!body.override_reason || body.override_reason.trim().length < 3) {
+      return NextResponse.json(
+        { error: "A price override needs a reason (at least 3 characters)." },
+        { status: 400 },
+      );
+    }
+    const { data: cfgRows } = await admin
+      .from("platform_config")
+      .select("key, value");
+    const config = new Map<string, string>(
+      (cfgRows ?? []).map((r) => [String(r.key), String(r.value)]),
+    );
+    const taxRate = cfgNum(config, "tax_rate", 0.13);
+    const grossed = grossUpForProcessing(ov, config);
+    const effectiveDate = String(patch.move_date ?? q.move_date ?? "");
+    const deposit = eventDepositForOverride(grossed, config, effectiveDate);
+    const priorSystemPrice =
+      typeof (q as Record<string, unknown>).system_price === "number" &&
+      ((q as Record<string, unknown>).system_price as number) > 0
+        ? ((q as Record<string, unknown>).system_price as number)
+        : typeof q.custom_price === "number"
+          ? q.custom_price
+          : grossed;
+    patch.custom_price = grossed;
+    patch.system_price = priorSystemPrice;
+    patch.override_price = grossed;
+    patch.override_price_pre_tax = ov;
+    patch.override_reason = body.override_reason.trim();
+    patch.deposit_amount = deposit;
+    factors.event_pre_tax_override_applied = true;
+    factors.event_pre_tax_override = ov;
+    factors.event_pre_tax_override_reason = body.override_reason.trim();
+    factors.event_system_pre_tax_total_before_override =
+      typeof q.custom_price === "number" ? q.custom_price : null;
+    factorsChanged = true;
+    patch.factors_applied = factors;
+    changes.push(
+      `Price set to $${grossed.toLocaleString()} (pre-tax override $${ov.toLocaleString()}, +$${Math.round(grossed * taxRate).toLocaleString()} HST)`,
+    );
+  }
+
   if (factorsChanged) patch.factors_applied = factors;
 
   if (Object.keys(patch).length === 0) {
@@ -149,7 +246,7 @@ export async function POST(
         changes,
         reason: body.reason ?? null,
         reason_code: body.reason_code ?? null,
-        pricing_touched: false,
+        pricing_touched: patch.custom_price !== undefined,
       },
     });
   } catch {
