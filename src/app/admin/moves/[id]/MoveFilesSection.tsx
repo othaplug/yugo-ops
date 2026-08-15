@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   Upload,
   FileText,
@@ -121,15 +122,34 @@ function PhotoLightbox({
 
   if (!current) return null;
 
-  // Backdrop: deep near-opaque black, NOT the global `modal-overlay` class
-  // (which is a 10% warm scrim tuned for text dialogs and lets the page bleed
-  // through behind a photo). Layout: flex column with header on top, image
-  // taking the flexible middle, thumbnail strip on bottom. This way portrait
-  // photos can't overlap the chrome and `object-contain` honours the actual
-  // available height instead of the full viewport.
-  return (
+  // Portal to document.body so the fixed positioning + viewport sizing
+  // always resolve against the real viewport. Rendering the lightbox
+  // in place (as we did before) meant that any transformed / filtered
+  // / will-change ancestor on the admin move-detail page (tabs,
+  // motion.divs, backdrop-blur containers) trapped `fixed inset-0`
+  // inside itself — so `max-h-full` computed against the ancestor's
+  // grown-with-content height instead of the viewport, and iPhone
+  // portrait photos rendered at natural (3000+ px tall) size. This is
+  // the exact "photos bigger than the screen, forces scroll" bug the
+  // operator flagged.
+  //
+  // Also lock body scroll while the lightbox is open — otherwise
+  // wheel/trackpad events bleed through to the page below and the
+  // admin content scrolls while the operator's browsing photos.
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  if (typeof document === "undefined") return null;
+
+  const overlay = (
     <div
       className="fixed inset-0 z-[99999] flex flex-col bg-black/90 backdrop-blur-sm"
+      style={{ height: "100dvh", width: "100vw", overflow: "hidden" }}
       onClick={onClose}
     >
       {/* Header strip — caption + counter + close */}
@@ -161,12 +181,24 @@ function PhotoLightbox({
       {/* Image stage — flex-1 so it grows to fill the space between header
           and thumbnail strip. `min-h-0` lets the child img shrink correctly
           inside a flex column (without it Tailwind's default min-height
-          keeps tall portraits from contracting). */}
-      <div className="relative flex-1 min-h-0 flex items-center justify-center px-4 py-4">
+          keeps tall portraits from contracting). `overflow: hidden` on the
+          stage clamps any residual overflow from the img element. */}
+      <div
+        className="relative flex-1 min-h-0 flex items-center justify-center px-4 py-4"
+        style={{ overflow: "hidden" }}
+      >
         <img
           src={current.url}
           alt={current.caption || current.name || "Photo"}
-          className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+          className="rounded-xl shadow-2xl"
+          style={{
+            maxWidth: "100%",
+            maxHeight: "100%",
+            width: "auto",
+            height: "auto",
+            objectFit: "contain",
+            display: "block",
+          }}
           onClick={(e) => e.stopPropagation()}
         />
 
@@ -233,6 +265,8 @@ function PhotoLightbox({
       )}
     </div>
   );
+
+  return createPortal(overlay, document.body);
 }
 
 // ─── Collapsible group ────────────────────────────────────────────────────────
