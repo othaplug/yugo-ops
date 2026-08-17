@@ -100,6 +100,12 @@ export async function POST(
     // may ship the canonical `special_instructions`.
     notes?: string;
     special_instructions?: string;
+    // Event scope patch — merged wholesale into factors_applied when
+    // present. Every key is optional; only the ones the operator
+    // touched are diffed. event_scope_changed_keys is a hint the
+    // client sends so we don't have to re-diff every field.
+    event_scope?: Record<string, unknown>;
+    event_scope_changed_keys?: string[];
   };
   try {
     body = await req.json();
@@ -254,6 +260,60 @@ export async function POST(
     changes.push(
       `Price set to $${grossed.toLocaleString()} (pre-tax override $${ov.toLocaleString()}, +$${Math.round(grossed * taxRate).toLocaleString()} HST)`,
     );
+  }
+
+  // ── Event scope merge (event service only) ──
+  // The edit page's EventScopeSection pushes a flat patch of event_*
+  // keys through body.event_scope. Merge each key into factors_applied
+  // when it actually differs from stored, and narrate the changes.
+  // This unblocks operator edits on event name, setup, teardown,
+  // fleet config, arrival window, and additional services without
+  // requiring a full regenerate (which was blocked because events are
+  // custom-priced and can't safely re-run through the move engine).
+  if (
+    q.service_type === "event" &&
+    body.event_scope &&
+    typeof body.event_scope === "object"
+  ) {
+    const HUMAN: Record<string, string> = {
+      event_name: "Event name",
+      event_scope_details: "Scope details",
+      event_setup_required: "Setup required",
+      event_setup_hours: "Setup hours",
+      event_setup_instructions: "Setup instructions",
+      event_teardown_required: "Teardown required",
+      event_same_day: "Same-day return",
+      event_return_leg: "Return leg",
+      event_return_date: "Return date",
+      event_additional_services: "Additional services",
+      event_multi: "Multi-event flag",
+      event_luxury: "Service level",
+      event_complex_setup_required: "Complex staging setup",
+      event_truck_type: "Truck type",
+      event_truck_count: "Truck count",
+      event_pallets: "Pallets",
+      event_pallet_jack: "Pallet jack",
+      event_liftgate: "Liftgate",
+      event_dollies: "Dollies",
+      event_arrival_window: "Arrival window",
+      event_hard_cutoff: "Hard cutoff",
+      event_after_hours: "After-hours premium",
+      event_is_b2b: "Corporate billing",
+      event_b2b_invoice_terms: "Invoice terms",
+    };
+    for (const [k, v] of Object.entries(body.event_scope)) {
+      const stored = factors[k];
+      const changed = Array.isArray(v)
+        ? !Array.isArray(stored) ||
+          (v as unknown[]).length !== (stored as unknown[]).length ||
+          (v as unknown[]).some((x, i) => x !== (stored as unknown[])[i])
+        : (v ?? null) !== (stored ?? null);
+      if (!changed) continue;
+      factors[k] = v ?? null;
+      factorsChanged = true;
+      const label = HUMAN[k] ?? k;
+      changes.push(`${label} updated`);
+    }
   }
 
   if (factorsChanged) patch.factors_applied = factors;

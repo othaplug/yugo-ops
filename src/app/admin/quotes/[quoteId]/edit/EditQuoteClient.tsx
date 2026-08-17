@@ -30,6 +30,9 @@ import TierPriceOverrideEditor, {
 import EditSection from "./EditSection";
 import EditQuoteLivePreview from "./EditQuoteLivePreview";
 import EditQuoteHeader from "./EditQuoteHeader";
+import EventScopeSection, {
+  type EventScopePatch,
+} from "./EventScopeSection";
 import EditQuoteCurrentSummary from "./EditQuoteCurrentSummary";
 import EditQuoteResultPanel from "./EditQuoteResultPanel";
 import EditQuoteReasonField from "./EditQuoteReasonField";
@@ -599,6 +602,15 @@ export default function EditQuoteClient({
         ? (factors.instructions as string)
         : "",
   );
+
+  // ── Event scope patch (event service only) ───────────────
+  // EventScopeSection owns the field state internally and pushes a
+  // flat patch up here on every change. We hold it in a ref-like
+  // state so the dirty-check + save flow can include it in the
+  // details POST body. On non-event quotes the section never mounts
+  // and this stays null.
+  const [eventScopePatch, setEventScopePatch] =
+    useState<EventScopePatch | null>(null);
 
   // ── Office move fields ────────────────────────────────────
   const [squareFootage, setSquareFootage] = useState(
@@ -1788,6 +1800,36 @@ export default function EditQuoteClient({
     coordinatorName,
     notesText,
   ]);
+
+  // Compare current event scope patch vs stored factors_applied. When
+  // ANY event field differs, we ship the whole patch so the API can
+  // merge it wholesale (simpler than per-field diffing across 20+
+  // keys). Non-event quotes always return null.
+  const eventScopeChangedKeys = useMemo(() => {
+    if (serviceType !== "event" || !eventScopePatch) return [] as string[];
+    const changed: string[] = [];
+    const eq = (a: unknown, b: unknown) => {
+      if (Array.isArray(a) && Array.isArray(b)) {
+        if (a.length !== b.length) return false;
+        return a.every((v, i) => v === b[i]);
+      }
+      if (a == null && b == null) return true;
+      return a === b;
+    };
+    for (const [k, v] of Object.entries(eventScopePatch)) {
+      const stored = (factors as Record<string, unknown>)[k];
+      // Treat null == undefined == "" for scalar comparison.
+      const norm = (x: unknown) =>
+        x === null || x === undefined || x === "" ? null : x;
+      if (Array.isArray(v)) {
+        if (!eq(v, stored as unknown[])) changed.push(k);
+      } else if (norm(v) !== norm(stored)) {
+        changed.push(k);
+      }
+    }
+    return changed;
+  }, [serviceType, eventScopePatch, factors]);
+  const hasEventScopeChanges = eventScopeChangedKeys.length > 0;
   const hasDetailChanges = Object.keys(detailPatch).length > 0;
 
   // The "Direct price override" on this metadata-only save path (event quotes)
@@ -1802,11 +1844,12 @@ export default function EditQuoteClient({
     Number.isFinite(overrideAmountNum) &&
     overrideAmountNum > 0 &&
     String(Math.round(overrideAmountNum)) !== storedOverrideStr;
-  const hasSavableDetailChanges = hasDetailChanges || overrideChanged;
+  const hasSavableDetailChanges =
+    hasDetailChanges || overrideChanged || hasEventScopeChanges;
 
   const handleSaveDetails = useCallback(
     async (resend: boolean) => {
-      if (!hasDetailChanges && !overrideChanged) return;
+      if (!hasDetailChanges && !overrideChanged && !hasEventScopeChanges) return;
       setError(null);
       if (
         overrideChanged &&
@@ -1839,6 +1882,16 @@ export default function EditQuoteClient({
               override_reason: overrideChanged
                 ? quotePreTaxOverrideReason.trim()
                 : undefined,
+              // Ship the event scope patch when any event field
+              // changed. Server merges it into factors_applied and
+              // narrates the changed keys into changesSummary.
+              event_scope:
+                hasEventScopeChanges && eventScopePatch
+                  ? eventScopePatch
+                  : undefined,
+              event_scope_changed_keys: hasEventScopeChanges
+                ? eventScopeChangedKeys
+                : undefined,
               reason: resend ? reason : undefined,
               reason_code: resend ? reasonValue || null : undefined,
               resend,
@@ -1867,6 +1920,9 @@ export default function EditQuoteClient({
     },
     [
       hasDetailChanges,
+      hasEventScopeChanges,
+      eventScopePatch,
+      eventScopeChangedKeys,
       overrideChanged,
       overrideAmountNum,
       quotePreTaxOverrideReason,
@@ -2722,6 +2778,37 @@ export default function EditQuoteClient({
             </p>
           </div>
         </EditSection>
+
+        {/* ── Event scope (event service only) ──
+            Full parity with the create form's event scope: name,
+            setup/teardown, additional services, fleet config,
+            scheduling window, luxury flags. Save (or Save & resend)
+            merges the whole patch into factors_applied through the
+            details endpoint — no re-pricing (events are custom-priced
+            and priced outside the engine). The client update email's
+            changesSummary narrates the changed keys. */}
+        {serviceType === "event" && (
+          <EditSection
+            eyebrow="Event"
+            title="Event scope"
+            summary={
+              hasEventScopeChanges
+                ? `${eventScopeChangedKeys.length} field${
+                    eventScopeChangedKeys.length === 1 ? "" : "s"
+                  } edited — open to review`
+                : "Setup, teardown, additional services, fleet, scheduling"
+            }
+            defaultOpen={hasEventScopeChanges}
+            hasChanges={hasEventScopeChanges}
+          >
+            <EventScopeSection
+              factors={factors as Record<string, unknown>}
+              onPatch={setEventScopePatch}
+              inputClass={inputClass}
+              labelClass={labelClass}
+            />
+          </EditSection>
+        )}
 
         {/* ── Notes / special instructions (all services) ──
             Was missing on the edit page entirely. Free-text field the
