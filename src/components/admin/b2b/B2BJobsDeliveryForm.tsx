@@ -358,6 +358,8 @@ export type B2BJobsInitialData = Partial<B2BJobsEmbedSnapshot> & {
   stagedDelivery?: boolean;
   chainOfCustodyNotes?: string;
   hookupNotes?: string;
+  routeMode?: "single" | "multi";
+  multiStops?: MultiStopDraftStop[];
 };
 
 export type B2BJobsDeliveryFormProps = {
@@ -621,9 +623,14 @@ export default function B2BJobsDeliveryForm({
     lastVerticalForItemsRef.current = verticalCode;
   }, [verticalCode]);
 
-  const [routeMode, setRouteMode] = useState<"single" | "multi">("single");
-  const [multiStops, setMultiStops] =
-    useState<MultiStopDraftStop[]>(defaultMultiStopRoute);
+  const [routeMode, setRouteMode] = useState<"single" | "multi">(
+    init?.routeMode ?? "single",
+  );
+  const [multiStops, setMultiStops] = useState<MultiStopDraftStop[]>(() =>
+    init?.multiStops && init.multiStops.length > 0
+      ? init.multiStops
+      : defaultMultiStopRoute(),
+  );
   const [projectName, setProjectName] = useState(init?.projectName ?? "");
   const [endClientName, setEndClientName] = useState(init?.endClientName ?? "");
   const [endClientPhone, setEndClientPhone] = useState(init?.endClientPhone ?? "");

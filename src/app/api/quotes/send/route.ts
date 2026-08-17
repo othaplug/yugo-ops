@@ -56,19 +56,24 @@ function quoteSubject(
   /** When set for single_item, replaces the default "Your Delivery Quote"
    *  prefix with the residential-aware variant ("Your Move Quote"). */
   singleItemSubjectOverride?: string | null,
+  /** When true, the quote has been revised since the client last saw it —
+   *  subject leads with "Updated:" so the coordinator's second email
+   *  doesn't look like an accidental duplicate. */
+  isRevised?: boolean,
 ): string {
   const namePart = firstName ? `${firstName}, ` : "";
+  const prefix = isRevised ? "Updated: " : "";
   if (serviceType === "event" && eventName?.trim()) {
-    return `${namePart}Your Yugo Event Quote, ${eventName.trim()} (${quoteId})`;
+    return `${prefix}${namePart}Your Yugo Event Quote, ${eventName.trim()} (${quoteId})`;
   }
   if (serviceType === "bin_rental") {
-    return `${namePart}Your Yugo Bin Rental Quote (${quoteId})`;
+    return `${prefix}${namePart}Your Yugo Bin Rental Quote (${quoteId})`;
   }
   if (serviceType === "single_item" && singleItemSubjectOverride?.trim()) {
-    return `${namePart}${singleItemSubjectOverride.trim()} ${quoteId}`;
+    return `${prefix}${namePart}${singleItemSubjectOverride.trim()} ${quoteId}`;
   }
   const subjectBase = SERVICE_SUBJECT[serviceType] ?? "Your Quote is Ready";
-  return `${namePart}${subjectBase} ${quoteId}`;
+  return `${prefix}${namePart}${subjectBase} ${quoteId}`;
 }
 
 function fmtEmailDay(dateStr: string | null | undefined): string {
@@ -246,12 +251,16 @@ export async function POST(req: NextRequest) {
       });
       singleItemSubjectOverride = copy.emailSubject;
     }
+    const isRevisedForEmail = Boolean(
+      (quote as { is_revised?: boolean | null }).is_revised,
+    );
     const subject = quoteSubject(
       firstName,
       quoteId,
       serviceType,
       eventNameForSubject,
       singleItemSubjectOverride,
+      isRevisedForEmail,
     );
     const platformCompanyName = await getCompanyDisplayName();
 
@@ -368,6 +377,12 @@ export async function POST(req: NextRequest) {
         quoteId,
         quoteUrl,
         serviceType,
+        // Templates can conditionally render "This is a revised version
+        // of your quote" copy when isRevised is true (populated from the
+        // quotes.is_revised flag stamped by the generate route's isUpdate
+        // branch). Existing templates ignore fields they don't reference,
+        // so this is safe to pass unconditionally.
+        isRevised: isRevisedForEmail,
         expiresAt: quote.expires_at ?? null,
         fromAddress: quote.from_address,
         toAddress: quote.to_address,

@@ -112,6 +112,11 @@ import B2BJobsDeliveryForm, {
   type B2BJobsInitialData,
 } from "@/components/admin/b2b/B2BJobsDeliveryForm";
 import {
+  createEmptyPickupStop,
+  createFinalDeliveryStop,
+  type MultiStopDraftStop,
+} from "@/components/admin/b2b/b2b-multi-stop-types";
+import {
   calculateBinRentalPrice,
   BIN_RENTAL_BUNDLE_SPECS,
   haversineKmBin,
@@ -3509,13 +3514,54 @@ export default function QuoteFormClient({
           `/api/admin/quotes/copy-prefill?quote_id=${encodeURIComponent(resumeDraftParam)}`,
         );
         if (!res.ok) return;
-        const data = (await res.json()) as { quote?: Record<string, unknown> };
+        const data = (await res.json()) as {
+          quote?: Record<string, unknown>;
+          scenarios?: unknown[];
+        };
         const Q = data.quote;
         if (!Q) return;
 
         // Mark this as an in-place save so generate updates the draft
         // row instead of creating a new YG-####.
         setQuoteId(String(Q.quote_id ?? resumeDraftParam));
+
+        // Multi-scenario quotes: restore the scenarios array + flag so
+        // A/B pricing options load populated. Falls back silently if the
+        // quote isn't multi-scenario.
+        if (
+          (Q as { is_multi_scenario?: boolean }).is_multi_scenario === true &&
+          Array.isArray(data.scenarios) &&
+          data.scenarios.length >= 2
+        ) {
+          setIsMultiScenario(true);
+          const rows: ScenarioInput[] = data.scenarios
+            .filter(
+              (s): s is Record<string, unknown> =>
+                s !== null && typeof s === "object",
+            )
+            .map((s, i) => ({
+              label:
+                typeof s.label === "string" && s.label.trim()
+                  ? s.label.trim()
+                  : `Option ${i + 1}`,
+              description:
+                typeof s.description === "string" ? s.description : "",
+              scenario_date:
+                typeof s.scenario_date === "string"
+                  ? s.scenario_date.slice(0, 10)
+                  : "",
+              scenario_time:
+                typeof s.scenario_time === "string" ? s.scenario_time : "",
+              price:
+                typeof s.price === "number"
+                  ? String(s.price)
+                  : typeof s.price === "string"
+                    ? s.price
+                    : "",
+              is_recommended: !!s.is_recommended,
+            }));
+          if (rows.length >= 2) setScenarios(rows);
+        }
 
         // Reuse the same field-by-field restoration as copy_quote for
         // service type / contact / addresses / move date / access. The
@@ -4086,8 +4132,47 @@ export default function QuoteFormClient({
               : fa.b2b_invoice_terms === "net_30"
                 ? "net_30"
                 : "on_completion";
+          // Reconstruct minimal multi-stop route so a multi-stop B2B
+          // quote loads in "multi" mode with addresses in place. Full
+          // per-stop details (contacts, readiness) fall back to defaults
+          // — persisted b2b_stops carries only address/type/access.
+          let initRouteMode: "single" | "multi" = "single";
+          let initMultiStops: MultiStopDraftStop[] | undefined;
+          const rawStops = fa.b2b_stops;
+          if (Array.isArray(rawStops) && rawStops.length >= 2) {
+            const built: MultiStopDraftStop[] = rawStops
+              .filter(
+                (s): s is { address?: unknown; type?: unknown; access?: unknown } =>
+                  s !== null && typeof s === "object",
+              )
+              .map((s, idx) => {
+                const addr = typeof s.address === "string" ? s.address : "";
+                const stopType =
+                  typeof s.type === "string" && s.type.toLowerCase() === "pickup"
+                    ? "pickup"
+                    : "delivery";
+                const base =
+                  stopType === "pickup"
+                    ? createEmptyPickupStop()
+                    : createFinalDeliveryStop();
+                return {
+                  ...base,
+                  address: addr,
+                  accessType:
+                    typeof s.access === "string" && s.access ? s.access : base.accessType,
+                  isFinalDestination: idx === rawStops.length - 1,
+                };
+              });
+            if (built.length >= 2) {
+              initRouteMode = "multi";
+              initMultiStops = built;
+            }
+          }
+
           const b2bInit: B2BJobsInitialData = {
             businessName: cStr(fa.b2b_retailer_source) || cStr(fa.b2b_business_name),
+            routeMode: initRouteMode,
+            multiStops: initMultiStops,
             verticalCode: cStr(fa.b2b_vertical_code),
             partnerOrgId: cStr(fa.b2b_partner_org_id),
             handlingType: cStr(fa.b2b_handling_type) || "threshold",

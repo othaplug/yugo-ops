@@ -42,5 +42,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Quote not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ quote });
+  // Multi-scenario quotes live in a sibling table. Pull them in the same
+  // request so the edit form can rehydrate the scenarios array — the
+  // "quote_scenarios" join is only meaningful when quotes.is_multi_scenario
+  // is true, but reading it unconditionally is cheap and keeps the payload
+  // shape stable for the client.
+  let scenarios: unknown[] = [];
+  if ((quote as { id?: string }).id) {
+    const { data: scnRows } = await admin
+      .from("quote_scenarios")
+      .select("*")
+      .eq("quote_id", (quote as { id: string }).id)
+      .order("sort_order", { ascending: true });
+    scenarios = scnRows ?? [];
+  }
+
+  return NextResponse.json({ quote, scenarios });
 }

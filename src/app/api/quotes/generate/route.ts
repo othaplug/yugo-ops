@@ -7085,21 +7085,50 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         }
       }
 
-      // Propagate est_hours change to any linked move so the move page always
-      // displays the same duration as the quote page.
+      // Propagate quote edits to any linked move so the move page /
+      // dispatch board / crew calendar stay in step. Without this, an
+      // operator editing an accepted quote's address, date, or service
+      // type left the linked move stuck on the old values — driver
+      // showed up at the wrong address, calendar had the wrong day.
+      // Only touched when the move is still in an editable status.
       const newEstHours = quotePayload.est_hours as number | null;
-      if (newEstHours != null && Number.isFinite(newEstHours) && newEstHours > 0) {
-        const { data: qRow } = await sb.from("quotes").select("id").eq("quote_id", quoteId).maybeSingle();
-        if (qRow?.id) {
-          const newMins = Math.round(newEstHours * 60);
-          await sb
-            .from("moves")
-            .update({
-              est_hours: newEstHours,
-              estimated_duration_minutes: newMins,
-            })
-            .eq("quote_id", qRow.id)
-            .in("status", ["pending", "pending_approval", "confirmed"]);
+      const newFromAddr = (quotePayload as { from_address?: string | null }).from_address ?? null;
+      const newToAddr = (quotePayload as { to_address?: string | null }).to_address ?? null;
+      const newMoveDate = (quotePayload as { move_date?: string | null }).move_date ?? null;
+      const newSvcType = (quotePayload as { service_type?: string | null }).service_type ?? null;
+      const { data: qRow } = await sb.from("quotes").select("id").eq("quote_id", quoteId).maybeSingle();
+      if (qRow?.id) {
+        const { data: linkedMoves } = await sb
+          .from("moves")
+          .select("id, scheduled_date")
+          .eq("quote_id", qRow.id)
+          .in("status", ["pending", "pending_approval", "confirmed"]);
+        if (linkedMoves && linkedMoves.length > 0) {
+          const patch: Record<string, unknown> = {};
+          if (newEstHours != null && Number.isFinite(newEstHours) && newEstHours > 0) {
+            patch.est_hours = newEstHours;
+            patch.estimated_duration_minutes = Math.round(newEstHours * 60);
+          }
+          if (newFromAddr) patch.from_address = newFromAddr;
+          if (newToAddr) patch.to_address = newToAddr;
+          if (newMoveDate) patch.scheduled_date = newMoveDate;
+          if (newSvcType) patch.service_type = newSvcType;
+          if (Object.keys(patch).length > 0) {
+            await sb.from("moves").update(patch).eq("quote_id", qRow.id).in("status", ["pending", "pending_approval", "confirmed"]);
+          }
+          // If move_date shifted on any linked move, re-sync its GCal
+          // event so the crew calendar reflects the new day. Fire-and-
+          // forget so the API response ships fast.
+          if (newMoveDate) {
+            const { triggerMoveGCalSync } = await import(
+              "@/lib/google-calendar/sync-utils"
+            );
+            for (const mv of linkedMoves) {
+              if (mv.scheduled_date !== newMoveDate) {
+                triggerMoveGCalSync(mv.id as string);
+              }
+            }
+          }
         }
       }
     } else {
