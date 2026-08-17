@@ -3378,6 +3378,13 @@ export default function QuoteFormClient({
 
   const copyQuoteParam = searchParams.get("copy_quote")?.trim() || "";
   const copyQuotePrefillDone = useRef(false);
+  // Armed by the prefill useEffects right before they call setServiceType,
+  // consumed by the serviceType-change reset useEffect on the next commit.
+  // Without this, the reset effect would fire when prefill flips serviceType
+  // from the default ("local_move") to whatever the source quote had, and
+  // wipe every field the prefill just wrote (event_name, event_scope_details,
+  // event_pre_tax_override + reason, event_crew_override, etc.).
+  const prefillJustSetServiceTypeRef = useRef(false);
   // Unified quote-edit entry point. Two query params accepted:
   //   ?resume_draft=YG-XXXX  — legacy alias, drafts only (kept for back-compat
   //                            with anyone who bookmarked the URL)
@@ -3414,6 +3421,7 @@ export default function QuoteFormClient({
         const nextService =
           st === "b2b_oneoff" || st === "b2b_delivery" ? "b2b_delivery" : st;
         if (nextService && isDefinedQuoteServiceType(nextService)) {
+          prefillJustSetServiceTypeRef.current = true;
           setServiceType(nextService);
         }
         const contacts = Q.contacts as
@@ -3512,6 +3520,7 @@ export default function QuoteFormClient({
         const nextService =
           st === "b2b_oneoff" || st === "b2b_delivery" ? "b2b_delivery" : st;
         if (nextService && isDefinedQuoteServiceType(nextService)) {
+          prefillJustSetServiceTypeRef.current = true;
           setServiceType(nextService);
         }
         const contacts = Q.contacts as
@@ -4824,15 +4833,14 @@ export default function QuoteFormClient({
       return;
     }
     if (prevServiceTypeRef.current === serviceType) return;
-    // The initial state carries an empty serviceType; when copy_quote /
-    // resume_draft / edit_quote prefill runs it flips serviceType from
-    // "" -> "event" (or whatever the source quote had). That first
-    // real assignment is NOT a coordinator changing services — it's
-    // the prefill landing — so treat the "" -> X transition like the
-    // initial mount: update the ref, don't blow away every field the
-    // prefill just wrote. A real service switch always originates from
-    // a non-empty previous value.
-    if (!prevServiceTypeRef.current) {
+    // When copy_quote / resume_draft / edit_quote prefill flips serviceType
+    // from the default to whatever the source quote had (e.g. "event"),
+    // that flip is NOT a coordinator changing services — it's the prefill
+    // landing — so absorb it without wiping every field the prefill just
+    // wrote. The ref below is armed by the prefill effect right before it
+    // sets serviceType and consumed here on the next commit.
+    if (prefillJustSetServiceTypeRef.current) {
+      prefillJustSetServiceTypeRef.current = false;
       prevServiceTypeRef.current = serviceType;
       return;
     }
