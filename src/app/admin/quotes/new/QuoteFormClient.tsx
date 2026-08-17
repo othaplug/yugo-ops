@@ -3838,6 +3838,343 @@ export default function QuoteFormClient({
           }
           const evOvReason = cStr(fa.event_pre_tax_override_reason);
           if (evOvReason) setEventOverrideReason(evOvReason);
+
+          // Event items list (single-event mode). Persisted as event_items
+          // JSON in factors_applied when the coordinator built a scoped list
+          // instead of relying on ballpark scope details.
+          const evItemsRaw =
+            (fa.event_items as unknown) ||
+            (Q as { event_items?: unknown }).event_items;
+          if (Array.isArray(evItemsRaw) && evItemsRaw.length > 0) {
+            const rows: EventItemFormRow[] = evItemsRaw
+              .filter(
+                (x): x is Record<string, unknown> =>
+                  x !== null && typeof x === "object",
+              )
+              .map((x) => ({
+                name: String(x.name ?? x.description ?? ""),
+                quantity: Math.max(1, Math.floor(Number(x.quantity ?? 1))) || 1,
+                weight_category: String(x.weight_category ?? "standard"),
+                actual_weight_lbs:
+                  typeof x.actual_weight_lbs === "number"
+                    ? x.actual_weight_lbs
+                    : undefined,
+                item_type: String(x.item_type ?? "custom"),
+                requires_wrapping: !!x.requires_wrapping,
+                requires_protection: !!x.requires_protection,
+                notes: String(x.notes ?? ""),
+              }))
+              .filter((r) => r.name);
+            if (rows.length > 0) setEventItems(rows);
+          }
+
+          // Same-location on-site flag (single event) + return rate config.
+          if (fa.event_same_location_onsite === true) {
+            setEventSameLocationSingle(true);
+          }
+          const returnPresetRaw = cStr(fa.event_return_rate_preset);
+          if (
+            (
+              ["auto", "60", "65", "80", "85", "100", "custom"] as const
+            ).includes(returnPresetRaw as never)
+          ) {
+            setEventReturnRateSingle(
+              returnPresetRaw as Parameters<typeof setEventReturnRateSingle>[0],
+            );
+          }
+          const returnCustom = faNum("event_return_rate_custom");
+          if (returnCustom != null && returnCustom >= 0) {
+            setEventReturnRateCustomSingle(String(returnCustom));
+          }
+
+          // Multi-event legs restoration. When event_mode === "multi" the
+          // engine stores each leg under event_legs; restore verbatim so
+          // the coordinator picks up the tour where they left off.
+          const legsRaw = fa.event_legs as unknown;
+          if (fa.event_mode === "multi" && Array.isArray(legsRaw) && legsRaw.length > 0) {
+            const legs: EventLegForm[] = legsRaw
+              .filter(
+                (x): x is Record<string, unknown> =>
+                  x !== null && typeof x === "object",
+              )
+              .map((x, idx) => ({
+                label: String(x.label ?? `Leg ${idx + 1}`),
+                from_address: String(x.from_address ?? ""),
+                to_address: String(x.to_address ?? ""),
+                from_access: String(x.from_access ?? "curb"),
+                to_access: String(x.to_access ?? "curb"),
+                move_date: String(x.move_date ?? "").slice(0, 10),
+                event_return_date: String(x.event_return_date ?? "").slice(0, 10),
+                event_same_day: !!x.event_same_day,
+                event_same_location_onsite: !!x.event_same_location_onsite,
+                event_leg_truck_type: String(x.event_leg_truck_type ?? "sprinter"),
+                event_leg_truck_count: Math.max(
+                  1,
+                  Math.floor(Number(x.event_leg_truck_count ?? 1)) || 1,
+                ),
+                event_leg_arrival_window: String(x.event_leg_arrival_window ?? ""),
+                event_leg_hard_cutoff: String(x.event_leg_hard_cutoff ?? ""),
+                event_leg_after_hours: !!x.event_leg_after_hours,
+                event_return_rate_preset: [
+                  "auto",
+                  "60",
+                  "65",
+                  "80",
+                  "85",
+                  "100",
+                  "custom",
+                ].includes(String(x.event_return_rate_preset ?? ""))
+                  ? (String(x.event_return_rate_preset) as EventLegForm["event_return_rate_preset"])
+                  : "auto",
+                event_return_rate_custom: String(x.event_return_rate_custom ?? ""),
+              }));
+            if (legs.length > 0) setEventLegs(legs);
+          }
+        }
+
+        // Labour-only restoration. Landed in factors_applied by the labour
+        // engine (crew_size, hours, complexity, weight_class, job_category,
+        // labour_only_weekend_applied, labour_only_after_hours_applied,
+        // visits, visit2_date, labour_description, labour_storage_*).
+        if (nextService === "labour_only") {
+          const crew = faNum("crew_size");
+          if (crew != null && crew >= 1) setLabourCrewSize(Math.round(crew));
+          const hrs = faNum("hours");
+          if (hrs != null && hrs > 0) setLabourHours(hrs);
+          const desc = cStr(fa.labour_description);
+          if (desc) setLabourDescription(desc);
+          const cx = cStr(fa.complexity);
+          if (cx === "standard" || cx === "moderate" || cx === "complex") {
+            setLabourComplexity(cx);
+          }
+          const wc = cStr(fa.weight_class);
+          if (wc === "standard" || wc === "heavy" || wc === "very_heavy") {
+            setLabourWeightClass(wc);
+          }
+          const jc = cStr(fa.job_category);
+          if (jc) setLabourJobCategory(jc);
+          if (fa.labour_only_weekend_applied === true) setLabourWeekend(true);
+          if (fa.labour_only_after_hours_applied === true) setLabourAfterHours(true);
+          const visits = faNum("visits");
+          if (visits != null && visits >= 1) setLabourVisits(Math.round(visits));
+          const v2 = cStr(fa.visit2_date);
+          if (v2) setLabourSecondVisitDate(v2.slice(0, 10));
+          // Truck required is inferred from truck_fee > 0.
+          const truckFee = faNum("truck_fee");
+          if (truckFee != null && truckFee > 0) setLabourTruckRequired(true);
+          if (fa.labour_storage_needed === true) {
+            setLabourStorageNeeded(true);
+            const weeks = faNum("labour_storage_weeks");
+            if (weeks != null && weeks >= 1) setLabourStorageWeeks(Math.round(weeks));
+          }
+        }
+
+        // Bin rental restoration. Fields land in factors_applied via the
+        // bin rental flow (bin_bundle_type, bin_extra_bins, bin_packing_paper,
+        // bin_material_delivery_charged, bin_delivery_notes, bin_linked_move_id,
+        // internal_notes, bin_hub_delivery_km, bin_hub_pickup_km, and
+        // bin_pickup_same_as_delivery when the coordinator set it).
+        if (nextService === "bin_rental") {
+          const bt = cStr(fa.bin_bundle_type);
+          if (
+            bt === "studio" ||
+            bt === "1br" ||
+            bt === "2br" ||
+            bt === "3br" ||
+            bt === "4br_plus" ||
+            bt === "custom"
+          ) {
+            setBinBundleType(bt);
+          }
+          const bCount = faNum("bin_count_total");
+          if (bt === "custom" && bCount != null && bCount > 0) {
+            setBinCustomCount(Math.round(bCount));
+          }
+          const bExtra = faNum("bin_extra_bins");
+          if (bExtra != null && bExtra > 0) setBinExtraBins(Math.round(bExtra));
+          if (fa.bin_packing_paper === true) setBinPackingPaper(true);
+          // Material delivery defaults true; only flip when explicitly false.
+          if (fa.bin_material_delivery_charged === false) {
+            setBinMaterialDelivery(false);
+          }
+          const bLink = cStr(fa.bin_linked_move_id);
+          if (bLink) setBinLinkedMoveId(bLink);
+          const bDelNotes = cStr(fa.bin_delivery_notes);
+          if (bDelNotes) setBinDeliveryNotes(bDelNotes);
+          const bInt = cStr(fa.internal_notes);
+          if (bInt) setBinInternalNotes(bInt);
+          // Pickup-same-as-delivery is a coordinator toggle; the flow
+          // stores it inside factors_applied when explicitly set.
+          if (fa.bin_pickup_same_as_delivery === false) {
+            setBinPickupSameAsDelivery(false);
+          }
+        }
+
+        // B2B (delivery / one-off) restoration. Vertical + line items +
+        // organization + delivery date + weight + special instructions +
+        // pre-tax override. Copy_quote covers only a subset; edit mode
+        // needs everything.
+        if (
+          nextService === "b2b_delivery" ||
+          nextService === "b2b_oneoff" ||
+          st === "b2b_delivery" ||
+          st === "b2b_oneoff"
+        ) {
+          const vc = cStr(fa.b2b_vertical_code);
+          if (vc) setB2bVerticalCode(vc);
+          const orgId = cStr(fa.b2b_partner_org_id);
+          if (orgId) setB2bPartnerOrgId(orgId);
+          const linesRaw = fa.b2b_line_items;
+          if (Array.isArray(linesRaw) && linesRaw.length > 0) {
+            const mapped: B2bLineRow[] = linesRaw
+              .filter(
+                (row): row is Record<string, unknown> =>
+                  row !== null && typeof row === "object",
+              )
+              .map((row) => ({
+                description: cStr(row.description) || "Item",
+                qty: Math.max(1, Number(row.quantity ?? row.qty) || 1),
+                fragile: Boolean(row.fragile),
+                handling_type:
+                  cStr(row.handling_type) || cStr(fa.b2b_handling_type) || undefined,
+              }));
+            if (mapped.length > 0) setB2bLines(mapped);
+          }
+          const timeBand = cStr(fa.b2b_time_band);
+          if (
+            timeBand === "morning" ||
+            timeBand === "afternoon" ||
+            timeBand === "after_hours"
+          ) {
+            setB2bTimeBand(timeBand);
+          }
+          const wCat = cStr(fa.b2b_weight_category);
+          if (wCat) setB2bWeightCategory(wCat);
+          const specialInstr = cStr(fa.b2b_special_instructions);
+          if (specialInstr) setB2bSpecialInstructions(specialInstr);
+          const bBiz = cStr(fa.b2b_retailer_source) || cStr(fa.b2b_business_name);
+          if (bBiz) setB2bBusinessName(bBiz);
+          const bOv = faNum("b2b_subtotal_override");
+          const bOvReason = cStr(fa.b2b_subtotal_override_reason);
+          if (bOv != null && bOv > 0) {
+            setB2bPriceOverrideOn(true);
+            setB2bPreTaxOverrideAmount(String(Math.round(bOv)));
+            if (bOvReason) setB2bOverrideReason(bOvReason);
+          }
+          const artCount = faNum("b2b_art_hanging_count");
+          if (artCount != null && artCount > 0) {
+            setB2bArtHangingCount(String(Math.round(artCount)));
+          }
+          const cratePieces = faNum("b2b_crating_pieces");
+          if (cratePieces != null && cratePieces > 0) {
+            setB2bCratingPieces(String(Math.round(cratePieces)));
+          }
+        }
+
+        // ── Single-item extras that live outside quote_items ──
+        if (nextService === "single_item") {
+          const cbc = Number(
+            (Q as { client_box_count?: unknown }).client_box_count ?? NaN,
+          );
+          if (Number.isFinite(cbc) && cbc >= 0) setClientBoxCount(String(cbc));
+          const specHandling = cStr(fa.single_item_special_handling);
+          if (specHandling) setSingleItemSpecialHandling(specHandling);
+        }
+
+        // ── Office extras beyond the counters ──
+        if (nextService === "office_move") {
+          const oMov = faNum("office_moving_sqft");
+          const oPartial = fa.office_partial_move === true;
+          if ((oMov != null && oMov > 0) || oPartial) {
+            setOfficeQuoteContext((prev) => ({
+              ...prev,
+              ...(oMov != null && oMov > 0 ? { movingSqft: oMov } : {}),
+              ...(oPartial ? { partialMove: true } : {}),
+            }));
+          }
+          const oInvRaw = (Q as { office_inventory?: unknown }).office_inventory
+            || fa.office_inventory;
+          if (Array.isArray(oInvRaw) && oInvRaw.length > 0) {
+            const rows = oInvRaw
+              .filter(
+                (x): x is Record<string, unknown> =>
+                  x !== null && typeof x === "object",
+              )
+              .map((x) => ({
+                slug: String(x.slug ?? ""),
+                quantity: Math.max(1, Math.floor(Number(x.quantity ?? 1))) || 1,
+              }))
+              .filter((r) => r.slug);
+            if (rows.length > 0) setOfficeInventory(rows);
+          }
+        }
+
+        // Full inventory items (residential + long-distance). Persisted as
+        // top-level inventory_items column (a JSON array of item lines).
+        if (nextService === "local_move" || nextService === "long_distance") {
+          const invRaw = (Q as { inventory_items?: unknown }).inventory_items;
+          if (Array.isArray(invRaw) && invRaw.length > 0) {
+            const rows: InventoryItemEntry[] = invRaw
+              .filter(
+                (x): x is Record<string, unknown> =>
+                  x !== null && typeof x === "object",
+              )
+              .map((x) => ({
+                slug: typeof x.slug === "string" ? x.slug : undefined,
+                name: String(x.name ?? x.item_name ?? x.display_name ?? ""),
+                quantity: Math.max(1, Math.floor(Number(x.quantity ?? 1))) || 1,
+                weight_score: Number(x.weight_score ?? 0) || 0,
+                weight_tier_code:
+                  typeof x.weight_tier_code === "string"
+                    ? x.weight_tier_code
+                    : undefined,
+                actual_weight_lbs:
+                  typeof x.actual_weight_lbs === "number"
+                    ? x.actual_weight_lbs
+                    : undefined,
+                weightNote:
+                  typeof x.weightNote === "string" ? x.weightNote : undefined,
+                room: typeof x.room === "string" ? x.room : undefined,
+                isCustom: !!x.isCustom,
+                fragile: !!x.fragile,
+                origin_index:
+                  typeof x.origin_index === "number" ? x.origin_index : undefined,
+              }));
+            const filtered = rows.filter((r) => r.name);
+            if (filtered.length > 0) setInventoryItems(filtered);
+          }
+        }
+
+        // Specialty extras beyond the top-level fields
+        if (nextService === "specialty") {
+          const sDim = fa.specialty_dimensions;
+          if (sDim && typeof sDim === "object" && !Array.isArray(sDim)) {
+            const d = sDim as Record<string, unknown>;
+            const l = Number(d.length ?? d.L ?? NaN);
+            const w = Number(d.width ?? d.W ?? NaN);
+            const h = Number(d.height ?? d.H ?? NaN);
+            if (Number.isFinite(l) && l > 0) setSpecialtyDimL(String(l));
+            if (Number.isFinite(w) && w > 0) setSpecialtyDimW(String(w));
+            if (Number.isFinite(h) && h > 0) setSpecialtyDimH(String(h));
+          }
+          const sBldReqs = fa.specialty_building_requirements;
+          if (Array.isArray(sBldReqs)) {
+            setSpecialtyBuildingReqs(
+              sBldReqs.filter((s): s is string => typeof s === "string"),
+            );
+          }
+        }
+
+        // Presentation mode is a top-level column and needs to hydrate
+        // regardless of service, so the operator sees the same
+        // comparison-vs-featured layout they picked before.
+        const presMode = cStr(
+          (Q as { presentation_mode?: unknown }).presentation_mode,
+        );
+        if (presMode) {
+          setPresentationMode(
+            presMode as Parameters<typeof setPresentationMode>[0],
+          );
         }
 
         // Specialty restoration
