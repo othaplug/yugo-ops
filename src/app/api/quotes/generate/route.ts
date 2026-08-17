@@ -6966,7 +6966,14 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
           }
         : {}),
       // ── Version tracking (in-place updates only) ──────────────────────
+      // On an in-place update, PRESERVE the source quote's status. The
+      // hardcoded `status: "draft"` above is only correct on a fresh
+      // insert; overwriting it on update yanks a sent/viewed/accepted
+      // quote back into the draft pipeline lane and hides it from the
+      // coordinator's "sent" list — exactly the confusion the edit
+      // overhaul is meant to eliminate.
       ...(isUpdate && existingQuoteSnapshot ? {
+        status: String(existingQuoteSnapshot.status ?? "draft"),
         version: ((existingQuoteSnapshot.version as number) ?? 1) + 1,
         last_regenerated_at: new Date().toISOString(),
         last_regenerated_by: authUser?.id ?? null,
