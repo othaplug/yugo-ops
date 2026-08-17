@@ -2195,12 +2195,12 @@ export default function QuotePageClient({
     !isResidential &&
     !booked &&
     quote.service_type !== "bin_rental" &&
-    quote.service_type !== "labour_only" &&
     (quote.service_type === "long_distance" ||
       quote.service_type === "white_glove" ||
       quote.service_type === "event" ||
       quote.service_type === "single_item" ||
-      quote.service_type === "specialty");
+      quote.service_type === "specialty" ||
+      quote.service_type === "labour_only");
 
   const protectionCardNode = (
     <ValuationProtectionCard
@@ -2715,6 +2715,7 @@ export default function QuotePageClient({
               quote={quoteForDisplay}
               onConfirm={handleConfirm}
               confirmed={confirmed}
+              protectionSlot={protectionSlotForLayout}
             />
           ) : quote.service_type === "bin_rental" ? (
             <BinRentalLayout
@@ -2923,7 +2924,6 @@ export default function QuotePageClient({
         {!layoutOwnsProtection &&
           (residentialSectionAtLeast(3) || !isResidential) &&
           quote.service_type !== "bin_rental" &&
-          quote.service_type !== "labour_only" &&
           !booked && (
             <section ref={protectionRef} className="scroll-mt-6">
               {isResidential && currentStep >= 3 && (

@@ -20,6 +20,10 @@ interface Props {
   quote: Quote;
   onConfirm: () => void;
   confirmed: boolean;
+  /** Rendered above the Investment Summary when provided (parent passes
+   *  the ValuationProtectionCard so the client sees coverage next to the
+   *  price, matching every other service layout). */
+  protectionSlot?: React.ReactNode;
 }
 
 function fmtDate(d: string | null | undefined): string {
@@ -50,7 +54,7 @@ const JOB_CATEGORY_LABELS: Record<string, string> = {
   other:            "Labour Service",
 };
 
-export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props) {
+export default function LabourOnlyLayout({ quote, onConfirm, confirmed, protectionSlot }: Props) {
   const f = (quote.factors_applied ?? {}) as Record<string, unknown>;
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
@@ -308,6 +312,13 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
         </div>
       </div>
 
+
+      {/* Your Protection card, above the Investment Summary. Rendered when
+          the parent passes protectionSlot so the client sees coverage +
+          upgrade options next to the price on every service, including
+          labour-only. Suppressed only when the parent doesn't opt in
+          (older callers / non-standard entry points). */}
+      {protectionSlot ? <div>{protectionSlot}</div> : null}
 
       {/* Investment summary */}
       <div
