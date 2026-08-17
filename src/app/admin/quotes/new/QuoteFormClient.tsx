@@ -3857,7 +3857,7 @@ export default function QuoteFormClient({
         } else {
           const versionLabel = sourceVersion ? ` · v${sourceVersion}` : "";
           setLeadQuoteBanner(
-            `Editing ${quoteCode}${versionLabel} (current status: ${sourceStatus.toUpperCase()}). Saving creates a new revision of this quote — the client link stays the same. Use the override fields if you're adjusting price.`,
+            `Editing ${quoteCode}${versionLabel} (current status: ${sourceStatus.toUpperCase()}). Saving creates a new revision of this quote. The client link stays the same. Use the override fields if you're adjusting price.`,
           );
         }
       } catch (e) {
