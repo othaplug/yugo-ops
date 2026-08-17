@@ -55,10 +55,18 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
   const total = price + tax;
-  // Pass move_date so the 4-day full-payment rule applies (operator
-  // change 2026-06-11). Labour-only bookings 4+ days out get a $150
-  // deposit; under that, full payment is due at booking.
-  const deposit = calculateDeposit("labour_only", total, undefined, quote.move_date);
+  // Read the server-computed deposit_amount as the single source of truth.
+  // Recomputing client-side with calculateDeposit() diverged from the
+  // engine's stored value ($150 flat vs $170 = 10% floor) and produced
+  // "$170 in the CTA button, $150 in the Investment Summary" on the
+  // same page. Fall back to the client-side computation only when the
+  // stored value is missing (older rows).
+  const storedDeposit =
+    quote.deposit_amount != null ? Number(quote.deposit_amount) : null;
+  const deposit =
+    storedDeposit != null && storedDeposit > 0
+      ? storedDeposit
+      : calculateDeposit("labour_only", total, undefined, quote.move_date);
   const balance = total - deposit;
   const fullPayment = balance === 0;
 

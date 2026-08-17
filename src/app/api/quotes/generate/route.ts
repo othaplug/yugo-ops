@@ -4811,10 +4811,17 @@ async function calcLabourOnly(
   // Short-notice full-payment fires only for FUTURE dates within 4 days.
   // A past move_date (daysOut < 0) means the operator hasn't set the real
   // date yet — treat it as "no date entered" and fall through to the
-  // normal $150 labour-only deposit. Prior to this guard, a stale date
-  // yielded deposit == total (~97% of total-with-tax) on every quote.
+  // normal deposit rule. Prior to this guard, a stale date yielded
+  // deposit == total (~97% of total-with-tax) on every quote.
   const shortNoticeFullPayment = daysOut >= 0 && daysOut < 4;
-  const deposit = total < 550 || shortNoticeFullPayment ? total : 150;
+  // 10% of the tax-inclusive total with a $150 floor. Matches the
+  // client-side calculateDeposit() formula in quote-shared.ts so the
+  // Investment Summary panel and CTA button never disagree on the
+  // deposit amount. Prior to this the engine stored a flat $150 while
+  // the client CTA computed the scaled value, so a $1,695 labour quote
+  // rendered "$150 deposit" in one place and "$170 deposit" in another.
+  const scaledDeposit = Math.max(150, Math.round(total * 0.1));
+  const deposit = total < 550 || shortNoticeFullPayment ? total : scaledDeposit;
 
   // Internal ops context only — not shown on client quote.
   const labourIncludes = [
