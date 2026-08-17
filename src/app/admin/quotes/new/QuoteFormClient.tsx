@@ -3790,6 +3790,54 @@ export default function QuoteFormClient({
           if (fa.event_same_day === true) setEventSameDay(true);
           const pickupTime = cStr(fa.event_pickup_time_after);
           if (pickupTime) setEventPickupTimeAfter(pickupTime);
+
+          // Multi-event flag + additional services + return-leg opt-out.
+          if (fa.event_multi === true) setEventMulti(true);
+          if (fa.event_complex_setup_required === true) setEventComplexSetup(true);
+          if (fa.event_has_return_leg === false) setEventReturnLeg(false);
+          if (fa.event_is_b2b === true) setEventIsB2b(true);
+          const evB2bTerms = cStr(fa.event_b2b_invoice_terms);
+          if (evB2bTerms === "net_15" || evB2bTerms === "on_completion") {
+            setEventB2bInvoiceTerms(evB2bTerms);
+          }
+          const evAddSvcs = fa.event_additional_services;
+          if (Array.isArray(evAddSvcs)) {
+            setEventAdditionalServices(
+              evAddSvcs.filter((s): s is string => typeof s === "string"),
+            );
+          }
+
+          // Job Details textarea (client-facing scope on the quote).
+          // Stored on the row as event_scope_details inside factors_applied.
+          const evScopeDetails = cStr(fa.event_scope_details);
+          if (evScopeDetails) setEventScopeDetails(evScopeDetails);
+
+          // Coordinator overrides for crew size and hours. Only surface as
+          // an override when the engine flagged the coordinator set them —
+          // otherwise the engine's own numbers are the source of truth and
+          // the override input should stay blank.
+          if (fa.event_crew_coordinator_override === true) {
+            const evCrew = faNum("event_crew");
+            if (evCrew != null && evCrew >= 2) {
+              setEventCrewOverride(String(Math.round(evCrew)));
+            }
+          }
+          if (fa.event_hours_coordinator_override === true) {
+            const evHours = faNum("event_hours");
+            if (evHours != null && evHours > 0) {
+              setEventHoursOverride(String(evHours));
+            }
+          }
+
+          // Pre-tax price override + reason (event-specific). Read either
+          // from factors_applied (canonical for events) or fall back to
+          // custom_price when only the totalised price was persisted.
+          const evOv = faNum("event_pre_tax_override");
+          if (evOv != null && evOv > 0 && fa.event_pre_tax_override_applied === true) {
+            setEventPreTaxOverride(String(evOv));
+          }
+          const evOvReason = cStr(fa.event_pre_tax_override_reason);
+          if (evOvReason) setEventOverrideReason(evOvReason);
         }
 
         // Specialty restoration
@@ -3842,6 +3890,55 @@ export default function QuoteFormClient({
             setCratingRequired(true);
             setCratingItems(pieces);
           }
+        }
+
+        // ── Global price override + tier overrides (non-event services) ──
+        // Column: override_price + override_reason for the global pre-tax
+        // override; tier_price_overrides for per-tier absolute overrides.
+        // Events keep their own event_pre_tax_override in factors_applied
+        // (handled above) so skip this block for events.
+        if (nextService !== "event") {
+          const ovPrice = Number((Q as { override_price?: unknown }).override_price ?? NaN);
+          if (Number.isFinite(ovPrice) && ovPrice > 0) {
+            setQuotePreTaxOverride(String(Math.round(ovPrice)));
+          }
+          const ovReason = cStr((Q as { override_reason?: unknown }).override_reason);
+          if (ovReason) setQuotePreTaxOverrideReason(ovReason);
+
+          const tpoRaw = (Q as { tier_price_overrides?: unknown }).tier_price_overrides;
+          if (tpoRaw && typeof tpoRaw === "object" && !Array.isArray(tpoRaw)) {
+            const nextTPO: Partial<
+              Record<
+                "essential" | "signature" | "estate" | "priority",
+                { price: string; reason: string }
+              >
+            > = {};
+            for (const [tk, row] of Object.entries(tpoRaw as Record<string, unknown>)) {
+              if (!row || typeof row !== "object") continue;
+              const r = row as { price?: unknown; reason?: unknown };
+              const p = Number(r.price ?? NaN);
+              const rn = String(r.reason ?? "").trim();
+              if (!Number.isFinite(p) || p <= 0 || rn.length < 3) continue;
+              if (
+                tk === "essential" ||
+                tk === "signature" ||
+                tk === "estate" ||
+                tk === "priority"
+              ) {
+                nextTPO[tk] = { price: String(Math.round(p)), reason: rn };
+              }
+            }
+            if (Object.keys(nextTPO).length > 0) setTierPriceOverrides(nextTPO);
+          }
+        }
+
+        // Assembly override for residential / long-distance quotes.
+        // Column is a nullable boolean — null means "auto" (unset), true/
+        // false mean the coordinator explicitly set the flag.
+        if (nextService === "local_move" || nextService === "long_distance") {
+          const asmRaw = (Q as { assembly_override?: unknown }).assembly_override;
+          if (asmRaw === true) setAssemblyOverride(true);
+          else if (asmRaw === false) setAssemblyOverride(false);
         }
 
         // Banner copy adapts to the source quote's current status so the
