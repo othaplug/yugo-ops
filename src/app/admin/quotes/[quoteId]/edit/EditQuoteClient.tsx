@@ -586,6 +586,20 @@ export default function EditQuoteClient({
       : "",
   );
 
+  // ── Notes / special instructions (all services) ───────────
+  // Persisted at factors.special_instructions. Free-text — anything
+  // the coordinator wants the crew, event ops, or delivery team to
+  // know that isn't captured in structured fields. Was missing from
+  // edit entirely; operators had to email the crew separately when a
+  // detail changed.
+  const [notesText, setNotesText] = useState<string>(
+    typeof factors.special_instructions === "string"
+      ? (factors.special_instructions as string)
+      : typeof factors.instructions === "string"
+        ? (factors.instructions as string)
+        : "",
+  );
+
   // ── Office move fields ────────────────────────────────────
   const [squareFootage, setSquareFootage] = useState(
     String(factors.square_footage || oq.square_footage || ""),
@@ -1027,6 +1041,11 @@ export default function EditQuoteClient({
       from_long_carry: fromLongCarry,
       to_long_carry: toLongCarry,
       recommended_tier: recommendedTier,
+      // Coordinator + free-text notes travel through every regenerate
+      // so re-quoting doesn't drop them (they live in factors_applied,
+      // which the engine rewrites on each run).
+      coordinator_name: coordinatorName || undefined,
+      special_instructions: notesText || undefined,
     };
     // assembly_override is tri-state. Only send explicit booleans; null
     // tells the engine to auto-detect from inventory.
@@ -1382,6 +1401,7 @@ export default function EditQuoteClient({
     quotePreTaxOverride,
     quotePreTaxOverrideReason,
     coordinatorName,
+    notesText,
     // Labour-only scope inputs. Without these in the dep array the
     // fingerprint never registers changes to labour fields and the
     // Save buttons stay disabled while the operator edits them.
@@ -1731,6 +1751,12 @@ export default function EditQuoteClient({
     preferred_time: typeof oq.preferred_time === "string" ? oq.preferred_time : "",
     coordinator_name:
       typeof factors.coordinator_name === "string" ? factors.coordinator_name : "",
+    notes:
+      typeof factors.special_instructions === "string"
+        ? (factors.special_instructions as string)
+        : typeof factors.instructions === "string"
+          ? (factors.instructions as string)
+          : "",
   }));
   const detailPatch = useMemo(() => {
     const norm = (v: string) => (v ?? "").trim();
@@ -1748,6 +1774,7 @@ export default function EditQuoteClient({
       out.preferred_time = preferredTime;
     if (norm(coordinatorName) !== norm(detailBaseline.coordinator_name))
       out.coordinator_name = coordinatorName;
+    if (norm(notesText) !== norm(detailBaseline.notes)) out.notes = notesText;
     return out;
   }, [
     detailBaseline,
@@ -1759,6 +1786,7 @@ export default function EditQuoteClient({
     arrivalWindow,
     preferredTime,
     coordinatorName,
+    notesText,
   ]);
   const hasDetailChanges = Object.keys(detailPatch).length > 0;
 
@@ -2691,6 +2719,45 @@ export default function EditQuoteClient({
             <p className="text-[11px] text-[var(--tx3)] mt-1.5">
               Shown on the client tracking page and every email signature
               for this quote. Save & re-send to update the client.
+            </p>
+          </div>
+        </EditSection>
+
+        {/* ── Notes / special instructions (all services) ──
+            Was missing on the edit page entirely. Free-text field the
+            operator can use for anything that isn't captured by
+            structured fields — building quirks, elevator windows,
+            client preferences, on-site contact notes. Persisted at
+            factors_applied.special_instructions and threaded into
+            re-generate + save-details paths + the client update
+            email's change summary. */}
+        <EditSection
+          eyebrow="Notes"
+          title="Special instructions"
+          summary={
+            notesText.trim()
+              ? `${notesText.trim().slice(0, 60)}${notesText.trim().length > 60 ? "…" : ""}`
+              : "Empty — anything the crew, event ops, or coordinator should know"
+          }
+          defaultOpen={notesText.trim().length === 0}
+          hasChanges={notesText.trim() !== (detailBaseline.notes ?? "").trim()}
+        >
+          <div className="max-w-2xl">
+            <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--tx3)]">
+              Notes for the crew / operations team
+            </label>
+            <textarea
+              value={notesText}
+              onChange={(e) => setNotesText(e.target.value)}
+              placeholder="Elevator booked 12:30–1:30 PM. Freight elevator on P1. Client requests morning start."
+              rows={4}
+              className={`${inputClass} mt-1 font-normal`}
+              style={{ resize: "vertical", minHeight: 90 }}
+            />
+            <p className="text-[11px] text-[var(--tx3)] mt-1.5">
+              Included in the client update email as a "note" line when
+              you Save &amp; resend. Also carried on every regenerate so
+              the crew job page keeps it.
             </p>
           </div>
         </EditSection>

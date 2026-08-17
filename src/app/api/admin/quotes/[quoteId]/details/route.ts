@@ -94,6 +94,12 @@ export async function POST(
     reason?: string;
     reason_code?: string | null;
     resend?: boolean;
+    // Free-text operator notes for the crew / ops team. Persisted at
+    // factors.special_instructions. Accepts either key for caller
+    // convenience — the edit form ships `notes`, direct API callers
+    // may ship the canonical `special_instructions`.
+    notes?: string;
+    special_instructions?: string;
   };
   try {
     body = await req.json();
@@ -148,6 +154,31 @@ export async function POST(
     factors.coordinator_name = body.coordinator_name.trim() || null;
     factorsChanged = true;
     changes.push("Coordinator updated");
+  }
+  // Free-text notes / special instructions — available on every service
+  // type. Persisted at factors.special_instructions so the crew page,
+  // job detail, and downstream move rows see the same value regardless
+  // of service (events, bins, and residential all read the same key).
+  // Body accepts `notes` OR `special_instructions` for caller
+  // convenience; both write to the same slot.
+  const notesIncoming =
+    typeof body.notes === "string"
+      ? body.notes
+      : typeof body.special_instructions === "string"
+        ? body.special_instructions
+        : undefined;
+  if (
+    notesIncoming !== undefined &&
+    norm(notesIncoming) !== norm(factors.special_instructions)
+  ) {
+    factors.special_instructions = notesIncoming.trim() || null;
+    factorsChanged = true;
+    const trimmed = notesIncoming.trim();
+    changes.push(
+      trimmed
+        ? `Notes updated${trimmed.length <= 60 ? `: ${trimmed}` : ""}`
+        : "Notes cleared",
+    );
   }
   // The event client page reads factors.delivery_date (falling back to move_date),
   // so a date change must update it too or the client would still show the old day.
