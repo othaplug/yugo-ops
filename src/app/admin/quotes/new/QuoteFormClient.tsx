@@ -15320,7 +15320,14 @@ export default function QuoteFormClient({
             )}
 
             {/* ── Fleet allocation (after generate) ── */}
-            {quoteResult?.truck?.primary && (() => {
+            {/* Labour-only without a truck: the allocator still returns
+                a default primary (16ft) but no fleet is actually assigned.
+                Hide the block so the sidebar doesn't lie about "16ft Box
+                Truck" for a no-truck job. */}
+            {quoteResult?.truck?.primary &&
+              !(
+                serviceType === "labour_only" && !labourTruckRequired
+              ) && (() => {
               // Office moves can use multiple trucks of the SAME type
               // (e.g. 2 x 16ft for a 327-item move). The truck allocator
               // only surfaces a single "primary" + optional differently-
@@ -17342,6 +17349,37 @@ function LabourOnlyPriceDisplay({
     weightMult > 1 && labourBase > 0
       ? Math.round(labourBase * complexityMult * (weightMult - 1))
       : 0;
+  // Weekend flat surcharge (labour_only_weekend, default $100) and
+  // after-hours multiplier (labour_only_after_hours_multiplier, default
+  // 1.15). Both are already baked into the headline pre-tax price but
+  // were not itemised — the sidebar jumped from base to HST without
+  // showing the $100/15% delta, so the total didn't reconcile against
+  // the visible lines.
+  const weekendApplied = factors.labour_only_weekend_applied === true;
+  const weekendAdd = weekendApplied ? 100 : 0;
+  const afterHoursApplied = factors.labour_only_after_hours_applied === true;
+  const afterHoursMult = 1.15;
+  const afterHoursAdd =
+    afterHoursApplied && labourBase > 0
+      ? Math.round(
+          (labourBase + complexityAdd + weightAdd + weekendAdd) *
+            (afterHoursMult - 1),
+        )
+      : 0;
+  // Engine adjustments (rounding + CC processing gross-up). Whatever the
+  // headline price is beyond the sum of the itemised lines belongs here
+  // so the sidebar reconciles instead of hiding a $50 delta.
+  const linesSubtotal =
+    labourBase +
+    complexityAdd +
+    weightAdd +
+    weekendAdd +
+    afterHoursAdd +
+    truckFee +
+    accessSurcharge +
+    labourStorageFee;
+  const engineAdj = t.price - linesSubtotal;
+  const showEngineAdj = Math.abs(engineAdj) >= 5;
 
   const isV2 = useQuoteFormIsV2();
   const ink = getCreamTierInk(isV2);
@@ -17388,6 +17426,22 @@ function LabourOnlyPriceDisplay({
             </span>
           </div>
         )}
+        {weekendAdd > 0 && (
+          <div className="flex justify-between">
+            <span className={card.muted}>Weekend surcharge</span>
+            <span className={`font-medium ${card.body}`}>
+              +{fmtPrice(weekendAdd)}
+            </span>
+          </div>
+        )}
+        {afterHoursAdd > 0 && (
+          <div className="flex justify-between">
+            <span className={card.muted}>After-hours (×{afterHoursMult})</span>
+            <span className={`font-medium ${card.body}`}>
+              +{fmtPrice(afterHoursAdd)}
+            </span>
+          </div>
+        )}
         {truckFee > 0 && (
           <div className="flex justify-between">
             <span className={card.muted}>Truck</span>
@@ -17401,6 +17455,17 @@ function LabourOnlyPriceDisplay({
             <span className={card.muted}>Access surcharge</span>
             <span className={`font-medium ${card.body}`}>
               {fmtPrice(accessSurcharge)}
+            </span>
+          </div>
+        )}
+        {showEngineAdj && (
+          <div className="flex justify-between">
+            <span className={card.muted}>
+              {engineAdj > 0 ? "Rounding + processing" : "Rounding adjustment"}
+            </span>
+            <span className={`font-medium ${card.body}`}>
+              {engineAdj > 0 ? "+" : ""}
+              {fmtPrice(engineAdj)}
             </span>
           </div>
         )}

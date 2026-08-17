@@ -1065,6 +1065,12 @@ async function calculateDeposit(
   // from the move date pay the full amount up front, regardless of the
   // deposit_rules table. Operator policy: 48-hour-before-move balance
   // collection window can't be honoured if we book inside it.
+  //
+  // Guard against PAST dates (daysOut < 0). A move_date in the past means
+  // the operator hasn't set a real date yet — treat it as "no date
+  // entered" and fall through to normal deposit rules. Before this guard,
+  // a stale move_date turned every quote into full-payment-at-booking
+  // (deposit = total, ~97% of the total-with-tax).
   if (moveDate) {
     const target = new Date(`${String(moveDate).trim().slice(0, 10)}T00:00:00`);
     if (!Number.isNaN(target.getTime())) {
@@ -1073,7 +1079,7 @@ async function calculateDeposit(
       const daysOut = Math.floor(
         (target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
       );
-      if (daysOut < 4) return Math.round(amount);
+      if (daysOut >= 0 && daysOut < 4) return Math.round(amount);
     }
   }
 
@@ -4802,7 +4808,13 @@ async function calcLabourOnly(
       );
     }
   }
-  const deposit = total < 550 || daysOut < 4 ? total : 150;
+  // Short-notice full-payment fires only for FUTURE dates within 4 days.
+  // A past move_date (daysOut < 0) means the operator hasn't set the real
+  // date yet — treat it as "no date entered" and fall through to the
+  // normal $150 labour-only deposit. Prior to this guard, a stale date
+  // yielded deposit == total (~97% of total-with-tax) on every quote.
+  const shortNoticeFullPayment = daysOut >= 0 && daysOut < 4;
+  const deposit = total < 550 || shortNoticeFullPayment ? total : 150;
 
   // Internal ops context only — not shown on client quote.
   const labourIncludes = [

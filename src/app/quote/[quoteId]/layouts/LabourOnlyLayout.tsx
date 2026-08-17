@@ -102,9 +102,9 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
     "All tools and equipment",
     "Floor protection",
     "Guaranteed flat price",
-    "General Liability — $5M premises coverage",
-    "Cargo & property insurance — your belongings covered in our care",
-    "WSIB workers' compensation — every crew member covered",
+    "General Liability, $5M premises coverage",
+    "Cargo & property insurance covers your belongings in our care",
+    "WSIB workers' compensation covers every crew member",
   ];
 
   return (
@@ -118,13 +118,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
             aria-hidden
           />
           <div>
-            <span
-              className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
-              style={{ backgroundColor: `${FOREST}15`, color: FOREST }}
-            >
-              Labour Service
-            </span>
-            <h2 className="font-hero text-[26px] mt-2" style={{ color: WINE }}>
+            <h2 className="font-hero text-[26px]" style={{ color: WINE }}>
               {categoryLabel}
             </h2>
           </div>
@@ -195,8 +189,11 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
         )}
       </div>
 
-      {/* Crew + truck, hours removed (client pays for scope, not time) */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Crew tile; truck tile only rendered when the coordinator flagged
+          a truck as required. Labour-only jobs default to no-truck (crew
+          shows up in a Sprinter or brings their own), so the "No Truck"
+          tile was pure visual noise for the majority of quotes. */}
+      <div className={truckFee > 0 ? "grid grid-cols-2 gap-3" : ""}>
         <div
           className="p-4 rounded-xl text-center"
           style={{ backgroundColor: `${WINE}06`, border: `1px solid ${WINE}15` }}
@@ -212,30 +209,32 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
             Movers
           </p>
         </div>
-        <div
-          className="p-4 rounded-xl text-center"
-          style={{
-            backgroundColor: truckFee > 0 ? `${FOREST}06` : `${FOREST}03`,
-            border: `1px solid ${FOREST}15`,
-          }}
-        >
-          <Truck
-            className="w-5 h-5 mx-auto mb-1.5"
-            style={{ color: truckFee > 0 ? FOREST : `${FOREST}40` }}
-          />
-          <p
-            className="text-[11px] font-bold tabular-nums"
-            style={{ color: truckFee > 0 ? FOREST : `${FOREST}40` }}
+        {truckFee > 0 && (
+          <div
+            className="p-4 rounded-xl text-center"
+            style={{
+              backgroundColor: `${FOREST}06`,
+              border: `1px solid ${FOREST}15`,
+            }}
           >
-            {truckFee > 0 ? "Included" : "No Truck"}
-          </p>
-          <p
-            className="text-[9px] font-bold uppercase tracking-wider mt-0.5"
-            style={{ color: `${FOREST}50` }}
-          >
-            Truck
-          </p>
-        </div>
+            <Truck
+              className="w-5 h-5 mx-auto mb-1.5"
+              style={{ color: FOREST }}
+            />
+            <p
+              className="text-[11px] font-bold tabular-nums"
+              style={{ color: FOREST }}
+            >
+              Included
+            </p>
+            <p
+              className="text-[9px] font-bold uppercase tracking-wider mt-0.5"
+              style={{ color: `${FOREST}50` }}
+            >
+              Truck
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Two-visit schedule */}
