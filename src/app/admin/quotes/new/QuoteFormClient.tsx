@@ -1314,6 +1314,8 @@ export default function QuoteFormClient({
   uiVariant = "v1",
   backFallback = "/admin",
   operatorName = "",
+  prefillQuoteId,
+  editMode = false,
 }: {
   addons: Addon[];
   config: Record<string, string>;
@@ -1337,6 +1339,15 @@ export default function QuoteFormClient({
   /** Logged-in operator's display name; prefills the Coordinator field so
    *  factors.coordinator_name is never blank at generate time. */
   operatorName?: string;
+  /** When set, prefills the form from this quote id (same code path as the
+   *  ?edit_quote= URL param). Combined with editMode = true, this powers
+   *  the /admin/quotes/[quoteId]/edit route: same UI as create, all fields
+   *  hydrated from the existing quote, save updates in place. */
+  prefillQuoteId?: string;
+  /** Edit-mode chrome: banner, "Save changes" / "Save & resend" labels,
+   *  skip the "leave page" draft prompt (there is no draft to lose — the
+   *  source quote itself is the persistent state). */
+  editMode?: boolean;
 }) {
   const isV2 = uiVariant === "v2";
   const checkboxAccentClass = isV2
@@ -3379,6 +3390,7 @@ export default function QuoteFormClient({
   // source quote drives banner copy (draft = "Resuming draft" /
   // sent+ = "Editing quote · revision N").
   const resumeDraftParam = (
+    prefillQuoteId?.trim() ||
     searchParams.get("edit_quote")?.trim() ||
     searchParams.get("resume_draft")?.trim() ||
     ""
@@ -6569,7 +6581,10 @@ export default function QuoteFormClient({
       );
       quoteClearDraft();
       deleteServerDraft(quoteDraftId);
-      toast(`Quote ${id} generated`, "check");
+      toast(
+        editMode ? `Quote ${id} saved` : `Quote ${id} generated`,
+        "check",
+      );
 
       // Persist additional stops if any were added
       const extraPickups = extraFromStops
@@ -7081,7 +7096,9 @@ export default function QuoteFormClient({
   // prompt reassures rather than threatens loss. Tab close / refresh is covered
   // by useFormDraft's beforeunload.
   useUnsavedNavGuard(
-    quoteHasRealContent && !sendSuccess,
+    // In edit mode the source quote itself is the persistent state — no
+    // draft is being lost by navigating away. Only guard the create flow.
+    !editMode && quoteHasRealContent && !sendSuccess,
     "You have a quote in progress. Your draft is saved and you can resume it from where you left off. Leave this screen?",
   );
 
@@ -7313,12 +7330,14 @@ export default function QuoteFormClient({
                   : "text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx2)] mb-1.5"
               }
             >
-              Sales
+              {editMode ? "Sales · Edit quote" : "Sales"}
             </p>
             <h1
               className={isV2 ? "text-fg" : "admin-page-hero text-[var(--tx)]"}
             >
-              Generate Quote
+              {editMode
+                ? `Editing ${prefillQuoteId || quoteId || "quote"}`
+                : "Generate Quote"}
             </h1>
             <p
               className={
@@ -7327,8 +7346,19 @@ export default function QuoteFormClient({
                   : "text-[11px] text-[var(--tx2)] mt-1.5 max-w-2xl leading-relaxed"
               }
             >
-              Move through each step in order. The live preview updates as you type.
+              {editMode
+                ? "Every field is prefilled from the existing quote. Change anything, then Save changes. Use Send Update to email the client the new version."
+                : "Move through each step in order. The live preview updates as you type."}
             </p>
+            {editMode && (
+              <div
+                className="mt-3 rounded-md border-l-[3px] border-l-[#66143D] border-y-0 border-r-0 bg-[var(--card)] px-3 py-2 text-[11px] text-[var(--tx2)]"
+                role="status"
+              >
+                A new revision is stamped on save. The original client
+                email link continues to work and shows the latest version.
+              </div>
+            )}
             {(leadQuoteBanner ||
               widgetQuoteBanner ||
               leadIntelSummary) && (
@@ -13268,8 +13298,11 @@ export default function QuoteFormClient({
                 >
                   {generating ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating…
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      {editMode ? " Saving…" : " Generating…"}
                     </>
+                  ) : editMode ? (
+                    "Save changes"
                   ) : quoteId ? (
                     "Regenerate"
                   ) : (
@@ -13310,7 +13343,8 @@ export default function QuoteFormClient({
                   "Add client email"
                 ) : (
                   <>
-                    <Send className="w-3.5 h-3.5" /> SEND QUOTE
+                    <Send className="w-3.5 h-3.5" />
+                    {editMode ? " SEND UPDATE" : " SEND QUOTE"}
                   </>
                 )}
               </button>
