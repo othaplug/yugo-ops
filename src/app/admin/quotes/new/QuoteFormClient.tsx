@@ -4824,6 +4824,18 @@ export default function QuoteFormClient({
       return;
     }
     if (prevServiceTypeRef.current === serviceType) return;
+    // The initial state carries an empty serviceType; when copy_quote /
+    // resume_draft / edit_quote prefill runs it flips serviceType from
+    // "" -> "event" (or whatever the source quote had). That first
+    // real assignment is NOT a coordinator changing services — it's
+    // the prefill landing — so treat the "" -> X transition like the
+    // initial mount: update the ref, don't blow away every field the
+    // prefill just wrote. A real service switch always originates from
+    // a non-empty previous value.
+    if (!prevServiceTypeRef.current) {
+      prevServiceTypeRef.current = serviceType;
+      return;
+    }
     const previousServiceType = prevServiceTypeRef.current;
     prevServiceTypeRef.current = serviceType;
 
