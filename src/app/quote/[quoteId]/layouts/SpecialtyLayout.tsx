@@ -256,7 +256,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed, protectio
                   <Check className="w-4 h-4" /> Selected
                 </span>
               ) : (
-                `Proceed — ${fmtPrice(price + tax)}`
+                `Proceed · ${fmtPrice(price + tax)}`
               )}
             </button>
             <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>

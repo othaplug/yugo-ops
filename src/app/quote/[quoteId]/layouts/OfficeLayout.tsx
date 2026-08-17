@@ -799,7 +799,7 @@ export default function OfficeLayout({
                         <Check className="w-4 h-4" /> Selected
                       </span>
                     ) : (
-                      `Proceed — ${fmtPrice(deposit)} Deposit`
+                      `Proceed · ${fmtPrice(deposit)} Deposit`
                     )}
                   </button>
                   <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>

@@ -311,7 +311,7 @@ export default function B2BOneOffLayout({
                     >
                       {typeof row.amount === "number"
                         ? fmtPrice(row.amount)
-                        : "—"}
+                        : "-"}
                     </td>
                   </tr>
                 ))}
