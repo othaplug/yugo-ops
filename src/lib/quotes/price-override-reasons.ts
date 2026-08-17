@@ -1,11 +1,7 @@
 /**
  * Curated reasons a coordinator might override a quote's engine-computed
- * price (either per-tier or the global pre-tax total).
- *
- * Different intent from `quote-update-reasons.ts` — that one explains
- * WHY the operator is re-issuing the quote to the client. This one
- * explains WHY the price was hand-set. Both are logged and surface
- * in audit trails; they live in distinct dropdowns on the edit page.
+ * price (either per-tier or the global pre-tax total). Logged and shown
+ * in audit trails.
  */
 /**
  * Grouped so the operator can scan the list by intent (are we going

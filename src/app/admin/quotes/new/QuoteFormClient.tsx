@@ -13700,8 +13700,8 @@ export default function QuoteFormClient({
                       // premium reasons (rush, added scope) so
                       // operators writing UP fell back to "Other"
                       // every time. Now uses the same list
-                      // TierPriceOverrideEditor + EditQuoteClient
-                      // read from — one source of truth, richer
+                      // TierPriceOverrideEditor reads from — one
+                      // source of truth, richer
                       // options grouped by intent (discount vs
                       // premium vs correction). See
                       // src/lib/quotes/price-override-reasons.ts.
