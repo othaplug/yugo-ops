@@ -330,6 +330,36 @@ export type B2BJobsSubmitSuccess = {
   deliveryNumber?: string | null;
 };
 
+/**
+ * Prefill data for edit mode. The parent (QuoteFormClient in edit mode)
+ * builds this from the source quote and passes it in. Each field is
+ * optional — provide only what the source actually carried; the
+ * component uses its normal defaults for the rest.
+ */
+export type B2BJobsInitialData = Partial<B2BJobsEmbedSnapshot> & {
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  scheduledDate?: string;
+  timeWindow?: string;
+  accessNotes?: string;
+  specialInstructions?: string;
+  crewOverride?: string;
+  truckOverride?: string;
+  hoursOverride?: string;
+  paymentMethod?: "card" | "invoice";
+  invoiceTerms?: "on_completion" | "net_15" | "net_30";
+  overridePrice?: string;
+  overrideReason?: string;
+  crewId?: string;
+  projectName?: string;
+  endClientName?: string;
+  endClientPhone?: string;
+  stagedDelivery?: boolean;
+  chainOfCustodyNotes?: string;
+  hookupNotes?: string;
+};
+
 export type B2BJobsDeliveryFormProps = {
   crews?: B2BJobsCrew[];
   organizations?: B2BJobsOrg[];
@@ -338,6 +368,14 @@ export type B2BJobsDeliveryFormProps = {
   embed?: boolean;
   /** Sync dimensional state to parent (Generate Quote sidebar + submit payload). */
   onEmbedStateChange?: (state: B2BJobsEmbedSnapshot) => void;
+  /**
+   * Edit-mode prefill: source quote data fed in from the parent so
+   * every internal useState starts populated instead of at defaults.
+   * The parent also relies on this to suppress the mount-time
+   * onEmbedStateChange empty-fire that would otherwise wipe its own
+   * prefill state.
+   */
+  initialData?: B2BJobsInitialData;
   /**
    * R1 Part 2: fired after a successful delivery create or quote send.
    * Awaited before navigation. Parents use this to attach an
@@ -353,25 +391,29 @@ export default function B2BJobsDeliveryForm({
   verticals = [],
   embed = false,
   onEmbedStateChange,
+  initialData,
   onSubmitSuccess,
 }: B2BJobsDeliveryFormProps) {
   const router = useRouter();
   const embedCbRef = useRef(onEmbedStateChange);
   embedCbRef.current = onEmbedStateChange;
+  // Read initialData once at mount so re-renders don't re-seed.
+  const initRef = useRef(initialData);
+  const init = initRef.current;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [businessName, setBusinessName] = useState("");
-  const [contactName, setContactName] = useState("");
-  const [contactPhone, setContactPhone] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
+  const [businessName, setBusinessName] = useState(init?.businessName ?? "");
+  const [contactName, setContactName] = useState(init?.contactName ?? "");
+  const [contactPhone, setContactPhone] = useState(init?.contactPhone ?? "");
+  const [contactEmail, setContactEmail] = useState(init?.contactEmail ?? "");
   const contactPhoneInput = usePhoneInput(contactPhone, setContactPhone);
 
   const [applyPartnerRates, setApplyPartnerRates] = useState(true);
-  const [partnerOrgId, setPartnerOrgId] = useState("");
+  const [partnerOrgId, setPartnerOrgId] = useState(init?.partnerOrgId ?? "");
 
   const [verticalCode, setVerticalCode] = useState(
-    () => verticals[0]?.code ?? "",
+    () => init?.verticalCode ?? verticals[0]?.code ?? "",
   );
   const lastVerticalForItemsRef = useRef<string | null>(null);
   const lastVerticalForRouteModeRef = useRef<string | null>(null);
@@ -582,19 +624,23 @@ export default function B2BJobsDeliveryForm({
   const [routeMode, setRouteMode] = useState<"single" | "multi">("single");
   const [multiStops, setMultiStops] =
     useState<MultiStopDraftStop[]>(defaultMultiStopRoute);
-  const [projectName, setProjectName] = useState("");
-  const [endClientName, setEndClientName] = useState("");
-  const [endClientPhone, setEndClientPhone] = useState("");
-  const [stagedDelivery, setStagedDelivery] = useState(false);
+  const [projectName, setProjectName] = useState(init?.projectName ?? "");
+  const [endClientName, setEndClientName] = useState(init?.endClientName ?? "");
+  const [endClientPhone, setEndClientPhone] = useState(init?.endClientPhone ?? "");
+  const [stagedDelivery, setStagedDelivery] = useState(init?.stagedDelivery ?? false);
 
-  const [pickupAddress, setPickupAddress] = useState("");
-  const [extraPickupStops, setExtraPickupStops] = useState<StopEntry[]>([]);
-  const [pickupAccess, setPickupAccess] = useState("loading_dock");
-  const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [extraDeliveryStops, setExtraDeliveryStops] = useState<StopEntry[]>([]);
-  const [deliveryAccess, setDeliveryAccess] = useState("elevator");
+  const [pickupAddress, setPickupAddress] = useState(init?.pickupAddress ?? "");
+  const [extraPickupStops, setExtraPickupStops] = useState<StopEntry[]>(
+    () => (init?.extraPickupAddresses ?? []).map((address) => ({ address })),
+  );
+  const [pickupAccess, setPickupAccess] = useState(init?.pickupAccess || "loading_dock");
+  const [deliveryAddress, setDeliveryAddress] = useState(init?.deliveryAddress ?? "");
+  const [extraDeliveryStops, setExtraDeliveryStops] = useState<StopEntry[]>(
+    () => (init?.extraDeliveryAddresses ?? []).map((address) => ({ address })),
+  );
+  const [deliveryAccess, setDeliveryAccess] = useState(init?.deliveryAccess || "elevator");
 
-  const [lines, setLines] = useState<LineRow[]>([]);
+  const [lines, setLines] = useState<LineRow[]>(() => init?.lines ?? []);
   const [newDesc, setNewDesc] = useState("");
   const [newQty, setNewQty] = useState(1);
   const [newWeight, setNewWeight] = useState<string>("standard");
@@ -615,42 +661,42 @@ export default function B2BJobsDeliveryForm({
   const [vehicleOverrideOpen, setVehicleOverrideOpen] = useState(false);
   const [pricingOverrideOpen, setPricingOverrideOpen] = useState(false);
 
-  const [handlingType, setHandlingType] = useState("threshold");
-  const [scheduledDate, setScheduledDate] = useState("");
-  const [timeWindow, setTimeWindow] = useState("");
-  const [timeSensitive, setTimeSensitive] = useState(false);
-  const [accessNotes, setAccessNotes] = useState("");
-  const [specialInstructions, setSpecialInstructions] = useState("");
+  const [handlingType, setHandlingType] = useState(init?.handlingType || "threshold");
+  const [scheduledDate, setScheduledDate] = useState(init?.scheduledDate ?? "");
+  const [timeWindow, setTimeWindow] = useState(init?.timeWindow ?? "");
+  const [timeSensitive, setTimeSensitive] = useState(init?.timeSensitive ?? false);
+  const [accessNotes, setAccessNotes] = useState(init?.accessNotes ?? "");
+  const [specialInstructions, setSpecialInstructions] = useState(init?.specialInstructions ?? "");
 
-  const [crewOverride, setCrewOverride] = useState<string>("");
-  const [truckOverride, setTruckOverride] = useState<string>("");
-  const [hoursOverride, setHoursOverride] = useState<string>("");
+  const [crewOverride, setCrewOverride] = useState<string>(init?.crewOverride ?? "");
+  const [truckOverride, setTruckOverride] = useState<string>(init?.truckOverride ?? "");
+  const [hoursOverride, setHoursOverride] = useState<string>(init?.hoursOverride ?? "");
 
-  const [assemblyRequired, setAssemblyRequired] = useState(false);
-  const [debrisRemoval, setDebrisRemoval] = useState(false);
-  const [stairsFlights, setStairsFlights] = useState("");
-  const [highValue, setHighValue] = useState(false);
-  const [artwork, setArtwork] = useState(false);
-  const [antiques, setAntiques] = useState(false);
-  const [skidCount, setSkidCount] = useState("");
-  const [boxCount, setBoxCount] = useState("");
-  const [totalLoadWeightLbs, setTotalLoadWeightLbs] = useState("");
-  const [haulAwayUnits, setHaulAwayUnits] = useState("");
-  const [returnsPickup, setReturnsPickup] = useState(false);
-  const [sameDay, setSameDay] = useState(false);
-  const [chainOfCustodyNotes, setChainOfCustodyNotes] = useState("");
-  const [hookupNotes, setHookupNotes] = useState("");
+  const [assemblyRequired, setAssemblyRequired] = useState(init?.assemblyRequired ?? false);
+  const [debrisRemoval, setDebrisRemoval] = useState(init?.debrisRemoval ?? false);
+  const [stairsFlights, setStairsFlights] = useState(init?.stairsFlights ?? "");
+  const [highValue, setHighValue] = useState(init?.highValue ?? false);
+  const [artwork, setArtwork] = useState(init?.artwork ?? false);
+  const [antiques, setAntiques] = useState(init?.antiques ?? false);
+  const [skidCount, setSkidCount] = useState(init?.skidCount ?? "");
+  const [boxCount, setBoxCount] = useState(init?.boxCount ?? "");
+  const [totalLoadWeightLbs, setTotalLoadWeightLbs] = useState(init?.totalLoadWeightLbs ?? "");
+  const [haulAwayUnits, setHaulAwayUnits] = useState(init?.haulAwayUnits ?? "");
+  const [returnsPickup, setReturnsPickup] = useState(init?.returnsPickup ?? false);
+  const [sameDay, setSameDay] = useState(init?.sameDay ?? false);
+  const [chainOfCustodyNotes, setChainOfCustodyNotes] = useState(init?.chainOfCustodyNotes ?? "");
+  const [hookupNotes, setHookupNotes] = useState(init?.hookupNotes ?? "");
 
   const [paymentMethod, setPaymentMethod] = useState<"card" | "invoice">(
-    "card",
+    init?.paymentMethod ?? "card",
   );
   const [invoiceTerms, setInvoiceTerms] = useState<
     "on_completion" | "net_15" | "net_30"
-  >("on_completion");
+  >(init?.invoiceTerms ?? "on_completion");
 
-  const [overridePrice, setOverridePrice] = useState("");
-  const [overrideReason, setOverrideReason] = useState("");
-  const [crewId, setCrewId] = useState("");
+  const [overridePrice, setOverridePrice] = useState(init?.overridePrice ?? "");
+  const [overrideReason, setOverrideReason] = useState(init?.overrideReason ?? "");
+  const [crewId, setCrewId] = useState(init?.crewId ?? "");
 
   const [previewLoading, setPreviewLoading] = useState(false);
   const [clientDistanceLoading, setClientDistanceLoading] = useState(false);

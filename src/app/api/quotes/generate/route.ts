@@ -96,6 +96,8 @@ import {
   quoteNumericSuffixForHubSpot,
 } from "@/lib/quotes/quote-id";
 import { patchHubSpotDealJobNo } from "@/lib/hubspot/sync-deal-job-no";
+import { safePatchDeal } from "@/lib/hubspot/safe-deal-write";
+import { buildAllDealProperties } from "@/lib/hubspot/deal-properties-builder";
 import { getResolvedMoveIncludeTitles } from "@/lib/quotes/residential-tier-quote-display";
 import { buildOfficeTierQuote } from "@/lib/quotes/office-quote-from-input";
 import { normalizePhone } from "@/lib/phone";
@@ -7009,6 +7011,80 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       if (updateErr) {
         return NextResponse.json({ error: updateErr.message }, { status: 500 });
       }
+
+      // HubSpot deal sync on in-place update. Mirrors the sync inside
+      // /api/quotes/send so an edited quote's HubSpot deal reflects the
+      // new price, addresses, service scope, etc. Without this the deal
+      // stays frozen at the pre-edit values and the amount shown in
+      // HubSpot diverges from the quote the client actually sees.
+      const existingHsDealId =
+        (existingQuoteSnapshot?.hubspot_deal_id as string | null)?.trim() || null;
+      if (existingHsDealId && hubspotAccessToken) {
+        try {
+          const curatedPriceForHs =
+            typeof (quotePayload as { custom_price?: { price?: number } }).custom_price?.price === "number"
+              ? (quotePayload as { custom_price?: { price?: number } }).custom_price!.price!
+              : ((quotePayload as { tiers?: Record<string, { price?: number }> | null }).tiers?.essential?.price ?? null);
+          const fromAddr = (quotePayload as { from_address?: string | null }).from_address ?? null;
+          const toAddr = (quotePayload as { to_address?: string | null }).to_address ?? null;
+          const fromAcc = (quotePayload as { from_access?: string | null }).from_access ?? null;
+          const toAcc = (quotePayload as { to_access?: string | null }).to_access ?? null;
+          const svcForHs =
+            (quotePayload as { service_type?: string | null }).service_type ?? svcType;
+          const moveDateForHs =
+            (quotePayload as { move_date?: string | null }).move_date ?? null;
+          const moveSizeForHs =
+            (quotePayload as { move_size?: string | null }).move_size ?? null;
+          const recTierForHs =
+            (quotePayload as { recommended_tier?: string | null }).recommended_tier ?? null;
+          const contactFullName = String(
+            (existingQuoteSnapshot as { contact_full_name?: string })?.contact_full_name ?? "",
+          ).trim();
+          const [firstNm = "", ...restNm] = contactFullName.split(/\s+/);
+          const lastNm = restNm.join(" ");
+          const factorsOnRow =
+            ((existingQuoteSnapshot?.factors_applied as
+              | { b2b_business_name?: string; business_name?: string; b2b_retailer_source?: string }
+              | null) ?? null);
+          const businessNm =
+            factorsOnRow?.b2b_business_name ??
+            factorsOnRow?.b2b_retailer_source ??
+            factorsOnRow?.business_name ??
+            null;
+          const prefix = await getQuoteIdPrefix(sb);
+          const jobNoSuffix = quoteNumericSuffixForHubSpot(quoteId, prefix);
+          const dealProps: Record<string, string> = {
+            ...buildAllDealProperties({
+              jobId: quoteId,
+              jobNumber: jobNoSuffix ?? undefined,
+              firstName: firstNm,
+              lastName: lastNm,
+              fromAddress: fromAddr ?? undefined,
+              toAddress: toAddr ?? undefined,
+              fromAccess: fromAcc ?? undefined,
+              toAccess: toAcc ?? undefined,
+              serviceType: svcForHs ?? undefined,
+              moveDate: moveDateForHs ?? undefined,
+              moveSize: moveSizeForHs ?? undefined,
+              subtotal: typeof curatedPriceForHs === "number" ? curatedPriceForHs : null,
+              tierSelected: recTierForHs ?? undefined,
+              isPmMove: false,
+              businessName: businessNm ?? undefined,
+            }),
+          };
+          if (typeof curatedPriceForHs === "number") {
+            dealProps.amount = String(curatedPriceForHs);
+          }
+          // Fire-and-forget so the response ships fast; failures are logged
+          // but do not block the save.
+          safePatchDeal(hubspotAccessToken, existingHsDealId, dealProps).catch(
+            (e) => console.warn("[quotes/generate] HubSpot update sync:", e),
+          );
+        } catch (e) {
+          console.warn("[quotes/generate] HubSpot update sync build:", e);
+        }
+      }
+
       // Propagate est_hours change to any linked move so the move page always
       // displays the same duration as the quote page.
       const newEstHours = quotePayload.est_hours as number | null;

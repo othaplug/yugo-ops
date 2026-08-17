@@ -109,6 +109,7 @@ import type { ProjectQuoteBreakdown } from "@/lib/move-projects/residential-proj
 import type { LabourValidationResult } from "@/lib/pricing/labour-validation";
 import B2BJobsDeliveryForm, {
   type B2BJobsEmbedSnapshot,
+  type B2BJobsInitialData,
 } from "@/components/admin/b2b/B2BJobsDeliveryForm";
 import {
   calculateBinRentalPrice,
@@ -3385,6 +3386,13 @@ export default function QuoteFormClient({
   // wipe every field the prefill just wrote (event_name, event_scope_details,
   // event_pre_tax_override + reason, event_crew_override, etc.).
   const prefillJustSetServiceTypeRef = useRef(false);
+  // Edit-mode B2B prefill: built from source quote in the resume_draft
+  // effect, threaded into B2BJobsDeliveryForm as initialData so the
+  // embedded component mounts with populated line items, addresses, org,
+  // etc. instead of defaults. When the embed mounts empty (create flow)
+  // this stays null and the embed uses its own defaults.
+  const [b2bInitialData, setB2bInitialData] =
+    useState<B2BJobsInitialData | null>(null);
   // Unified quote-edit entry point. Two query params accepted:
   //   ?resume_draft=YG-XXXX  — legacy alias, drafts only (kept for back-compat
   //                            with anyone who bookmarked the URL)
@@ -4029,6 +4037,91 @@ export default function QuoteFormClient({
           st === "b2b_delivery" ||
           st === "b2b_oneoff"
         ) {
+          // Feed source quote fields into the embedded B2BJobsDeliveryForm
+          // as initialData. That component owns its own internal state, so
+          // parent-level setB2bLines et al. get overwritten on the embed's
+          // mount-time onEmbedStateChange fire; only initialData survives.
+          const evLinesRaw = fa.b2b_line_items;
+          const evLines = Array.isArray(evLinesRaw)
+            ? evLinesRaw
+                .filter(
+                  (row): row is Record<string, unknown> =>
+                    row !== null && typeof row === "object",
+                )
+                .map((row) => ({
+                  description: String(row.description ?? "Item"),
+                  quantity: Math.max(1, Number(row.quantity ?? row.qty) || 1),
+                  weight_category: String(row.weight_category ?? "standard"),
+                  actual_weight_lbs:
+                    typeof row.actual_weight_lbs === "number"
+                      ? row.actual_weight_lbs
+                      : undefined,
+                  fragile: !!row.fragile,
+                  unit_type:
+                    typeof row.unit_type === "string" ? row.unit_type : undefined,
+                  stop_assignment:
+                    typeof row.stop_assignment === "string"
+                      ? row.stop_assignment
+                      : undefined,
+                  serial_number:
+                    typeof row.serial_number === "string"
+                      ? row.serial_number
+                      : undefined,
+                  declared_value:
+                    typeof row.declared_value === "string"
+                      ? row.declared_value
+                      : undefined,
+                  crating_required: !!row.crating_required,
+                  hookup_required: !!row.hookup_required,
+                  haul_away_line: !!row.haul_away_line,
+                  line_assembly_required: !!row.line_assembly_required,
+                }))
+            : [];
+          const bOvNum = faNum("b2b_subtotal_override");
+          const initPayment =
+            fa.b2b_payment_method === "invoice" ? "invoice" : "card";
+          const initTerms =
+            fa.b2b_invoice_terms === "net_15"
+              ? "net_15"
+              : fa.b2b_invoice_terms === "net_30"
+                ? "net_30"
+                : "on_completion";
+          const b2bInit: B2BJobsInitialData = {
+            businessName: cStr(fa.b2b_retailer_source) || cStr(fa.b2b_business_name),
+            verticalCode: cStr(fa.b2b_vertical_code),
+            partnerOrgId: cStr(fa.b2b_partner_org_id),
+            handlingType: cStr(fa.b2b_handling_type) || "threshold",
+            pickupAddress: cStr(Q.from_address),
+            deliveryAddress: cStr(Q.to_address),
+            pickupAccess: cStr(Q.from_access) || "loading_dock",
+            deliveryAccess: cStr(Q.to_access) || "elevator",
+            lines: evLines,
+            scheduledDate: cStr(Q.move_date).slice(0, 10) || undefined,
+            timeSensitive: fa.b2b_time_sensitive === true,
+            assemblyRequired: fa.b2b_assembly_required === true,
+            debrisRemoval: fa.b2b_debris_removal === true,
+            stairsFlights: cStr(fa.b2b_stairs_flights),
+            highValue: fa.b2b_high_value === true,
+            artwork: fa.b2b_artwork === true,
+            antiques: fa.b2b_antiques === true,
+            skidCount: cStr(fa.b2b_skid_count),
+            boxCount: cStr(fa.b2b_box_count),
+            totalLoadWeightLbs: cStr(fa.b2b_total_load_weight_lbs),
+            haulAwayUnits: cStr(fa.b2b_haul_away_units),
+            returnsPickup: fa.b2b_returns_pickup === true,
+            sameDay: fa.b2b_same_day === true,
+            specialInstructions: cStr(fa.b2b_special_instructions),
+            accessNotes: cStr(fa.b2b_access_notes),
+            crewOverride: cStr(fa.b2b_crew_override),
+            truckOverride: cStr(fa.b2b_truck_override),
+            hoursOverride: cStr(fa.b2b_hours_override),
+            paymentMethod: initPayment,
+            invoiceTerms: initTerms,
+            overridePrice:
+              bOvNum != null && bOvNum > 0 ? String(Math.round(bOvNum)) : "",
+            overrideReason: cStr(fa.b2b_subtotal_override_reason),
+          };
+          setB2bInitialData(b2bInit);
           const vc = cStr(fa.b2b_vertical_code);
           if (vc) setB2bVerticalCode(vc);
           const orgId = cStr(fa.b2b_partner_org_id);
@@ -12807,6 +12900,7 @@ export default function QuoteFormClient({
                     verticals={deliveryVerticals}
                     organizations={b2bOrganizations}
                     crews={b2bCrews}
+                    initialData={b2bInitialData ?? undefined}
                     onEmbedStateChange={handleB2bEmbedStateChange}
                     onSubmitSuccess={async (result) => {
                       // R1 Part 2: link an inbound_shipments row to the
