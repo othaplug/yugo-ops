@@ -5664,7 +5664,16 @@ function ValuationProtectionCard({
       currentPackage === "priority" ||
       (upgradeSelected && activeTierSlug === "full_replacement");
 
-  const declThreshold = tierData?.max_per_item ?? 2500;
+  // Premium coverage (B2B / event / white-glove) has no per-item sub-cap: a
+  // client only declares a piece worth MORE than their total coverage ceiling
+  // ($30k Standard, $50k / $100k riders), not the old $2,500 per-item default
+  // that read nonsensically next to a $30k tier. Residential keeps its real
+  // per-item caps.
+  const declThreshold = wgMode
+    ? wgDefaultIncluded
+      ? WG_DEFAULT_TOTAL_COVERAGE
+      : (wgTotalCoverage ?? tierData?.max_per_shipment ?? WG_DEFAULT_TOTAL_COVERAGE)
+    : (tierData?.max_per_item ?? 2500);
 
   const calcFee = (val: number) => Math.max(val * 0.02, 50);
 
