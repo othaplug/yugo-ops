@@ -227,6 +227,22 @@ export async function POST(req: NextRequest) {
       if (puName) coordinatorName = puName;
     }
     const expiryDays = parseInt(coordConfig?.find((c) => c.key === "quote_expiry_days")?.value || "7", 10);
+    // Per-service expiry policy wins over the global default. The send route used
+    // to clobber every quote to the global 7-day value, contradicting the generate
+    // route (which honors quote_expiry_policy) and producing the "email says 30
+    // days, page says 7" split. B2B one-off maps to the b2b_delivery policy.
+    const expiryServiceType =
+      quote.service_type === "b2b_oneoff" ? "b2b_delivery" : quote.service_type;
+    let effectiveExpiryDays = expiryDays;
+    {
+      const { data: expiryPol } = await supabase
+        .from("quote_expiry_policy")
+        .select("days")
+        .eq("service_type", expiryServiceType)
+        .maybeSingle();
+      const d = Number((expiryPol as { days?: number } | null)?.days);
+      if (Number.isFinite(d) && d > 0) effectiveExpiryDays = d;
+    }
 
     const eventNameForSubject = (factors.event_name as string) ?? null;
     // For single_item, the subject prefix mirrors the residential/commercial
@@ -507,7 +523,7 @@ export async function POST(req: NextRequest) {
         status: "sent",
         sent_at: now.toISOString(),
         quote_url: quoteUrl,
-        expires_at: new Date(now.getTime() + expiryDays * 86_400_000).toISOString(),
+        expires_at: new Date(now.getTime() + effectiveExpiryDays * 86_400_000).toISOString(),
         ...(!hasToken ? { public_action_token: randomBytes(24).toString("hex") } : {}),
       })
       .eq("quote_id", quoteId);
