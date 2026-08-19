@@ -1,4 +1,11 @@
-import { MapPin, ArrowRight, Check, CaretRight } from "@phosphor-icons/react";
+import {
+  MapPin,
+  ArrowRight,
+  Check,
+  ShieldCheck,
+  Certificate,
+  User,
+} from "@phosphor-icons/react";
 import {
   type Quote,
   WINE,
@@ -10,6 +17,13 @@ import {
   fmtPrice,
 } from "../quote-shared";
 import { toTitleCase } from "@/lib/format-text";
+import { getB2BDeliveryFeatureList } from "@/lib/quotes/b2b-quote-copy";
+import {
+  B2B_COVERAGE_TIERS,
+  B2B_COI_LINE,
+  B2B_COVERAGE_HEADLINE,
+  B2B_TERMS_SHORT,
+} from "@/lib/quotes/b2b-coverage-and-terms";
 
 function friendlyFleetLine(raw: string): string {
   let s = raw.trim();
@@ -18,12 +32,29 @@ function friendlyFleetLine(raw: string): string {
   return s || raw.trim();
 }
 
+function fmtDate(v: string | null | undefined): string {
+  if (!v) return "";
+  const d = new Date(String(v).slice(0, 10) + "T00:00:00");
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-CA", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
 interface Props {
   quote: Quote;
   onConfirm: () => void;
-  /** Second action: scroll to agreement (if needed) or to payment after signing */
   onPayInFull?: () => void;
   confirmed: boolean;
+  branding: {
+    companyLegal: string;
+    brand: string;
+    email: string;
+    address: string;
+    hstNumber: string;
+  };
 }
 
 export default function B2BOneOffLayout({
@@ -31,27 +62,31 @@ export default function B2BOneOffLayout({
   onConfirm,
   onPayInFull,
   confirmed,
+  branding,
 }: Props) {
   const f = quote.factors_applied as Record<string, unknown> | null;
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
-  const specialtyTransport = f?.specialty_b2b_transport === true;
-  const payInvoice = f?.b2b_payment_method === "invoice";
-  const splitCardActions =
-    specialtyTransport && !payInvoice && typeof onPayInFull === "function";
-  const retailer =
-    typeof f?.b2b_retailer_source === "string"
-      ? f.b2b_retailer_source.trim()
-      : "";
-  const weightSurcharge =
-    typeof f?.weight_surcharge === "number" && f.weight_surcharge > 0
-      ? f.weight_surcharge
-      : 0;
-  const dimensional = f?.b2b_dimensional === true;
-  const verticalTitle =
-    typeof f?.b2b_vertical_name === "string" && f.b2b_vertical_name.trim()
-      ? f.b2b_vertical_name.trim()
-      : null;
+  const str = (k: string): string =>
+    typeof f?.[k] === "string" ? (f[k] as string).trim() : "";
+  const bool = (k: string): boolean => f?.[k] === true;
+
+  const payInvoice = f?.b2b_payment_method === "invoice"; // Net-30 partner account only
+  const businessName = str("b2b_business_name");
+  const deliverToName = (quote as { deliver_to_name?: string | null })
+    .deliver_to_name;
+  const attn = typeof deliverToName === "string" ? deliverToName.trim() : "";
+  const coordinator = str("coordinator_name");
+  const verticalName = str("b2b_vertical_name") || str("item_description");
+  const verticalCode = str("b2b_vertical_code") || null;
+  const handlingType = str("b2b_handling_type") || null;
+  const scope = str("b2b_scope"); // admin-authored, auto-drafted
+  const crewSize =
+    typeof f?.b2b_crew === "number"
+      ? (f.b2b_crew as number)
+      : typeof f?.specialty_crew_size === "number"
+        ? (f.specialty_crew_size as number)
+        : 2;
   const lineItems = Array.isArray(f?.b2b_line_items)
     ? (f.b2b_line_items as {
         description?: string;
@@ -59,284 +94,239 @@ export default function B2BOneOffLayout({
         fragile?: boolean;
       }[])
     : [];
-  const legacyItems = Array.isArray(f?.b2b_items)
-    ? (f.b2b_items as string[])
-    : [];
-  const handlingRaw =
-    typeof f?.b2b_handling_type === "string" ? f.b2b_handling_type : null;
-  const handlingLabel = handlingRaw ? handlingRaw.replace(/_/g, " ") : "";
-  const truckBreakdown =
-    typeof f?.truck_breakdown_line === "string" &&
-    f.truck_breakdown_line.trim().length > 0
-      ? f.truck_breakdown_line.trim()
-      : "";
-  const specialtyNotes =
-    typeof f?.specialty_handling_notes === "string" &&
-    f.specialty_handling_notes.trim().length > 0
-      ? f.specialty_handling_notes.trim()
-      : "";
-  const costBreakdown = Array.isArray(f?.specialty_cost_breakdown)
-    ? (f.specialty_cost_breakdown as { label?: string; amount?: number }[])
-    : [];
-  const crewN =
-    typeof f?.specialty_crew_size === "number" ? f.specialty_crew_size : null;
+  const truckBreakdown = str("truck_breakdown_line");
+  const handlingLabel = handlingType ? handlingType.replace(/_/g, " ") : "";
+
+  const includes = getB2BDeliveryFeatureList(
+    verticalCode,
+    crewSize,
+    verticalName || null,
+    handlingType,
+    {
+      assemblyRequired: bool("b2b_assembly_required"),
+      debrisRemoval: bool("b2b_debris_removal"),
+    },
+  );
+
+  const eyebrow = (extra = "") =>
+    `text-[10px] font-bold tracking-[0.14em] uppercase ${extra}`;
 
   return (
-    <section className="mb-10 space-y-6">
-      {payInvoice ? (
-        <div
-          className="rounded-2xl border-2 border-dashed p-5 space-y-3"
-          style={{ borderColor: `${FOREST}35`, backgroundColor: `${FOREST}06` }}
-        >
-          <p
-            className="text-[10px] font-bold tracking-[0.14em] uppercase"
-            style={{ color: `${FOREST}70` }}
-          >
-            PRO FORMA INVOICE
-          </p>
-          <div
-            className="flex justify-between text-[13px] font-semibold"
-            style={{ color: FOREST }}
-          >
-            <span>Delivery Service</span>
-            <span>{fmtPrice(price)}</span>
-          </div>
-          <div
-            className="flex justify-between text-[12px]"
-            style={{ color: `${FOREST}75` }}
-          >
-            <span>HST (13%)</span>
-            <span>{fmtPrice(tax)}</span>
-          </div>
-          <div
-            className="flex justify-between pt-2 border-t text-[15px] font-bold"
-            style={{ borderColor: `${FOREST}20`, color: WINE }}
-          >
-            <span>Total Due</span>
-            <span>{fmtPrice(price + tax)}</span>
-          </div>
-          <p
-            className="text-[11px] leading-snug pt-1"
-            style={{ color: `${FOREST}72` }}
-          >
-            <strong>Terms:</strong> Net 30, payment due within 30 days of
-            invoice date. No card payment on this quote. Our team will follow up
-            with a formal invoice and scheduling details after you confirm.
-          </p>
-        </div>
-      ) : null}
-
-      {/* Item & Route */}
-      <div>
-        <div className="mb-4">
-          <p
-            className="text-[var(--text-base)] font-semibold"
-            style={{ color: FOREST }}
-          >
-            {specialtyTransport
-              ? "Specialty Transport"
-              : (verticalTitle ??
-                (f?.item_description as string) ??
-                "Delivery Service")}
-          </p>
-          {specialtyTransport &&
-          typeof f?.item_description === "string" &&
-          f.item_description.trim() ? (
+    <section className="mb-10 space-y-5">
+      {/* ── Letterhead: who it is for, who it is from ── */}
+      <div
+        className="rounded-2xl border px-5 py-5 sm:px-6"
+        style={{ borderColor: `${FOREST}22`, backgroundColor: "#FFFCF9" }}
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <p className={eyebrow()} style={{ color: FOREST_MUTED }}>
+              Prepared for
+            </p>
             <p
-              className="text-[12px] mt-1 font-medium leading-snug"
-              style={{ color: `${FOREST}90` }}
+              className="font-hero text-[20px] leading-tight mt-1"
+              style={{ color: WINE }}
             >
-              {f.item_description.trim()}
+              {businessName || attn || "Your Business"}
             </p>
-          ) : null}
-          {specialtyTransport ? (
-            <span
-              className="inline-block mt-1 text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
-              style={{ backgroundColor: `${FOREST}12`, color: FOREST }}
+            {attn && businessName ? (
+              <p className="text-[12px] mt-0.5" style={{ color: FOREST_BODY }}>
+                Attention: {attn}
+              </p>
+            ) : null}
+          </div>
+          <div className="sm:text-right shrink-0">
+            <p className={eyebrow()} style={{ color: FOREST_MUTED }}>
+              Delivery quote
+            </p>
+            <p
+              className="font-hero text-[18px] mt-1"
+              style={{ color: FOREST }}
             >
-              One-off B2B
-            </span>
-          ) : f?.item_category ? (
-            <span
-              className="inline-block mt-1 text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
-              style={{ backgroundColor: `${FOREST}12`, color: FOREST }}
-            >
-              {dimensional
-                ? "COMMERCIAL DELIVERY"
-                : toTitleCase(String(f.item_category))}
-            </span>
-          ) : null}
-          {crewN != null && crewN > 0 ? (
-            <p className="text-[11px] mt-2" style={{ color: `${FOREST}75` }}>
-              <span className="font-semibold" style={{ color: FOREST }}>
-                Crew:{" "}
-              </span>
-              {crewN} people
+              {quote.quote_id}
             </p>
-          ) : null}
-          {retailer ? (
-            <p className="text-[11px] mt-2" style={{ color: `${FOREST}75` }}>
-              <span className="font-semibold" style={{ color: FOREST }}>
-                Retailer:
-              </span>{" "}
-              {retailer}
-            </p>
-          ) : null}
+            {quote.expires_at ? (
+              <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}A0` }}>
+                Valid until {fmtDate(quote.expires_at)}
+              </p>
+            ) : null}
+          </div>
         </div>
 
-        {/* Items (dimensional): receipt-style rows, qty aligned, handling as own block */}
-        {dimensional && (lineItems.length > 0 || legacyItems.length > 0) ? (
-          <div className="pt-4 border-t border-[var(--brd)]/30">
-            <div
-              className="rounded-2xl border border-[#2C3E2D]/14 bg-[#FFFCF9] px-4 py-4 sm:px-5"
-              style={{ boxShadow: "0 2px 12px rgba(44,62,45,0.06)" }}
-            >
-              <p
-                className={`${QUOTE_EYEBROW_CLASS} mb-3`}
-                style={{ color: FOREST_MUTED }}
+        <div
+          className="mt-4 pt-4 border-t flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
+          style={{ borderColor: `${FOREST}15` }}
+        >
+          <div className="text-[11px] leading-relaxed" style={{ color: `${FOREST}B0` }}>
+            <span className="font-semibold" style={{ color: FOREST }}>
+              {branding.companyLegal}
+            </span>
+            {branding.address ? <> &middot; {branding.address}</> : null}
+            {branding.hstNumber ? (
+              <>
+                <br />
+                HST {branding.hstNumber}
+              </>
+            ) : null}
+          </div>
+          {coordinator ? (
+            <div className="flex items-center gap-2.5">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                style={{ backgroundColor: `${FOREST}12` }}
               >
-                Line items
-              </p>
-              {lineItems.length > 0 ? (
-                <ul className="divide-y divide-[#2C3E2D]/10">
-                  {lineItems.map((row, i) => {
-                    const desc = String(row.description ?? "Item").trim() || "Item";
-                    const qty =
-                      row.quantity != null && Number(row.quantity) > 0
-                        ? Math.round(Number(row.quantity))
-                        : null;
-                    return (
-                      <li
-                        key={i}
-                        className="flex flex-col gap-2 py-3 first:pt-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className="text-[13px] font-medium leading-snug"
-                            style={{ color: FOREST }}
-                          >
-                            {desc}
-                          </p>
-                          {row.fragile ? (
-                            <span
-                              className="mt-1.5 inline-block text-[9px] font-bold tracking-[0.12em] uppercase"
-                              style={{ color: FOREST_MUTED }}
-                            >
-                              Fragile
-                            </span>
-                          ) : null}
-                        </div>
-                        {qty != null ? (
-                          <div className="flex shrink-0 items-baseline gap-2 sm:flex-col sm:items-end sm:gap-0 sm:text-right">
-                            <span
-                              className="text-[9px] font-bold tracking-[0.14em] uppercase"
-                              style={{ color: FOREST_MUTED }}
-                            >
-                              Qty
-                            </span>
-                            <span
-                              className="text-[13px] font-semibold tabular-nums leading-none"
-                              style={{ color: FOREST }}
-                            >
-                              {qty}
-                            </span>
-                          </div>
-                        ) : null}
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <ul className="space-y-2.5">
-                  {legacyItems.map((s, i) => (
-                    <li
-                      key={i}
-                      className="text-[13px] font-medium leading-snug"
-                      style={{ color: FOREST }}
-                    >
-                      {s}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {handlingLabel ? (
-                <div className="mt-4 border-t border-[#2C3E2D]/12 pt-4">
-                  <p
-                    className={`${QUOTE_EYEBROW_CLASS} mb-1.5`}
-                    style={{ color: FOREST_MUTED }}
-                  >
-                    Handling
-                  </p>
-                  <p
-                    className="text-[13px] font-medium leading-snug"
-                    style={{ color: FOREST_BODY }}
-                  >
-                    {toTitleCase(handlingLabel)}
-                  </p>
-                </div>
-              ) : null}
+                <User className="w-4 h-4" style={{ color: FOREST }} weight="fill" />
+              </div>
+              <div className="leading-tight">
+                <p className={eyebrow()} style={{ color: FOREST_MUTED }}>
+                  Your coordinator
+                </p>
+                <p className="text-[12.5px] font-semibold" style={{ color: FOREST }}>
+                  {coordinator}
+                  {branding.email ? (
+                    <span className="font-normal" style={{ color: `${FOREST}90` }}>
+                      {" "}
+                      &middot; {branding.email}
+                    </span>
+                  ) : null}
+                </p>
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
+      </div>
 
-        {specialtyNotes ? (
-          <div className="pt-4 border-t border-[var(--brd)]/30">
-            <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853] mb-1">
-              Special handling
+      {/* ── Scope of work ── */}
+      {(scope || verticalName) && (
+        <div
+          className="rounded-2xl px-5 py-5 sm:px-6"
+          style={{ backgroundColor: `${FOREST}06`, borderLeft: `2px solid ${FOREST}` }}
+        >
+          <p className={eyebrow("mb-2")} style={{ color: FOREST_MUTED }}>
+            Scope of work
+          </p>
+          {scope ? (
+            <p
+              className="text-[13.5px] leading-relaxed"
+              style={{ color: FOREST_BODY }}
+            >
+              {scope}
             </p>
-            <p className="text-[12px] leading-snug" style={{ color: FOREST }}>
-              {specialtyNotes}
+          ) : (
+            <p className="text-[13.5px] leading-relaxed" style={{ color: FOREST_BODY }}>
+              {verticalName}
+              {handlingLabel ? `, ${toTitleCase(handlingLabel)} handling` : ""}, delivered
+              end to end by a dedicated Yugo crew.
             </p>
-          </div>
-        ) : null}
+          )}
+        </div>
+      )}
 
-        {specialtyTransport && costBreakdown.length > 0 ? (
-          <div className="pt-4 border-t border-[var(--brd)]/30">
-            <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853] mb-2">
-              Cost build (reference)
+      {/* ── What's included ── */}
+      <div
+        className="rounded-2xl border px-5 py-5 sm:px-6"
+        style={{ borderColor: `${FOREST}18`, backgroundColor: "#FFFCF9" }}
+      >
+        <p className={eyebrow("mb-4")} style={{ color: FOREST_MUTED }}>
+          Your delivery includes
+        </p>
+        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+          {includes.map((line, i) => (
+            <li key={i} className="flex items-start gap-2.5">
+              <Check
+                className="w-4 h-4 shrink-0 mt-0.5"
+                style={{ color: FOREST }}
+                weight="bold"
+              />
+              <span className="text-[12.5px] leading-snug" style={{ color: FOREST_BODY }}>
+                {toTitleCase(line)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* ── Items, handling, route, fleet ── */}
+      <div
+        className="rounded-2xl border px-5 py-5 sm:px-6"
+        style={{ borderColor: `${FOREST}18`, backgroundColor: "#FFFCF9" }}
+      >
+        {lineItems.length > 0 ? (
+          <>
+            <p className={eyebrow("mb-3")} style={{ color: FOREST_MUTED }}>
+              Line items
             </p>
-            <table className="w-full text-[11px]">
-              <tbody>
-                {costBreakdown.map((row, i) => (
-                  <tr
+            <ul className="divide-y" style={{ borderColor: `${FOREST}10` }}>
+              {lineItems.map((row, i) => {
+                const desc = String(row.description ?? "Item").trim() || "Item";
+                const qty =
+                  row.quantity != null && Number(row.quantity) > 0
+                    ? Math.round(Number(row.quantity))
+                    : null;
+                return (
+                  <li
                     key={i}
-                    className={i > 0 ? "border-t border-[#E2DDD5]" : ""}
+                    className="flex items-start justify-between gap-4 py-2.5 first:pt-0"
+                    style={{ borderColor: `${FOREST}10` }}
                   >
-                    <td className="py-1" style={{ color: `${FOREST}80` }}>
-                      {row.label ?? "Line"}
-                    </td>
-                    <td
-                      className="py-1 text-right font-medium"
-                      style={{ color: FOREST }}
-                    >
-                      {typeof row.amount === "number"
-                        ? fmtPrice(row.amount)
-                        : "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    <div className="min-w-0">
+                      <p
+                        className="text-[13px] font-medium leading-snug"
+                        style={{ color: FOREST }}
+                      >
+                        {desc}
+                      </p>
+                      {row.fragile ? (
+                        <span
+                          className="mt-1 inline-block text-[9px] font-bold tracking-[0.12em] uppercase"
+                          style={{ color: FOREST_MUTED }}
+                        >
+                          Fragile
+                        </span>
+                      ) : null}
+                    </div>
+                    {qty != null ? (
+                      <span
+                        className="text-[13px] font-semibold tabular-nums shrink-0"
+                        style={{ color: FOREST }}
+                      >
+                        &times;{qty}
+                      </span>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        ) : null}
+
+        {handlingLabel ? (
+          <div
+            className={lineItems.length > 0 ? "mt-4 pt-4 border-t" : ""}
+            style={{ borderColor: `${FOREST}12` }}
+          >
+            <p className={eyebrow("mb-1")} style={{ color: FOREST_MUTED }}>
+              Handling
+            </p>
+            <p className="text-[13px] font-medium" style={{ color: FOREST_BODY }}>
+              {toTitleCase(handlingLabel)}
+            </p>
           </div>
         ) : null}
 
-        {/* Route */}
-        <div className="pt-4 border-t border-[var(--brd)]/30">
+        <div
+          className="mt-4 pt-4 border-t"
+          style={{ borderColor: `${FOREST}12` }}
+        >
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-start gap-2">
-                <MapPin
-                  className="w-3.5 h-3.5 shrink-0 mt-0.5"
-                  style={{ color: WINE }}
-                />
-                <div>
-                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">
-                    PICKUP
+                <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: WINE }} />
+                <div className="min-w-0">
+                  <p className={eyebrow()} style={{ color: FOREST_MUTED }}>
+                    Pickup
                   </p>
-                  <p
-                    className="text-[12px] font-medium"
-                    style={{ color: FOREST }}
-                  >
+                  <p className="text-[12px] font-medium" style={{ color: FOREST }}>
                     {quote.from_address}
                   </p>
                 </div>
@@ -345,154 +335,168 @@ export default function B2BOneOffLayout({
             <ArrowRight className="w-4 h-4 shrink-0" style={{ color: FOREST }} />
             <div className="flex-1 min-w-0 text-right">
               <div className="flex items-start gap-2 justify-end">
-                <div>
-                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">
-                    DELIVERY
+                <div className="min-w-0">
+                  <p className={eyebrow()} style={{ color: FOREST_MUTED }}>
+                    Delivery
                   </p>
-                  <p
-                    className="text-[12px] font-medium"
-                    style={{ color: FOREST }}
-                  >
+                  <p className="text-[12px] font-medium" style={{ color: FOREST }}>
                     {quote.to_address}
                   </p>
                 </div>
-                <MapPin
-                  className="w-3.5 h-3.5 shrink-0 mt-0.5"
-                  style={{ color: FOREST }}
-                />
+                <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: FOREST }} />
               </div>
             </div>
           </div>
-          {quote.distance_km != null && (
-            <p
-              className="text-[10px] text-center mt-2 font-medium"
-              style={{ color: `${FOREST}CC` }}
-            >
-              {quote.distance_km} km
-              {quote.drive_time_min
-                ? ` \u00b7 ~${quote.drive_time_min} min`
-                : ""}
-            </p>
-          )}
+          <div className="mt-2 flex items-center justify-center gap-2 text-[11px] font-medium" style={{ color: `${FOREST}B0` }}>
+            {quote.distance_km != null ? (
+              <span>
+                {quote.distance_km} km
+                {quote.drive_time_min ? ` · ~${quote.drive_time_min} min` : ""}
+              </span>
+            ) : null}
+            {truckBreakdown ? (
+              <span>
+                {quote.distance_km != null ? "· " : ""}
+                {toTitleCase(friendlyFleetLine(truckBreakdown))}
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
 
-      {/* Price + CTA */}
-      <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
-        {(weightSurcharge > 0 || truckBreakdown) && (
-          <div
-            className="text-left text-[11px] space-y-1 mb-4 pb-4 border-b"
-            style={{ borderColor: "#E2DDD5", color: `${FOREST}B8` }}
-          >
-            {weightSurcharge > 0 ? (
-              <p>
-                <span className="font-semibold" style={{ color: FOREST }}>
-                  Weight category:{" "}
-                </span>
-                +{fmtPrice(weightSurcharge)}
-              </p>
-            ) : null}
-            {truckBreakdown ? (
-              <p className="inline-flex flex-wrap items-baseline gap-x-1 gap-y-0">
-                <span
-                  className="text-[9px] font-bold tracking-[0.14em] uppercase shrink-0 leading-none"
-                  style={{ color: FOREST }}
-                >
-                  Fleet
-                </span>
-                <span
-                  className="text-[9px] font-semibold tracking-[0.12em] uppercase leading-none"
-                  style={{ color: `${FOREST}B8` }}
-                >
-                  {friendlyFleetLine(truckBreakdown).toUpperCase()}
-                </span>
-              </p>
-            ) : null}
-          </div>
-        )}
+      {/* ── Yugo Asset Protection ── */}
+      <div
+        className="rounded-2xl border px-5 py-6 sm:px-6"
+        style={{ borderColor: `${FOREST}22`, backgroundColor: `${FOREST}06` }}
+      >
+        <div className="flex items-center gap-2.5 mb-3">
+          <ShieldCheck className="w-5 h-5 shrink-0" style={{ color: FOREST }} weight="fill" />
+          <p className="font-hero text-[17px]" style={{ color: WINE }}>
+            Yugo Asset Protection
+          </p>
+        </div>
         <p
-          className="font-hero text-[36px] md:text-[42px]"
-          style={{ color: WINE }}
+          className="text-[12.5px] leading-relaxed mb-5 max-w-2xl"
+          style={{ color: FOREST_BODY }}
         >
+          {B2B_COVERAGE_HEADLINE}
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {B2B_COVERAGE_TIERS.map((t) => (
+            <div
+              key={t.key}
+              className="rounded-xl border px-4 py-4 flex flex-col"
+              style={{
+                borderColor: t.included ? FOREST : `${FOREST}20`,
+                backgroundColor: t.included ? `${FOREST}0A` : "#FFFCF9",
+              }}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[13px] font-semibold" style={{ color: FOREST }}>
+                  {t.name}
+                </p>
+                <span
+                  className="text-[9px] font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded-full whitespace-nowrap"
+                  style={{
+                    color: t.included ? "#FFFCF9" : FOREST,
+                    backgroundColor: t.included ? FOREST : `${FOREST}14`,
+                  }}
+                >
+                  {t.priceLabel}
+                </span>
+              </div>
+              <p className="text-[11px] mt-1" style={{ color: FOREST_MUTED }}>
+                {t.limitLabel} &middot; {t.deductibleLabel}
+              </p>
+              <ul className="mt-3 space-y-1.5">
+                {t.points.map((p, i) => (
+                  <li
+                    key={i}
+                    className="text-[11px] leading-snug flex gap-1.5"
+                    style={{ color: FOREST_BODY }}
+                  >
+                    <Check className="w-3 h-3 shrink-0 mt-0.5" style={{ color: FOREST }} weight="bold" />
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <div
+          className="mt-4 flex items-start gap-2.5 rounded-xl px-4 py-3"
+          style={{ backgroundColor: `${FOREST}0C` }}
+        >
+          <Certificate className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} weight="fill" />
+          <p className="text-[11.5px] leading-snug" style={{ color: FOREST_BODY }}>
+            {B2B_COI_LINE}
+          </p>
+        </div>
+      </div>
+
+      {/* ── Price + CTA ── */}
+      <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
+        <p className="font-hero text-[36px] md:text-[42px]" style={{ color: WINE }}>
           {fmtPrice(price)}
         </p>
-        <p
-          className="text-[12px] mt-1 mb-5 font-medium"
-          style={{ color: `${FOREST}C9` }}
-        >
+        <p className="text-[12px] mt-1 mb-5 font-medium" style={{ color: `${FOREST}C9` }}>
           +{fmtPrice(tax)} HST &middot; Total {fmtPrice(price + tax)}
         </p>
-        {splitCardActions && !confirmed ? (
-          <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 max-w-lg mx-auto">
-            <button
-              type="button"
-              onClick={onConfirm}
-              className="flex-1 min-h-[48px] inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-none border-2 text-[10px] font-bold tracking-[0.12em] uppercase transition-opacity hover:opacity-90"
-              style={{ borderColor: FOREST, color: FOREST, backgroundColor: "transparent" }}
-            >
-              Continue to agreement
-              <CaretRight className="w-3.5 h-3.5 shrink-0" weight="bold" aria-hidden />
-            </button>
-            <button
-              type="button"
-              onClick={onPayInFull}
-              className="flex-1 min-h-[48px] inline-flex items-center justify-center py-3 px-4 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90"
-              style={{ backgroundColor: FOREST }}
-            >
-              Pay in full ({fmtPrice(price + tax)})
-            </button>
-          </div>
-        ) : splitCardActions && confirmed ? (
-          <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 max-w-lg mx-auto">
-            <button
-              type="button"
-              disabled
-              className="flex-1 min-h-[48px] inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-none border-2 text-[10px] font-bold tracking-[0.12em] uppercase opacity-70 cursor-default"
-              style={{ borderColor: FOREST, color: FOREST, backgroundColor: "transparent" }}
-            >
-              <Check className="w-4 h-4 shrink-0" aria-hidden />
-              Scope confirmed
-            </button>
-            <button
-              type="button"
-              onClick={onPayInFull}
-              className="flex-1 min-h-[48px] inline-flex items-center justify-center py-3 px-4 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90"
-              style={{ backgroundColor: FOREST }}
-            >
-              Pay in full ({fmtPrice(price + tax)})
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={onConfirm}
-            className={`w-full max-w-xs mx-auto py-3.5 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90 ${
-              confirmed ? "opacity-80" : ""
-            }`}
-            style={{ backgroundColor: FOREST }}
-          >
-            {confirmed ? (
-              <span className="flex items-center justify-center gap-2">
-                <Check className="w-4 h-4" /> CONFIRMED
-              </span>
-            ) : payInvoice ? (
-              "CONFIRM BOOKING"
-            ) : specialtyTransport ? (
-              `CONFIRM DELIVERY (${fmtPrice(price + tax)})`
-            ) : (
-              `CONFIRM DELIVERY (${fmtPrice(price + tax)})`
-            )}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="w-full max-w-xs mx-auto py-3.5 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90"
+          style={{ backgroundColor: FOREST, opacity: confirmed ? 0.8 : 1 }}
+        >
+          {confirmed ? (
+            <span className="flex items-center justify-center gap-2">
+              <Check className="w-4 h-4" /> Confirmed
+            </span>
+          ) : payInvoice ? (
+            "Confirm booking"
+          ) : (
+            `Confirm delivery (${fmtPrice(price + tax)})`
+          )}
+        </button>
         <p
           className="text-[10px] mt-2 font-medium leading-snug max-w-md mx-auto"
           style={{ color: `${FOREST}C4` }}
         >
           {payInvoice
-            ? "Net 30 invoice. No card required. Confirm below after you sign the agreement."
-            : splitCardActions
-              ? "Continue confirms your scope, then sign. Pay in full after signing to confirm your booking."
-              : "Full payment required to confirm booking."}
+            ? "Net 30 on your approved partner account. No card required at booking."
+            : "Full payment at booking confirms your delivery."}
+        </p>
+      </div>
+
+      {/* ── Short-form commercial terms ── */}
+      <div className="px-1">
+        <p className={eyebrow("mb-3")} style={{ color: FOREST_MUTED }}>
+          Commercial terms
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+          {B2B_TERMS_SHORT.map((t, i) => (
+            <div key={i}>
+              <p className="text-[11.5px] font-semibold" style={{ color: FOREST }}>
+                {t.title}
+              </p>
+              <p className="text-[11px] leading-snug mt-0.5" style={{ color: `${FOREST}A8` }}>
+                {t.body}
+              </p>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10.5px] mt-4" style={{ color: `${FOREST}90` }}>
+          Full{" "}
+          <a
+            href="/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+            style={{ color: FOREST }}
+          >
+            Commercial Terms &amp; Conditions
+          </a>{" "}
+          govern this quote.
         </p>
       </div>
     </section>

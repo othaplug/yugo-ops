@@ -383,7 +383,13 @@ export default function QuotePageClient({
   slotsRemaining?: number;
   valuationTiers?: ValuationTier[];
   valuationUpgrades?: ValuationUpgrade[];
-  branding: { companyLegal: string; brand: string; email: string };
+  branding: {
+    companyLegal: string;
+    brand: string;
+    email: string;
+    address: string;
+    hstNumber: string;
+  };
   eventFeatures?: TierFeature[] | null;
   residentialTierFeatures: Record<string, TierFeature[]>;
   residentialTierCardAdditions?: {
@@ -2643,36 +2649,13 @@ export default function QuotePageClient({
             </>
           ) : quote.service_type === "b2b_oneoff" ||
             quote.service_type === "b2b_delivery" ? (
-            <>
-              <InclusionsShowcase
-                ref={comparisonRef}
-                selectedTier={selectedTier}
-                isResidential={isResidential}
-                residentialTierFeatures={residentialTierFeatures}
-                truckPrimary={flooredTruckPrimary}
-                truckSecondary={quote.truck_secondary}
-                crewSize={flooredCrewSize}
-                variant="logistics"
-                logisticsLeadPackage={b2bPackageLeadIcon}
-                logisticsB2bHandling={
-                  typeof (
-                    quote.factors_applied as Record<string, unknown> | null
-                  )?.b2b_handling_type === "string"
-                    ? String(
-                        (quote.factors_applied as Record<string, unknown>)
-                          .b2b_handling_type,
-                      ).trim() || null
-                    : null
-                }
-                truckPricingNote={truckBreakdownClientNote}
-              />
-              <B2BOneOffLayout
-                quote={quoteForDisplay}
-                onConfirm={handleConfirm}
-                onPayInFull={handleB2bPayInFull}
-                confirmed={confirmed}
-              />
-            </>
+            <B2BOneOffLayout
+              quote={quoteForDisplay}
+              onConfirm={handleConfirm}
+              onPayInFull={handleB2bPayInFull}
+              confirmed={confirmed}
+              branding={branding}
+            />
           ) : quote.service_type === "event" ? (
             <>
               <InclusionsShowcase
@@ -2924,6 +2907,8 @@ export default function QuotePageClient({
         {!layoutOwnsProtection &&
           (residentialSectionAtLeast(3) || !isResidential) &&
           quote.service_type !== "bin_rental" &&
+          quote.service_type !== "b2b_oneoff" &&
+          quote.service_type !== "b2b_delivery" &&
           !booked && (
             <section ref={protectionRef} className="scroll-mt-6">
               {isResidential && currentStep >= 3 && (

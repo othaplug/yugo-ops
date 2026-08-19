@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { isFeatureEnabled } from "@/lib/platform-settings";
 import { getLegalBranding } from "@/lib/legal-branding";
-import { getCompanyPhone } from "@/lib/config";
+import { getCompanyPhone, getConfig } from "@/lib/config";
 import type { TierFeature } from "./quote-shared";
 import {
   buildResidentialTierFeatureBundle,
@@ -57,7 +57,11 @@ export default async function QuotePage({
       : Array.isArray(tokenParam) && typeof tokenParam[0] === "string"
         ? tokenParam[0].trim() || null
         : null;
-  const [supportPhone, brandingEarly] = await Promise.all([getCompanyPhone(), getLegalBranding()]);
+  const [supportPhone, brandingEarly, companyHstNumber] = await Promise.all([
+    getCompanyPhone(),
+    getLegalBranding(),
+    getConfig("company_hst_number", ""),
+  ]);
   // Use admin client so the quote is found by link regardless of RLS (anon can only see sent/viewed/accepted).
   const admin = createAdminClient();
   const { data: quote, error } = await admin
@@ -321,6 +325,8 @@ export default async function QuotePage({
         companyLegal: branding.companyLegal,
         brand: branding.brand,
         email: branding.email,
+        address: branding.address,
+        hstNumber: companyHstNumber,
       }}
       eventFeatures={eventFeatures}
       residentialTierFeatures={residentialTierFeatures}
