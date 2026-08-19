@@ -389,14 +389,8 @@ function expiryNote(expiresAt: string | null | undefined): string {
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 28px;">
       <tr>
-        <td align="center" style="padding:0 8px;">
-          <table cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:400px;width:88%;margin:0 auto;" role="presentation">
-            <tr>
-              <td class="yugo-quote-expiry-bar" style="${boxStyle}">
-                <span style="${textStyle}">This quote expires on ${formatted}. Book now to secure your rate.</span>
-              </td>
-            </tr>
-          </table>
+        <td class="yugo-quote-expiry-bar" style="${boxStyle}">
+          <span style="${textStyle}">This quote expires on ${formatted}. Book now to secure your rate.</span>
         </td>
       </tr>
     </table>
