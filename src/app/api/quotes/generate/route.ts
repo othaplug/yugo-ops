@@ -368,6 +368,8 @@ interface QuoteInput {
   b2b_items?: string[];
   b2b_weight_category?: string;
   b2b_special_instructions?: string;
+  /** Client-facing scope narrative, rendered on the quote's Scope of work. */
+  b2b_scope?: string;
   b2b_payment_method?: "card" | "invoice";
   /** When payment is invoice: on_completion | net_15 */
   b2b_invoice_terms?: string;
@@ -3712,6 +3714,7 @@ async function calcB2bOneoff(
           b2b_estimated_hours: null,
           b2b_crew: fb.crew,
           b2b_business_name: input.b2b_business_name || null,
+      b2b_scope: input.b2b_scope?.trim() || null,
           b2b_items: input.b2b_items || null,
           b2b_payment_method: input.b2b_payment_method ?? "card",
           b2b_invoice_terms:
@@ -3885,6 +3888,7 @@ async function calcB2bOneoff(
         b2b_estimated_hours: dim.estimatedHours,
         b2b_crew: dim.crew,
         b2b_business_name: input.b2b_business_name || null,
+      b2b_scope: input.b2b_scope?.trim() || null,
         b2b_items: input.b2b_items || null,
         b2b_payment_method: input.b2b_payment_method ?? "card",
         b2b_invoice_terms:
@@ -3962,6 +3966,7 @@ async function calcB2bOneoff(
       weight_surcharge: weightSurcharge,
       weight_category: weightCategory,
       b2b_business_name: input.b2b_business_name || null,
+      b2b_scope: input.b2b_scope?.trim() || null,
       b2b_items: input.b2b_items || null,
       parking_long_carry_total: plcB2b.total,
       truck_recommended: truckB2b,
@@ -4446,6 +4451,7 @@ async function calcEvent(
       event_mode: "single",
       event_name: input.event_name || null,
       b2b_business_name: input.b2b_business_name || null,
+      b2b_scope: input.b2b_scope?.trim() || null,
       b2b_payment_method: input.b2b_business_name ? (input.b2b_payment_method ?? "card") : null,
       b2b_invoice_terms: input.b2b_payment_method === "invoice" ? (input.b2b_invoice_terms?.trim() || "on_completion") : null,
       delivery_date: input.move_date || null,
@@ -4656,6 +4662,7 @@ async function calcMultiEvent(
       event_mode: "multi",
       event_name: input.event_name || null,
       b2b_business_name: input.b2b_business_name || null,
+      b2b_scope: input.b2b_scope?.trim() || null,
       b2b_payment_method: input.b2b_business_name ? (input.b2b_payment_method ?? "card") : null,
       b2b_invoice_terms: input.b2b_payment_method === "invoice" ? (input.b2b_invoice_terms?.trim() || "on_completion") : null,
       event_legs: legBreakdown,

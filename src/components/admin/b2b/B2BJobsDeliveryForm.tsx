@@ -211,6 +211,66 @@ type LineRow = {
 
 export type B2BJobsLineRow = LineRow;
 
+// ── Client-facing Scope of Work auto-draft ──
+// Composes the "Scope of work" narrative shown on the client quote from the
+// structured fields the coordinator already fills. Editable; the operator can
+// override it. Premium tone, no em dashes.
+const B2B_SCOPE_VERBS: Record<string, string> = {
+  white_glove: "White-glove delivery",
+  threshold: "Threshold delivery",
+  room_placement: "Room-of-choice delivery",
+  carry_in: "Carry-in delivery",
+  hand_bomb: "Hand-carry delivery",
+  skid_drop: "Skid-drop delivery",
+};
+function b2bJoinList(items: string[]): string {
+  if (items.length === 0) return "";
+  if (items.length === 1) return items[0];
+  return items.slice(0, -1).join(", ") + " and " + items[items.length - 1];
+}
+function b2bSentenceCase(s: string): string {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+function b2bReadableAccess(v: string | null | undefined): string {
+  return String(v ?? "").trim().toLowerCase().replace(/_/g, " ");
+}
+export function buildB2bScopeDraft(a: {
+  lines: LineRow[];
+  handlingType: string;
+  pickupAccess: string;
+  deliveryAccess: string;
+  timeWindow: string;
+  assemblyRequired: boolean;
+  debrisRemoval: boolean;
+}): string {
+  const itemsText = a.lines
+    .filter((l) => l.description?.trim())
+    .map((l) => {
+      const q = Math.max(1, Math.round(Number(l.quantity) || 1));
+      return `${q} ${l.description.trim().toLowerCase()}`;
+    });
+  const parts: string[] = [];
+  const verb = B2B_SCOPE_VERBS[a.handlingType] || "Delivery";
+  parts.push(
+    itemsText.length ? `${verb} of ${b2bJoinList(itemsText)}.` : `${verb}.`,
+  );
+  if (a.handlingType === "white_glove") {
+    const acts = ["unwrap", "place in the room of choice"];
+    if (a.assemblyRequired) acts.push("assemble");
+    if (a.debrisRemoval) acts.push("remove all packaging");
+    parts.push(b2bSentenceCase(b2bJoinList(acts)) + ".");
+  } else if (a.debrisRemoval) {
+    parts.push("Packaging removed on completion.");
+  }
+  const access: string[] = [];
+  if (a.pickupAccess) access.push(`${b2bReadableAccess(a.pickupAccess)} pickup`);
+  if (a.deliveryAccess)
+    access.push(`${b2bReadableAccess(a.deliveryAccess)} delivery`);
+  if (access.length) parts.push(b2bSentenceCase(access.join("; ")) + ".");
+  if (a.timeWindow?.trim()) parts.push(`Delivery window: ${a.timeWindow.trim()}.`);
+  return parts.join(" ");
+}
+
 export type B2BJobsEmbedSnapshot = {
   businessName: string;
   verticalCode: string;
@@ -344,6 +404,7 @@ export type B2BJobsInitialData = Partial<B2BJobsEmbedSnapshot> & {
   timeWindow?: string;
   accessNotes?: string;
   specialInstructions?: string;
+  scope?: string;
   crewOverride?: string;
   truckOverride?: string;
   hoursOverride?: string;
@@ -681,6 +742,36 @@ export default function B2BJobsDeliveryForm({
 
   const [assemblyRequired, setAssemblyRequired] = useState(init?.assemblyRequired ?? false);
   const [debrisRemoval, setDebrisRemoval] = useState(init?.debrisRemoval ?? false);
+
+  // Client-facing Scope of Work: auto-drafts from the structured fields until
+  // the operator edits it (then it stays put). Sent as b2b_scope and rendered
+  // on the client quote's "Scope of work" block.
+  const [b2bScope, setB2bScope] = useState<string>(init?.scope ?? "");
+  const scopeDirtyRef = useRef<boolean>(Boolean((init?.scope ?? "").trim()));
+  const scopeDraft = useMemo(
+    () =>
+      buildB2bScopeDraft({
+        lines,
+        handlingType,
+        pickupAccess,
+        deliveryAccess,
+        timeWindow,
+        assemblyRequired,
+        debrisRemoval,
+      }),
+    [
+      lines,
+      handlingType,
+      pickupAccess,
+      deliveryAccess,
+      timeWindow,
+      assemblyRequired,
+      debrisRemoval,
+    ],
+  );
+  useEffect(() => {
+    if (!scopeDirtyRef.current) setB2bScope(scopeDraft);
+  }, [scopeDraft]);
   const [stairsFlights, setStairsFlights] = useState(init?.stairsFlights ?? "");
   const [highValue, setHighValue] = useState(init?.highValue ?? false);
   const [artwork, setArtwork] = useState(init?.artwork ?? false);
@@ -1886,6 +1977,7 @@ export default function B2BJobsDeliveryForm({
           ? { b2b_invoice_terms: invoiceTerms }
           : {}),
         b2b_special_instructions: instructionsMerged || undefined,
+        b2b_scope: (b2bScope.trim() || scopeDraft).trim() || undefined,
         b2b_assembly_required: assemblyRequired,
         b2b_debris_removal: debrisRemoval,
         b2b_stairs_flights: stairsFlights ? Number(stairsFlights) : undefined,
@@ -3590,8 +3682,42 @@ export default function B2BJobsDeliveryForm({
       </section>
 
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
+            Scope of work
+            <span className="ml-2 font-normal normal-case tracking-normal text-[var(--tx3)]">
+              shown on the client quote
+            </span>
+          </h3>
+          <button
+            type="button"
+            onClick={() => {
+              scopeDirtyRef.current = false;
+              setB2bScope(scopeDraft);
+            }}
+            className="shrink-0 text-[10px] font-semibold text-[var(--admin-primary,#66143D)] hover:underline"
+          >
+            Reset to auto-draft
+          </button>
+        </div>
+        <textarea
+          value={b2bScope}
+          onChange={(e) => {
+            setB2bScope(e.target.value);
+            scopeDirtyRef.current = true;
+          }}
+          rows={3}
+          className={`${fieldInput} resize-y`}
+          placeholder="Auto-drafts from the delivery details above. Edit freely; this is what the client reads."
+        />
+      </section>
+
+      <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
         <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
           Special instructions
+          <span className="ml-2 font-normal normal-case tracking-normal text-[var(--tx3)]">
+            crew only, not shown to the client
+          </span>
         </h3>
         <textarea
           value={specialInstructions}
