@@ -42,7 +42,7 @@ import {
   displayLabel,
 } from "@/lib/displayLabels";
 import {
-  getB2BQuoteEmailSubheading,
+  getB2BQuoteHero,
   quoteEmailCrewLine,
 } from "@/lib/quotes/b2b-quote-copy";
 import { B2B_INCLUDED_COVERAGE } from "@/lib/quotes/b2b-coverage-and-terms";
@@ -1418,10 +1418,12 @@ function b2bOneOffTemplate(d: QuoteTemplateData): string {
 
   const total = d.customPrice ?? 0;
   const tax = Math.round(total * 0.13);
-  const scopeLine = getB2BQuoteEmailSubheading(
+  // Just the service name for a light descriptor line (not the full verbose
+  // subtitle, which crowded the header).
+  const serviceHeadline = getB2BQuoteHero(
     d.b2bVerticalCode ?? undefined,
     d.b2bHandlingType ?? undefined,
-  );
+  ).headline;
 
   // Net-30 is available only to approved partner accounts (b2b_payment_method
   // === "invoice"). Every other one-off pays in full at booking. Never show
@@ -1431,13 +1433,16 @@ function b2bOneOffTemplate(d: QuoteTemplateData): string {
     ? "Net 30 on your approved partner account"
     : "Full payment at booking";
 
-  // "Prepared for {business}" \u2014 mirrors the quote page letterhead so the
-  // recipient sees who the quote is addressed to.
+  // Clean header: the recipient leads in serif, the service is a light one-line
+  // descriptor beneath it. Falls back to the service as the lead when no
+  // business name is present.
   const business = d.b2bBusinessName?.trim();
-  const preparedFor = business
-    ? `<div style="${SHELL_EYEBROW}margin:0 0 4px;">Prepared for</div>
-       <div style="font-family:${HERO_FONT};font-size:20px;font-weight:400;color:${EMAIL_WINE};line-height:1.2;margin:0 0 18px;">${escapeHtmlEmail(business)}</div>`
-    : "";
+  const headerBlock = business
+    ? `<div style="${SHELL_EYEBROW}margin:0 0 6px;">Prepared for</div>
+       <div style="font-family:${HERO_FONT};font-size:25px;font-weight:400;color:${EMAIL_WINE};line-height:1.12;margin:0 0 8px;">${escapeHtmlEmail(business)}</div>
+       <p style="font-size:13px;color:${SHELL_TX2};margin:0 0 26px;line-height:1.5;letter-spacing:0.01em;">${escapeHtmlEmail(serviceHeadline)}</p>`
+    : `${subHeading("Delivery Quote")}
+       <div style="font-family:${HERO_FONT};font-size:22px;font-weight:400;color:${EMAIL_WINE};line-height:1.2;margin:0 0 24px;">${escapeHtmlEmail(serviceHeadline)}</div>`;
 
   // Yugo Asset Protection \u2014 one short line, matching the quote page.
   const coverageLine = `
@@ -1458,9 +1463,7 @@ function b2bOneOffTemplate(d: QuoteTemplateData): string {
     </p>`;
 
   return quoteEmailLayout(`
-    ${subHeading("Delivery Quote")}
-    <p style="font-size:14px;font-weight:600;color:${EMAIL_WINE};letter-spacing:0;margin:0 0 20px;line-height:1.5;">${scopeLine}</p>
-    ${preparedFor}
+    ${headerBlock}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`)}
     ${bodyText("Your commercial delivery quote is ready. One transparent flat rate with professional logistics from pickup through delivery.")}
     ${expiryNote(d.expiresAt)}
