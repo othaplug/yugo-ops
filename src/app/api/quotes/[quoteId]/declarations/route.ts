@@ -90,10 +90,18 @@ export async function POST(
 
   const db = createAdminClient();
 
+  // The client passes the human quote_id (YG-XXXXX); admin callers may pass the
+  // UUID id. Never filter `id.eq.<non-uuid>` — comparing the uuid column to a
+  // non-uuid string errors the whole query (returns 404 "Quote not found"),
+  // which is why declared items silently never saved.
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      quoteId,
+    );
   const { data: quote, error: lookupErr } = await db
     .from("quotes")
     .select("id, quote_id, public_action_token, status, expires_at")
-    .or(`id.eq.${quoteId},quote_id.eq.${quoteId}`)
+    .eq(isUuid ? "id" : "quote_id", quoteId)
     .maybeSingle();
   if (lookupErr || !quote?.id) {
     return NextResponse.json({ error: "Quote not found" }, { status: 404 });
