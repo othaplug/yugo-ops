@@ -2239,6 +2239,7 @@ export default function QuotePageClient({
       }}
       journeyCopy={valuationJourneyCopy}
       premiumShellKind={shellKind}
+      heading={isB2BDelivery ? "Yugo Asset Protection" : "Your Protection"}
     />
   );
 
@@ -5566,6 +5567,7 @@ function ValuationProtectionCard({
   onRemoveDeclaration,
   journeyCopy = "move",
   premiumShellKind = "none",
+  heading = "Your Protection",
 }: {
   includedValuation: string;
   currentPackage: string;
@@ -5595,6 +5597,7 @@ function ValuationProtectionCard({
    */
   journeyCopy?: "move" | "delivery" | "service" | "event";
   premiumShellKind?: PremiumShellKind;
+  heading?: string;
 }) {
   const wgMode = !!whiteGloveRiders && whiteGloveRiders.length > 0;
   const wgSelected = wgMode
@@ -5712,7 +5715,7 @@ function ValuationProtectionCard({
         className={`${premiumChrome ? "text-2xl md:text-3xl font-serif" : QUOTE_SECTION_H2_CLASS} mb-6 text-center`}
         style={{ color: premiumChrome ? shellText!.primary : WINE }}
       >
-        Your Protection
+        {heading}
       </h2>
 
       {/* Active protection, open layout, label / value rows */}

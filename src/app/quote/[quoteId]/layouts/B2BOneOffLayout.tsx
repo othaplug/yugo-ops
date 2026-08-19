@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { MapPin, ArrowRight, Check, User } from "@phosphor-icons/react";
 import {
   type Quote,
   WINE,
@@ -167,13 +166,7 @@ export default function B2BOneOffLayout({
             ) : null}
           </div>
           {coordinator ? (
-            <div className="flex items-center gap-2.5">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                style={{ backgroundColor: `${FOREST}12` }}
-              >
-                <User className="w-4 h-4" style={{ color: FOREST }} weight="fill" />
-              </div>
+            <div>
               <div className="leading-tight">
                 <p className={eyebrow()} style={{ color: FOREST_MUTED }}>
                   Your coordinator
@@ -229,15 +222,12 @@ export default function B2BOneOffLayout({
         </p>
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
           {includes.map((line, i) => (
-            <li key={i} className="flex items-start gap-2.5">
-              <Check
-                className="w-4 h-4 shrink-0 mt-0.5"
-                style={{ color: FOREST }}
-                weight="bold"
-              />
-              <span className="text-[12.5px] leading-snug" style={{ color: FOREST_BODY }}>
-                {toTitleCase(line)}
-              </span>
+            <li
+              key={i}
+              className="text-[12.5px] leading-snug pl-3 border-l"
+              style={{ color: FOREST_BODY, borderColor: `${FOREST}2E` }}
+            >
+              {toTitleCase(line)}
             </li>
           ))}
         </ul>
@@ -317,31 +307,23 @@ export default function B2BOneOffLayout({
         >
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
-              <div className="flex items-start gap-2">
-                <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: WINE }} />
-                <div className="min-w-0">
-                  <p className={eyebrow()} style={{ color: FOREST_MUTED }}>
-                    Pickup
-                  </p>
-                  <p className="text-[12px] font-medium" style={{ color: FOREST }}>
-                    {quote.from_address}
-                  </p>
-                </div>
-              </div>
+              <p className={eyebrow()} style={{ color: FOREST_MUTED }}>
+                Pickup
+              </p>
+              <p className="text-[12px] font-medium" style={{ color: FOREST }}>
+                {quote.from_address}
+              </p>
             </div>
-            <ArrowRight className="w-4 h-4 shrink-0" style={{ color: FOREST }} />
+            <span className="shrink-0 text-[14px]" style={{ color: FOREST_MUTED }} aria-hidden>
+              &rarr;
+            </span>
             <div className="flex-1 min-w-0 text-right">
-              <div className="flex items-start gap-2 justify-end">
-                <div className="min-w-0">
-                  <p className={eyebrow()} style={{ color: FOREST_MUTED }}>
-                    Delivery
-                  </p>
-                  <p className="text-[12px] font-medium" style={{ color: FOREST }}>
-                    {quote.to_address}
-                  </p>
-                </div>
-                <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: FOREST }} />
-              </div>
+              <p className={eyebrow()} style={{ color: FOREST_MUTED }}>
+                Delivery
+              </p>
+              <p className="text-[12px] font-medium" style={{ color: FOREST }}>
+                {quote.to_address}
+              </p>
             </div>
           </div>
           <div className="mt-2 flex items-center justify-center gap-2 text-[11px] font-medium" style={{ color: `${FOREST}B0` }}>
@@ -384,9 +366,7 @@ export default function B2BOneOffLayout({
           style={{ backgroundColor: FOREST, opacity: confirmed ? 0.8 : 1 }}
         >
           {confirmed ? (
-            <span className="flex items-center justify-center gap-2">
-              <Check className="w-4 h-4" /> Confirmed
-            </span>
+            "Confirmed"
           ) : payInvoice ? (
             "Confirm booking"
           ) : (
