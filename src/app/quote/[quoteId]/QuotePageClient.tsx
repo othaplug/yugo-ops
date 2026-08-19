@@ -1926,6 +1926,18 @@ export default function QuotePageClient({
     scrollToComparisonThenContract();
   }, [scrollToComparisonThenContract]);
 
+  // B2B coverage upgrades (Enhanced / Signature) run through the existing
+  // high-value declarations flow: fees roll into valuationCost -> total ->
+  // deposit -> bookingAmount, and the array persists to the quote. The B2B
+  // layout adds/removes coverage; this marks the array dirty so it saves.
+  const handleB2bDeclarationsChange = useCallback(
+    (next: HighValueDeclaration[]) => {
+      declarationsDirtyRef.current = true;
+      setDeclarations(next);
+    },
+    [],
+  );
+
   const handleB2bPayInFull = useCallback(() => {
     if (!confirmed) {
       handleConfirm();
@@ -2655,6 +2667,9 @@ export default function QuotePageClient({
               onPayInFull={handleB2bPayInFull}
               confirmed={confirmed}
               branding={branding}
+              declarations={declarations}
+              onDeclarationsChange={handleB2bDeclarationsChange}
+              coverageCost={valuationCost}
             />
           ) : quote.service_type === "event" ? (
             <>
