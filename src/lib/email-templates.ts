@@ -1429,7 +1429,7 @@ export function extraItemAwaitingClientEmail(params: {
   const firstName = clientName?.split(/\s+/)[0] || "there";
   const acceptBtn = `
     <a href="${acceptUrl}" style="display:inline-block;background:${EMAIL_FOREST};color:#FFFDF8;text-decoration:none;font-weight:700;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;padding:13px 26px;border-radius:6px;font-family:${PREMIUM_SERIF_HEADING};">
-      Accept &amp; charge $${feeDollars}
+      <span style="color:#FFFDF8;">Accept &amp; charge $${feeDollars}</span>
     </a>`;
   const declineBtn = `
     <a href="${declineUrl}" style="display:inline-block;background:transparent;color:${PREMIUM_BODY};text-decoration:none;font-weight:600;font-size:12px;letter-spacing:0.04em;text-transform:uppercase;padding:13px 22px;border:1px solid ${PREMIUM_BODY}40;border-radius:6px;font-family:${PREMIUM_SERIF_HEADING};margin-left:10px;">
@@ -1438,7 +1438,7 @@ export function extraItemAwaitingClientEmail(params: {
   const inner = `
     <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">Action needed</div>
     <div style="font-size:24px;font-weight:700;letter-spacing:0;margin:0 0 18px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};line-height:1.25;">Approve an added charge for your move</div>
-    <p style="font-size:13px;color:${PREMIUM_BODY};line-height:1.55;margin:0 0 18px;">Hi ${firstName}, your coordinator priced an extra item that was added to your move. Nothing has been charged yet — you choose whether to accept.</p>
+    <p style="font-size:13px;color:${PREMIUM_BODY};line-height:1.55;margin:0 0 18px;">Hi ${firstName}, your coordinator priced an extra item that was added to your move. Nothing has been charged yet. You choose whether to accept.</p>
     ${premiumSectionRule()}
     <div style="padding:16px 0 4px;">
       <div style="font-size:11px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">Item</div>

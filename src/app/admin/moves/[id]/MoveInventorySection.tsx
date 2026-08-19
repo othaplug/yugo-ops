@@ -975,14 +975,26 @@ export default function MoveInventorySection({
             >
               Cancel
             </button>
-            <button
-              type="button"
-              onClick={confirmExtraApprove}
-              disabled={extraActioning === approveExtraModal.itemId}
-              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--grn)] text-white hover:bg-[var(--grn)]/90 disabled:opacity-50"
-            >
-              {extraActioning === approveExtraModal.itemId ? "…" : "Send to client"}
-            </button>
+            {(() => {
+              const feeNum = parseFloat(approveExtraFeeDollars);
+              const feeValid = Number.isFinite(feeNum) && feeNum > 0;
+              const busy = extraActioning === approveExtraModal.itemId;
+              return (
+                <button
+                  type="button"
+                  onClick={confirmExtraApprove}
+                  disabled={busy || !feeValid}
+                  className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--grn)] text-white hover:bg-[var(--grn)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={
+                    !feeValid && !busy
+                      ? "Enter a fee above $0 before sending"
+                      : undefined
+                  }
+                >
+                  {busy ? "…" : "Send to client"}
+                </button>
+              );
+            })()}
           </div>
         </ModalDialogFrame>
       )}

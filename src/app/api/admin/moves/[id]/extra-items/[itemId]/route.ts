@@ -47,6 +47,21 @@ export async function PATCH(
       ? Math.round(body.fee_cents)
       : 0;
 
+  // Guard: staging an item for client approval REQUIRES a real fee.
+  // A $0 fee makes the approval email look broken ("Accept & charge
+  // $0.00", "Amount $0.00") and lets the client "approve" a phantom
+  // charge that bills nothing. If the coordinator meant to remove a
+  // fee they should reject the item, not stage it at $0.
+  if (nextStatus === "awaiting_client" && feeCents <= 0) {
+    return NextResponse.json(
+      {
+        error:
+          "A fee is required to send an extra item for client approval. Enter a dollar amount above $0.",
+      },
+      { status: 400 },
+    );
+  }
+
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("extra_items")
