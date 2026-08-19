@@ -1,32 +1,17 @@
-import { useState } from "react";
-import {
-  MapPin,
-  ArrowRight,
-  Check,
-  ShieldCheck,
-  Certificate,
-  User,
-  Plus,
-  X,
-} from "@phosphor-icons/react";
+import type { ReactNode } from "react";
+import { MapPin, ArrowRight, Check, User } from "@phosphor-icons/react";
 import {
   type Quote,
-  type HighValueDeclaration,
   WINE,
   FOREST,
   FOREST_BODY,
   FOREST_MUTED,
-  QUOTE_EYEBROW_CLASS,
   TAX_RATE,
   fmtPrice,
 } from "../quote-shared";
 import { toTitleCase } from "@/lib/format-text";
 import { getB2BDeliveryFeatureList } from "@/lib/quotes/b2b-quote-copy";
-import {
-  B2B_COI_LINE,
-  B2B_COVERAGE_HEADLINE,
-  B2B_TERMS_SHORT,
-} from "@/lib/quotes/b2b-coverage-and-terms";
+import { B2B_TERMS_SHORT } from "@/lib/quotes/b2b-coverage-and-terms";
 
 function friendlyFleetLine(raw: string): string {
   let s = raw.trim();
@@ -58,21 +43,10 @@ interface Props {
     address: string;
     hstNumber: string;
   };
-  /** High-value declarations array (drives Enhanced + Signature coverage). */
-  declarations: HighValueDeclaration[];
-  onDeclarationsChange: (next: HighValueDeclaration[]) => void;
-  /** Current coverage cost (declaration fees), already reflected in the total. */
+  /** The shared "Your Protection" card, rendered above the price. */
+  protectionSlot?: ReactNode;
+  /** Current coverage cost (from the selected rider), reflected in the total. */
   coverageCost: number;
-}
-
-const ENHANCED_KEY = "Enhanced Protection";
-const ENHANCED_MAX = 50000;
-const ENHANCED_RATE = 0.015;
-const ENHANCED_MIN = 150;
-
-function enhancedFeeFor(value: number): number {
-  const v = Math.min(ENHANCED_MAX, Math.max(0, Math.round(value)));
-  return v > 0 ? Math.max(ENHANCED_MIN, Math.round(v * ENHANCED_RATE)) : 0;
 }
 
 export default function B2BOneOffLayout({
@@ -81,8 +55,7 @@ export default function B2BOneOffLayout({
   onPayInFull,
   confirmed,
   branding,
-  declarations,
-  onDeclarationsChange,
+  protectionSlot,
   coverageCost,
 }: Props) {
   const f = quote.factors_applied as Record<string, unknown> | null;
@@ -131,67 +104,9 @@ export default function B2BOneOffLayout({
   const eyebrow = (extra = "") =>
     `text-[10px] font-bold tracking-[0.14em] uppercase ${extra}`;
 
-  // ── Selectable coverage (drives the existing declarations flow) ──
-  const enhancedDecl =
-    declarations.find((d) => d.item_name.startsWith(ENHANCED_KEY)) ?? null;
-  const signatureDecls = declarations.filter(
-    (d) => !d.item_name.startsWith(ENHANCED_KEY),
-  );
-  const [enhancedInput, setEnhancedInput] = useState<string>(
-    enhancedDecl ? String(enhancedDecl.declared_value) : "",
-  );
-  const [sigName, setSigName] = useState("");
-  const [sigVal, setSigVal] = useState("");
-  const enhancedInputNum = Math.round(Number(enhancedInput) || 0);
-  const enhancedPreviewFee = enhancedFeeFor(enhancedInputNum);
-
-  const applyEnhanced = () => {
-    const v = Math.min(ENHANCED_MAX, enhancedInputNum);
-    const others = declarations.filter(
-      (d) => !d.item_name.startsWith(ENHANCED_KEY),
-    );
-    if (v > 0) {
-      onDeclarationsChange([
-        ...others,
-        {
-          item_name: `${ENHANCED_KEY} (declared value ${fmtPrice(v)})`,
-          declared_value: v,
-          fee: enhancedFeeFor(v),
-        },
-      ]);
-    } else {
-      onDeclarationsChange(others);
-    }
-  };
-  const removeEnhanced = () => {
-    onDeclarationsChange(
-      declarations.filter((d) => !d.item_name.startsWith(ENHANCED_KEY)),
-    );
-    setEnhancedInput("");
-  };
-  const addSignature = () => {
-    const v = Math.round(Number(sigVal) || 0);
-    const name = sigName.trim();
-    if (!name || v <= 0) return;
-    onDeclarationsChange([
-      ...declarations,
-      { item_name: name, declared_value: v, fee: 0 },
-    ]);
-    setSigName("");
-    setSigVal("");
-  };
-  const removeSignature = (idx: number) => {
-    const target = signatureDecls[idx];
-    if (!target) return;
-    onDeclarationsChange(declarations.filter((d) => d !== target));
-  };
-
   const displayPrice = price + coverageCost;
   const displayTax = Math.round(displayPrice * TAX_RATE);
   const displayTotal = displayPrice + displayTax;
-  const inputCls =
-    "w-full rounded-lg border px-3 py-2 text-[13px] outline-none";
-  const inputStyle = { borderColor: `${FOREST}30`, color: FOREST } as const;
 
   return (
     <section className="mb-10 space-y-5">
@@ -446,116 +361,14 @@ export default function B2BOneOffLayout({
         </div>
       </div>
 
-      {/* ── Yugo Asset Protection ── */}
-      <div
-        className="rounded-2xl border px-5 py-6 sm:px-6"
-        style={{ borderColor: `${FOREST}22`, backgroundColor: `${FOREST}06` }}
-      >
-        <div className="flex items-center gap-2.5 mb-3">
-          <ShieldCheck className="w-5 h-5 shrink-0" style={{ color: FOREST }} weight="fill" />
-          <p className="font-hero text-[17px]" style={{ color: WINE }}>
-            Yugo Asset Protection
-          </p>
-        </div>
-        <p
-          className="text-[12.5px] leading-relaxed mb-5 max-w-2xl"
-          style={{ color: FOREST_BODY }}
-        >
-          {B2B_COVERAGE_HEADLINE}
-        </p>
-        <div className="space-y-3">
-          {/* Standard — included */}
-          <div className="rounded-xl border px-4 py-4" style={{ borderColor: FOREST, backgroundColor: `${FOREST}0A` }}>
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[13px] font-semibold" style={{ color: FOREST }}>Standard Protection</p>
-              <span className="text-[9px] font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded-full" style={{ color: "#FFFCF9", backgroundColor: FOREST }}>Included</span>
-            </div>
-            <p className="text-[11.5px] mt-1 leading-snug" style={{ color: FOREST_BODY }}>
-              Repair or restoration of damaged items up to $30,000 per shipment, backed by our $5M commercial general liability. Real coverage, not $0.60-a-pound courier liability.
-            </p>
-          </div>
-
-          {/* Enhanced — selectable */}
-          <div className="rounded-xl border px-4 py-4" style={{ borderColor: enhancedDecl ? FOREST : `${FOREST}20`, backgroundColor: enhancedDecl ? `${FOREST}0A` : "#FFFCF9" }}>
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[13px] font-semibold" style={{ color: FOREST }}>Enhanced Protection</p>
-              <span className="text-[9px] font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded-full" style={{ color: FOREST, backgroundColor: `${FOREST}14` }}>Full replacement</span>
-            </div>
-            <p className="text-[11.5px] mt-1 leading-snug" style={{ color: FOREST_BODY }}>
-              Full replacement value to $50,000, $0 deductible. Declare your shipment value and we cover every dollar of it.
-            </p>
-            {enhancedDecl ? (
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-lg px-3 py-2" style={{ backgroundColor: `${FOREST}0C` }}>
-                <div className="text-[12px]" style={{ color: FOREST }}>
-                  <span className="font-semibold">Added</span> &middot; declared {fmtPrice(enhancedDecl.declared_value)} &middot; <span className="font-semibold">+{fmtPrice(enhancedDecl.fee)}</span>
-                </div>
-                <button type="button" onClick={removeEnhanced} className="text-[11px] font-semibold underline shrink-0" style={{ color: FOREST_MUTED }}>Remove</button>
-              </div>
-            ) : (
-              <div className="mt-3 flex flex-col sm:flex-row gap-2 sm:items-end">
-                <div className="flex-1">
-                  <label className="text-[10px] block mb-1" style={{ color: FOREST_MUTED }}>Declared shipment value (up to $50,000)</label>
-                  <input type="number" inputMode="numeric" min={0} max={ENHANCED_MAX} value={enhancedInput} onChange={(e) => setEnhancedInput(e.target.value)} placeholder="e.g. 25000" className={inputCls} style={inputStyle} />
-                </div>
-                <button type="button" onClick={applyEnhanced} disabled={enhancedInputNum <= 0} className="shrink-0 rounded-lg px-4 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-white transition-opacity disabled:opacity-40" style={{ backgroundColor: FOREST }}>
-                  Add{enhancedPreviewFee > 0 ? ` · ${fmtPrice(enhancedPreviewFee)}` : ""}
-                </button>
-              </div>
-            )}
-            <p className="text-[10px] mt-2" style={{ color: `${FOREST}90` }}>Priced at 1.5% of declared value, $150 minimum.</p>
-          </div>
-
-          {/* Signature — declare high-value pieces */}
-          <div className="rounded-xl border px-4 py-4" style={{ borderColor: `${FOREST}20`, backgroundColor: "#FFFCF9" }}>
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[13px] font-semibold" style={{ color: FOREST }}>Signature Protection</p>
-              <span className="text-[9px] font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded-full" style={{ color: FOREST, backgroundColor: `${FOREST}14` }}>Quoted per item</span>
-            </div>
-            <p className="text-[11.5px] mt-1 leading-snug" style={{ color: FOREST_BODY }}>
-              Fine art and bespoke pieces above $50,000, scheduled individually and covered nail to nail. Declare a piece and we schedule and quote it for you.
-            </p>
-            {signatureDecls.length > 0 ? (
-              <ul className="mt-3 space-y-1.5">
-                {signatureDecls.map((d, i) => (
-                  <li key={i} className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-[12px]" style={{ backgroundColor: `${FOREST}0C`, color: FOREST }}>
-                    <span className="min-w-0 truncate"><span className="font-semibold">{d.item_name}</span> &middot; {fmtPrice(d.declared_value)} &middot; <span style={{ color: FOREST_MUTED }}>quoted separately</span></span>
-                    <button type="button" onClick={() => removeSignature(i)} aria-label="Remove" className="shrink-0"><X className="w-3.5 h-3.5" style={{ color: FOREST_MUTED }} /></button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            <div className="mt-3 flex flex-col sm:flex-row gap-2 sm:items-end">
-              <div className="flex-1">
-                <label className="text-[10px] block mb-1" style={{ color: FOREST_MUTED }}>Piece</label>
-                <input value={sigName} onChange={(e) => setSigName(e.target.value)} placeholder="e.g. Commissioned canvas" className={inputCls} style={inputStyle} />
-              </div>
-              <div className="sm:w-32">
-                <label className="text-[10px] block mb-1" style={{ color: FOREST_MUTED }}>Value</label>
-                <input type="number" inputMode="numeric" min={0} value={sigVal} onChange={(e) => setSigVal(e.target.value)} placeholder="60000" className={inputCls} style={inputStyle} />
-              </div>
-              <button type="button" onClick={addSignature} className="shrink-0 inline-flex items-center justify-center gap-1 rounded-lg px-4 py-2 text-[11px] font-bold uppercase tracking-[0.08em]" style={{ backgroundColor: `${FOREST}14`, color: FOREST }}>
-                <Plus className="w-3.5 h-3.5" /> Declare
-              </button>
-            </div>
-          </div>
-        </div>
-        <div
-          className="mt-4 flex items-start gap-2.5 rounded-xl px-4 py-3"
-          style={{ backgroundColor: `${FOREST}0C` }}
-        >
-          <Certificate className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} weight="fill" />
-          <p className="text-[11.5px] leading-snug" style={{ color: FOREST_BODY }}>
-            {B2B_COI_LINE}
-          </p>
-        </div>
-      </div>
+      {protectionSlot}
 
       {/* ── Price + CTA ── */}
       <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
         {coverageCost > 0 ? (
           <div className="text-left text-[12px] max-w-xs mx-auto mb-4 pb-4 border-b" style={{ borderColor: "#E2DDD5", color: FOREST_BODY }}>
             <div className="flex justify-between py-0.5"><span>Delivery</span><span className="tabular-nums">{fmtPrice(price)}</span></div>
-            <div className="flex justify-between py-0.5"><span>Enhanced coverage</span><span className="tabular-nums">+{fmtPrice(coverageCost)}</span></div>
+            <div className="flex justify-between py-0.5"><span>Added protection</span><span className="tabular-nums">+{fmtPrice(coverageCost)}</span></div>
           </div>
         ) : null}
         <p className="font-hero text-[36px] md:text-[42px]" style={{ color: WINE }}>

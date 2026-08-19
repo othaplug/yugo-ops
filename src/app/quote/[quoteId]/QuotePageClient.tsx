@@ -444,7 +444,9 @@ export default function QuotePageClient({
    * Surfaces that use the White-Glove-style protection presentation:
    * Standard Protection default + $50k / $100k rider ladder.
    */
-  const usesPremiumProtection = isWhiteGlove || isPremiumStandaloneItem || isEvent;
+  const isB2BDelivery = isB2BDeliveryQuoteServiceType(quote.service_type);
+  const usesPremiumProtection =
+    isWhiteGlove || isPremiumStandaloneItem || isEvent || isB2BDelivery;
   /**
    * White Glove sub-type chosen by the coordinator at quote time and stored in
    * factors_applied.white_glove_kind. "delivery" = item transport (the default,
@@ -1926,18 +1928,6 @@ export default function QuotePageClient({
     scrollToComparisonThenContract();
   }, [scrollToComparisonThenContract]);
 
-  // B2B coverage upgrades (Enhanced / Signature) run through the existing
-  // high-value declarations flow: fees roll into valuationCost -> total ->
-  // deposit -> bookingAmount, and the array persists to the quote. The B2B
-  // layout adds/removes coverage; this marks the array dirty so it saves.
-  const handleB2bDeclarationsChange = useCallback(
-    (next: HighValueDeclaration[]) => {
-      declarationsDirtyRef.current = true;
-      setDeclarations(next);
-    },
-    [],
-  );
-
   const handleB2bPayInFull = useCallback(() => {
     if (!confirmed) {
       handleConfirm();
@@ -2218,7 +2208,9 @@ export default function QuotePageClient({
       quote.service_type === "event" ||
       quote.service_type === "single_item" ||
       quote.service_type === "specialty" ||
-      quote.service_type === "labour_only");
+      quote.service_type === "labour_only" ||
+      quote.service_type === "b2b_oneoff" ||
+      quote.service_type === "b2b_delivery");
 
   const protectionCardNode = (
     <ValuationProtectionCard
@@ -2667,8 +2659,7 @@ export default function QuotePageClient({
               onPayInFull={handleB2bPayInFull}
               confirmed={confirmed}
               branding={branding}
-              declarations={declarations}
-              onDeclarationsChange={handleB2bDeclarationsChange}
+              protectionSlot={protectionSlotForLayout}
               coverageCost={valuationCost}
             />
           ) : quote.service_type === "event" ? (
@@ -2922,8 +2913,6 @@ export default function QuotePageClient({
         {!layoutOwnsProtection &&
           (residentialSectionAtLeast(3) || !isResidential) &&
           quote.service_type !== "bin_rental" &&
-          quote.service_type !== "b2b_oneoff" &&
-          quote.service_type !== "b2b_delivery" &&
           !booked && (
             <section ref={protectionRef} className="scroll-mt-6">
               {isResidential && currentStep >= 3 && (
