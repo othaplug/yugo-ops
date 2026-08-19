@@ -3782,7 +3782,14 @@ async function calcB2bOneoff(
       crating_pieces: cratingPieces > 0 ? cratingPieces : undefined,
     };
 
-    const b2bExtrasForDim = useVerticalZoneSchedule ? [] : b2bLocationExtras.lines;
+    // Distance is charged ONCE. Zone-schedule verticals price distance via their
+    // own zone table (already excludes the GTA surcharge). Per-km verticals
+    // charge the route distance directly, so the GTA zone surcharge would
+    // double-charge the same trip; drop it and keep only non-distance extras
+    // (e.g. weekend). See the pricing audit (route per-km + zone-3 both firing).
+    const b2bExtrasForDim = useVerticalZoneSchedule
+      ? []
+      : b2bLocationExtras.lines.filter((l) => !/gta|zone/i.test(l.label));
 
     const dim = calculateB2BDimensionalPrice({
       vertical: loaded.vertical,
@@ -3809,7 +3816,9 @@ async function calcB2bOneoff(
           totalDistanceKm: distKm,
           roundingNearest: rounding,
           parkingLongCarryTotal: plcB2b.total,
-          pricingExtras: listUseZones ? [] : b2bLocationExtras.lines,
+          pricingExtras: listUseZones
+            ? []
+            : b2bLocationExtras.lines.filter((l) => !/gta|zone/i.test(l.label)),
           platformConfig: config,
         });
       }

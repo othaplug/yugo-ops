@@ -1599,6 +1599,27 @@ export default function B2BJobsDeliveryForm({
     estimatedDistanceKm,
   ]);
 
+  // Single authoritative price: keep the SERVER price (recovery + surcharges +
+  // partner rates baked in) in sync so the number the operator sees is the
+  // number the client is quoted. The client-side estimate is only a placeholder
+  // shown for the ~800ms until the server responds. Clearing serverPricing on
+  // each input change falls back to the ~estimate, then the debounced fetch
+  // replaces it with the exact figure. (clientEstimate changes identity on every
+  // priced-input change, so it is a stable proxy for "inputs changed".)
+  const runPricingPreviewRef = useRef(runPricingPreview);
+  useEffect(() => {
+    runPricingPreviewRef.current = runPricingPreview;
+  });
+  useEffect(() => {
+    if (!clientEstimate) return;
+    setServerPricing(null);
+    const t = setTimeout(() => {
+      void runPricingPreviewRef.current();
+    }, 800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientEstimate]);
+
   const buildB2bStopsPayload = () =>
     stopsForQuote.map((s) => ({
       address: s.address,
@@ -3796,8 +3817,7 @@ export default function B2BJobsDeliveryForm({
                   {formatCurrency(clientEstimate.hst)}
                 </div>
                 <p className="text-[10px] text-[var(--tx3)] leading-relaxed">
-                  Approximate. Click <strong>Get exact price</strong> below for
-                  the number that goes on the quote.
+                  Calculating the exact price that goes on the quote...
                 </p>
                 <div className="border-t border-[var(--brd)]/40 pt-2 mt-2 space-y-0.5 max-h-32 overflow-y-auto">
                   {clientEstimate.breakdown.map((b, i) => (
