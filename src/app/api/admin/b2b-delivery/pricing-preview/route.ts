@@ -19,6 +19,13 @@ import { parseRateCard } from "@/lib/b2b/rate-card-types";
 import { calcCabinetPrice, calcAppliancePrice } from "@/lib/b2b/cabinet-pricing";
 import { priceCabinetryFlatBand } from "@/lib/pricing/b2b-flatband";
 import { calcFlooringPrice, type FlooringMaterial, type FlooringHandling } from "@/lib/b2b/flooring-pricing";
+import {
+  computeJobScopeSurcharge,
+  isValidJobScope,
+  B2B_RECOVER_UPLIFT_PCT_DEFAULT,
+  B2B_RECEIVING_FEE_DEFAULT,
+  type JobScope,
+} from "@/lib/pricing/b2b-job-scope-pricing";
 
 /** Vertical codes that use flat-band rate card instead of the dimensional engine. */
 const FLAT_BAND_VERTICALS = new Set(["cabinetry", "appliance", "flooring"]);
@@ -91,6 +98,38 @@ export async function POST(req: NextRequest) {
 
     const rounding = cfgNum(config, "rounding_nearest", 25);
     const taxRate = cfgNum(config, "tax_rate", TAX_FALLBACK);
+
+    // Job-scope surcharge (warehouse receiving / recover-original swap). Shared
+    // with the client estimate and /api/quotes/generate via computeJobScopeSurcharge
+    // so the number never drifts. Applied to the final pre-tax at each return
+    // path below (added after processing recovery — Yugo absorbs the CC fee on
+    // this pass-through logistics amount, which is immaterial).
+    const jobScope: JobScope = isValidJobScope(body.job_scope)
+      ? body.job_scope
+      : "direct_delivery";
+    const scopeRates = {
+      recoverUpliftPct: cfgNum(
+        config,
+        "b2b_recover_uplift_pct",
+        B2B_RECOVER_UPLIFT_PCT_DEFAULT,
+      ),
+      receivingFee: cfgNum(config, "b2b_receiving_fee", B2B_RECEIVING_FEE_DEFAULT),
+    };
+    const withScope = (
+      roundedPreTax: number,
+      breakdown: Array<{ label: string; amount: number }>,
+    ) => {
+      const scope = computeJobScopeSurcharge(jobScope, roundedPreTax, scopeRates);
+      const preTax = Math.round((roundedPreTax + scope.addPreTax) * 100) / 100;
+      const hst = Math.round(preTax * taxRate * 100) / 100;
+      return {
+        rounded_pre_tax: preTax,
+        hst,
+        total_with_tax: Math.round((preTax + hst) * 100) / 100,
+        breakdown: [...breakdown, ...scope.lines],
+      };
+    };
+
     const accessMap = parseJsonConfig<Record<string, number>>(config, "b2b_access_surcharges", {});
     const accessKey = (k: string) => (k === "no_parking_nearby" ? "no_parking" : k);
     const accessSurcharge =
@@ -158,17 +197,16 @@ export async function POST(req: NextRequest) {
         },
         config,
       );
-      const cabTaxRate = cfgNum(config, "tax_rate", TAX_FALLBACK);
-      const hst = Math.round(fb.roundedPreTax * cabTaxRate * 100) / 100;
+      const scoped = withScope(fb.roundedPreTax, fb.breakdown);
       return NextResponse.json({
         ok: true,
         subtotal_pre_round: fb.subtotalPreRound,
         access_surcharge: 0,
         multi_stop_surcharge: 0,
-        rounded_pre_tax: fb.roundedPreTax,
-        hst,
-        total_with_tax: Math.round((fb.roundedPreTax + hst) * 100) / 100,
-        breakdown: fb.breakdown,
+        rounded_pre_tax: scoped.rounded_pre_tax,
+        hst: scoped.hst,
+        total_with_tax: scoped.total_with_tax,
+        breakdown: scoped.breakdown,
         includes: fb.includes,
         truck: fb.truck,
         crew: fb.crew,
@@ -306,17 +344,17 @@ export async function POST(req: NextRequest) {
         config,
         50,
       );
-      const hst = Math.round(roundedPreTax * taxRate * 100) / 100;
+      const scoped = withScope(roundedPreTax, result.breakdown);
 
       return NextResponse.json({
         ok: true,
         subtotal_pre_round: preRoundSubtotal,
         access_surcharge: 0,
         multi_stop_surcharge: 0,
-        rounded_pre_tax: roundedPreTax,
-        hst,
-        total_with_tax: Math.round((roundedPreTax + hst) * 100) / 100,
-        breakdown: result.breakdown,
+        rounded_pre_tax: scoped.rounded_pre_tax,
+        hst: scoped.hst,
+        total_with_tax: scoped.total_with_tax,
+        breakdown: scoped.breakdown,
         includes: [`${totalUnits} item${totalUnits !== 1 ? "s" : ""}`, zone.replace(/_/g, " "), isPartner ? "partner rate" : "standard rate"],
         truck: "sprinter",
         crew: 2,
@@ -420,8 +458,6 @@ export async function POST(req: NextRequest) {
       config,
       50,
     );
-    const hst = Math.round(roundedSubtotal * taxRate * 100) / 100;
-
     const breakdownOut = [...dim.breakdown];
     if (multiStopLineAmount > 0) {
       breakdownOut.push({
@@ -429,16 +465,17 @@ export async function POST(req: NextRequest) {
         amount: multiStopLineAmount,
       });
     }
+    const scoped = withScope(roundedSubtotal, breakdownOut);
 
     return NextResponse.json({
       ok: true,
       subtotal_pre_round: engineSubtotal,
       access_surcharge: accessSurcharge,
       multi_stop_surcharge: multiStopLineAmount,
-      rounded_pre_tax: roundedSubtotal,
-      hst,
-      total_with_tax: Math.round((roundedSubtotal + hst) * 100) / 100,
-      breakdown: breakdownOut,
+      rounded_pre_tax: scoped.rounded_pre_tax,
+      hst: scoped.hst,
+      total_with_tax: scoped.total_with_tax,
+      breakdown: scoped.breakdown,
       includes: dim.includes,
       truck: dim.truck,
       crew: dim.crew,

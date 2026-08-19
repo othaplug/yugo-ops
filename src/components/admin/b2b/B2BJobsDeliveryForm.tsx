@@ -60,6 +60,10 @@ import {
 import { getMultiStopDrivingDistance } from "@/lib/mapbox/driving-distance";
 import { priceCabinetryFlatBand } from "@/lib/pricing/b2b-flatband";
 import {
+  computeJobScopeSurcharge,
+  type JobScope,
+} from "@/lib/pricing/b2b-job-scope-pricing";
+import {
   mergedRatesWithBundleTiers,
   prepareB2bLineItemsForDimensionalEngine,
 } from "@/lib/b2b-dimensional-quote-prep";
@@ -446,6 +450,13 @@ export type B2BJobsDeliveryFormProps = {
    * the JobScopeSection has scope != direct_delivery.
    */
   onSubmitSuccess?: (result: B2BJobsSubmitSuccess) => Promise<void> | void;
+  /**
+   * Logistics scope chosen in the JobScopeSection above the form. Drives the
+   * warehouse-receiving / recover-original surcharge so the estimate, the sent
+   * quote, and the created delivery all price the extra leg (see
+   * computeJobScopeSurcharge). Defaults to "direct_delivery" (no surcharge).
+   */
+  jobScope?: JobScope;
 };
 
 export default function B2BJobsDeliveryForm({
@@ -456,6 +467,7 @@ export default function B2BJobsDeliveryForm({
   onEmbedStateChange,
   initialData,
   onSubmitSuccess,
+  jobScope = "direct_delivery",
 }: B2BJobsDeliveryFormProps) {
   const router = useRouter();
   const embedCbRef = useRef(onEmbedStateChange);
@@ -916,7 +928,7 @@ export default function B2BJobsDeliveryForm({
       !delAddr ||
       effLines.length === 0
     ) {
-      return;
+      return null;
     }
     setPreviewLoading(true);
     try {
@@ -945,6 +957,7 @@ export default function B2BJobsDeliveryForm({
               }
             : {}),
           handling_type: handlingType,
+          job_scope: jobScope,
           line_items: effLines.map((l) => toB2bLinePayload(l, handlingType)),
           crew_override: crewOverride ? Number(crewOverride) : undefined,
           truck_override: truckOverride || undefined,
@@ -973,7 +986,7 @@ export default function B2BJobsDeliveryForm({
       });
       const data = await res.json();
       if (res.ok && data.ok) {
-        setServerPricing({
+        const block: B2bPriceBlock = {
           rounded_pre_tax: data.rounded_pre_tax,
           hst: data.hst,
           total_with_tax: data.total_with_tax,
@@ -984,10 +997,14 @@ export default function B2BJobsDeliveryForm({
           access_surcharge: data.access_surcharge ?? 0,
           requires_custom_quote: !!data.requires_custom_quote,
           pricing_engine: typeof data.pricing_engine === "string" ? data.pricing_engine : undefined,
-        });
+        };
+        setServerPricing(block);
+        return block;
       }
+      return null;
     } catch {
       /* Keep client estimate on network failure */
+      return null;
     } finally {
       setPreviewLoading(false);
     }
@@ -1511,12 +1528,15 @@ export default function B2BJobsDeliveryForm({
         },
         cabCfg,
       );
-      const hstCab = Math.round(fbCab.roundedPreTax * TAX_RATE_CLIENT * 100) / 100;
+      const scopeCab = computeJobScopeSurcharge(jobScope, fbCab.roundedPreTax);
+      const cabPreTax =
+        Math.round((fbCab.roundedPreTax + scopeCab.addPreTax) * 100) / 100;
+      const hstCab = Math.round(cabPreTax * TAX_RATE_CLIENT * 100) / 100;
       setClientEstimate({
-        rounded_pre_tax: fbCab.roundedPreTax,
+        rounded_pre_tax: cabPreTax,
         hst: hstCab,
-        total_with_tax: Math.round((fbCab.roundedPreTax + hstCab) * 100) / 100,
-        breakdown: fbCab.breakdown,
+        total_with_tax: Math.round((cabPreTax + hstCab) * 100) / 100,
+        breakdown: [...fbCab.breakdown, ...scopeCab.lines],
         truck: fbCab.truck,
         crew: fbCab.crew,
         estimated_hours: 0,
@@ -1549,7 +1569,6 @@ export default function B2BJobsDeliveryForm({
       dim.subtotal + access + multiSurchargeClient,
       50,
     );
-    const hst = Math.round(roundedPreTax * TAX_RATE_CLIENT * 100) / 100;
     const bd = [...dim.breakdown];
     if (multiSurchargeClient > 0) {
       bd.push({
@@ -1557,10 +1576,18 @@ export default function B2BJobsDeliveryForm({
         amount: multiSurchargeClient,
       });
     }
+    // Warehouse-receiving / recover-original surcharge. Uses the shared helper
+    // (with default rates client-side) so the placeholder estimate matches the
+    // authoritative server price that replaces it within ~800ms.
+    const scope = computeJobScopeSurcharge(jobScope, roundedPreTax);
+    const scopedPreTax =
+      Math.round((roundedPreTax + scope.addPreTax) * 100) / 100;
+    for (const l of scope.lines) bd.push(l);
+    const hst = Math.round(scopedPreTax * TAX_RATE_CLIENT * 100) / 100;
     setClientEstimate({
-      rounded_pre_tax: roundedPreTax,
+      rounded_pre_tax: scopedPreTax,
       hst,
-      total_with_tax: Math.round((roundedPreTax + hst) * 100) / 100,
+      total_with_tax: Math.round((scopedPreTax + hst) * 100) / 100,
       breakdown: bd,
       truck: dim.truck,
       crew: dim.crew,
@@ -1597,6 +1624,7 @@ export default function B2BJobsDeliveryForm({
     truckOverride,
     hoursOverride,
     estimatedDistanceKm,
+    jobScope,
   ]);
 
   // Single authoritative price: keep the SERVER price (recovery + surcharges +
@@ -1647,7 +1675,10 @@ export default function B2BJobsDeliveryForm({
       .filter(Boolean)
       .join("\n\n") || null;
 
-  const validateCore = (requireEmailForQuote: boolean) => {
+  const validateCore = (
+    requireEmailForQuote: boolean,
+    requirePhoneForBooking = false,
+  ) => {
     const partnerId = partnerOrgId.trim();
     const hasPartnerOrg =
       partnerId.length > 0 && organizations.some((o) => o.id === partnerId);
@@ -1656,6 +1687,10 @@ export default function B2BJobsDeliveryForm({
       if (!contactPhone.trim()) return "Contact phone is required";
     }
     if (!contactName.trim()) return "Contact name is required";
+    // A scheduled delivery always needs a reachable on-site number, even when a
+    // partner org owns the billing relationship.
+    if (requirePhoneForBooking && !contactPhone.trim())
+      return "Contact phone is required to schedule the delivery";
     if (!verticalCode.trim()) return "Delivery vertical is required";
     if (buildEffectiveLines().length === 0)
       return "Add at least one line item (or box count for flooring)";
@@ -1683,7 +1718,10 @@ export default function B2BJobsDeliveryForm({
   const postCreateDelivery = async (
     status: "draft" | "scheduled" | "confirmed",
   ) => {
-    const err = validateCore(false);
+    // A real booking (not a draft) must have a reachable contact number for the
+    // crew, even when a partner org supplies the billing relationship.
+    const isBooking = status !== "draft";
+    const err = validateCore(false, isBooking);
     if (err) {
       setError(err);
       return;
@@ -1701,7 +1739,21 @@ export default function B2BJobsDeliveryForm({
     );
     const b2bLineItems = effLines.map((l) => toB2bLinePayload(l, handlingType));
 
-    const priceBlock = serverPricing ?? clientEstimate;
+    // Never persist the approximate client-side estimate on a real booking.
+    // If the authoritative server price is not already in hand, fetch it now
+    // and block the booking if it cannot be confirmed.
+    let priceBlock = serverPricing;
+    if (!priceBlock && isBooking) {
+      priceBlock = await runPricingPreviewRef.current();
+      if (!priceBlock) {
+        setLoading(false);
+        setError(
+          "Could not confirm the exact price. Check the delivery details and try again.",
+        );
+        return;
+      }
+    }
+    priceBlock = priceBlock ?? clientEstimate;
     const enginePreTax = priceBlock?.rounded_pre_tax ?? 0;
     const ovAmt = parseNumberInput(overridePrice);
     const finalPreTax = ovAmt > 0 ? ovAmt : enginePreTax;
@@ -1744,6 +1796,7 @@ export default function B2BJobsDeliveryForm({
       status,
       vertical_code: verticalCode,
       b2b_line_items: b2bLineItems,
+      b2b_job_scope: jobScope,
       b2b_assembly_required: assemblyRequired,
       b2b_debris_removal: debrisRemoval,
       pricing_breakdown: priceBlock?.breakdown ?? null,
@@ -1815,16 +1868,32 @@ export default function B2BJobsDeliveryForm({
             sort_order: i + 1,
           })),
       ];
+      // The delivery row exists at this point, so a failure below cannot be
+      // rolled back. Instead of swallowing it, collect what did not save and
+      // surface it to the operator before navigating so nothing is lost silently.
+      const postWarnings: string[] = [];
       if (extras.length > 0 && routeMode !== "multi") {
-        fetch("/api/admin/job-stops", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            job_type: "delivery",
-            job_id: created.id,
-            stops: extras,
-          }),
-        }).catch(() => {});
+        try {
+          const stopRes = await fetch("/api/admin/job-stops", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              job_type: "delivery",
+              job_id: created.id,
+              stops: extras,
+            }),
+          });
+          if (!stopRes.ok) {
+            const sd = await stopRes.json().catch(() => ({}));
+            postWarnings.push(
+              `The extra stops did not save (${sd.error || stopRes.statusText || "server error"}). Re-add them on the delivery page.`,
+            );
+          }
+        } catch {
+          postWarnings.push(
+            "The extra stops did not save (network error). Re-add them on the delivery page.",
+          );
+        }
       }
       // R1 Part 2: announce success so parents (B2BOneOffDeliveryForm
       // wrapper, QuoteFormClient embed) can attach an
@@ -1841,7 +1910,16 @@ export default function B2BJobsDeliveryForm({
             "[B2BJobsDeliveryForm] onSubmitSuccess threw",
             err instanceof Error ? err.message : err,
           );
+          postWarnings.push(
+            `The inbound shipment link did not save (${err instanceof Error ? err.message : "unknown error"}). Link it on the delivery page.`,
+          );
         }
+      }
+      if (postWarnings.length > 0) {
+        const label = created.delivery_number ?? created.id;
+        window.alert(
+          `Delivery ${label} was created, but some details need attention:\n\n${postWarnings.join("\n\n")}`,
+        );
       }
       const path = created.delivery_number
         ? `/admin/deliveries/${encodeURIComponent(created.delivery_number)}`
@@ -1914,6 +1992,7 @@ export default function B2BJobsDeliveryForm({
               }
             : {}),
           handling_type: handlingType,
+          job_scope: jobScope,
           line_items: effLines.map((l) => toB2bLinePayload(l, handlingType)),
           crew_override: crewOverride ? Number(crewOverride) : undefined,
           truck_override: truckOverride || undefined,
@@ -1999,6 +2078,7 @@ export default function B2BJobsDeliveryForm({
           : {}),
         b2b_special_instructions: instructionsMerged || undefined,
         b2b_scope: (b2bScope.trim() || scopeDraft).trim() || undefined,
+        b2b_job_scope: jobScope,
         b2b_assembly_required: assemblyRequired,
         b2b_debris_removal: debrisRemoval,
         b2b_stairs_flights: stairsFlights ? Number(stairsFlights) : undefined,
@@ -2227,7 +2307,7 @@ export default function B2BJobsDeliveryForm({
         <div className="px-3 py-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/30 text-[11px] text-[var(--accent-text)]">
           {partnerOrgId.trim() && applyPartnerRates
             ? "Partner organization linked — dimensional preview uses partner vertical rates when configured."
-            : "True one-off: no partner org — full payment at booking unless you send a quote with invoice terms."}
+            : "True one-off: no partner org. Full payment at booking unless you send a quote with invoice terms."}
         </div>
       )}
 
@@ -2423,7 +2503,21 @@ export default function B2BJobsDeliveryForm({
         </h3>
         <select
           value={verticalCode}
-          onChange={(e) => setVerticalCode(e.target.value)}
+          onChange={(e) => {
+            const next = e.target.value;
+            // Switching vertical clears the item list (verticalCode effect).
+            // Confirm first so the operator doesn't lose entered items.
+            if (
+              next !== verticalCode &&
+              lines.length > 0 &&
+              !window.confirm(
+                "Switching the delivery vertical clears the items you have added. Continue?",
+              )
+            ) {
+              return; // controlled select reverts to the current vertical
+            }
+            setVerticalCode(next);
+          }}
           className={fieldInput}
           required
         >
@@ -3778,7 +3872,7 @@ export default function B2BJobsDeliveryForm({
             {serverPricing ? (
               <div className="text-[11px] space-y-1 text-[var(--tx)] border border-[var(--gold)]/30 rounded-lg p-3 bg-[var(--gold)]/5">
                 <p className="text-[9px] uppercase tracking-wide text-[var(--tx3)]">
-                  Final price (server)
+                  Exact price · confirmed
                 </p>
                 <div className="text-[20px] font-bold text-[var(--accent-text)] tabular-nums">
                   {formatCurrency(serverPricing.total_with_tax)}
@@ -3817,7 +3911,9 @@ export default function B2BJobsDeliveryForm({
                   {formatCurrency(clientEstimate.hst)}
                 </div>
                 <p className="text-[10px] text-[var(--tx3)] leading-relaxed">
-                  Calculating the exact price that goes on the quote...
+                  {previewLoading
+                    ? "Confirming the exact price that goes on the quote..."
+                    : "Approximate. The exact price is confirmed when you save or send."}
                 </p>
                 <div className="border-t border-[var(--brd)]/40 pt-2 mt-2 space-y-0.5 max-h-32 overflow-y-auto">
                   {clientEstimate.breakdown.map((b, i) => (

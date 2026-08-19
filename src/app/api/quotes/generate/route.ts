@@ -370,6 +370,9 @@ interface QuoteInput {
   b2b_special_instructions?: string;
   /** Client-facing scope narrative, rendered on the quote's Scope of work. */
   b2b_scope?: string;
+  /** Logistics scope: direct_delivery | receive_and_deliver | receive_and_recover.
+   *  Drives the warehouse-receiving / recover-original surcharge. */
+  b2b_job_scope?: JobScope;
   b2b_payment_method?: "card" | "invoice";
   /** When payment is invoice: on_completion | net_15 */
   b2b_invoice_terms?: string;
@@ -724,6 +727,13 @@ import {
   applyProcessingRecoveryAndRound,
   grossUpForProcessing,
 } from "@/lib/pricing/processing-recovery";
+import {
+  computeJobScopeSurcharge,
+  isValidJobScope,
+  B2B_RECOVER_UPLIFT_PCT_DEFAULT,
+  B2B_RECEIVING_FEE_DEFAULT,
+  type JobScope,
+} from "@/lib/pricing/b2b-job-scope-pricing";
 import { priceCabinetryFlatBand } from "@/lib/pricing/b2b-flatband";
 import {
   accessProfileSurcharge,
@@ -5760,6 +5770,51 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         next[k] = applyProcessingRecoveryToTier(t, config, tierRounding);
       }
       officeTiers = next;
+    }
+  }
+
+  // Job-scope surcharge (warehouse receiving / recover-original swap). Applied
+  // post-recovery so it matches the admin pricing-preview exactly (see
+  // computeJobScopeSurcharge and /api/admin/b2b-delivery/pricing-preview).
+  // Skipped when a full pre-tax override is in force — that number is final.
+  if (
+    (svcType === "b2b_delivery" || svcType === "b2b_oneoff") &&
+    custom_price &&
+    !(factors as Record<string, unknown>).b2b_full_pre_tax_override_applied
+  ) {
+    const js = isValidJobScope(input.b2b_job_scope)
+      ? input.b2b_job_scope
+      : "direct_delivery";
+    if (js !== "direct_delivery") {
+      const scope = computeJobScopeSurcharge(js, custom_price.price, {
+        recoverUpliftPct: cfgNum(
+          config,
+          "b2b_recover_uplift_pct",
+          B2B_RECOVER_UPLIFT_PCT_DEFAULT,
+        ),
+        receivingFee: cfgNum(
+          config,
+          "b2b_receiving_fee",
+          B2B_RECEIVING_FEE_DEFAULT,
+        ),
+      });
+      if (scope.addPreTax > 0) {
+        const scopeTaxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
+        const newPrice =
+          Math.round((custom_price.price + scope.addPreTax) * 100) / 100;
+        const newTax = Math.round(newPrice * scopeTaxRate);
+        custom_price = {
+          ...custom_price,
+          price: newPrice,
+          tax: newTax,
+          total: newPrice + newTax,
+        };
+        const f = factors as Record<string, unknown>;
+        if (Array.isArray(f.b2b_price_breakdown)) {
+          f.b2b_price_breakdown = [...f.b2b_price_breakdown, ...scope.lines];
+        }
+        f.b2b_job_scope = js;
+      }
     }
   }
 

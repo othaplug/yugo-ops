@@ -126,6 +126,7 @@ export default function B2BOneOffDeliveryForm({
         crews={crews}
         organizations={organizations}
         verticals={verticals}
+        jobScope={jobScope}
         onSubmitSuccess={handleSubmitSuccess}
       />
     </div>
