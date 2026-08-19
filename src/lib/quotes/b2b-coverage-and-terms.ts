@@ -130,7 +130,7 @@ export const B2B_TERMS_FULL: { heading: string; body: string[] }[] = [
   {
     heading: "1. Parties and services",
     body: [
-      "These Commercial Terms & Conditions govern the delivery, white-glove handling, and any assembly, installation, or warehouse-receiving services (the \"Services\") provided by Yugo Technologies Inc. (\"Yugo\") to the business client identified on the accepted quote (the \"Client\").",
+      "These Commercial Terms & Conditions govern the delivery, white-glove handling, and any assembly, installation, or warehouse-receiving services (the \"Services\") provided by HELLOYUGO Inc., operating as Yugo (\"Yugo\"), to the business client identified on the accepted quote (the \"Client\").",
       "The Services are limited to those itemized on the accepted quote. Unless expressly stated, the Services do not include hard-wired electrical or plumbing connection, mounting into masonry, plaster, or substrates of unknown composition, modification of goods or premises, removal of existing furniture, or storage beyond the scheduled delivery date. Assembly is limited to manufacturer-intended, hand-tool assembly.",
     ],
   },

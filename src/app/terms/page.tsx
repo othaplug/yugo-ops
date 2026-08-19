@@ -14,7 +14,7 @@ const INK_BODY = "#3A3A38"; // comfortable reading ink on cream
 const INK_MUTED = "#5A554F"; // captions / disclaimer
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: "Commercial Terms | Yugo" };
+  return { title: "Commercial Terms" };
 }
 
 export default function TermsPage() {
