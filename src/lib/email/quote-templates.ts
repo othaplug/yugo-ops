@@ -45,6 +45,7 @@ import {
   getB2BQuoteEmailSubheading,
   quoteEmailCrewLine,
 } from "@/lib/quotes/b2b-quote-copy";
+import { B2B_INCLUDED_COVERAGE } from "@/lib/quotes/b2b-coverage-and-terms";
 
 /* Typography: hero = Instrument Serif + Georgia; light cream shell + wine wordmark (readable in light & dark mail clients). */
 /* ─── Light shell (main quote letter — wine logo, WCAG-friendly on cream) ─── */
@@ -322,6 +323,9 @@ export interface QuoteTemplateData {
   b2bVerticalCode?: string | null;
   /** Matches `factors_applied.b2b_handling_type` for commercial quote emails. */
   b2bHandlingType?: string | null;
+  /** `factors_applied.b2b_payment_method`. "invoice" = approved partner on Net-30;
+   *  every other value (or null) is a one-off that pays in full at booking. */
+  b2bPaymentMethod?: string | null;
   // Bin rental
   binBundleLabel?: string | null;
   binDropOffDate?: string | null;
@@ -1399,7 +1403,6 @@ function binRentalTemplate(d: QuoteTemplateData): string {
 /* B2B One-Off */
 function b2bOneOffTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
-  if (d.b2bBusinessName) rows.push(["Business", d.b2bBusinessName]);
   if (d.b2bItems) rows.push(["Items", d.b2bItems]);
   rows.push(
     ...addressRowsWithAccess(
@@ -1420,19 +1423,56 @@ function b2bOneOffTemplate(d: QuoteTemplateData): string {
     d.b2bHandlingType ?? undefined,
   );
 
+  // Net-30 is available only to approved partner accounts (b2b_payment_method
+  // === "invoice"). Every other one-off pays in full at booking. Never show
+  // "or Net 30" unconditionally \u2014 it misrepresents the terms for one-offs.
+  const payInvoice = d.b2bPaymentMethod === "invoice";
+  const paymentLine = payInvoice
+    ? "Net 30 on your approved partner account"
+    : "Full payment at booking";
+
+  // "Prepared for {business}" \u2014 mirrors the quote page letterhead so the
+  // recipient sees who the quote is addressed to.
+  const business = d.b2bBusinessName?.trim();
+  const preparedFor = business
+    ? `<div style="${SHELL_EYEBROW}margin:0 0 4px;">Prepared for</div>
+       <div style="font-family:${HERO_FONT};font-size:20px;font-weight:400;color:${EMAIL_WINE};line-height:1.2;margin:0 0 18px;">${escapeHtmlEmail(business)}</div>`
+    : "";
+
+  // Yugo Asset Protection \u2014 one short line, matching the quote page.
+  const coverageLine = `
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 28px;">
+      <tr>
+        <td style="border-left:2px solid ${EMAIL_FOREST};padding:10px 0 10px 14px;">
+          <div style="${SHELL_EYEBROW}margin:0 0 4px;">Yugo Asset Protection</div>
+          <p style="font-size:12px;color:${SHELL_TX2};line-height:1.65;margin:0;">Full replacement or repair coverage to ${formatCurrency(B2B_INCLUDED_COVERAGE)} per shipment is included, wall to wall. Higher declared-value coverage is available for statement pieces.</p>
+        </td>
+      </tr>
+    </table>`;
+
+  // Reuse the computed quote URL to derive the site base for the terms link.
+  const baseUrl = d.quoteUrl.split("/quote/")[0];
+  const termsLink = `
+    <p style="font-size:11px;color:${SHELL_TX3};text-align:center;margin:0 0 20px;line-height:1.6">
+      Full <a href="${baseUrl}/terms" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;font-weight:600;">Commercial Terms &amp; Conditions</a> govern this quote.
+    </p>`;
+
   return quoteEmailLayout(`
     ${subHeading("Delivery Quote")}
     <p style="font-size:14px;font-weight:600;color:${EMAIL_WINE};letter-spacing:0;margin:0 0 20px;line-height:1.5;">${scopeLine}</p>
+    ${preparedFor}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`)}
     ${bodyText("Your commercial delivery quote is ready. One transparent flat rate with professional logistics from pickup through delivery.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
-    ${priceCard("Delivery All Inclusive", total, `+${formatCurrencyEmail(tax)} HST \u00b7 Full payment at booking (card) or Net 30 when invoiced`)}
+    ${coverageLine}
+    ${priceCard("Delivery All Inclusive", total, `+${formatCurrencyEmail(tax)} HST \u00b7 ${paymentLine}`)}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
     ${ctaButton(d.quoteUrl, "VIEW QUOTE & CONFIRM")}
     <p style="font-size:11px;color:${SHELL_TX3};text-align:center;margin:0 0 20px;line-height:1.6">
       Planning regular deliveries? Our <strong style="color:${EMAIL_WINE}">Partner Program</strong> offers priority scheduling, volume pricing, and a dedicated portal.
     </p>
+    ${termsLink}
     ${questionsFooter(d.coordinatorName, d.coordinatorPhone)}
   `);
 }

@@ -238,7 +238,7 @@ export function getB2BQuoteEmailSubheading(
   handlingType?: string | null,
 ): string {
   const { headline, subtitle } = getB2BQuoteHero(verticalCode, handlingType);
-  return `${headline} — ${subtitle.replace(/\.$/, "")}`;
+  return `${headline}. ${subtitle.replace(/\.$/, "")}`;
 }
 
 /** Loading/unloading row for logistics `InclusionsShowcase` when B2B handling is known. */

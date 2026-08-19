@@ -471,6 +471,10 @@ export async function POST(req: NextRequest) {
           typeof factors.b2b_handling_type === "string" && factors.b2b_handling_type.trim()
             ? factors.b2b_handling_type
             : null,
+        b2bPaymentMethod:
+          typeof factors.b2b_payment_method === "string"
+            ? factors.b2b_payment_method
+            : null,
         binBundleLabel: (factors.bin_bundle_label as string) ?? null,
         binDropOffDate: (factors.bin_drop_off_date as string) ?? null,
         binPickupDate: (factors.bin_pickup_date as string) ?? null,
