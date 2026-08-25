@@ -2256,19 +2256,16 @@ async function calcResidential(
   const addonForSig = addonResult.total - (addonResult.byTierExclusion.get("signature") ?? (addonResult.byTierExclusion.get("premier") ?? 0));
   const addonForEst = addonResult.total - (addonResult.byTierExclusion.get("estate") ?? 0);
 
-  let curPrice = curBase + addonForCur;
-  let sigPrice = sigBase + addonForSig;
-  let estPrice = estBase + addonForEst;
+  // Tier spread caps operate on the add-on-FREE bases; per-tier add-ons are
+  // layered on AFTER. Previously add-ons were added first and the caps then
+  // re-derived estPrice = sigPrice + gap, so Estate inherited Signature's add-on
+  // cost even when that add-on was excluded from Estate (the double-charge:
+  // Estate already includes packing, yet the packing add-on rode up via the gap).
+  let curPrice = curBase;
+  let sigPrice = sigBase;
+  let estPrice = estBase;
   if (sigPrice < curPrice) sigPrice = curPrice;
   if (estPrice < sigPrice) estPrice = sigPrice;
-
-  pd("Step 8 — addons:", {
-    addon_line_total: addonResult.total,
-    addon_for_essential: addonForCur,
-    addon_for_signature: addonForSig,
-    addon_for_estate: addonForEst,
-    prices_after_addons: { essential: curPrice, signature: sigPrice, estate: estPrice },
-  });
 
   // Tier spread caps: avoid flat multipliers inflating Signature/Estate on small moves
   const minCuratedToSig = cfgNum(config, "min_essential_signature_gap", cfgNum(config, "min_curated_signature_gap", 350));
@@ -2280,14 +2277,19 @@ async function calcResidential(
   const estGap = Math.min(Math.max(estPrice - sigPrice, minSigToEstate), maxSigToEstate);
   estPrice = sigPrice + estGap;
 
-  pd("Step 8b — tier spread caps (min/max gap between tiers):", {
-    min_essential_signature_gap: minCuratedToSig,
-    max_essential_signature_gap: maxCuratedToSig,
-    min_signature_estate_gap: minSigToEstate,
-    max_signature_estate_gap: maxSigToEstate,
+  // Layer per-tier add-ons on top of the capped bases (an excluded tier adds $0).
+  curPrice += addonForCur;
+  sigPrice += addonForSig;
+  estPrice += addonForEst;
+
+  pd("Step 8 — tier spread caps on bases, then per-tier add-ons layered:", {
+    addon_line_total: addonResult.total,
+    addon_for_essential: addonForCur,
+    addon_for_signature: addonForSig,
+    addon_for_estate: addonForEst,
     sig_gap_applied: sigGap,
     estate_gap_applied: estGap,
-    prices_after_spread_caps: { essential: curPrice, signature: sigPrice, estate: estPrice },
+    prices_after_addons: { essential: curPrice, signature: sigPrice, estate: estPrice },
   });
 
   const preProcessing = { essential: curPrice, signature: sigPrice, estate: estPrice };
