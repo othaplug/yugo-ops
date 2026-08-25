@@ -223,7 +223,8 @@ export async function POST(req: NextRequest) {
     // ── Flat-band rate card path (flooring, appliance) ───────────────────────
     if (FLAT_BAND_VERTICALS.has(verticalCode)) {
       const rcRaw = config.get("b2b_rate_card");
-      const rateCard = rcRaw ? parseRateCard(JSON.parse(rcRaw)) : null;
+      // parseRateCard tolerates the raw (and double-encoded) config string.
+      const rateCard = rcRaw ? parseRateCard(rcRaw) : null;
       if (!rateCard) {
         return NextResponse.json(
           { error: "Rate card not configured — run the b2b_rate_card SQL migration" },

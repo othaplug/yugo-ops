@@ -72,8 +72,25 @@ export type B2BRateCard = {
   appliances?: ApplianceTierRates;
 };
 
-/** Parse and validate a raw JSON value from platform_config as a B2BRateCard. */
+/**
+ * Parse and validate a raw platform_config value as a B2BRateCard.
+ *
+ * Accepts either the raw config string or an already-parsed value. The stored
+ * `b2b_rate_card` value was seeded double-encoded (a JSON string of a JSON
+ * string), so parsing it once yields a string, not an object — which silently
+ * failed the old `typeof !== "object"` guard and 500'd flooring/appliance
+ * pricing. Unwrap up to a few string layers so both encodings resolve.
+ */
 export function parseRateCard(raw: unknown): B2BRateCard | null {
-  if (!raw || typeof raw !== "object") return null;
-  return raw as B2BRateCard;
+  let v: unknown = raw;
+  let guard = 0;
+  while (typeof v === "string" && guard++ < 4) {
+    try {
+      v = JSON.parse(v);
+    } catch {
+      return null;
+    }
+  }
+  if (!v || typeof v !== "object") return null;
+  return v as B2BRateCard;
 }

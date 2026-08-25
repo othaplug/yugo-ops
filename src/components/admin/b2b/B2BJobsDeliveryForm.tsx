@@ -1739,24 +1739,28 @@ export default function B2BJobsDeliveryForm({
     );
     const b2bLineItems = effLines.map((l) => toB2bLinePayload(l, handlingType));
 
+    // An admin price override is the authoritative final number, so it is a
+    // valid escape hatch when the exact server price cannot be confirmed.
+    const ovAmt = parseNumberInput(overridePrice);
+    const hasOverride = ovAmt > 0;
+
     // Never persist the approximate client-side estimate on a real booking.
-    // If the authoritative server price is not already in hand, fetch it now
-    // and block the booking if it cannot be confirmed.
+    // If the authoritative server price is not already in hand (and no override
+    // is set), fetch it now and block the booking if it cannot be confirmed.
     let priceBlock = serverPricing;
-    if (!priceBlock && isBooking) {
+    if (!priceBlock && isBooking && !hasOverride) {
       priceBlock = await runPricingPreviewRef.current();
       if (!priceBlock) {
         setLoading(false);
         setError(
-          "Could not confirm the exact price. Check the delivery details and try again.",
+          "Could not confirm the exact price. Retry in a moment, or set an admin price override below to proceed.",
         );
         return;
       }
     }
     priceBlock = priceBlock ?? clientEstimate;
     const enginePreTax = priceBlock?.rounded_pre_tax ?? 0;
-    const ovAmt = parseNumberInput(overridePrice);
-    const finalPreTax = ovAmt > 0 ? ovAmt : enginePreTax;
+    const finalPreTax = hasOverride ? ovAmt : enginePreTax;
     const calculated_price = enginePreTax > 0 ? enginePreTax : null;
     const totalWithTax =
       finalPreTax > 0 ? Math.round(finalPreTax * 1.13 * 100) / 100 : null;
