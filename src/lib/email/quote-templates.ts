@@ -586,8 +586,13 @@ function tierCards(
           : `1px solid ${EMAIL_TIER_ESSENTIAL_BORDER}`;
       }
 
+      // The badge text MUST carry `!important` + `-webkit-text-fill-color` like
+      // every other text node here, or email clients (Apple Mail dark mode, and
+      // the forced link color from the wrapping <a>) override the white label to
+      // invisible — leaving just the wine background block. This was the bug.
+      const badgeFg = isRec ? badgeRecFg : badgeMutedFg;
       const badge = badgeText
-        ? `<span style="display:inline-block;padding:2px 9px;font-size:7px;font-weight:700;background-color:${isRec ? badgeRecBg : badgeMutedBg};color:${isRec ? badgeRecFg : badgeMutedFg};margin-left:8px;letter-spacing:0.5px;text-transform:uppercase;vertical-align:middle;">${badgeText}</span>`
+        ? `<span style="display:inline-block;padding:3px 10px;font-size:9px;font-weight:700;background-color:${isRec ? badgeRecBg : badgeMutedBg};color:${badgeFg} !important;-webkit-text-fill-color:${badgeFg};margin-left:8px;letter-spacing:0.5px;text-transform:uppercase;vertical-align:middle;">${badgeText}</span>`
         : "";
 
       // Recommended tier shows the full list; the others show their top items
