@@ -2130,18 +2130,18 @@ export async function generateMovePDFs(moveId: string): Promise<{ summaryPath: s
   const invoicePath = `moves/${moveId}/invoice-${displayId}.pdf`;
   const receiptPath = `moves/${moveId}/receipt-${displayId}.pdf`;
 
-  await admin.storage.from(BUCKET).upload(summaryPath, summaryBuffer, {
+  // cacheControl: "0" — Supabase Storage's default is 3600s, which
+  // let browsers/CDN serve the pre-regenerate PDF for up to an hour
+  // after a fresh upload. Every regen call has to be able to show its
+  // output immediately, so we ask Storage to never cache these files.
+  const uploadOpts = {
     contentType: "application/pdf",
     upsert: true,
-  });
-  await admin.storage.from(BUCKET).upload(invoicePath, invoiceBuffer, {
-    contentType: "application/pdf",
-    upsert: true,
-  });
-  await admin.storage.from(BUCKET).upload(receiptPath, receiptBuffer, {
-    contentType: "application/pdf",
-    upsert: true,
-  });
+    cacheControl: "0",
+  };
+  await admin.storage.from(BUCKET).upload(summaryPath, summaryBuffer, uploadOpts);
+  await admin.storage.from(BUCKET).upload(invoicePath, invoiceBuffer, uploadOpts);
+  await admin.storage.from(BUCKET).upload(receiptPath, receiptBuffer, uploadOpts);
 
   // Store storage paths (not public URLs): bucket is private; APIs create signed URLs on demand
   await admin
