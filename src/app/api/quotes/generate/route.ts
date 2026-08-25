@@ -738,6 +738,7 @@ import {
   type JobScope,
 } from "@/lib/pricing/b2b-job-scope-pricing";
 import { computeB2bFlatBandPrice } from "@/lib/pricing/b2b-flatband-vertical";
+import { effectiveExcludedTiers } from "@/lib/quotes/addon-visibility";
 import { priceCabinetryFlatBand } from "@/lib/pricing/b2b-flatband";
 import {
   accessProfileSurcharge,
@@ -1273,11 +1274,15 @@ async function calculateAddons(
       ...(variantOut ? { variant: variantOut } : {}),
     });
 
-    const excluded = addon.excluded_tiers as string[] | null;
-    if (excluded && excluded.length > 0) {
-      for (const tier of excluded) {
-        byTierExclusion.set(tier, (byTierExclusion.get(tier) ?? 0) + cost);
-      }
+    // Per-tier exclusion via the single source of truth (DB excluded_tiers +
+    // the code-side Estate-included list), so a tier that already includes this
+    // service is never charged for it (fixes the Estate/Signature double-charge).
+    const excluded = effectiveExcludedTiers(
+      addon.slug as string,
+      addon.excluded_tiers as string[] | null,
+    );
+    for (const tier of excluded) {
+      byTierExclusion.set(tier, (byTierExclusion.get(tier) ?? 0) + cost);
     }
   }
 

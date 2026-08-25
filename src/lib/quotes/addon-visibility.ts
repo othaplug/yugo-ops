@@ -25,6 +25,49 @@ function slugHiddenForEstate(slug: string): boolean {
   return (ESTATE_INCLUDED_SLUGS as readonly string[]).includes(slug);
 }
 
+/**
+ * SINGLE SOURCE OF TRUTH for add-on tier exclusion. Combines the DB
+ * `excluded_tiers` column with the code-side ESTATE_INCLUDED_SLUGS list, so the
+ * pricing engine, the client quote page, and the admin live preview can never
+ * disagree about which tiers a given add-on applies to. A tier in the returned
+ * set means: this add-on is already included in that tier — do NOT charge it and
+ * do NOT show it as a buyable add-on.
+ */
+/** Legacy tier names in the DB mapped to the canonical Essential/Signature/Estate. */
+const TIER_ALIASES: Record<string, string> = {
+  premier: "signature",
+  curated: "essential",
+  essentials: "essential",
+};
+
+export function effectiveExcludedTiers(
+  slug: string,
+  excludedTiers: string[] | null | undefined,
+): string[] {
+  const set = new Set(
+    (excludedTiers ?? [])
+      .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
+      .map((t) => {
+        const lc = t.trim().toLowerCase();
+        return TIER_ALIASES[lc] ?? lc;
+      }),
+  );
+  // Estate bundles these services regardless of what the DB column says.
+  if (slugHiddenForEstate(slug)) set.add("estate");
+  return [...set];
+}
+
+/** True when `slug` is already included in `tier` (so it must not be charged). */
+export function isAddonIncludedInTier(
+  slug: string,
+  excludedTiers: string[] | null | undefined,
+  tier: string,
+): boolean {
+  return effectiveExcludedTiers(slug, excludedTiers).includes(
+    (tier || "").toLowerCase(),
+  );
+}
+
 /** Quote UI label when Estate tier (e.g. five wardrobe boxes already in package). */
 export function estateAddonDisplayName(slug: string, defaultName: string): string {
   if (slug === "wardrobe_boxes") return "Extra wardrobe boxes";
@@ -33,15 +76,11 @@ export function estateAddonDisplayName(slug: string, defaultName: string): strin
 
 /** Add-ons shown for the selected / recommended residential tier. */
 export function getVisibleAddons(allAddons: Addon[], recommendedTier: string | null | undefined): Addon[] {
-  const tier = (recommendedTier || "essential").toLowerCase();
-  return allAddons.filter((a) => {
-    if (a.excluded_tiers?.includes(tier)) return false;
-    if (tier === "estate") {
-      if (slugHiddenForEstate(a.slug)) return false;
-      return true;
-    }
-    return true;
-  });
+  const tier = (TIER_ALIASES[(recommendedTier || "essential").toLowerCase()] ??
+    (recommendedTier || "essential").toLowerCase());
+  return allAddons.filter(
+    (a) => !effectiveExcludedTiers(a.slug, a.excluded_tiers).includes(tier),
+  );
 }
 
 export function isAddonHiddenForTier(slug: string, tier: string): boolean {

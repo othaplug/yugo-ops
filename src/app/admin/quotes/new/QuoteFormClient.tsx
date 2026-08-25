@@ -171,6 +171,7 @@ import {
 import {
   getVisibleAddons,
   ESTATE_ADDON_UI_LINES,
+  effectiveExcludedTiers,
 } from "@/lib/quotes/addon-visibility";
 import { withStorageWeeklyPrice } from "@/lib/quotes/storage-pricing";
 import {
@@ -1118,7 +1119,7 @@ function quickEstimate(
   config: Record<string, string>,
   serviceType: string,
   moveSize: string,
-  addonTotal: number,
+  addonTotals: { essential: number; signature: number; estate: number },
   fromAccess?: string,
   toAccess?: string,
   inventoryScore?: number,
@@ -1254,9 +1255,9 @@ function quickEstimate(
     ) + roundTo(estateLabourUplift, rounding);
 
   return {
-    essential: curBase + addonTotal,
-    signature: sig + addonTotal,
-    estate: est + addonTotal,
+    essential: curBase + addonTotals.essential,
+    signature: sig + addonTotals.signature,
+    estate: est + addonTotals.estate,
   };
 }
 
@@ -5191,40 +5192,72 @@ export default function QuoteFormClient({
   }, [serviceType]);
 
   // ── Add-on subtotal ───────────────────────
-  const addonSubtotal = useMemo(() => {
-    let total = 0;
-    for (const [id, sel] of selectedAddons) {
-      const addon = allAddons.find((a) => a.id === id);
-      if (!addon) continue;
+  // Cost of one selected add-on line (shared by the flat subtotal and the
+  // per-tier totals so they can never diverge).
+  const selectedAddonCost = useCallback(
+    (
+      addon: (typeof allAddons)[number],
+      sel: (typeof selectedAddons) extends Map<unknown, infer V> ? V : never,
+    ): number => {
       switch (addon.price_type) {
         case "flat":
-          total += addon.price;
-          break;
+          return addon.price;
         case "per_unit":
-          total += addon.price * (sel.quantity || 1);
-          break;
+          return addon.price * (sel.quantity || 1);
         case "tiered":
-          total += addon.tiers?.[sel.tier_index ?? 0]?.price ?? 0;
-          break;
+          return addon.tiers?.[sel.tier_index ?? 0]?.price ?? 0;
         case "percent":
-          total += Math.round(1199 * (addon.percent_value ?? 0));
-          break;
+          return Math.round(1199 * (addon.percent_value ?? 0));
         case "variant_matrix": {
           const cfg = addon.variant_config ?? null;
+          let t = 0;
           for (const v of sel.variants ?? []) {
             const cell = lookupTVMountCell(
               cfg,
               v.size as import("@/lib/quotes/tv-mount-matrix").TVMountSizeBand,
               v.type as TVMountType,
             );
-            if (cell) total += cell.price * (v.quantity || 1);
+            if (cell) t += cell.price * (v.quantity || 1);
           }
-          break;
+          return t;
         }
+        default:
+          return 0;
       }
+    },
+    [],
+  );
+
+  const addonSubtotal = useMemo(() => {
+    let total = 0;
+    for (const [id, sel] of selectedAddons) {
+      const addon = allAddons.find((a) => a.id === id);
+      if (!addon) continue;
+      total += selectedAddonCost(addon, sel);
     }
     return total;
-  }, [selectedAddons, allAddons]);
+  }, [selectedAddons, allAddons, selectedAddonCost]);
+
+  // Per-tier add-on totals: a service already included in a tier (Estate packing,
+  // Signature assembly, ...) contributes $0 to that tier, so the live preview
+  // matches what the server actually charges. Single source of truth via
+  // effectiveExcludedTiers.
+  const addonTierTotals = useMemo(() => {
+    const totals = { essential: 0, signature: 0, estate: 0 };
+    for (const [id, sel] of selectedAddons) {
+      const addon = allAddons.find((a) => a.id === id);
+      if (!addon) continue;
+      const cost = selectedAddonCost(addon, sel);
+      const excluded = effectiveExcludedTiers(
+        addon.slug as string,
+        addon.excluded_tiers as string[] | null,
+      );
+      if (!excluded.includes("essential")) totals.essential += cost;
+      if (!excluded.includes("signature")) totals.signature += cost;
+      if (!excluded.includes("estate")) totals.estate += cost;
+    }
+    return totals;
+  }, [selectedAddons, allAddons, selectedAddonCost]);
 
   const configMap = useMemo(() => new Map(Object.entries(config)), [config]);
 
@@ -5375,7 +5408,7 @@ export default function QuoteFormClient({
         config,
         serviceType,
         moveSize,
-        addonSubtotal,
+        addonTierTotals,
         fromAccess || undefined,
         toAccess || undefined,
         inventoryScoreWithBoxes > 0 ? inventoryScoreWithBoxes : undefined,
@@ -5389,7 +5422,7 @@ export default function QuoteFormClient({
       config,
       serviceType,
       moveSize,
-      addonSubtotal,
+      addonTierTotals,
       fromAccess,
       toAccess,
       inventoryScoreWithBoxes,
