@@ -69,6 +69,13 @@ type MoveRow = {
    *  Prefer this over the crew row's `members` field (which is the whole
    *  team roster and can carry names never dispatched to this job). */
   assigned_members?: string[] | null;
+  /** Business name when the job is billed to a company (office move,
+   *  B2B delivery, event with corporate billing, or any residential
+   *  move flagged as commercial). Empty for individual bookings. */
+  company_name?: string | null;
+  business_type?: string | null;
+  organization_id?: string | null;
+  source_company?: string | null;
   truck_primary?: string | null;
   truck_secondary?: string | null;
   actual_hours?: number | null;
@@ -86,17 +93,25 @@ function moveDisplayId(m: MoveRow): string {
   return m.move_code || `MV-${m.id.slice(0, 8).toUpperCase()}`;
 }
 
-function invoiceNumber(m: MoveRow): string {
+// Strip the leading letter prefix AND the separator hyphen so
+// "MV-30356" becomes "30356", not "-30356" (which produced
+// "INV--30356" / "REC--30356" on every invoice + receipt).
+function jobNumericSuffix(m: MoveRow): string {
   const code = m.move_code || "";
-  const num = code.replace(/^[A-Z]+/i, "") || m.id.slice(0, 4).toUpperCase();
-  return `INV-${num}`;
+  return code.replace(/^[A-Z]+-?/i, "") || m.id.slice(0, 4).toUpperCase();
+}
+function invoiceNumber(m: MoveRow): string {
+  return `INV-${jobNumericSuffix(m)}`;
+}
+function receiptNumber(m: MoveRow): string {
+  return `REC-${jobNumericSuffix(m)}`;
 }
 
-function receiptNumber(m: MoveRow): string {
-  const code = m.move_code || "";
-  const num = code.replace(/^[A-Z]+/i, "") || m.id.slice(0, 4).toUpperCase();
-  return `REC-${num}`;
-}
+/** Yugo's GST/HST registration number, shown on every invoice per
+ *  Canadian CRA rules for invoices over $30. Hardcoded — this is a
+ *  company-level identifier that changes only if the business
+ *  restructures. */
+const YUGO_GST_HST_NUMBER = "762694743RT0001";
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "-";
@@ -324,6 +339,72 @@ function eyebrowFor(serviceType: string | null | undefined): string {
 function ledeFor(serviceType: string | null | undefined): string {
   const label = eyebrowFor(serviceType).toLowerCase();
   return `${label.charAt(0).toUpperCase() + label.slice(1)}, issued on completion. A record of the work carried out and the terms it was carried out under.`;
+}
+
+/** Bill-to block for the invoice / receipt header. Returns the party
+ *  name (the entity being billed) as the large serif value, plus any
+ *  attention/contact line that appears below. Company billing wins:
+ *  a job with company_name shows "Acme Inc." as the party, with
+ *  "Attn: Jane Doe" below; personal jobs show the client name as the
+ *  party with contact lines below. */
+function billTo(move: MoveRow): {
+  party: string;
+  attn?: string;
+  isCompany: boolean;
+} {
+  const company = String(move.company_name ?? move.source_company ?? "").trim();
+  const client = String(move.client_name ?? "").trim();
+  const svc = String(move.service_type ?? "").toLowerCase();
+  const isB2BService =
+    svc === "b2b_delivery" ||
+    svc === "b2b_oneoff" ||
+    svc === "office_move";
+  if (company) {
+    return {
+      party: company,
+      attn: client && client.toLowerCase() !== company.toLowerCase() ? `Attn: ${client}` : undefined,
+      isCompany: true,
+    };
+  }
+  if (isB2BService && client) {
+    return { party: client, isCompany: true };
+  }
+  return { party: client || "-", isCompany: false };
+}
+
+/** Line-item label for the invoice's first row per service type.
+ *  Reuses serviceDisplay() so the label matches the summary but adds
+ *  the "delivery service" / "move" suffix the invoice reads more
+ *  naturally with. */
+function invoiceLineLabel(
+  serviceType: string | null | undefined,
+  tierSelected: string | null | undefined,
+): string {
+  const s = String(serviceType ?? "").toLowerCase();
+  const svc = serviceDisplay(s, tierSelected);
+  if (
+    s === "b2b_delivery" ||
+    s === "b2b_oneoff" ||
+    s === "single_item"
+  ) {
+    return `${svc.label} · Delivery service`;
+  }
+  if (s === "bin_rental") {
+    return `${svc.label} · Rental package`;
+  }
+  if (s === "labour_only") {
+    return `${svc.label} · Labour service`;
+  }
+  if (s === "event") {
+    return `${svc.label} · Event service`;
+  }
+  if (s === "white_glove" || s === "specialty") {
+    return `${svc.label} · Delivery service`;
+  }
+  if (s === "office_move") {
+    return `${svc.label} · Relocation service`;
+  }
+  return `${svc.label} · Move service`;
 }
 
 /** Parse an inventory item name that may carry a "xN" / "×N" suffix
@@ -1052,8 +1133,20 @@ function generateEditorialMoveSummaryPDF(
   return Buffer.from(doc.output("arraybuffer"));
 }
 
-/** Invoice PDF: wine gradient shell, centered wordmark, readable spacing (no wordmark text) */
+/** Public entry: dispatches to the editorial redesign. */
 function generateInvoicePDF(
+  move: MoveRow,
+  extraItems: ExtraRow,
+  tierLabel: string,
+  tierPrice: number,
+  logoBase64: string,
+  footerLine: string,
+  companyLegal: string,
+): Buffer {
+  return generateEditorialInvoicePDF(move, extraItems, tierLabel, tierPrice, logoBase64, footerLine, companyLegal);
+}
+
+function _legacyGenerateInvoicePDF(
   move: MoveRow,
   extraItems: ExtraRow,
   tierLabel: string,
@@ -1166,8 +1259,23 @@ function generateInvoicePDF(
   return Buffer.from(doc.output("arraybuffer"));
 }
 
-/** Payment receipt: premium shell, generous line height, optional client signature from sign-off */
+/** Public entry: dispatches to the editorial redesign. */
 function generateReceiptPDF(
+  move: MoveRow,
+  tierLabel: string,
+  depositPaid: number,
+  balancePaid: number,
+  logoBase64: string,
+  footerLine: string,
+  signatureDataUrl?: string | null,
+  cardLast4?: string | null,
+): Buffer {
+  return generateEditorialReceiptPDF(
+    move, tierLabel, depositPaid, balancePaid, logoBase64, footerLine, signatureDataUrl, cardLast4,
+  );
+}
+
+function _legacyGenerateReceiptPDF(
   move: MoveRow,
   tierLabel: string,
   depositPaid: number,
@@ -1291,6 +1399,660 @@ function generateReceiptPDF(
   pdfFooter(doc, footerLine);
   drawBottomAccentBar(doc, true);
   return Buffer.from(doc.output("arraybuffer"));
+}
+
+/** ─── Editorial Invoice generator ────────────────────────────────────
+ *  Same wine hero + footer bands and hairline-ruled interior as the
+ *  Move Summary. Bill-to auto-switches to company name when the move
+ *  is billed to a business. GST/HST number, address, and support
+ *  email surface on every doc. */
+function generateEditorialInvoicePDF(
+  move: MoveRow,
+  extraItems: ExtraRow,
+  _tierLabel: string,
+  tierPrice: number,
+  _logoBase64: string,
+  _footerLine: string,
+  _companyLegal: string,
+): Buffer {
+  const WINE_RGB: [number, number, number] = [43, 4, 22];
+  const CREAM_RGB: [number, number, number] = [249, 237, 228];
+  const CREAM_MUTED: [number, number, number] = [216, 202, 190];
+  const INK: [number, number, number] = [26, 19, 16];
+  const INK_MUTED: [number, number, number] = [122, 110, 103];
+  const RULE_RGB: [number, number, number] = [232, 225, 218];
+
+  const doc = new jsPDF("p", "pt", "letter");
+  const SERIF = registerSerifFont(doc);
+  const SANS = registerBrownFont(doc);
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 50;
+  const contentW = pageW - margin * 2;
+
+  const invNum = invoiceNumber(move);
+  const issued = formatEditorialDate(move.completed_at || move.scheduled_date);
+  const bill = billTo(move);
+  const svcType = String(move.service_type ?? move.move_type ?? "").toLowerCase();
+  const lineLabel = invoiceLineLabel(svcType, move.tier_selected);
+
+  const approvedExtras = extraItems.filter(
+    (e) => (e.status ?? "approved") === "approved" && (e.fee_cents ?? 0) > 0,
+  );
+  const subtotal =
+    tierPrice +
+    approvedExtras.reduce(
+      (s, e) => s + ((Number(e.fee_cents) || 0) / 100) * (e.quantity || 1),
+      0,
+    );
+  const hst = calcHST(subtotal);
+  const total = subtotal + hst;
+  const depositPaid = Number(move.deposit_amount ?? Math.round(tierPrice * 0.25));
+  const balancePaid = Number(move.balance_amount ?? (total - depositPaid));
+  const amountOwing = Math.max(0, total - depositPaid - balancePaid);
+
+  const wordmarkCream = loadYugoWordmarkCreamBase64();
+  const symbol = loadYugoSymbolBase64();
+
+  // ─── HERO ───────────────────────────────────────────
+  const heroH = 108;
+  doc.setFillColor(...WINE_RGB);
+  doc.rect(0, 0, pageW, heroH, "F");
+  if (wordmarkCream) {
+    try {
+      const wmH = 22;
+      const wmW = wmH * 2.2;
+      doc.addImage(wordmarkCream, "PNG", margin, 40, wmW, wmH);
+    } catch { /* skip */ }
+  }
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+  doc.text("INVOICE", pageW - margin, 40, { align: "right" });
+  doc.setTextColor(...CREAM_RGB);
+  doc.setFont(SERIF, "normal");
+  doc.setFontSize(28);
+  doc.text(invNum, pageW - margin, 68, { align: "right" });
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(8.5);
+  doc.text(`ISSUED ${issued.toUpperCase()}`, pageW - margin, 86, { align: "right" });
+
+  let y = heroH + 34;
+  const drawRule = () => {
+    doc.setDrawColor(...RULE_RGB);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageW - margin, y);
+    y += 26;
+  };
+  const eyebrow = (label: string) => {
+    doc.setTextColor(...WINE_RGB);
+    doc.setFont(SANS, "bold");
+    doc.setFontSize(8);
+    doc.text(label, margin, y);
+  };
+
+  // ─── BILL TO ────────────────────────────────────────
+  eyebrow("BILL TO");
+  y += 22;
+  doc.setTextColor(...INK);
+  doc.setFont(SERIF, "normal");
+  doc.setFontSize(30);
+  doc.text(bill.party, margin, y);
+
+  y += 18;
+  doc.setTextColor(...INK_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(11);
+  const contactLines: string[] = [];
+  if (bill.attn) contactLines.push(bill.attn);
+  if (move.client_email) contactLines.push(move.client_email);
+  if (move.client_phone) contactLines.push(move.client_phone);
+  contactLines.forEach((ln) => {
+    doc.text(ln, margin, y);
+    y += 13;
+  });
+  y += 12;
+  drawRule();
+
+  // ─── ROUTE ──────────────────────────────────────────
+  const colW = (contentW - 40) / 2;
+  const rightColX = margin + colW + 40;
+  const fromParsed = parseAddress(move.from_address);
+  const toParsed = parseAddress(move.to_address);
+  const routeBlock = (x: number, label: string, parsed: ReturnType<typeof parseAddress>) => {
+    let cy = y;
+    doc.setTextColor(...WINE_RGB);
+    doc.setFont(SANS, "bold");
+    doc.setFontSize(8);
+    doc.text(label, x, cy);
+    cy += 16;
+    doc.setTextColor(...INK);
+    doc.setFont(SERIF, "normal");
+    doc.setFontSize(17);
+    doc.splitTextToSize(parsed.street, colW).forEach((ln: string) => {
+      doc.text(ln, x, cy);
+      cy += 19;
+    });
+    if (parsed.cityLine || parsed.postal) {
+      doc.setTextColor(...INK_MUTED);
+      doc.setFont(SANS, "normal");
+      doc.setFontSize(10);
+      const sub = [parsed.cityLine, parsed.postal].filter(Boolean).join("   ");
+      doc.text(sub, x, cy + 2);
+    }
+  };
+  routeBlock(margin, "COLLECTED FROM", fromParsed);
+  routeBlock(rightColX, "DELIVERED TO", toParsed);
+  const arrowY = y + 12;
+  doc.setDrawColor(...WINE_RGB);
+  doc.setLineWidth(0.8);
+  doc.line(margin + colW + 6, arrowY, rightColX - 10, arrowY);
+  doc.line(rightColX - 12, arrowY - 3, rightColX - 6, arrowY);
+  doc.line(rightColX - 12, arrowY + 3, rightColX - 6, arrowY);
+  y += 62;
+  drawRule();
+
+  // ─── LINE ITEMS ─────────────────────────────────────
+  eyebrow("LINE ITEMS");
+  y += 18;
+
+  // Header row
+  doc.setTextColor(...INK_MUTED);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+  doc.text("DESCRIPTION", margin, y);
+  doc.text("AMOUNT", pageW - margin, y, { align: "right" });
+  y += 8;
+  doc.setDrawColor(...RULE_RGB);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, pageW - margin, y);
+  y += 16;
+
+  const row = (label: string, amt: number, opts?: { emphasize?: boolean }) => {
+    doc.setTextColor(...INK);
+    doc.setFont(SANS, opts?.emphasize ? "bold" : "normal");
+    doc.setFontSize(12);
+    doc.text(label, margin, y);
+    doc.setFont(SERIF, "normal");
+    doc.setFontSize(14);
+    doc.text(formatCurrency(amt), pageW - margin, y, { align: "right" });
+    y += 22;
+  };
+  row(lineLabel, tierPrice);
+  approvedExtras.forEach((e) => {
+    row(
+      `Add-on · ${e.description || "Item"}`,
+      ((Number(e.fee_cents) || 0) / 100) * (e.quantity || 1),
+    );
+  });
+
+  // Subtotal / HST separated by hairline
+  y += 4;
+  doc.setDrawColor(...RULE_RGB);
+  doc.line(margin, y, pageW - margin, y);
+  y += 18;
+  doc.setTextColor(...INK_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(11);
+  doc.text("Subtotal", margin, y);
+  doc.setTextColor(...INK);
+  doc.setFont(SERIF, "normal");
+  doc.setFontSize(14);
+  doc.text(formatCurrency(subtotal), pageW - margin, y, { align: "right" });
+  y += 20;
+
+  doc.setTextColor(...INK_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(11);
+  doc.text("HST (13%)", margin, y);
+  doc.setTextColor(...INK);
+  doc.setFont(SERIF, "normal");
+  doc.setFontSize(14);
+  doc.text(formatCurrency(hst), pageW - margin, y, { align: "right" });
+  y += 24;
+
+  // Total (big serif)
+  doc.setDrawColor(...RULE_RGB);
+  doc.line(margin, y, pageW - margin, y);
+  y += 22;
+  doc.setTextColor(...INK);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(10.5);
+  doc.text("TOTAL", margin, y);
+  doc.setTextColor(...WINE_RGB);
+  doc.setFont(SERIF, "normal");
+  doc.setFontSize(26);
+  doc.text(formatCurrency(total), pageW - margin, y + 2, { align: "right" });
+  y += 26;
+  drawRule();
+
+  // ─── PAYMENT SUMMARY ─────────────────────────────────
+  eyebrow("PAYMENT SUMMARY");
+  y += 18;
+  const paidRow = (label: string, amt: number) => {
+    doc.setTextColor(...INK_MUTED);
+    doc.setFont(SANS, "normal");
+    doc.setFontSize(11);
+    doc.text(label, margin, y);
+    doc.setFont(SERIF, "normal");
+    doc.setFontSize(13);
+    doc.text(`-${formatCurrency(amt)}`, pageW - margin, y, { align: "right" });
+    y += 18;
+  };
+  paidRow(`Deposit paid · ${formatEditorialDate(move.deposit_paid_at)}`, depositPaid);
+  paidRow(`Balance paid · ${formatEditorialDate(move.balance_paid_at)}`, balancePaid);
+  y += 6;
+  doc.setDrawColor(...RULE_RGB);
+  doc.line(margin, y, pageW - margin, y);
+  y += 22;
+  doc.setTextColor(...INK);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(10.5);
+  doc.text("AMOUNT OWING", margin, y);
+  doc.setTextColor(...WINE_RGB);
+  doc.setFont(SERIF, "normal");
+  doc.setFontSize(26);
+  doc.text(formatCurrency(amountOwing), pageW - margin, y + 2, { align: "right" });
+
+  // ─── FOOTER ─────────────────────────────────────────
+  const footerH = 200;
+  const footerTop = pageH - footerH;
+  doc.setFillColor(...WINE_RGB);
+  doc.rect(0, footerTop, pageW, footerH, "F");
+  const fPad = 28;
+  const fColW = (contentW - 40) / 2;
+  const fRightX = margin + fColW + 40;
+  const fy = footerTop + fPad;
+
+  // Left: Terms + GST/HST number
+  doc.setTextColor(...CREAM_RGB);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+  doc.text("TERMS", margin, fy);
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(9.5);
+  const termsLines = doc.splitTextToSize(
+    "Balance is settled from the card on file after job completion. Enhanced valuation and any change-order fees agreed in writing appear as separate lines above.",
+    fColW,
+  );
+  let fyLeft = fy + 14;
+  termsLines.forEach((ln: string) => {
+    doc.text(ln, margin, fyLeft);
+    fyLeft += 12;
+  });
+  fyLeft += 8;
+  doc.setTextColor(...CREAM_RGB);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+  doc.text("GST / HST", margin, fyLeft);
+  fyLeft += 12;
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(10);
+  doc.text(YUGO_GST_HST_NUMBER, margin, fyLeft);
+
+  // Right: Support column
+  doc.setTextColor(...CREAM_RGB);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+  doc.text("QUESTIONS?", fRightX, fy);
+  doc.setFont(SERIF, "normal");
+  doc.setFontSize(15);
+  doc.text("info@helloyugo.com", fRightX, fy + 20);
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(9.5);
+  doc.splitTextToSize(
+    "Reply to this invoice or reach us at (647) 370 4525 — we respond same or next business day.",
+    fColW,
+  ).forEach((ln: string, i: number) => {
+    doc.text(ln, fRightX, fy + 40 + i * 12);
+  });
+
+  // Bottom legal
+  const legalY = pageH - 36;
+  doc.setDrawColor(76, 47, 60);
+  doc.setLineWidth(0.4);
+  doc.line(margin, legalY - 14, pageW - margin, legalY - 14);
+  doc.setTextColor(...CREAM_RGB);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+  doc.text("HELLOYUGO INC.", margin, legalY - 2);
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(8);
+  doc.text(
+    "  ·  507 KING STREET EAST, TORONTO, ONTARIO M5A 1M3",
+    margin + doc.getTextWidth("HELLOYUGO INC."),
+    legalY - 2,
+  );
+  doc.text(
+    "(647) 370 4525  ·  INFO@HELLOYUGO.COM  ·  ITSYUGO.COM",
+    margin,
+    legalY + 10,
+  );
+  if (symbol) {
+    try {
+      const sSize = 32;
+      doc.addImage(symbol, "PNG", pageW - margin - sSize, legalY - sSize + 10, sSize, sSize);
+    } catch { /* skip */ }
+  }
+
+  return Buffer.from(doc.output("arraybuffer"));
+}
+
+/** ─── Editorial Payment Receipt generator ─────────────────────── */
+function generateEditorialReceiptPDF(
+  move: MoveRow,
+  _tierLabel: string,
+  depositPaid: number,
+  balancePaid: number,
+  _logoBase64: string,
+  _footerLine: string,
+  signatureDataUrl?: string | null,
+  cardLast4?: string | null,
+): Buffer {
+  const WINE_RGB: [number, number, number] = [43, 4, 22];
+  const CREAM_RGB: [number, number, number] = [249, 237, 228];
+  const CREAM_MUTED: [number, number, number] = [216, 202, 190];
+  const INK: [number, number, number] = [26, 19, 16];
+  const INK_MUTED: [number, number, number] = [122, 110, 103];
+  const RULE_RGB: [number, number, number] = [232, 225, 218];
+
+  const doc = new jsPDF("p", "pt", "letter");
+  const SERIF = registerSerifFont(doc);
+  const SANS = registerBrownFont(doc);
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 50;
+  const contentW = pageW - margin * 2;
+
+  const recNum = receiptNumber(move);
+  const paidDate = formatEditorialDate(move.balance_paid_at || move.deposit_paid_at || move.completed_at);
+  const bill = billTo(move);
+  const svcType = String(move.service_type ?? move.move_type ?? "").toLowerCase();
+  const svc = serviceDisplay(svcType, move.tier_selected);
+  const jobNoun = ["b2b_delivery", "b2b_oneoff", "single_item", "bin_rental"].includes(svcType)
+    ? "delivery"
+    : "move";
+  const cardSuffix = cardLast4 ? `Card ending ${cardLast4}` : "Card on file";
+  const totalPaid = depositPaid + balancePaid;
+
+  const wordmarkCream = loadYugoWordmarkCreamBase64();
+  const symbol = loadYugoSymbolBase64();
+
+  // Hero
+  const heroH = 108;
+  doc.setFillColor(...WINE_RGB);
+  doc.rect(0, 0, pageW, heroH, "F");
+  if (wordmarkCream) {
+    try {
+      const wmH = 22;
+      const wmW = wmH * 2.2;
+      doc.addImage(wordmarkCream, "PNG", margin, 40, wmW, wmH);
+    } catch { /* skip */ }
+  }
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+  doc.text("PAYMENT RECEIPT", pageW - margin, 40, { align: "right" });
+  doc.setTextColor(...CREAM_RGB);
+  doc.setFont(SERIF, "normal");
+  doc.setFontSize(28);
+  doc.text(recNum, pageW - margin, 68, { align: "right" });
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(8.5);
+  doc.text(`PAID ${paidDate.toUpperCase()}`, pageW - margin, 86, { align: "right" });
+
+  let y = heroH + 34;
+  const drawRule = () => {
+    doc.setDrawColor(...RULE_RGB);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageW - margin, y);
+    y += 26;
+  };
+  const eyebrow = (label: string) => {
+    doc.setTextColor(...WINE_RGB);
+    doc.setFont(SANS, "bold");
+    doc.setFontSize(8);
+    doc.text(label, margin, y);
+  };
+
+  // Paid by
+  eyebrow("PAID BY");
+  y += 22;
+  doc.setTextColor(...INK);
+  doc.setFont(SERIF, "normal");
+  doc.setFontSize(30);
+  doc.text(bill.party, margin, y);
+  y += 18;
+  doc.setTextColor(...INK_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(11);
+  const contactLines: string[] = [];
+  if (bill.attn) contactLines.push(bill.attn);
+  if (move.client_email) contactLines.push(move.client_email);
+  if (move.client_phone) contactLines.push(move.client_phone);
+  contactLines.forEach((ln) => {
+    doc.text(ln, margin, y);
+    y += 13;
+  });
+  y += 12;
+  drawRule();
+
+  // Route
+  const colW = (contentW - 40) / 2;
+  const rightColX = margin + colW + 40;
+  const fromParsed = parseAddress(move.from_address);
+  const toParsed = parseAddress(move.to_address);
+  const routeBlock = (x: number, label: string, parsed: ReturnType<typeof parseAddress>) => {
+    let cy = y;
+    doc.setTextColor(...WINE_RGB);
+    doc.setFont(SANS, "bold");
+    doc.setFontSize(8);
+    doc.text(label, x, cy);
+    cy += 16;
+    doc.setTextColor(...INK);
+    doc.setFont(SERIF, "normal");
+    doc.setFontSize(17);
+    doc.splitTextToSize(parsed.street, colW).forEach((ln: string) => {
+      doc.text(ln, x, cy);
+      cy += 19;
+    });
+    if (parsed.cityLine || parsed.postal) {
+      doc.setTextColor(...INK_MUTED);
+      doc.setFont(SANS, "normal");
+      doc.setFontSize(10);
+      doc.text([parsed.cityLine, parsed.postal].filter(Boolean).join("   "), x, cy + 2);
+    }
+  };
+  routeBlock(margin, "COLLECTED FROM", fromParsed);
+  routeBlock(rightColX, "DELIVERED TO", toParsed);
+  const arrowY = y + 12;
+  doc.setDrawColor(...WINE_RGB);
+  doc.setLineWidth(0.8);
+  doc.line(margin + colW + 6, arrowY, rightColX - 10, arrowY);
+  doc.line(rightColX - 12, arrowY - 3, rightColX - 6, arrowY);
+  doc.line(rightColX - 12, arrowY + 3, rightColX - 6, arrowY);
+  y += 62;
+  drawRule();
+
+  // Payments table
+  eyebrow("PAYMENTS");
+  y += 18;
+  doc.setTextColor(...INK_MUTED);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+  const colDate = margin;
+  const colDesc = margin + 90;
+  const colMethod = margin + 320;
+  const colAmt = pageW - margin;
+  doc.text("DATE", colDate, y);
+  doc.text("DESCRIPTION", colDesc, y);
+  doc.text("METHOD", colMethod, y);
+  doc.text("AMOUNT", colAmt, y, { align: "right" });
+  y += 8;
+  doc.setDrawColor(...RULE_RGB);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, pageW - margin, y);
+  y += 18;
+  const payRow = (date: string, desc: string, method: string, amt: number) => {
+    doc.setTextColor(...INK);
+    doc.setFont(SANS, "normal");
+    doc.setFontSize(11);
+    doc.text(date, colDate, y);
+    doc.text(desc, colDesc, y);
+    doc.text(method, colMethod, y);
+    doc.setFont(SERIF, "normal");
+    doc.setFontSize(14);
+    doc.text(formatCurrency(amt), colAmt, y, { align: "right" });
+    y += 22;
+  };
+  if (depositPaid > 0) {
+    payRow(
+      formatEditorialDate(move.deposit_paid_at),
+      `Deposit · ${svc.label} ${jobNoun}`,
+      cardSuffix,
+      depositPaid,
+    );
+  }
+  if (balancePaid > 0 || depositPaid === 0) {
+    payRow(
+      formatEditorialDate(move.balance_paid_at || move.completed_at),
+      `Balance · ${svc.label} ${jobNoun}`,
+      cardSuffix,
+      balancePaid,
+    );
+  }
+  y += 4;
+  doc.setDrawColor(...RULE_RGB);
+  doc.line(margin, y, pageW - margin, y);
+  y += 22;
+  doc.setTextColor(...INK);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(10.5);
+  doc.text("TOTAL PAID", margin, y);
+  doc.setTextColor(...WINE_RGB);
+  doc.setFont(SERIF, "normal");
+  doc.setFontSize(26);
+  doc.text(formatCurrency(totalPaid), pageW - margin, y + 2, { align: "right" });
+  y += 26;
+  drawRule();
+
+  // Confirm note + signature
+  doc.setTextColor(...INK_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(11.5);
+  const confirmLines = doc.splitTextToSize(
+    `This receipt confirms full payment for your completed ${jobNoun}. A duplicate copy has been emailed to the address above. Keep this record for your files.`,
+    colW,
+  );
+  confirmLines.forEach((ln: string, i: number) => {
+    doc.text(ln, margin, y + i * 14);
+  });
+
+  const sig =
+    typeof signatureDataUrl === "string" && signatureDataUrl.trim().startsWith("data:image")
+      ? signatureDataUrl.trim()
+      : null;
+  if (sig) {
+    const sigX = rightColX;
+    const sigY = y;
+    doc.setTextColor(...WINE_RGB);
+    doc.setFont(SANS, "bold");
+    doc.setFontSize(8);
+    doc.text("CLIENT SIGNATURE", sigX, sigY);
+    try {
+      doc.addImage(sig, "PNG", sigX, sigY + 8, 220, 56);
+    } catch { /* skip */ }
+    doc.setDrawColor(...RULE_RGB);
+    doc.setLineWidth(0.5);
+    doc.rect(sigX, sigY + 8, 220, 56);
+  }
+
+  // Footer
+  const footerH = 200;
+  const footerTop = pageH - footerH;
+  doc.setFillColor(...WINE_RGB);
+  doc.rect(0, footerTop, pageW, footerH, "F");
+  const fPad = 28;
+  const fColW = (contentW - 40) / 2;
+  const fRightX = margin + fColW + 40;
+  const fy = footerTop + fPad;
+  doc.setTextColor(...CREAM_RGB);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+  doc.text("ON RECORD", margin, fy);
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(9.5);
+  doc.splitTextToSize(
+    "Payments processed by Square. This receipt is your legal proof of payment. Refunds, if applicable, follow the terms on your original quote.",
+    fColW,
+  ).forEach((ln: string, i: number) => {
+    doc.text(ln, margin, fy + 14 + i * 12);
+  });
+  doc.setTextColor(...CREAM_RGB);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+  doc.text("NEED A DUPLICATE?", fRightX, fy);
+  doc.setFont(SERIF, "normal");
+  doc.setFontSize(15);
+  doc.text("info@helloyugo.com", fRightX, fy + 20);
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(9.5);
+  doc.splitTextToSize(
+    "We keep every receipt on file. Reach out any time for a fresh PDF or additional statement.",
+    fColW,
+  ).forEach((ln: string, i: number) => {
+    doc.text(ln, fRightX, fy + 40 + i * 12);
+  });
+
+  const legalY = pageH - 36;
+  doc.setDrawColor(76, 47, 60);
+  doc.setLineWidth(0.4);
+  doc.line(margin, legalY - 14, pageW - margin, legalY - 14);
+  doc.setTextColor(...CREAM_RGB);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+  doc.text("HELLOYUGO INC.", margin, legalY - 2);
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(8);
+  doc.text(
+    "  ·  507 KING STREET EAST, TORONTO, ONTARIO M5A 1M3",
+    margin + doc.getTextWidth("HELLOYUGO INC."),
+    legalY - 2,
+  );
+  doc.text(
+    "(647) 370 4525  ·  INFO@HELLOYUGO.COM  ·  ITSYUGO.COM",
+    margin,
+    legalY + 10,
+  );
+  if (symbol) {
+    try {
+      const sSize = 32;
+      doc.addImage(symbol, "PNG", pageW - margin - sSize, legalY - sSize + 10, sSize, sSize);
+    } catch { /* skip */ }
+  }
+
+  return Buffer.from(doc.output("arraybuffer"));
+}
+
+/** Shared "10 July 2026" formatter used across the editorial docs.
+ *  Falls back to whatever formatDate returned when parsing fails. */
+function formatEditorialDate(iso: string | null | undefined): string {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return formatDate(iso);
+  const day = d.toLocaleDateString("en-CA", { day: "numeric", timeZone: "America/Toronto" });
+  const month = d.toLocaleDateString("en-CA", { month: "long", timeZone: "America/Toronto" });
+  const year = d.toLocaleDateString("en-CA", { year: "numeric", timeZone: "America/Toronto" });
+  return `${day} ${month} ${year}`;
 }
 
 export async function generateMovePDFs(moveId: string): Promise<{ summaryPath: string; invoicePath: string; receiptPath: string }> {
