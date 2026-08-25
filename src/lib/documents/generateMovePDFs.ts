@@ -65,6 +65,10 @@ type MoveRow = {
   deposit_paid_at: string | null;
   balance_paid_at: string | null;
   crew_id: string | null;
+  /** Per-job snapshot of the specific crew members assigned to this move.
+   *  Prefer this over the crew row's `members` field (which is the whole
+   *  team roster and can carry names never dispatched to this job). */
+  assigned_members?: string[] | null;
   truck_primary?: string | null;
   truck_secondary?: string | null;
   actual_hours?: number | null;
@@ -254,11 +258,28 @@ function generateMoveSummaryPDF(
     contentW,
   );
   setBodyText(doc, 9);
-  const crewNames =
+  // Prefer moves.assigned_members (per-job subset the dispatcher actually
+  // rostered onto this job) over crews.members (the whole team roster,
+  // which routinely carries names never dispatched to this move — the
+  // "John, Gary, Che, Belah, Connor" bug on the MV-30356 summary).
+  // Fall back to the crew row only when the move has no snapshot.
+  const assigned = Array.isArray(move.assigned_members)
+    ? (move.assigned_members as string[]).filter(
+        (s) => typeof s === "string" && s.trim().length > 0,
+      )
+    : [];
+  const rosterMembers =
     crew?.members && Array.isArray(crew.members)
-      ? (crew.members as string[]).join(", ")
+      ? (crew.members as string[]).filter(
+          (s) => typeof s === "string" && s.trim().length > 0,
+        )
+      : [];
+  const displayMembers = assigned.length > 0 ? assigned : rosterMembers;
+  const crewNames =
+    displayMembers.length > 0
+      ? displayMembers.join(", ")
       : crew?.name || "-";
-  const crewCount = Array.isArray(crew?.members) ? (crew.members as string[]).length : 0;
+  const crewCount = displayMembers.length;
   const moverWord = logistics ? "logistics professionals" : "movers";
   const durationLine =
     move.actual_hours != null
