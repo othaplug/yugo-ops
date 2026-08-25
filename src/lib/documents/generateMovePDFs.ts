@@ -137,6 +137,31 @@ function loadYugoSymbolBase64(): string {
   }
 }
 
+/** Register Instrument Serif with the jsPDF instance so setFont("InstrumentSerif")
+ *  resolves. Returns the family name if the embed succeeded, or falls back to
+ *  the built-in "times" if the TTF isn't on disk (e.g. legacy build without
+ *  public/fonts/instrument-serif/). Brown is intentionally NOT embedded — the
+ *  file is proprietary; body copy stays on jsPDF's "helvetica" until a licensed
+ *  Brown TTF is added. */
+function registerSerifFont(doc: jsPDF): string {
+  const dir = path.join(process.cwd(), "public", "fonts", "instrument-serif");
+  try {
+    const reg = fs.readFileSync(path.join(dir, "InstrumentSerif-Regular.ttf"), { encoding: "base64" });
+    doc.addFileToVFS("InstrumentSerif-Regular.ttf", reg);
+    doc.addFont("InstrumentSerif-Regular.ttf", "InstrumentSerif", "normal");
+  } catch {
+    return "times";
+  }
+  try {
+    const ita = fs.readFileSync(path.join(dir, "InstrumentSerif-Italic.ttf"), { encoding: "base64" });
+    doc.addFileToVFS("InstrumentSerif-Italic.ttf", ita);
+    doc.addFont("InstrumentSerif-Italic.ttf", "InstrumentSerif", "italic");
+  } catch {
+    /* italic optional */
+  }
+  return "InstrumentSerif";
+}
+
 /** ─── Editorial Move Summary helpers ────────────────────────────────────
  *  Small pure formatters used by the redesigned generateMoveSummaryPDF.
  *  Kept close to the generator so anything the PDF prints is defined in
@@ -275,6 +300,24 @@ function eyebrowFor(serviceType: string | null | undefined): string {
 function ledeFor(serviceType: string | null | undefined): string {
   const label = eyebrowFor(serviceType).toLowerCase();
   return `${label.charAt(0).toUpperCase() + label.slice(1)}, issued on completion. A record of the work carried out and the terms it was carried out under.`;
+}
+
+/** Parse an inventory item name that may carry a "xN" / "×N" suffix
+ *  (coordinators write "Quartz high-top tables x6" as a single string
+ *  because move_inventory has no quantity column). Returns the clean
+ *  name and the quantity so the PDF can print each in its own column
+ *  instead of "Quartz high-top tables x6" beside a "1" that reads
+ *  contradictory. */
+function parseItemQuantity(raw: string | null | undefined): { name: string; quantity: number } {
+  const s = String(raw ?? "").trim();
+  if (!s) return { name: "Item", quantity: 1 };
+  const m = s.match(/^(.*?)[\s]+[x×]\s*(\d+)\s*$/i);
+  if (m) {
+    const name = m[1].trim();
+    const qty = Math.max(1, parseInt(m[2], 10) || 1);
+    return { name: name || s, quantity: qty };
+  }
+  return { name: s, quantity: 1 };
 }
 
 function parseAddress(full: string | null | undefined): { street: string; cityLine: string; postal: string } {
@@ -556,14 +599,13 @@ function generateEditorialMoveSummaryPDF(
   const RULE_RGB: [number, number, number] = [232, 225, 218];
   const PAPER_RGB: [number, number, number] = [255, 252, 247];
 
-  // Fonts: jsPDF built-ins for this pass. Instrument Serif + Brown
-  // embedding lands in a follow-up (needs licensed .ttf files).
-  // "times" reads closest to Instrument Serif; "helvetica" is the
-  // adequate stand-in for Brown until font embedding ships.
-  const SERIF = "times";
-  const SANS = "helvetica";
-
   const doc = new jsPDF("p", "pt", "letter");
+  // Fonts: Instrument Serif (OFL, public/fonts/instrument-serif/*.ttf)
+  // is embedded per-document. Brown is proprietary and NOT embedded —
+  // body sans stays on jsPDF's built-in "helvetica" until a licensed
+  // Brown TTF is added under public/fonts/brown/.
+  const SERIF = registerSerifFont(doc);
+  const SANS = "helvetica";
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 50;
@@ -601,7 +643,19 @@ function generateEditorialMoveSummaryPDF(
   const durationCaption = move.actual_hours != null ? "As delivered" : "Estimated at survey";
 
   const dateStr = formatDate(move.completed_at || move.scheduled_date);
-  const dateForHero = dateStr.toUpperCase();
+  // Editorial hero format: "10 JULY 2026" (day, then month, then year).
+  // Fall back to whatever formatDate returned when parsing fails.
+  const dateSource = move.completed_at || move.scheduled_date;
+  let dateForHero = dateStr.toUpperCase();
+  if (dateSource) {
+    const d = new Date(dateSource);
+    if (!Number.isNaN(d.getTime())) {
+      const day = d.toLocaleDateString("en-CA", { day: "numeric", timeZone: "America/Toronto" });
+      const month = d.toLocaleDateString("en-CA", { month: "long", timeZone: "America/Toronto" }).toUpperCase();
+      const year = d.toLocaleDateString("en-CA", { year: "numeric", timeZone: "America/Toronto" });
+      dateForHero = `${day} ${month} ${year}`;
+    }
+  }
 
   const wordmarkCream = loadYugoWordmarkCreamBase64();
   const symbol = loadYugoSymbolBase64();
@@ -850,10 +904,13 @@ function generateEditorialMoveSummaryPDF(
       y += 14;
 
       // Aggregate identical item names into (name, count) pairs.
+      // Each row contributes its parsed quantity (from a "xN" suffix
+      // in the item name), not just 1. A row like "Quartz high-top
+      // tables x6" adds 6 to the total, not 1.
       const counts = new Map<string, number>();
       for (const it of items) {
-        const name = (it.item_name || "Item").toString();
-        counts.set(name, (counts.get(name) ?? 0) + 1);
+        const parsed = parseItemQuantity(it.item_name);
+        counts.set(parsed.name, (counts.get(parsed.name) ?? 0) + parsed.quantity);
       }
       for (const [name, count] of counts.entries()) {
         totalItems += count;
