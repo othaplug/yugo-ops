@@ -183,7 +183,9 @@ export async function GET(req: NextRequest) {
 
       if (schedule.crew_id) {
         const snap = await fetchCrewAssignmentSnapshot(supabase, schedule.crew_id);
-        insertPayload.assigned_members = snap.assigned_members;
+        // Store the crew name for display, but leave assigned_members empty (no
+        // hand-picked subset on an auto-generated delivery) so the client
+        // tracking page shows a neutral crew label instead of the whole team.
         insertPayload.assigned_crew_name = snap.assigned_crew_name;
       }
 

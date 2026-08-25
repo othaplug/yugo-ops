@@ -116,11 +116,17 @@ export async function POST(req: NextRequest) {
       ? jobRow.assigned_members
       : [];
     const nameMissing = !String(jobRow.assigned_crew_name || "").trim();
-    const membersMissing = am.length === 0;
-    if (membersMissing || nameMissing) {
+    // Deliveries: do NOT snapshot the full roster into assigned_members at job
+    // start. That overwrote a coordinator's hand-picked subset and made the
+    // client tracking page name the entire team; when no subset was picked,
+    // assigned_members stays empty (dispatch falls back to the roster for the
+    // count, the client sees a neutral crew label). Moves keep the prior
+    // behaviour to avoid changing residential tracking.
+    const backfillMembers = am.length === 0 && jobType === "move";
+    if (backfillMembers || nameMissing) {
       const snap = await fetchCrewAssignmentSnapshot(admin, jobRow.crew_id);
       const patch: Record<string, unknown> = {};
-      if (membersMissing) patch.assigned_members = snap.assigned_members;
+      if (backfillMembers) patch.assigned_members = snap.assigned_members;
       if (nameMissing) patch.assigned_crew_name = snap.assigned_crew_name;
       if (Object.keys(patch).length) {
         const tbl = jobType === "move" ? "moves" : "deliveries";

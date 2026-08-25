@@ -283,10 +283,14 @@ export async function POST(req: NextRequest) {
           )
           .map((m) => m.trim());
         const deduped = [...new Set(picked)];
-        insertPayload.assigned_members =
-          deduped.length > 0 ? deduped : snap.assigned_members;
+        // Only persist a genuine hand-picked subset. When none is chosen, leave
+        // assigned_members empty (assigned_crew_name still identifies the team)
+        // rather than snapshotting the full roster — dispatch falls back to the
+        // roster for the crew count, and the client tracking page shows a neutral
+        // "your Yugo crew" instead of naming everyone. A later hand-pick sticks.
+        insertPayload.assigned_members = deduped.length > 0 ? deduped : [];
       } else {
-        insertPayload.assigned_members = snap.assigned_members;
+        insertPayload.assigned_members = [];
       }
     }
 
