@@ -139,10 +139,7 @@ function loadYugoSymbolBase64(): string {
 
 /** Register Instrument Serif with the jsPDF instance so setFont("InstrumentSerif")
  *  resolves. Returns the family name if the embed succeeded, or falls back to
- *  the built-in "times" if the TTF isn't on disk (e.g. legacy build without
- *  public/fonts/instrument-serif/). Brown is intentionally NOT embedded — the
- *  file is proprietary; body copy stays on jsPDF's "helvetica" until a licensed
- *  Brown TTF is added. */
+ *  the built-in "times" if the TTF isn't on disk. */
 function registerSerifFont(doc: jsPDF): string {
   const dir = path.join(process.cwd(), "public", "fonts", "instrument-serif");
   try {
@@ -160,6 +157,33 @@ function registerSerifFont(doc: jsPDF): string {
     /* italic optional */
   }
   return "InstrumentSerif";
+}
+
+/** Register Brown with the jsPDF instance for body copy so
+ *  setFont("Brown") resolves. Falls back to jsPDF's built-in
+ *  "helvetica" when the TTF is missing (a partial deploy). Brown
+ *  ships as woff2 in the app CSS; a build-time conversion produced
+ *  the TTF variants under public/fonts/brown/. */
+function registerBrownFont(doc: jsPDF): string {
+  const dir = path.join(process.cwd(), "public", "fonts", "brown");
+  const load = (
+    file: string,
+    styleKey: "normal" | "bold" | "italic" | "bolditalic",
+  ): boolean => {
+    try {
+      const b64 = fs.readFileSync(path.join(dir, file), { encoding: "base64" });
+      doc.addFileToVFS(file, b64);
+      doc.addFont(file, "Brown", styleKey);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  if (!load("Brown-Regular.ttf", "normal")) return "helvetica";
+  load("Brown-Bold.ttf", "bold");
+  load("Brown-Regular-Italic.ttf", "italic");
+  load("Brown-Bold-Italic.ttf", "bolditalic");
+  return "Brown";
 }
 
 /** ─── Editorial Move Summary helpers ────────────────────────────────────
@@ -600,12 +624,11 @@ function generateEditorialMoveSummaryPDF(
   const PAPER_RGB: [number, number, number] = [255, 252, 247];
 
   const doc = new jsPDF("p", "pt", "letter");
-  // Fonts: Instrument Serif (OFL, public/fonts/instrument-serif/*.ttf)
-  // is embedded per-document. Brown is proprietary and NOT embedded —
-  // body sans stays on jsPDF's built-in "helvetica" until a licensed
-  // Brown TTF is added under public/fonts/brown/.
+  // Brand fonts embedded per-document via jsPDF's font vfs. Both
+  // fall back to jsPDF built-ins when their TTF is missing at read
+  // time so a partial deploy doesn't crash generation.
   const SERIF = registerSerifFont(doc);
-  const SANS = "helvetica";
+  const SANS = registerBrownFont(doc);
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 50;
