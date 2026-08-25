@@ -2099,6 +2099,10 @@ export default function B2BJobsDeliveryForm({
           : undefined,
         b2b_haul_away_units: haulAwayUnits ? Number(haulAwayUnits) : undefined,
         b2b_returns_pickup: returnsPickup,
+        // Flooring flat-band inputs so /api/quotes/generate prices flooring the
+        // same way the pricing-preview does (else it fell back to dimensional).
+        b2b_flooring_material: flooringMaterial || undefined,
+        b2b_box_count: boxCount ? Number(boxCount) : undefined,
         b2b_delivery_window: timeWindow.trim() || undefined,
         b2b_complexity_addons: [
           ...(highValue ? ["high_value"] : []),

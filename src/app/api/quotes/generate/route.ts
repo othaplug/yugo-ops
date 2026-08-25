@@ -373,6 +373,9 @@ interface QuoteInput {
   /** Logistics scope: direct_delivery | receive_and_deliver | receive_and_recover.
    *  Drives the warehouse-receiving / recover-original surcharge. */
   b2b_job_scope?: JobScope;
+  /** Flooring flat-band inputs (vinyl | hardwood | tile; box count override). */
+  b2b_flooring_material?: string;
+  b2b_box_count?: number;
   b2b_payment_method?: "card" | "invoice";
   /** When payment is invoice: on_completion | net_15 */
   b2b_invoice_terms?: string;
@@ -734,6 +737,7 @@ import {
   B2B_RECEIVING_FEE_DEFAULT,
   type JobScope,
 } from "@/lib/pricing/b2b-job-scope-pricing";
+import { computeB2bFlatBandPrice } from "@/lib/pricing/b2b-flatband-vertical";
 import { priceCabinetryFlatBand } from "@/lib/pricing/b2b-flatband";
 import {
   accessProfileSurcharge,
@@ -3628,38 +3632,80 @@ async function calcB2bOneoff(
     const items = lineItemsFromQuotePayload(input);
     const stops = stopsFromQuotePayload(input);
 
-    // ── Cabinetry: continuous cabinet-unit engine ───────────────────────────
-    // Cabinetry is priced by the SAME priceCabinetryFlatBand the admin preview
-    // calls, so the saved/sent quote equals what the operator previewed. The
-    // old per-piece dimensional engine no longer touches cabinetry (it over-
-    // quoted a normal kitchen past $1,600); it stays only for the other B2B
-    // verticals below.
-    if (loaded.vertical.code === "cabinetry") {
+    // ── Flat-band verticals (cabinetry, flooring, appliance) ─────────────────
+    // These are priced by the SAME flat-band engines the admin pricing-preview
+    // calls, so the saved/sent quote equals what the operator previewed and what
+    // a created delivery saves. Cabinetry uses priceCabinetryFlatBand; flooring
+    // and appliance use the shared computeB2bFlatBandPrice (the rate-card engine
+    // the preview route runs). The old per-piece dimensional engine no longer
+    // touches any of them (it over-quoted a normal kitchen past $1,600).
+    if (
+      loaded.vertical.code === "cabinetry" ||
+      loaded.vertical.code === "flooring" ||
+      loaded.vertical.code === "appliance"
+    ) {
       const partnerOrgIdCab = input.b2b_partner_organization_id?.trim() || null;
       const extraPickupStops = Math.max(
         0,
         stops.filter((s) => s.type === "pickup").length - 1,
       );
-      const fb = priceCabinetryFlatBand(
-        {
-          lines: items.map((i) => ({
-            description: i.description,
-            quantity: i.quantity,
-            weight_category: i.weight_category,
-            unit_type: i.unit_type,
-            declared_value: i.declared_value,
-          })),
-          deliveryKmFromOffice: b2bLocationExtras.deliveryKmFromGta ?? 0,
-          extraPickupStops,
-          handlingType: (input.b2b_handling_type || "threshold").toLowerCase(),
-          isPartner: !!partnerOrgIdCab,
-          weekend: isMoveDateWeekend(input.move_date),
-          longCarry:
-            input.from_access === "long_carry" || input.to_access === "long_carry",
-          stairsFlights: input.b2b_stairs_flights ?? 0,
-        },
-        config,
-      );
+      const fb =
+        loaded.vertical.code === "cabinetry"
+          ? priceCabinetryFlatBand(
+              {
+                lines: items.map((i) => ({
+                  description: i.description,
+                  quantity: i.quantity,
+                  weight_category: i.weight_category,
+                  unit_type: i.unit_type,
+                  declared_value: i.declared_value,
+                })),
+                deliveryKmFromOffice: b2bLocationExtras.deliveryKmFromGta ?? 0,
+                extraPickupStops,
+                handlingType: (input.b2b_handling_type || "threshold").toLowerCase(),
+                isPartner: !!partnerOrgIdCab,
+                weekend: isMoveDateWeekend(input.move_date),
+                longCarry:
+                  input.from_access === "long_carry" ||
+                  input.to_access === "long_carry",
+                stairsFlights: input.b2b_stairs_flights ?? 0,
+              },
+              config,
+            )
+          : (() => {
+              const r = computeB2bFlatBandPrice(
+                {
+                  verticalCode: loaded.vertical.code,
+                  deliveryKmFromGta: b2bLocationExtras.deliveryKmFromGta ?? 0,
+                  lines: items.map((i) => ({
+                    quantity: i.quantity,
+                    weight_category: i.weight_category,
+                  })),
+                  isPartner: !!partnerOrgIdCab,
+                  weekend: isMoveDateWeekend(input.move_date),
+                  longCarry:
+                    input.from_access === "long_carry" ||
+                    input.to_access === "long_carry",
+                  stairsFlights: input.b2b_stairs_flights ?? 0,
+                  handlingType: (input.b2b_handling_type || "threshold").toLowerCase(),
+                  flooringMaterial: input.b2b_flooring_material,
+                  boxCount: input.b2b_box_count,
+                },
+                config,
+              );
+              return {
+                roundedPreTax: r.roundedPreTax,
+                subtotalPreRound: r.subtotalPreRound,
+                breakdown: r.breakdown,
+                truck: r.truck,
+                crew: r.crew,
+                includes: r.includes,
+                requiresCustomQuote: r.requiresCustomQuote,
+                weightedUnits: r.totalUnits,
+                rawPieceCount: r.totalUnits,
+                zone: r.zone,
+              };
+            })();
 
       const engineSubtotal = fb.roundedPreTax;
       const subOvr = parsePositivePreTaxOverride(input.b2b_subtotal_override);
@@ -5749,7 +5795,15 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     // a sharper $875). Round those to nearest $25 instead. Every other
     // service stays on $50.
     const tierRounding = svcType === "single_item" ? 25 : 50;
-    if (custom_price) {
+    // Flat-band b2b verticals (cabinetry / flooring / appliance) already baked CC
+    // processing recovery into their price inside the flat-band engine. Applying
+    // it again here double-rounds and bumped large jobs +$50 over the previewed
+    // price (e.g. an $850 cabinetry job saved as $900). Skip the re-apply for
+    // them so the sent quote equals the preview at every value.
+    const flatBandAlreadyRecovered =
+      (svcType === "b2b_delivery" || svcType === "b2b_oneoff") &&
+      (factors as Record<string, unknown>).b2b_flatband === true;
+    if (custom_price && !flatBandAlreadyRecovered) {
       custom_price = applyProcessingRecoveryToTier(custom_price, config, tierRounding);
       // The CC-recovery gross-up bumps the price but leaves the event deposit
       // computed on the pre-recovery number, so a full-payment event showed a
