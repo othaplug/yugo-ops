@@ -64,7 +64,11 @@ export async function POST(
   let tokenIssued = false;
   if (!del.recipient_tracking_token) {
     try {
-      const t = await issueDeliveryTrackingTokens(del.id);
+      // forceRecipient: the operator explicitly clicked send, so mint the
+      // recipient token even when business and customer are the same contact.
+      const t = await issueDeliveryTrackingTokens(del.id, {
+        forceRecipient: true,
+      });
       tokenIssued = !!t.recipientToken;
     } catch (err) {
       return NextResponse.json(
@@ -78,8 +82,11 @@ export async function POST(
     }
   }
 
+  let sendResult;
   try {
-    await sendB2BTrackingNotifications(del.id, { audiences: ["recipient"] });
+    sendResult = await sendB2BTrackingNotifications(del.id, {
+      audiences: ["recipient"],
+    });
   } catch (err) {
     return NextResponse.json(
       {
@@ -91,6 +98,12 @@ export async function POST(
     );
   }
 
+  // Build the recipient list from what ACTUALLY sent, not column presence.
+  const sentTo = [
+    sendResult.recipient.smsSent ? `SMS ${del.customer_phone}` : null,
+    sendResult.recipient.emailSent ? `email ${del.customer_email}` : null,
+  ].filter(Boolean);
+
   await logAudit({
     userEmail: user?.email ?? null,
     action: "edit_move",
@@ -100,18 +113,32 @@ export async function POST(
       kind: "customer_tracking_notification_sent",
       delivery_number: del.delivery_number,
       token_issued: tokenIssued,
+      sms_sent: sendResult.recipient.smsSent,
+      email_sent: sendResult.recipient.emailSent,
+      skipped_reason: sendResult.recipient.skippedReason ?? null,
       to_phone: del.customer_phone ?? null,
       to_email: del.customer_email ?? null,
     },
   });
 
+  // Nothing actually went out — tell the operator the truth instead of a
+  // false "sent" toast (missing provider key, provider rejection, etc.).
+  if (sentTo.length === 0) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          sendResult.recipient.skippedReason ||
+          "The tracking notification could not be delivered (the SMS/email provider rejected it or is not configured). Nothing was sent to the customer.",
+      },
+      { status: 502 },
+    );
+  }
+
   return NextResponse.json({
     ok: true,
     delivery_number: del.delivery_number,
     token_issued: tokenIssued,
-    sent_to: [
-      del.customer_phone ? `SMS ${del.customer_phone}` : null,
-      del.customer_email ? `email ${del.customer_email}` : null,
-    ].filter(Boolean),
+    sent_to: sentTo,
   });
 }

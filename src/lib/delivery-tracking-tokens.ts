@@ -36,7 +36,10 @@ export type DeliveryTrackAudience = "business" | "recipient";
  * Issue unique tracking tokens for a B2B one-off delivery (idempotent).
  * Returns existing tokens if already set.
  */
-export async function issueDeliveryTrackingTokens(deliveryId: string): Promise<{
+export async function issueDeliveryTrackingTokens(
+  deliveryId: string,
+  opts: { forceRecipient?: boolean } = {},
+): Promise<{
   trackingToken: string;
   recipientToken: string | null;
 }> {
@@ -52,7 +55,9 @@ export async function issueDeliveryTrackingTokens(deliveryId: string): Promise<{
     (row.booking_type === "one_off" && !row.organization_id) ||
     cat === "b2b" ||
     vertical.length > 0;
-  if (!isB2BDeliveryJob) {
+  // forceRecipient (operator clicked "Send customer tracking") means intent is
+  // already confirmed — mint even when the heuristic wouldn't.
+  if (!isB2BDeliveryJob && !opts.forceRecipient) {
     return {
       trackingToken: row.tracking_token || "",
       recipientToken: row.recipient_tracking_token || null,
@@ -80,7 +85,14 @@ export async function issueDeliveryTrackingTokens(deliveryId: string): Promise<{
     !!custName &&
     (custEmail ? custEmail !== bizEmail : true) &&
     (custPhone ? custPhone !== bizPhone : true);
-  if (customerIsReachable && customerIsDistinct && !recipientToken) {
+  // On a forced (manual) send, a reachable customer is enough — the business
+  // and customer contact being the same person (common on true one-offs) must
+  // not silently suppress the tracking link.
+  if (
+    customerIsReachable &&
+    (customerIsDistinct || opts.forceRecipient) &&
+    !recipientToken
+  ) {
     recipientToken = opaqueToken();
   }
 
@@ -96,15 +108,33 @@ export async function issueDeliveryTrackingTokens(deliveryId: string): Promise<{
   return { trackingToken, recipientToken: recipientToken || null };
 }
 
+export type TrackingSendResult = {
+  recipient: {
+    attempted: boolean;
+    emailSent: boolean;
+    smsSent: boolean;
+    skippedReason?: string;
+  };
+  business: { attempted: boolean; emailSent: boolean; smsSent: boolean };
+};
+
 export async function sendB2BTrackingNotifications(
   deliveryId: string,
   opts: { audiences?: DeliveryTrackAudience[] } = {},
-): Promise<void> {
+): Promise<TrackingSendResult> {
+  const result: TrackingSendResult = {
+    recipient: { attempted: false, emailSent: false, smsSent: false },
+    business: { attempted: false, emailSent: false, smsSent: false },
+  };
   const audiences = opts.audiences ?? ["business", "recipient"];
   const admin = createAdminClient();
   const { data: d } = await admin.from("deliveries").select("*").eq("id", deliveryId).single();
 
-  if (!d?.tracking_token) return;
+  if (!d?.tracking_token) {
+    if (audiences.includes("recipient"))
+      result.recipient.skippedReason = "no tracking token on delivery";
+    return result;
+  }
 
   const base = getEmailBaseUrl().replace(/\/$/, "");
   const bizUrl = `${base}/delivery/track/${encodeURIComponent(d.tracking_token)}`;
@@ -118,37 +148,43 @@ export async function sendB2BTrackingNotifications(
   const bizGreet = bizContactFirst ? `Hi ${bizContactFirst},` : "Hi,";
 
   if (audiences.includes("business")) {
+    result.business.attempted = true;
     const subj = "Your delivery is confirmed";
     const html = b2bDeliveryConfirmedBusinessEmail(bizUrl);
     if (d.contact_email) {
-      await sendEmail({
+      const r = await sendEmail({
         to: d.contact_email,
         subject: subj,
         html,
-      }).catch(() => {});
+      }).catch(() => ({ success: false }));
+      result.business.emailSent = !!(r as { success?: boolean })?.success;
     }
     if (d.contact_phone) {
-      await sendSMS(
+      const r = await sendSMS(
         d.contact_phone,
         [bizGreet, `Your Yugo delivery is confirmed.`, `Track anytime:\n${bizUrl}`].join("\n\n"),
-      ).catch(() => {});
+      ).catch(() => ({ success: false }));
+      result.business.smsSent = !!(r as { success?: boolean })?.success;
     }
   }
 
-  if (
-    audiences.includes("recipient") &&
-    d.recipient_tracking_token &&
-    (d.customer_phone || d.customer_email)
-  ) {
+  if (audiences.includes("recipient")) {
+    if (!d.recipient_tracking_token) {
+      result.recipient.skippedReason = "no recipient tracking token issued";
+    } else if (!d.customer_phone && !d.customer_email) {
+      result.recipient.skippedReason = "no customer phone or email on delivery";
+    } else {
+    result.recipient.attempted = true;
     const recUrl = `${base}/delivery/track/${encodeURIComponent(d.recipient_tracking_token)}`;
     const subj = `Your ${brand} delivery with Yugo`;
     const html = b2bDeliveryRecipientEmail(brand, recUrl);
     if (d.customer_email) {
-      await sendEmail({
+      const r = await sendEmail({
         to: d.customer_email,
         subject: subj,
         html,
-      }).catch(() => {});
+      }).catch(() => ({ success: false }));
+      result.recipient.emailSent = !!(r as { success?: boolean })?.success;
     }
     // Operator ask 2026-06-29: SMS to the end-customer must include
     // the actual day + window the crew is coming, not just "your
@@ -194,7 +230,13 @@ export async function sendB2BTrackingNotifications(
       lines.push(
         `Track when the crew is en route + see live ETA:\n${recUrl}`,
       );
-      await sendSMS(d.customer_phone, lines.join("\n\n")).catch(() => {});
+      const r = await sendSMS(d.customer_phone, lines.join("\n\n")).catch(
+        () => ({ success: false }),
+      );
+      result.recipient.smsSent = !!(r as { success?: boolean })?.success;
+    }
     }
   }
+
+  return result;
 }

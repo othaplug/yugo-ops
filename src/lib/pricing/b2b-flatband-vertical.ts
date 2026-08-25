@@ -21,6 +21,8 @@ import {
   type FlooringHandling,
 } from "@/lib/b2b/flooring-pricing";
 import { applyProcessingRecoveryAndRound } from "@/lib/pricing/processing-recovery";
+import { recommendTruckForB2B } from "@/lib/pricing/b2b-dimensional";
+import { recommendCrewFromWeightItems } from "@/lib/pricing/weight-tiers";
 
 export const B2B_RATE_CARD_VERTICALS = new Set(["flooring", "appliance"]);
 
@@ -42,6 +44,9 @@ export type B2bFlatBandInput = {
   flooringMaterial?: string;
   /** Flooring only — overrides the summed unit count when provided. */
   boxCount?: number;
+  /** Operator overrides from the builder's "Override recommendation" panel. */
+  truckOverride?: string;
+  crewOverride?: number;
 };
 
 export type B2bFlatBandResult = {
@@ -71,14 +76,39 @@ export function computeB2bFlatBandPrice(
 
   const totalUnits = input.lines.reduce((s, l) => s + Math.max(1, l.quantity), 0);
   const zone = getZoneFromDistance(input.deliveryKmFromGta ?? 0);
+
+  // Truck + crew sized from the real load, not hardcoded. Flooring sizes off the
+  // box count; appliance off the piece count. Operator overrides always win.
+  // Uses the same recommenders the dimensional engine + estimate use, so the
+  // exact price agrees with the estimate on which truck/crew to send.
+  const truckLoad =
+    input.verticalCode === "flooring" &&
+    typeof input.boxCount === "number" &&
+    input.boxCount > 0
+      ? Math.round(input.boxCount)
+      : totalUnits;
+  const recommendedTruck = recommendTruckForB2B([], truckLoad, {});
+  const recommendedCrew = recommendCrewFromWeightItems(
+    input.lines.map((l) => ({
+      weight_category: l.weight_category ?? null,
+      quantity: l.quantity,
+    })),
+    2,
+  );
+  const truck = input.truckOverride?.trim() ? input.truckOverride.trim() : recommendedTruck;
+  const crew =
+    typeof input.crewOverride === "number" && input.crewOverride > 0
+      ? input.crewOverride
+      : recommendedCrew;
+
   const empty: B2bFlatBandResult = {
     ok: false,
     subtotalPreRound: 0,
     roundedPreTax: 0,
     breakdown: [],
     includes: [],
-    truck: "sprinter",
-    crew: 2,
+    truck,
+    crew,
     requiresCustomQuote: false,
     totalUnits,
     zone,
@@ -168,8 +198,8 @@ export function computeB2bFlatBandPrice(
       zone.replace(/_/g, " "),
       input.isPartner ? "partner rate" : "standard rate",
     ],
-    truck: "sprinter",
-    crew: 2,
+    truck,
+    crew,
     requiresCustomQuote: result.requiresCustomQuote,
     totalUnits,
     zone,

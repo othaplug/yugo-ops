@@ -3690,6 +3690,8 @@ async function calcB2bOneoff(
                   handlingType: (input.b2b_handling_type || "threshold").toLowerCase(),
                   flooringMaterial: input.b2b_flooring_material,
                   boxCount: input.b2b_box_count,
+                  truckOverride: input.truck_type || undefined,
+                  crewOverride: input.b2b_crew_override,
                 },
                 config,
               );

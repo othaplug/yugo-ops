@@ -4,15 +4,34 @@ import { verifyDeliveryTrackAccess } from "@/lib/delivery-tracking-tokens";
 import { isUuid } from "@/lib/move-code";
 import { getDispatchPhone } from "@/lib/config";
 import { buildClientMainStepCompletedAt } from "@/lib/delivery-track-stage-times";
+import { normalizeDeliveryStatus } from "@/lib/crew-tracking-status";
 
-/** Public track: show assigned crew member names only — never internal team labels (e.g. Team Alpha). */
-function clientFacingDeliveryCrewNames(assignedMembers: unknown): string | null {
-  const names = Array.isArray(assignedMembers)
-    ? assignedMembers
+function toNameList(raw: unknown): string[] {
+  return Array.isArray(raw)
+    ? raw
         .filter((n): n is string => typeof n === "string" && n.trim().length > 0)
         .map((n) => n.trim())
     : [];
+}
+
+/**
+ * Public track: name the crew members ONLY when they are a genuine hand-picked
+ * subset of the crew roster. When assigned_members is empty, or it equals the
+ * full roster (a delivery that never had a specific crew chosen, or one that got
+ * back-filled with the whole team), return null so the client sees a neutral
+ * "your Yugo crew" state instead of every team member's name.
+ */
+function clientFacingDeliveryCrewNames(
+  assignedMembers: unknown,
+  crewRoster: unknown,
+): string | null {
+  const names = toNameList(assignedMembers);
   if (names.length === 0) return null;
+  const roster = toNameList(crewRoster);
+  if (roster.length > 0 && names.length >= roster.length) {
+    const rosterSet = new Set(roster.map((n) => n.toLowerCase()));
+    if (names.every((n) => rosterSet.has(n.toLowerCase()))) return null;
+  }
   return names.join(", ");
 }
 
@@ -100,6 +119,14 @@ export async function GET(
       .limit(1)
       .maybeSingle();
 
+    // Prefer the live session status regardless of whether a GPS last_location
+    // has been captured. The B2B multi-stop crew flow advances the session
+    // status (arrived at pickup, en route to destination, ...) but never posts
+    // GPS, so gating the client stage on last_location froze the stepper at
+    // "en route to pickup" for the whole job. reconcile only ever writes the
+    // canonical mapped stages, so the client step mapping stays clean.
+    if (ts?.status) liveStage = normalizeDeliveryStatus(ts.status);
+
     const { data: timelineSession } = await admin
       .from("tracking_sessions")
       .select("checkpoints")
@@ -127,21 +154,24 @@ export async function GET(
       }
     }
 
-    const clientCrewLabel = clientFacingDeliveryCrewNames(delivery.assigned_members);
-
     if (delivery.crew_id) {
       const { data: c } = await admin
         .from("crews")
-        .select("current_lat, current_lng")
+        .select("current_lat, current_lng, members")
         .eq("id", delivery.crew_id)
         .single();
+      // Compare assigned_members against the crew roster so we only reveal a
+      // real hand-picked subset, never the whole team.
+      const clientCrewLabel = clientFacingDeliveryCrewNames(
+        delivery.assigned_members,
+        c?.members,
+      );
       crewName = clientCrewLabel;
 
       if (ts?.last_location && typeof ts.last_location === "object" && "lat" in ts.last_location && "lng" in ts.last_location) {
         const loc = ts.last_location as { lat: number; lng: number };
         const markerName = clientCrewLabel || "Crew";
         crew = { current_lat: loc.lat, current_lng: loc.lng, name: markerName };
-        liveStage = ts.status || liveStage;
       } else if (c && c.current_lat != null && c.current_lng != null) {
         const markerName = clientCrewLabel || "Crew";
         crew = { current_lat: c.current_lat, current_lng: c.current_lng, name: markerName };

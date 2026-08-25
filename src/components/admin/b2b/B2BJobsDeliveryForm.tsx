@@ -3906,6 +3906,24 @@ export default function B2BJobsDeliveryForm({
                   ))}
                 </div>
               </div>
+            ) : (verticalCode === "flooring" || verticalCode === "appliance") &&
+              clientEstimate ? (
+              // Flooring/appliance are priced on the flat-band rate card, which
+              // the browser can't compute (no rate card client-side). Show a
+              // pending state instead of the misleading per-piece estimate; the
+              // exact rate-card price lands from the server in ~800ms.
+              <div className="text-[11px] space-y-1 text-[var(--tx)] border border-[var(--brd)] rounded-lg p-3 bg-[var(--bg)]/40">
+                <p className="text-[9px] uppercase tracking-wide text-[var(--tx3)]">
+                  Exact price
+                </p>
+                <div className="text-[15px] font-semibold text-[var(--tx2)] tabular-nums">
+                  Calculating…
+                </div>
+                <p className="text-[10px] text-[var(--tx3)] leading-relaxed">
+                  Pricing this off the {verticalCode} rate card. The exact price
+                  appears in a moment.
+                </p>
+              </div>
             ) : clientEstimate ? (
               <div className="text-[11px] space-y-1 text-[var(--tx)] border border-[var(--brd)] rounded-lg p-3 bg-[var(--bg)]/40">
                 <p className="text-[9px] uppercase tracking-wide text-[var(--tx3)]">
