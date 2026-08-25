@@ -165,6 +165,9 @@ interface QuoteInput {
   service_type: string;
   from_address: string;
   to_address: string;
+  /** Unit / suite numbers (condo / walk-up), stored separately from the address. */
+  from_unit?: string;
+  to_unit?: string;
   from_access?: string;
   to_access?: string;
   /** Ship 1: type-aware access capture (property_type + typed dimensions). Persisted; not yet priced. */
@@ -7330,6 +7333,21 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
           { error: "Quote insert failed", code: "QUOTE_ID_INSERT_FAILED" },
           { status: 500 },
         );
+      }
+    }
+
+    // Persist unit / suite numbers in a SEPARATE update so a deploy that lands
+    // before the from_unit/to_unit migration cannot break the main quote write.
+    // 42703 = column does not exist yet; ignored until `npm run db:push` runs.
+    {
+      const fu = (input.from_unit ?? "").trim();
+      const tu = (input.to_unit ?? "").trim();
+      const { error: unitErr } = await sb
+        .from("quotes")
+        .update({ from_unit: fu || null, to_unit: tu || null })
+        .eq("quote_id", quoteId);
+      if (unitErr && String(unitErr.code) !== "42703") {
+        console.warn("[generate] unit numbers not persisted:", unitErr.message);
       }
     }
 

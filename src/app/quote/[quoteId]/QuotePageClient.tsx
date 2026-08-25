@@ -132,6 +132,7 @@ import EventLayout from "./layouts/EventLayout";
 import LabourOnlyLayout from "./layouts/LabourOnlyLayout";
 import BinRentalLayout from "./layouts/BinRentalLayout";
 import { abbreviateAddressRegions } from "@/lib/address-abbrev";
+import { formatAddressWithUnit } from "@/lib/address-format";
 import {
   pickupLocationsFromQuote,
   dropoffLocationsFromQuote,
@@ -550,8 +551,18 @@ export default function QuotePageClient({
   const quoteForDisplay = useMemo(
     () => ({
       ...quote,
-      from_address: abbreviateAddressRegions(quote.from_address || ""),
-      to_address: abbreviateAddressRegions(quote.to_address || ""),
+      from_address: abbreviateAddressRegions(
+        formatAddressWithUnit(
+          (quote as { from_unit?: string | null }).from_unit,
+          quote.from_address,
+        ) || "",
+      ),
+      to_address: abbreviateAddressRegions(
+        formatAddressWithUnit(
+          (quote as { to_unit?: string | null }).to_unit,
+          quote.to_address,
+        ) || "",
+      ),
     }),
     [quote],
   );

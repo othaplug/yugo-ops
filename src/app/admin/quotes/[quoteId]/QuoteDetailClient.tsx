@@ -45,6 +45,7 @@ import type { QuotePaymentPipelineMode } from "@/lib/quotes/payment-pipeline-mod
 import { InfoHint } from "@/components/ui/InfoHint";
 import ExternalBookingModal from "./ExternalBookingModal";
 import { normalizeTierKey } from "@/lib/tiers/tier-definitions";
+import { formatAddressWithUnit } from "@/lib/address-format";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -2152,13 +2153,25 @@ export default function QuoteDetailClient({
                           .additional_destinations)
                       : [];
                     const pickups: string[] = [];
-                    if (quote.from_address) pickups.push(String(quote.from_address));
+                    if (quote.from_address)
+                      pickups.push(
+                        formatAddressWithUnit(
+                          (quote as { from_unit?: string | null }).from_unit,
+                          String(quote.from_address),
+                        ),
+                      );
                     for (const s of extraPickups) {
                       const a = (s?.address ?? "").trim();
                       if (a) pickups.push(a);
                     }
                     const dropoffs: string[] = [];
-                    if (quote.to_address) dropoffs.push(String(quote.to_address));
+                    if (quote.to_address)
+                      dropoffs.push(
+                        formatAddressWithUnit(
+                          (quote as { to_unit?: string | null }).to_unit,
+                          String(quote.to_address),
+                        ),
+                      );
                     for (const s of extraDropoffs) {
                       const a = (s?.address ?? "").trim();
                       if (a) dropoffs.push(a);

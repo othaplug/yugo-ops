@@ -3455,6 +3455,8 @@ export default function QuoteFormClient({
         if (cStr(contact?.phone)) setPhone(formatPhone(cStr(contact?.phone)));
         if (cStr(Q.from_address)) setFromAddress(cStr(Q.from_address));
         if (cStr(Q.to_address)) setToAddress(cStr(Q.to_address));
+        if (cStr(Q.from_unit)) setFromUnit(cStr(Q.from_unit));
+        if (cStr(Q.to_unit)) setToUnit(cStr(Q.to_unit));
         if (cStr(Q.move_date)) setMoveDate(cStr(Q.move_date).slice(0, 10));
         if (cStr(Q.from_access)) setFromAccess(cStr(Q.from_access));
         if (cStr(Q.to_access)) setToAccess(cStr(Q.to_access));
@@ -3594,6 +3596,8 @@ export default function QuoteFormClient({
         if (cStr(contact?.phone)) setPhone(formatPhone(cStr(contact?.phone)));
         if (cStr(Q.from_address)) setFromAddress(cStr(Q.from_address));
         if (cStr(Q.to_address)) setToAddress(cStr(Q.to_address));
+        if (cStr(Q.from_unit)) setFromUnit(cStr(Q.from_unit));
+        if (cStr(Q.to_unit)) setToUnit(cStr(Q.to_unit));
         if (cStr(Q.move_date)) setMoveDate(cStr(Q.move_date).slice(0, 10));
         if (cStr(Q.from_access)) setFromAccess(cStr(Q.from_access));
         if (cStr(Q.to_access)) setToAccess(cStr(Q.to_access));
@@ -8780,6 +8784,8 @@ export default function QuoteFormClient({
                             value={fromAccessProfile}
                             endLabel="Pickup"
                             address={fromAddress}
+                            unit={fromUnit}
+                            onUnitChange={setFromUnit}
                             onChange={(p) => {
                               setFromAccessProfile(p);
                               const la = profileToLegacyAccess(p);
@@ -9018,6 +9024,8 @@ export default function QuoteFormClient({
                             value={toAccessProfile}
                             endLabel="Destination"
                             address={toAddress}
+                            unit={toUnit}
+                            onUnitChange={setToUnit}
                             onChange={(p) => {
                               setToAccessProfile(p);
                               const la = profileToLegacyAccess(p);

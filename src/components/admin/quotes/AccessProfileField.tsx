@@ -56,16 +56,24 @@ function setField(
   return next;
 }
 
+/** Property types that live in a multi-unit building and need a unit/suite number. */
+const UNIT_BEARING_TYPES: AccessPropertyType[] = ["condo", "walkup"];
+
 export function AccessProfileField({
   value,
   onChange,
   endLabel,
   address,
+  unit,
+  onUnitChange,
 }: {
   value: AccessProfile | null;
   onChange: (p: AccessProfile) => void;
   endLabel: string;
   address?: string;
+  /** Unit / suite number for this address (shown for condo / walk-up). */
+  unit?: string;
+  onUnitChange?: (v: string) => void;
 }) {
   const model = value ? accessModelFromProfile(value) : null;
   const spec = value ? specForType(value.property_type) : null;
@@ -116,6 +124,30 @@ export function AccessProfileField({
           );
         })}
       </div>
+
+      {/* Unit / suite number — only for multi-unit buildings (condo / walk-up). */}
+      {value && onUnitChange && UNIT_BEARING_TYPES.includes(value.property_type) ? (
+        <div className="mt-4 w-full sm:max-w-[16rem]">
+          <label
+            htmlFor={`access-unit-${endLabel}`}
+            className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--tx3)]"
+          >
+            Unit / Suite
+          </label>
+          <input
+            id={`access-unit-${endLabel}`}
+            type="text"
+            value={unit ?? ""}
+            onChange={(e) => onUnitChange(e.target.value)}
+            placeholder="e.g. 1201"
+            className="w-full rounded-lg border border-[var(--brd)] bg-[var(--bg2)] px-3 py-2 text-[14px] text-[var(--tx)] outline-none transition focus:border-[var(--admin-primary-fill)]"
+            aria-label={`${endLabel} unit or suite number`}
+          />
+          <p className="mt-1 text-[11px] text-[var(--tx3)]">
+            Shown with the address on the quote, crew sheet, and tracking.
+          </p>
+        </div>
+      ) : null}
 
       {value && spec ? (
         <div className="mt-4 grid gap-4 sm:grid-cols-[1.1fr_0.9fr]">

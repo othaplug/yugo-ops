@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatAccessForDisplay } from "@/lib/format-text";
+import { formatAddressWithUnit } from "@/lib/address-format";
 import { createBinOrderFromBinRentalQuote } from "@/lib/automations/create-bin-order-from-quote";
 import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
 import { generateWelcomePackageToken } from "@/lib/welcome-package-token";
@@ -793,9 +794,24 @@ export async function createMoveFromQuote(
       {
         ...sharedStatic,
         move_type: moveType,
-        from_address: quote.from_address,
-        to_address: quote.to_address,
-        delivery_address: quote.to_address,
+        // Fold the unit/suite into the stored address so every downstream move
+        // surface (crew sheet, PDFs, tracking, calendar, dispatch) shows
+        // "Suite 1234 - 50 Carroll St" without per-surface wiring. Units live as
+        // clean columns on the quote; the move carries the display string.
+        // Deploy-safe: quote is select("*"), so from_unit is undefined (plain
+        // address) until the migration adds the column.
+        from_address: formatAddressWithUnit(
+          (quote as { from_unit?: string | null }).from_unit,
+          quote.from_address,
+        ),
+        to_address: formatAddressWithUnit(
+          (quote as { to_unit?: string | null }).to_unit,
+          quote.to_address,
+        ),
+        delivery_address: formatAddressWithUnit(
+          (quote as { to_unit?: string | null }).to_unit,
+          quote.to_address,
+        ),
         scheduled_date: scenarioDate ?? quote.move_date,
         distance_km: quote.distance_km ?? null,
         est_crew_size: bookedTierCrew ?? (quote.est_crew_size as number) ?? null,
