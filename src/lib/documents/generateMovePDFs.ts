@@ -117,6 +117,177 @@ function loadYugoLogoBase64(): string {
   return "";
 }
 
+/** Cream wordmark for the wine hero band on the redesigned move summary. */
+function loadYugoWordmarkCreamBase64(): string {
+  try {
+    const p = path.join(process.cwd(), "public", "images", "yugo-logo-cream.png");
+    return `data:image/png;base64,${fs.readFileSync(p, { encoding: "base64" })}`;
+  } catch {
+    return "";
+  }
+}
+
+/** Brand ornament for the wine footer band on the redesigned move summary. */
+function loadYugoSymbolBase64(): string {
+  try {
+    const p = path.join(process.cwd(), "public", "yugo-symbol.png");
+    return `data:image/png;base64,${fs.readFileSync(p, { encoding: "base64" })}`;
+  } catch {
+    return "";
+  }
+}
+
+/** ─── Editorial Move Summary helpers ────────────────────────────────────
+ *  Small pure formatters used by the redesigned generateMoveSummaryPDF.
+ *  Kept close to the generator so anything the PDF prints is defined in
+ *  one file the operator can grep and reason about. */
+
+const COUNT_WORDS = [
+  "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven",
+  "Eight", "Nine", "Ten", "Eleven", "Twelve",
+];
+function crewCountToWord(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return "-";
+  return COUNT_WORDS[n] ?? String(Math.round(n));
+}
+
+function serviceDisplay(
+  serviceType: string | null | undefined,
+  tierSelected: string | null | undefined,
+): { label: string; caption: string } {
+  const s = String(serviceType ?? "").toLowerCase();
+  const tier = String(tierSelected ?? "").toLowerCase();
+  if (s === "white_glove") {
+    return { label: "White Glove", caption: "Premium handling and placement" };
+  }
+  if (s === "specialty") {
+    return { label: "Specialty", caption: "Item-specific handling protocol" };
+  }
+  if (s === "single_item") {
+    return { label: "Single Item", caption: "Item-level delivery" };
+  }
+  if (s === "labour_only") {
+    return { label: "Labour Only", caption: "Crew hours, no transit" };
+  }
+  if (s === "event") {
+    return { label: "Event Logistics", caption: "Venue delivery + return" };
+  }
+  if (s === "b2b_delivery" || s === "b2b_oneoff") {
+    return { label: "B2B Delivery", caption: "Commercial logistics" };
+  }
+  if (s === "bin_rental") {
+    return { label: "Bin Rental", caption: "Reusable move bins on rotation" };
+  }
+  if (s === "office_move") {
+    return { label: "Office Move", caption: "Commercial relocation" };
+  }
+  if (s === "long_distance") {
+    return { label: "Long Distance", caption: "Inter-city relocation" };
+  }
+  // Residential tier drives the label + caption for local moves
+  if (s === "local_move") {
+    if (tier === "estate") return { label: "Estate", caption: "White-glove residential move" };
+    if (tier === "signature") return { label: "Signature", caption: "Full-service residential move" };
+    return { label: "Essential", caption: "Transport with full protection" };
+  }
+  const fallback = (serviceType ?? "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return { label: fallback || "Move", caption: "As booked" };
+}
+
+function vehicleDisplay(primary: string | null | undefined, secondary?: string | null): string {
+  const v = String(primary || secondary || "").toLowerCase();
+  if (!v) return "-";
+  if (v === "sprinter") return "Sprinter";
+  if (v === "cube" || v === "cube_van") return "Cube Van";
+  if (/^\d+ft$/.test(v)) return `${v.replace("ft", "ft")} Box Truck`;
+  return v.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Valuation display per service. White-glove / specialty / office / event
+ *  ship with Enhanced Protection by policy. Residential + long-distance
+ *  default to Released but respect a coordinator-selected upgrade tier. */
+function valuationDisplay(
+  serviceType: string | null | undefined,
+  valuationTier: string | null | undefined,
+): { title: string; body: string } {
+  const s = String(serviceType ?? "").toLowerCase();
+  const t = String(valuationTier ?? "").toLowerCase().replace(/\s+/g, "_");
+  const ENHANCED = {
+    title: "Enhanced Protection",
+    body:
+      "Cargo liability at $5.00 per pound per article, total coverage up to $30,000, zero deductible. Full repair, or replacement at current market value where repair is not possible. Backed by our $5M commercial general liability.",
+  };
+  const FULL_REPLACEMENT = {
+    title: "Full Replacement",
+    body:
+      "Full current market replacement value, up to $10,000 per item, up to $100,000 per shipment, zero deductible. Backed by our $5M commercial general liability.",
+  };
+  const RELEASED = {
+    title: "Released Value",
+    body:
+      "Cargo liability at $0.60 per pound per article, the statutory baseline. Backed by our $5M commercial general liability.",
+  };
+  // Explicit upgrade rider on the row wins regardless of service.
+  if (t === "enhanced" || t === "signature") return ENHANCED;
+  if (t === "full_replacement" || t === "estate") return FULL_REPLACEMENT;
+  // Service-level defaults.
+  if (
+    s === "white_glove" ||
+    s === "specialty" ||
+    s === "office_move" ||
+    s === "event"
+  ) {
+    return ENHANCED;
+  }
+  return RELEASED;
+}
+
+function includedCopy(serviceType: string | null | undefined): string {
+  const s = String(serviceType ?? "").toLowerCase();
+  if (s === "white_glove" || s === "specialty") {
+    return "Licensed and insured logistics professionals, a dedicated vehicle, all equipment, and premium white-glove handling as agreed at booking.";
+  }
+  if (s === "b2b_delivery" || s === "b2b_oneoff" || s === "single_item") {
+    return "Licensed and insured logistics professionals, a dedicated vehicle, all equipment, and delivery handling as agreed at booking.";
+  }
+  if (s === "labour_only") {
+    return "Licensed and insured labour crew, all equipment, and on-site handling as agreed at booking.";
+  }
+  if (s === "event") {
+    return "Licensed and insured event crew, a dedicated vehicle, all equipment, setup, and teardown as agreed at booking.";
+  }
+  return "Licensed and insured movers, a dedicated truck, protective wrapping for key furniture, and floor + entryway protection.";
+}
+
+function eyebrowFor(serviceType: string | null | undefined): string {
+  const s = String(serviceType ?? "").toLowerCase();
+  if (
+    s === "b2b_delivery" ||
+    s === "b2b_oneoff" ||
+    s === "single_item" ||
+    s === "bin_rental"
+  ) {
+    return "DELIVERY SUMMARY";
+  }
+  return "MOVE SUMMARY";
+}
+
+function ledeFor(serviceType: string | null | undefined): string {
+  const label = eyebrowFor(serviceType).toLowerCase();
+  return `${label.charAt(0).toUpperCase() + label.slice(1)}, issued on completion. A record of the work carried out and the terms it was carried out under.`;
+}
+
+function parseAddress(full: string | null | undefined): { street: string; cityLine: string; postal: string } {
+  const raw = String(full ?? "").trim();
+  if (!raw) return { street: "-", cityLine: "", postal: "" };
+  const parts = raw.split(",").map((s) => s.trim()).filter(Boolean);
+  const street = parts[0] ?? raw;
+  const postalMatch = raw.match(/[A-Z]\d[A-Z]\s?\d[A-Z]\d/i);
+  const postal = postalMatch ? postalMatch[0].toUpperCase() : "";
+  const cityLine = parts.slice(1).join(", ").replace(postal, "").trim().replace(/,\s*$/, "");
+  return { street, cityLine, postal };
+}
+
 /** Letter PDFs use points; default footer Y in pdf-brand targets mm layouts, so anchor to page bottom */
 function pdfFooter(doc: jsPDF, footerLine: string): void {
   const pageH = doc.internal.pageSize.getHeight();
@@ -140,8 +311,25 @@ function formatValuationTierForPdf(tier: string | null | undefined): string {
   return map[t] || raw.replace(/_/g, " ");
 }
 
-/** Move Summary PDF: wine gradient, centered wordmark, section rules, letter/pt spacing */
+/** Move Summary PDF: editorial layout matching brand reference —
+ *  wine hero + footer bands, hairline-ruled sections, serif hero values,
+ *  actual assigned crew as pills, service/valuation wired per service type. */
 function generateMoveSummaryPDF(
+  move: MoveRow,
+  crew: CrewRow,
+  inventory: InventoryRow,
+  tierLabel: string,
+  logoBase64: string,
+  footerLine: string,
+): Buffer {
+  return generateEditorialMoveSummaryPDF(move, crew, inventory, tierLabel, logoBase64, footerLine);
+}
+
+/** Legacy generator retained for the "previous look" fallback while the
+ *  editorial redesign shakes out on prod. Currently unused; the export
+ *  above always calls the editorial version. Delete after two weeks of
+ *  clean prod runs. */
+function _legacyGenerateMoveSummaryPDF(
   move: MoveRow,
   crew: CrewRow,
   inventory: InventoryRow,
@@ -343,6 +531,444 @@ function generateMoveSummaryPDF(
 
   pdfFooter(doc, footerLine);
   drawBottomAccentBar(doc, true);
+  return Buffer.from(doc.output("arraybuffer"));
+}
+
+/** ─── Editorial Move Summary generator ───────────────────────────────
+ *  Matches the reference layout: full-bleed wine hero + wine footer bands,
+ *  editorial center column with hairline rules, serif hero values, crew
+ *  as outlined pills, per-service wired copy for service label, vehicle,
+ *  valuation, and inclusions. */
+function generateEditorialMoveSummaryPDF(
+  move: MoveRow,
+  crew: CrewRow,
+  inventory: InventoryRow,
+  _tierLabel: string,
+  _logoBase64: string,
+  _footerLine: string,
+): Buffer {
+  // Palette (matches the approved artifact mockup 1:1)
+  const WINE_RGB: [number, number, number] = [43, 4, 22];
+  const CREAM_RGB: [number, number, number] = [249, 237, 228];
+  const CREAM_MUTED: [number, number, number] = [216, 202, 190];
+  const INK: [number, number, number] = [26, 19, 16];
+  const INK_MUTED: [number, number, number] = [122, 110, 103];
+  const RULE_RGB: [number, number, number] = [232, 225, 218];
+  const PAPER_RGB: [number, number, number] = [255, 252, 247];
+
+  // Fonts: jsPDF built-ins for this pass. Instrument Serif + Brown
+  // embedding lands in a follow-up (needs licensed .ttf files).
+  // "times" reads closest to Instrument Serif; "helvetica" is the
+  // adequate stand-in for Brown until font embedding ships.
+  const SERIF = "times";
+  const SANS = "helvetica";
+
+  const doc = new jsPDF("p", "pt", "letter");
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 50;
+  const contentW = pageW - margin * 2;
+
+  const logistics = isMoveRowLogisticsDelivery(move);
+  const svcType = String(move.service_type ?? move.move_type ?? "").toLowerCase();
+  const svcDisp = serviceDisplay(svcType, move.tier_selected);
+  const vehicle = vehicleDisplay(move.truck_primary, move.truck_secondary);
+  const valuation = valuationDisplay(svcType, move.valuation_tier);
+  const included = includedCopy(svcType);
+  const summaryEyebrow = eyebrowFor(svcType);
+  const lede = ledeFor(svcType);
+
+  // Crew: prefer moves.assigned_members (fixed 26ab3841) over crews.members.
+  const assigned = Array.isArray(move.assigned_members)
+    ? (move.assigned_members as string[]).filter(
+        (s) => typeof s === "string" && s.trim().length > 0,
+      )
+    : [];
+  const rosterMembers =
+    crew?.members && Array.isArray(crew.members)
+      ? (crew.members as string[]).filter(
+          (s) => typeof s === "string" && s.trim().length > 0,
+        )
+      : [];
+  const crewNames = assigned.length > 0 ? assigned : rosterMembers;
+
+  const durationText =
+    move.actual_hours != null
+      ? `${move.actual_hours} hours`
+      : move.est_hours != null
+        ? `${move.est_hours} hours`
+        : "-";
+  const durationCaption = move.actual_hours != null ? "As delivered" : "Estimated at survey";
+
+  const dateStr = formatDate(move.completed_at || move.scheduled_date);
+  const dateForHero = dateStr.toUpperCase();
+
+  const wordmarkCream = loadYugoWordmarkCreamBase64();
+  const symbol = loadYugoSymbolBase64();
+
+  // ─── HERO BAND ──────────────────────────────────────
+  const heroH = 108;
+  doc.setFillColor(...WINE_RGB);
+  doc.rect(0, 0, pageW, heroH, "F");
+
+  // Wordmark, cream, left
+  if (wordmarkCream) {
+    try {
+      // Wordmark PNG is 2:1 (roughly). Render at 22pt tall.
+      const wmH = 22;
+      const wmW = wmH * 2.2;
+      doc.addImage(wordmarkCream, "PNG", margin, 40, wmW, wmH);
+    } catch { /* skip logo */ }
+  } else {
+    doc.setTextColor(...CREAM_RGB);
+    doc.setFont(SERIF, "normal");
+    doc.setFontSize(20);
+    doc.text("YUGO", margin, 56);
+  }
+
+  // Right: eyebrow / job id / date
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+
+  doc.text("JOB REFERENCE", pageW - margin, 40, { align: "right" });
+
+  doc.setTextColor(...CREAM_RGB);
+  doc.setFont(SERIF, "normal");
+  doc.setFontSize(28);
+
+  doc.text(moveDisplayId(move), pageW - margin, 68, { align: "right" });
+
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(8.5);
+
+  doc.text(dateForHero, pageW - margin, 86, { align: "right" });
+
+
+  let y = heroH + 34;
+
+  // ─── PREPARED FOR ────────────────────────────────────
+  doc.setTextColor(...WINE_RGB);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+  doc.text("PREPARED FOR", margin, y);
+
+
+  y += 22;
+  doc.setTextColor(...INK);
+  doc.setFont(SERIF, "normal");
+  doc.setFontSize(30);
+  doc.text(move.client_name || "-", margin, y);
+
+  y += 20;
+  doc.setTextColor(...INK_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(9.5);
+  const ledeLines = doc.splitTextToSize(lede, contentW);
+  ledeLines.forEach((ln: string) => {
+    doc.text(ln, margin, y);
+    y += 13;
+  });
+  y += 12;
+
+  // Hairline rule
+  const drawRule = () => {
+    doc.setDrawColor(...RULE_RGB);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageW - margin, y);
+    y += 26;
+  };
+  drawRule();
+
+  // ─── ADDRESSES ──────────────────────────────────────
+  const colW = (contentW - 40) / 2;
+  const rightColX = margin + colW + 40;
+
+  const fromParsed = parseAddress(move.from_address);
+  const toParsed = parseAddress(move.to_address);
+
+  const drawAddressBlock = (x: number, label: string, parsed: ReturnType<typeof parseAddress>) => {
+    let cy = y;
+    doc.setTextColor(...WINE_RGB);
+    doc.setFont(SANS, "bold");
+    doc.setFontSize(8);
+    doc.text(label, x, cy);
+  
+
+    cy += 16;
+    doc.setTextColor(...INK);
+    doc.setFont(SERIF, "normal");
+    doc.setFontSize(17);
+    const streetLines = doc.splitTextToSize(parsed.street, colW);
+    streetLines.forEach((ln: string) => {
+      doc.text(ln, x, cy);
+      cy += 19;
+    });
+
+    if (parsed.cityLine || parsed.postal) {
+      doc.setTextColor(...INK_MUTED);
+      doc.setFont(SANS, "normal");
+      doc.setFontSize(10);
+      const sub = [parsed.cityLine, parsed.postal].filter(Boolean).join("   ");
+      doc.text(sub, x, cy + 2);
+    }
+  };
+
+  drawAddressBlock(margin, "COLLECTED FROM", fromParsed);
+  drawAddressBlock(rightColX, "DELIVERED TO", toParsed);
+
+  // Arrow between columns (wine)
+  const arrowY = y + 12;
+  const arrowStartX = margin + colW + 6;
+  const arrowEndX = rightColX - 6;
+  doc.setDrawColor(...WINE_RGB);
+  doc.setLineWidth(0.8);
+  doc.line(arrowStartX, arrowY, arrowEndX - 4, arrowY);
+  // arrowhead
+  doc.line(arrowEndX - 6, arrowY - 3, arrowEndX, arrowY);
+  doc.line(arrowEndX - 6, arrowY + 3, arrowEndX, arrowY);
+
+  y += 62;
+  drawRule();
+
+  // ─── STATS ROW (Service / Vehicle / Crew / On site) ─
+  const stats = [
+    { label: "SERVICE", value: svcDisp.label, caption: svcDisp.caption },
+    { label: "VEHICLE", value: vehicle, caption: "Dedicated" },
+    { label: "CREW", value: crewCountToWord(crewNames.length || 0), caption: "Logistics professionals" },
+    { label: "ON SITE", value: durationText, caption: durationCaption },
+  ];
+  const statColW = contentW / 4;
+  stats.forEach((s, i) => {
+    const x = margin + statColW * i;
+    let cy = y;
+    doc.setTextColor(...WINE_RGB);
+    doc.setFont(SANS, "bold");
+    doc.setFontSize(8);
+    doc.text(s.label, x, cy);
+  
+
+    cy += 20;
+    doc.setTextColor(...INK);
+    doc.setFont(SERIF, "normal");
+    doc.setFontSize(19);
+    doc.text(s.value, x, cy);
+
+    cy += 16;
+    doc.setTextColor(...INK_MUTED);
+    doc.setFont(SANS, "normal");
+    doc.setFontSize(9);
+    const capLines = doc.splitTextToSize(s.caption, statColW - 10);
+    capLines.slice(0, 2).forEach((ln: string) => {
+      doc.text(ln, x, cy);
+      cy += 11;
+    });
+  });
+  y += 62;
+  drawRule();
+
+  // ─── YOUR CREW ON THE DAY (pills) ────────────────────
+  if (crewNames.length > 0) {
+    doc.setTextColor(...WINE_RGB);
+    doc.setFont(SANS, "bold");
+    doc.setFontSize(8);
+    doc.text("YOUR CREW ON THE DAY", margin, y);
+  
+
+    y += 18;
+    let px = margin;
+    const pillH = 22;
+    const pillPadX = 14;
+    const pillGap = 8;
+    doc.setFont(SANS, "normal");
+    doc.setFontSize(10);
+    for (const name of crewNames) {
+      const w = doc.getTextWidth(name) + pillPadX * 2;
+      if (px + w > pageW - margin) {
+        px = margin;
+        y += pillH + 6;
+      }
+      // pill outline + paper fill
+      doc.setDrawColor(...RULE_RGB);
+      doc.setFillColor(...PAPER_RGB);
+      doc.setLineWidth(0.6);
+      // roundedRect(x, y, w, h, rx, ry, style)
+      doc.roundedRect(px, y, w, pillH, 11, 11, "FD");
+      doc.setTextColor(...INK);
+      doc.text(name, px + w / 2, y + 14.5, { align: "center" });
+      px += w + pillGap;
+    }
+    y += pillH + 20;
+    drawRule();
+  }
+
+  // ─── MANIFEST TABLE ─────────────────────────────────
+  doc.setTextColor(...WINE_RGB);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+  doc.text("MANIFEST", margin, y);
+
+
+  y += 18;
+  // Column headers
+  doc.setTextColor(...INK_MUTED);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+  doc.text("ITEM", margin, y);
+  doc.text("QTY", pageW - margin, y, { align: "right" });
+
+  y += 8;
+  doc.setDrawColor(...RULE_RGB);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, pageW - margin, y);
+  y += 14;
+
+  // Group items by room; each room becomes a "group" heading row.
+  const byRoom = new Map<string, InventoryRow>();
+  for (const it of inventory) {
+    const key = (it.room || "Items").toString();
+    const arr = byRoom.get(key) ?? [];
+    arr.push(it);
+    byRoom.set(key, arr);
+  }
+  if (byRoom.size === 0) {
+    doc.setTextColor(...INK_MUTED);
+    doc.setFont(SANS, "italic");
+    doc.setFontSize(10);
+    doc.text("No inventory recorded for this move.", margin, y);
+    y += 18;
+  } else {
+    let totalItems = 0;
+    for (const [room, items] of byRoom.entries()) {
+      // Group heading
+      doc.setTextColor(...WINE_RGB);
+      doc.setFont(SANS, "bold");
+      doc.setFontSize(8);
+      doc.text(room.toUpperCase(), margin, y);
+    
+      y += 14;
+
+      // Aggregate identical item names into (name, count) pairs.
+      const counts = new Map<string, number>();
+      for (const it of items) {
+        const name = (it.item_name || "Item").toString();
+        counts.set(name, (counts.get(name) ?? 0) + 1);
+      }
+      for (const [name, count] of counts.entries()) {
+        totalItems += count;
+        doc.setTextColor(...INK);
+        doc.setFont(SANS, "normal");
+        doc.setFontSize(11);
+        doc.text(name, margin, y);
+        doc.setFont(SERIF, "normal");
+        doc.setFontSize(13);
+        doc.text(String(count), pageW - margin, y, { align: "right" });
+        y += 16;
+      }
+      y += 4;
+    }
+    // Total row
+    y += 4;
+    doc.setDrawColor(...RULE_RGB);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageW - margin, y);
+    y += 16;
+    doc.setTextColor(...INK);
+    doc.setFont(SANS, "bold");
+    doc.setFontSize(9);
+    doc.text("TOTAL ITEMS HANDLED", margin, y);
+  
+    doc.setFont(SERIF, "normal");
+    doc.setFontSize(20);
+    doc.setTextColor(...WINE_RGB);
+    doc.text(String(totalItems), pageW - margin, y + 2, { align: "right" });
+  }
+
+  // ─── FOOTER BAND (wine) ─────────────────────────────
+  const footerH = 200;
+  const footerTop = pageH - footerH;
+  doc.setFillColor(...WINE_RGB);
+  doc.rect(0, footerTop, pageW, footerH, "F");
+
+  const fPad = 28;
+  const fColX = margin;
+  const fColW = (contentW - 40) / 2;
+  const fRightX = margin + fColW + 40;
+  let fy = footerTop + fPad;
+
+  // Left: What was included
+  doc.setTextColor(...CREAM_RGB);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+  doc.text("WHAT WAS INCLUDED", fColX, fy);
+
+
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(9.5);
+  const incLines = doc.splitTextToSize(included, fColW);
+  let fyLeft = fy + 14;
+  incLines.forEach((ln: string) => {
+    doc.text(ln, fColX, fyLeft);
+    fyLeft += 12;
+  });
+
+  // Right: Valuation coverage
+  doc.setTextColor(...CREAM_RGB);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+  doc.text("VALUATION COVERAGE", fRightX, fy);
+
+
+  doc.setTextColor(...CREAM_RGB);
+  doc.setFont(SERIF, "normal");
+  doc.setFontSize(15);
+  doc.text(valuation.title, fRightX, fy + 20);
+
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(9.5);
+  const valLines = doc.splitTextToSize(valuation.body, fColW);
+  let fyRight = fy + 36;
+  valLines.forEach((ln: string) => {
+    doc.text(ln, fRightX, fyRight);
+    fyRight += 12;
+  });
+
+  // Bottom legal row — thin hairline in a low-opacity cream, drawn as
+  // a solid line in a color that reads as ~18% cream on wine. jsPDF's
+  // opacity path (setGState) isn't in the TS types, so we bake the
+  // effective color instead.
+  const legalY = pageH - 36;
+  doc.setDrawColor(76, 47, 60);
+  doc.setLineWidth(0.4);
+  doc.line(margin, legalY - 14, pageW - margin, legalY - 14);
+
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "bold");
+  doc.setFontSize(8);
+
+  doc.setTextColor(...CREAM_RGB);
+  doc.text("HELLOYUGO INC.", margin, legalY - 2);
+  doc.setTextColor(...CREAM_MUTED);
+  doc.setFont(SANS, "normal");
+  doc.setFontSize(8);
+  const legalLine1Width = doc.getTextWidth("HELLOYUGO INC.");
+  doc.text("  ·  507 KING STREET EAST, TORONTO, ONTARIO M5A 1M3", margin + legalLine1Width, legalY - 2);
+
+
+  doc.text("(647) 370 4525  ·  INFO@HELLOYUGO.COM  ·  ITSYUGO.COM", margin, legalY + 10);
+
+
+  // Ornament symbol, right
+  if (symbol) {
+    try {
+      const sSize = 32;
+      doc.addImage(symbol, "PNG", pageW - margin - sSize, legalY - sSize + 10, sSize, sSize);
+    } catch { /* skip */ }
+  }
+
   return Buffer.from(doc.output("arraybuffer"));
 }
 
