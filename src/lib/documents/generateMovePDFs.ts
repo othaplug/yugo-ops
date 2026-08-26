@@ -1032,20 +1032,20 @@ function generateEditorialMoveSummaryPDF(
       y += 4;
     }
     // Total row
-    y += 4;
+    y += 10;
     doc.setDrawColor(...RULE_RGB);
     doc.setLineWidth(0.5);
     doc.line(margin, y, pageW - margin, y);
-    y += 16;
+    y += 24;
     doc.setTextColor(...INK);
     doc.setFont(SANS, "bold");
     doc.setFontSize(9);
     doc.text("TOTAL ITEMS HANDLED", margin, y);
-  
+
     doc.setFont(SERIF, "normal");
     doc.setFontSize(20);
     doc.setTextColor(...WINE_RGB);
-    doc.text(String(totalItems), pageW - margin, y + 2, { align: "right" });
+    doc.text(String(totalItems), pageW - margin, y + 3, { align: "right" });
   }
 
   // ─── FOOTER BAND (wine) ─────────────────────────────
@@ -1124,11 +1124,15 @@ function generateEditorialMoveSummaryPDF(
   doc.text("(647) 370 4525  ·  INFO@HELLOYUGO.COM  ·  ITSYUGO.COM", margin, legalY + 10);
 
 
-  // Ornament symbol, right
+  // Ornament symbol, right. The asset is 726x622 (aspect ~1.167 W/H)
+  // — using equal sSize for width + height squeezed it into a slug.
+  // Render at intrinsic ratio, sized off height so the symbol sits
+  // level with the two-line legal block on its left.
   if (symbol) {
     try {
-      const sSize = 32;
-      doc.addImage(symbol, "PNG", pageW - margin - sSize, legalY - sSize + 10, sSize, sSize);
+      const sH = 40;
+      const sW = sH * (726 / 622);
+      doc.addImage(symbol, "PNG", pageW - margin - sW, legalY - sH + 12, sW, sH);
     } catch { /* skip */ }
   }
 
@@ -1612,12 +1616,15 @@ function generateEditorialInvoicePDF(
   doc.setFont(SERIF, "normal");
   doc.setFontSize(14);
   doc.text(formatCurrency(hst), pageW - margin, y, { align: "right" });
-  y += 20;
+  y += 22;
 
-  // Total (big serif)
+  // Total row: hairline rule with breathing room ABOVE + BELOW, and
+  // the serif money value sits with its cap-height aligned to the
+  // small caps label (visually centered on the label's x-height).
+  y += 4;
   doc.setDrawColor(...RULE_RGB);
   doc.line(margin, y, pageW - margin, y);
-  y += 18;
+  y += 26;
   doc.setTextColor(...INK);
   doc.setFont(SANS, "bold");
   doc.setFontSize(10.5);
@@ -1625,8 +1632,11 @@ function generateEditorialInvoicePDF(
   doc.setTextColor(...WINE_RGB);
   doc.setFont(SERIF, "normal");
   doc.setFontSize(26);
-  doc.text(formatCurrency(total), pageW - margin, y + 2, { align: "right" });
-  y += 22;
+  // Serif value baseline is 4pt below the small-caps baseline so the
+  // large "$" hangs a hair below the label's x-height — reads as a
+  // single row instead of the label floating above the number.
+  doc.text(formatCurrency(total), pageW - margin, y + 4, { align: "right" });
+  y += 26;
   drawRule();
 
   // ─── PAYMENT SUMMARY ─────────────────────────────────
@@ -1644,10 +1654,10 @@ function generateEditorialInvoicePDF(
   };
   paidRow(`Deposit paid · ${formatEditorialDate(move.deposit_paid_at)}`, depositPaid);
   paidRow(`Balance paid · ${formatEditorialDate(move.balance_paid_at)}`, balancePaid);
-  y += 4;
+  y += 10;
   doc.setDrawColor(...RULE_RGB);
   doc.line(margin, y, pageW - margin, y);
-  y += 18;
+  y += 26;
   doc.setTextColor(...INK);
   doc.setFont(SANS, "bold");
   doc.setFontSize(10.5);
@@ -1655,7 +1665,7 @@ function generateEditorialInvoicePDF(
   doc.setTextColor(...WINE_RGB);
   doc.setFont(SERIF, "normal");
   doc.setFontSize(26);
-  doc.text(formatCurrency(amountOwing), pageW - margin, y + 2, { align: "right" });
+  doc.text(formatCurrency(amountOwing), pageW - margin, y + 4, { align: "right" });
 
   // ─── FOOTER ─────────────────────────────────────────
   const footerH = 160;
@@ -1719,8 +1729,9 @@ function generateEditorialInvoicePDF(
   );
   if (symbol) {
     try {
-      const sSize = 32;
-      doc.addImage(symbol, "PNG", pageW - margin - sSize, legalY - sSize + 10, sSize, sSize);
+      const sH = 40;
+      const sW = sH * (726 / 622);
+      doc.addImage(symbol, "PNG", pageW - margin - sW, legalY - sH + 12, sW, sH);
     } catch { /* skip */ }
   }
 
@@ -1911,10 +1922,10 @@ function generateEditorialReceiptPDF(
       balancePaid,
     );
   }
-  y += 4;
+  y += 10;
   doc.setDrawColor(...RULE_RGB);
   doc.line(margin, y, pageW - margin, y);
-  y += 22;
+  y += 26;
   doc.setTextColor(...INK);
   doc.setFont(SANS, "bold");
   doc.setFontSize(10.5);
@@ -1922,7 +1933,7 @@ function generateEditorialReceiptPDF(
   doc.setTextColor(...WINE_RGB);
   doc.setFont(SERIF, "normal");
   doc.setFontSize(26);
-  doc.text(formatCurrency(totalPaid), pageW - margin, y + 2, { align: "right" });
+  doc.text(formatCurrency(totalPaid), pageW - margin, y + 4, { align: "right" });
   y += 26;
   drawRule();
 
@@ -2019,8 +2030,9 @@ function generateEditorialReceiptPDF(
   );
   if (symbol) {
     try {
-      const sSize = 32;
-      doc.addImage(symbol, "PNG", pageW - margin - sSize, legalY - sSize + 10, sSize, sSize);
+      const sH = 40;
+      const sW = sH * (726 / 622);
+      doc.addImage(symbol, "PNG", pageW - margin - sW, legalY - sH + 12, sW, sH);
     } catch { /* skip */ }
   }
 
