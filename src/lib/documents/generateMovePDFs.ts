@@ -1049,8 +1049,8 @@ function generateEditorialMoveSummaryPDF(
   }
 
   // ─── FOOTER BAND (wine) ─────────────────────────────
-  const footerH = 200;
-  const footerTop = pageH - footerH;
+  const footerH = 160;
+  const footerTop = Math.max(pageH - footerH, y + 24);
   doc.setFillColor(...WINE_RGB);
   doc.rect(0, footerTop, pageW, footerH, "F");
 
@@ -1579,7 +1579,7 @@ function generateEditorialInvoicePDF(
     doc.setFont(SERIF, "normal");
     doc.setFontSize(14);
     doc.text(formatCurrency(amt), pageW - margin, y, { align: "right" });
-    y += 22;
+    y += 18;
   };
   row(lineLabel, tierPrice);
   approvedExtras.forEach((e) => {
@@ -1590,10 +1590,10 @@ function generateEditorialInvoicePDF(
   });
 
   // Subtotal / HST separated by hairline
-  y += 4;
+  y += 2;
   doc.setDrawColor(...RULE_RGB);
   doc.line(margin, y, pageW - margin, y);
-  y += 18;
+  y += 16;
   doc.setTextColor(...INK_MUTED);
   doc.setFont(SANS, "normal");
   doc.setFontSize(11);
@@ -1602,7 +1602,7 @@ function generateEditorialInvoicePDF(
   doc.setFont(SERIF, "normal");
   doc.setFontSize(14);
   doc.text(formatCurrency(subtotal), pageW - margin, y, { align: "right" });
-  y += 20;
+  y += 18;
 
   doc.setTextColor(...INK_MUTED);
   doc.setFont(SANS, "normal");
@@ -1612,12 +1612,12 @@ function generateEditorialInvoicePDF(
   doc.setFont(SERIF, "normal");
   doc.setFontSize(14);
   doc.text(formatCurrency(hst), pageW - margin, y, { align: "right" });
-  y += 24;
+  y += 20;
 
   // Total (big serif)
   doc.setDrawColor(...RULE_RGB);
   doc.line(margin, y, pageW - margin, y);
-  y += 22;
+  y += 18;
   doc.setTextColor(...INK);
   doc.setFont(SANS, "bold");
   doc.setFontSize(10.5);
@@ -1626,12 +1626,12 @@ function generateEditorialInvoicePDF(
   doc.setFont(SERIF, "normal");
   doc.setFontSize(26);
   doc.text(formatCurrency(total), pageW - margin, y + 2, { align: "right" });
-  y += 26;
+  y += 22;
   drawRule();
 
   // ─── PAYMENT SUMMARY ─────────────────────────────────
   eyebrow("PAYMENT SUMMARY");
-  y += 24;
+  y += 20;
   const paidRow = (label: string, amt: number) => {
     doc.setTextColor(...INK_MUTED);
     doc.setFont(SANS, "normal");
@@ -1640,14 +1640,14 @@ function generateEditorialInvoicePDF(
     doc.setFont(SERIF, "normal");
     doc.setFontSize(13);
     doc.text(`-${formatCurrency(amt)}`, pageW - margin, y, { align: "right" });
-    y += 18;
+    y += 16;
   };
   paidRow(`Deposit paid · ${formatEditorialDate(move.deposit_paid_at)}`, depositPaid);
   paidRow(`Balance paid · ${formatEditorialDate(move.balance_paid_at)}`, balancePaid);
-  y += 6;
+  y += 4;
   doc.setDrawColor(...RULE_RGB);
   doc.line(margin, y, pageW - margin, y);
-  y += 22;
+  y += 18;
   doc.setTextColor(...INK);
   doc.setFont(SANS, "bold");
   doc.setFontSize(10.5);
@@ -1658,8 +1658,8 @@ function generateEditorialInvoicePDF(
   doc.text(formatCurrency(amountOwing), pageW - margin, y + 2, { align: "right" });
 
   // ─── FOOTER ─────────────────────────────────────────
-  const footerH = 200;
-  const footerTop = pageH - footerH;
+  const footerH = 160;
+  const footerTop = Math.max(pageH - footerH, y + 24);
   doc.setFillColor(...WINE_RGB);
   doc.rect(0, footerTop, pageW, footerH, "F");
   const fPad = 28;
@@ -1958,8 +1958,8 @@ function generateEditorialReceiptPDF(
   }
 
   // Footer
-  const footerH = 200;
-  const footerTop = pageH - footerH;
+  const footerH = 160;
+  const footerTop = Math.max(pageH - footerH, y + 24);
   doc.setFillColor(...WINE_RGB);
   doc.rect(0, footerTop, pageW, footerH, "F");
   const fPad = 28;
