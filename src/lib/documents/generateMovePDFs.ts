@@ -142,15 +142,28 @@ function loadYugoWordmarkCreamBase64(): string {
   }
 }
 
-/** Brand ornament for the wine footer band on the redesigned move summary. */
+/** Brand ornament for the wine footer band on the redesigned PDFs.
+ *  Uses the cream-tinted variant so it reads on the wine footer;
+ *  falls back to the wine PNG if the cream file is missing (which
+ *  would render dark-on-dark, hence why it looked black in prod). */
 function loadYugoSymbolBase64(): string {
-  try {
-    const p = path.join(process.cwd(), "public", "yugo-symbol.png");
-    return `data:image/png;base64,${fs.readFileSync(p, { encoding: "base64" })}`;
-  } catch {
-    return "";
+  const dir = path.join(process.cwd(), "public");
+  for (const name of ["yugo-symbol-cream.png", "yugo-symbol.png"] as const) {
+    try {
+      const b64 = fs.readFileSync(path.join(dir, name), { encoding: "base64" });
+      return `data:image/png;base64,${b64}`;
+    } catch {
+      /* try next */
+    }
   }
+  return "";
 }
+
+/** Cream wordmark aspect ratio, taken from the source PNG
+ *  (public/images/yugo-logo-cream.png is 1024×277 → ratio ≈ 3.7).
+ *  Any callers rendering the wordmark should use `WORDMARK_ASPECT`
+ *  as the width factor so the mark never gets squeezed. */
+const WORDMARK_ASPECT = 1024 / 277;
 
 /** Register Instrument Serif with the jsPDF instance so setFont("InstrumentSerif")
  *  resolves. Returns the family name if the embed succeeded, or falls back to
@@ -763,7 +776,7 @@ function generateEditorialMoveSummaryPDF(
     try {
       // Wordmark PNG is 2:1 (roughly). Render at 22pt tall.
       const wmH = 22;
-      const wmW = wmH * 2.2;
+      const wmW = wmH * WORDMARK_ASPECT;
       doc.addImage(wordmarkCream, "PNG", margin, 40, wmW, wmH);
     } catch { /* skip logo */ }
   } else {
@@ -843,7 +856,7 @@ function generateEditorialMoveSummaryPDF(
     doc.text(label, x, cy);
   
 
-    cy += 16;
+    cy += 22;
     doc.setTextColor(...INK);
     doc.setFont(SERIF, "normal");
     doc.setFontSize(17);
@@ -902,7 +915,7 @@ function generateEditorialMoveSummaryPDF(
     doc.setFontSize(19);
     doc.text(s.value, x, cy);
 
-    cy += 16;
+    cy += 22;
     doc.setTextColor(...INK_MUTED);
     doc.setFont(SANS, "normal");
     doc.setFontSize(9);
@@ -1450,7 +1463,7 @@ function generateEditorialInvoicePDF(
   if (wordmarkCream) {
     try {
       const wmH = 22;
-      const wmW = wmH * 2.2;
+      const wmW = wmH * WORDMARK_ASPECT;
       doc.addImage(wordmarkCream, "PNG", margin, 40, wmW, wmH);
     } catch { /* skip */ }
   }
@@ -1483,7 +1496,7 @@ function generateEditorialInvoicePDF(
 
   // ─── BILL TO ────────────────────────────────────────
   eyebrow("BILL TO");
-  y += 22;
+  y += 30;
   doc.setTextColor(...INK);
   doc.setFont(SERIF, "normal");
   doc.setFontSize(30);
@@ -1515,7 +1528,7 @@ function generateEditorialInvoicePDF(
     doc.setFont(SANS, "bold");
     doc.setFontSize(8);
     doc.text(label, x, cy);
-    cy += 16;
+    cy += 22;
     doc.setTextColor(...INK);
     doc.setFont(SERIF, "normal");
     doc.setFontSize(17);
@@ -1544,7 +1557,7 @@ function generateEditorialInvoicePDF(
 
   // ─── LINE ITEMS ─────────────────────────────────────
   eyebrow("LINE ITEMS");
-  y += 18;
+  y += 24;
 
   // Header row
   doc.setTextColor(...INK_MUTED);
@@ -1618,7 +1631,7 @@ function generateEditorialInvoicePDF(
 
   // ─── PAYMENT SUMMARY ─────────────────────────────────
   eyebrow("PAYMENT SUMMARY");
-  y += 18;
+  y += 24;
   const paidRow = (label: string, amt: number) => {
     doc.setTextColor(...INK_MUTED);
     doc.setFont(SANS, "normal");
@@ -1654,51 +1667,33 @@ function generateEditorialInvoicePDF(
   const fRightX = margin + fColW + 40;
   const fy = footerTop + fPad;
 
-  // Left: Terms + GST/HST number
+  // Left: GST/HST number as its own value.
+  // (Terms block removed per operator directive — the balance-on-file
+  // language belonged on the original booking contract, not on the
+  // receipt-of-payment doc a client re-opens weeks later.)
   doc.setTextColor(...CREAM_RGB);
   doc.setFont(SANS, "bold");
   doc.setFontSize(8);
-  doc.text("TERMS", margin, fy);
-  doc.setTextColor(...CREAM_MUTED);
-  doc.setFont(SANS, "normal");
-  doc.setFontSize(9.5);
-  const termsLines = doc.splitTextToSize(
-    "Balance is settled from the card on file after job completion. Enhanced valuation and any change-order fees agreed in writing appear as separate lines above.",
-    fColW,
-  );
-  let fyLeft = fy + 14;
-  termsLines.forEach((ln: string) => {
-    doc.text(ln, margin, fyLeft);
-    fyLeft += 12;
-  });
-  fyLeft += 8;
+  doc.text("GST / HST", margin, fy);
   doc.setTextColor(...CREAM_RGB);
-  doc.setFont(SANS, "bold");
-  doc.setFontSize(8);
-  doc.text("GST / HST", margin, fyLeft);
-  fyLeft += 12;
-  doc.setTextColor(...CREAM_MUTED);
-  doc.setFont(SANS, "normal");
-  doc.setFontSize(10);
-  doc.text(YUGO_GST_HST_NUMBER, margin, fyLeft);
+  doc.setFont(SERIF, "normal");
+  doc.setFontSize(17);
+  doc.text(YUGO_GST_HST_NUMBER, margin, fy + 22);
 
-  // Right: Support column
+  // Right: Support column. Copy neutralised so it reads the same
+  // whether the client opened the PDF from email or from the track-move
+  // portal (no "reply to this invoice", which fails on the portal).
   doc.setTextColor(...CREAM_RGB);
   doc.setFont(SANS, "bold");
   doc.setFontSize(8);
   doc.text("QUESTIONS?", fRightX, fy);
   doc.setFont(SERIF, "normal");
-  doc.setFontSize(15);
-  doc.text("info@helloyugo.com", fRightX, fy + 20);
+  doc.setFontSize(17);
+  doc.text("info@helloyugo.com", fRightX, fy + 22);
   doc.setTextColor(...CREAM_MUTED);
   doc.setFont(SANS, "normal");
-  doc.setFontSize(9.5);
-  doc.splitTextToSize(
-    "Reply to this invoice or reach us at (647) 370 4525 — we respond same or next business day.",
-    fColW,
-  ).forEach((ln: string, i: number) => {
-    doc.text(ln, fRightX, fy + 40 + i * 12);
-  });
+  doc.setFontSize(10);
+  doc.text("(647) 370 4525 · same or next business day", fRightX, fy + 40);
 
   // Bottom legal
   const legalY = pageH - 36;
@@ -1779,7 +1774,7 @@ function generateEditorialReceiptPDF(
   if (wordmarkCream) {
     try {
       const wmH = 22;
-      const wmW = wmH * 2.2;
+      const wmW = wmH * WORDMARK_ASPECT;
       doc.addImage(wordmarkCream, "PNG", margin, 40, wmW, wmH);
     } catch { /* skip */ }
   }
@@ -1812,7 +1807,7 @@ function generateEditorialReceiptPDF(
 
   // Paid by
   eyebrow("PAID BY");
-  y += 22;
+  y += 30;
   doc.setTextColor(...INK);
   doc.setFont(SERIF, "normal");
   doc.setFontSize(30);
@@ -1843,7 +1838,7 @@ function generateEditorialReceiptPDF(
     doc.setFont(SANS, "bold");
     doc.setFontSize(8);
     doc.text(label, x, cy);
-    cy += 16;
+    cy += 22;
     doc.setTextColor(...INK);
     doc.setFont(SERIF, "normal");
     doc.setFontSize(17);
@@ -1871,7 +1866,7 @@ function generateEditorialReceiptPDF(
 
   // Payments table
   eyebrow("PAYMENTS");
-  y += 18;
+  y += 24;
   doc.setTextColor(...INK_MUTED);
   doc.setFont(SANS, "bold");
   doc.setFontSize(8);
