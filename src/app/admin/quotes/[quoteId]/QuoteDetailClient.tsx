@@ -1529,57 +1529,6 @@ export default function QuoteDetailClient({
 
         <div className="space-y-5">
 
-        {/* ── Inventory ──────────────────────────────────────────────── */}
-        {(() => {
-          const inv = Array.isArray(
-            (quote as { inventory_items?: unknown }).inventory_items,
-          )
-            ? ((quote as { inventory_items: Array<Record<string, unknown>> })
-                .inventory_items)
-            : [];
-          if (inv.length === 0) return null;
-          const totalQty = inv.reduce(
-            (s, it) => s + (Number(it.quantity) || 0),
-            0,
-          );
-          return (
-            <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 md:p-5">
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <h2 className="admin-section-h2 mb-0">Inventory</h2>
-                <span className="text-[11px] font-semibold text-[var(--tx3)] tabular-nums">
-                  {inv.length} item{inv.length === 1 ? "" : "s"} · {totalQty}{" "}
-                  piece{totalQty === 1 ? "" : "s"}
-                </span>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-x-6">
-                {inv.map((it, i) => {
-                  const name =
-                    String(it.name ?? it.slug ?? "Item").replace(/_/g, " ") ||
-                    "Item";
-                  return (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between gap-3 py-2 border-b border-[var(--brd)]/50 text-[13px]"
-                    >
-                      <span className="text-[var(--tx2)] capitalize flex items-center gap-2 min-w-0">
-                        <span className="truncate">{name}</span>
-                        {Boolean(it.fragile) && (
-                          <span className="shrink-0 text-[9.5px] font-bold uppercase tracking-wider text-[var(--org)] bg-[var(--ordim)] rounded px-1.5 py-0.5">
-                            Fragile
-                          </span>
-                        )}
-                      </span>
-                      <span className="tabular-nums text-[var(--tx)] font-semibold shrink-0">
-                        ×{Number(it.quantity) || 1}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
-
         {/* ── Pricing & tiers ────────────────────────────────────────── */}
         {(() => {
           const t = ((quote.tiers ?? {}) as Record<
@@ -2063,6 +2012,73 @@ export default function QuoteDetailClient({
             </div>
           </div>
         )}
+
+        {/* ── Inventory (collapsible, default closed) ─────────────────── */}
+        {(() => {
+          const inv = Array.isArray(
+            (quote as { inventory_items?: unknown }).inventory_items,
+          )
+            ? ((quote as { inventory_items: Array<Record<string, unknown>> })
+                .inventory_items)
+            : [];
+          if (inv.length === 0) return null;
+          const totalQty = inv.reduce(
+            (s, it) => s + (Number(it.quantity) || 0),
+            0,
+          );
+          return (
+            <details className="group rounded-xl border border-[var(--brd)] bg-[var(--card)]">
+              <summary className="flex items-center justify-between gap-2 p-4 md:p-5 cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
+                <div className="flex items-center gap-2 min-w-0">
+                  <svg
+                    className="w-3.5 h-3.5 shrink-0 text-[var(--tx3)] transition-transform group-open:rotate-90"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    aria-hidden
+                  >
+                    <path
+                      d="M6 4l4 4-4 4"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <h2 className="admin-section-h2 mb-0">Inventory</h2>
+                </div>
+                <span className="text-[11px] font-semibold text-[var(--tx3)] tabular-nums shrink-0">
+                  {inv.length} item{inv.length === 1 ? "" : "s"} · {totalQty}{" "}
+                  piece{totalQty === 1 ? "" : "s"}
+                </span>
+              </summary>
+              <div className="px-4 md:px-5 pb-4 md:pb-5 -mt-1 grid sm:grid-cols-2 gap-x-6">
+                {inv.map((it, i) => {
+                  const name =
+                    String(it.name ?? it.slug ?? "Item").replace(/_/g, " ") ||
+                    "Item";
+                  return (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between gap-3 py-2 border-b border-[var(--brd)]/50 text-[13px]"
+                    >
+                      <span className="text-[var(--tx2)] capitalize flex items-center gap-2 min-w-0">
+                        <span className="truncate">{name}</span>
+                        {Boolean(it.fragile) && (
+                          <span className="shrink-0 text-[9.5px] font-bold uppercase tracking-wider text-[var(--org)] bg-[var(--ordim)] rounded px-1.5 py-0.5">
+                            Fragile
+                          </span>
+                        )}
+                      </span>
+                      <span className="tabular-nums text-[var(--tx)] font-semibold shrink-0">
+                        ×{Number(it.quantity) || 1}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
+          );
+        })()}
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left: Quote Details */}
