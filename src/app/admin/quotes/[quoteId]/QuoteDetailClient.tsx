@@ -99,6 +99,7 @@ interface Props {
     selected_at: string | null;
   }>;
   acceptedScenarioId?: string | null;
+  clientHistory?: { lifetimeValue: number; pastMoves: number; openQuotes: number };
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -429,6 +430,103 @@ function tierInterestLine(metrics: QuoteEngagementMetrics): string {
   return entries.map(([k, v]) => `${toTitleCase(k)} ${v}×`).join(", ");
 }
 
+/** Non-blocking amber banner shown on quotes that are already out the
+ *  door (sent / viewed / accepted) but where the contact record has
+ *  no phone number — meaning the quote-link SMS was skipped at send
+ *  time. Inline capture writes the number to the contact and fires
+ *  the SMS in the same click; on success the banner disappears. */
+function PhoneMissingBanner({
+  quoteId,
+  hasPhone,
+  quoteStatus,
+}: {
+  quoteId: string;
+  hasPhone: boolean;
+  quoteStatus: string;
+}) {
+  const [phone, setPhone] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+
+  // Only visible on quotes that were actually sent to the client. On a
+  // draft, "no phone yet" is expected — nothing to warn about.
+  const outTheDoor = ["sent", "viewed", "accepted"].includes(quoteStatus.toLowerCase());
+  if (hasPhone || !outTheDoor || dismissed) return null;
+
+  const submit = async () => {
+    setSubmitting(true);
+    setMsg(null);
+    try {
+      const res = await fetch(
+        `/api/admin/quotes/${encodeURIComponent(quoteId)}/add-phone-and-resend-sms`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone }),
+        },
+      );
+      const data = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok || !data.ok) {
+        setMsg({ kind: "err", text: data.error || "Could not send SMS." });
+        return;
+      }
+      setMsg({ kind: "ok", text: "SMS sent. Phone saved to the contact." });
+      setTimeout(() => setDismissed(true), 1600);
+    } catch (e) {
+      setMsg({
+        kind: "err",
+        text: e instanceof Error ? e.message : "Network error.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg px-3 py-2.5 bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-700/40">
+      <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+        No phone on file · SMS not sent
+      </p>
+      <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5 leading-snug">
+        This quote was emailed successfully, but the contact had no phone number
+        so the quote-link text was skipped. Add one now to send it.
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <input
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder="(647) 555 0100"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          disabled={submitting}
+          className="admin-premium-input min-w-[180px] flex-1 max-w-[260px] text-[12px]"
+        />
+        <button
+          type="button"
+          onClick={submit}
+          disabled={submitting || phone.trim().replace(/\D/g, "").length < 10}
+          className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--grn)] text-white hover:bg-[var(--grn)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {submitting ? "Sending…" : "Add & send SMS"}
+        </button>
+      </div>
+      {msg && (
+        <p
+          className={`mt-2 text-[11px] ${
+            msg.kind === "ok"
+              ? "text-green-700 dark:text-green-400"
+              : "text-red-700 dark:text-red-400"
+          }`}
+        >
+          {msg.text}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function QuoteDetailClient({
   quote,
   engagement,
@@ -447,6 +545,7 @@ export default function QuoteDetailClient({
   hasTierRange = false,
   scenarios = [],
   acceptedScenarioId = null,
+  clientHistory = { lifetimeValue: 0, pastMoves: 0, openQuotes: 0 },
 }: Props) {
   const router = useRouter();
   const [hubspotLinkedId, setHubspotLinkedId] = useState<string | null>(
@@ -1430,6 +1529,344 @@ export default function QuoteDetailClient({
           </div>
         </div>
 
+        {/* ── Operator dashboard: main content (left) + decision rail (right) ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_336px] gap-5 lg:gap-6 items-start">
+        <div className="space-y-5 min-w-0">
+
+        {/* ── Client & sales intent (redesign) ─────────────────────────
+            Elevates the buried engagement signal into the first content card:
+            who the client is + how interested they are (views, time on quote,
+            which tier they keep opening). All real data — no placeholders. */}
+        {(() => {
+          const em = engagementMetrics;
+          const views = em?.pageViewCount ?? 0;
+          const days = em?.distinctViewDays ?? 0;
+          const clicks = (em?.tierClickCounts ?? {}) as Record<string, number>;
+          const clickTotal = Object.values(clicks).reduce((a, b) => a + (b || 0), 0);
+          const secs = em?.maxSessionSeconds ?? 0;
+          const mmss =
+            secs > 0
+              ? `${Math.floor(secs / 60)}:${String(Math.round(secs % 60)).padStart(2, "0")}`
+              : "—";
+          const level =
+            (views >= 3 && days >= 2) || clickTotal >= 4
+              ? "high"
+              : views >= 2 || clickTotal >= 2 || em?.comparingRecommended
+                ? "warm"
+                : "cool";
+          const levelMeta =
+            level === "high"
+              ? { label: "High intent", cls: "text-[var(--grn)] bg-[var(--grdim)] border-[var(--grn)]/25" }
+              : level === "warm"
+                ? { label: "Warm", cls: "text-[var(--org)] bg-[var(--ordim)] border-[var(--org)]/25" }
+                : { label: "Quiet", cls: "text-[var(--tx3)] bg-[var(--gdim)] border-[var(--brd)]" };
+          const tierOrder = ["essential", "signature", "estate"] as const;
+          const tierLabel: Record<string, string> = {
+            essential: "Essential",
+            signature: "Signature",
+            estate: "Estate",
+          };
+          const maxClick = Math.max(1, ...tierOrder.map((t) => clicks[t] ?? 0));
+          const hottest = tierOrder.reduce(
+            (best, t) => ((clicks[t] ?? 0) > (clicks[best] ?? 0) ? t : best),
+            "signature" as string,
+          );
+          const initials =
+            String(contact?.name ?? "")
+              .split(/\s+/)
+              .map((s: string) => s[0])
+              .filter(Boolean)
+              .slice(0, 2)
+              .join("")
+              .toUpperCase() || "—";
+          const factors = (quote.factors_applied ?? {}) as Record<string, unknown>;
+          const leadSource = String(
+            factors.lead_source ?? (quote as { lead_source?: string }).lead_source ?? "",
+          ).trim();
+          const tagCls =
+            "inline-flex items-center text-[11px] font-semibold text-[var(--tx2)] bg-[var(--surface)] border border-[var(--brd)] rounded-full px-2.5 py-0.5";
+          const microCls =
+            "text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--tx3)]";
+          return (
+            <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 md:p-5">
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <h2 className="admin-section-h2 mb-0">Client &amp; sales intent</h2>
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${levelMeta.cls}`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                  {levelMeta.label}
+                </span>
+              </div>
+              <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
+                {/* identity */}
+                <div className="flex gap-3.5 md:pr-5 md:border-r md:border-[var(--brd)]">
+                  <div
+                    className="w-12 h-12 rounded-xl bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] flex items-center justify-center text-[18px] shrink-0"
+                    style={{ fontFamily: "var(--font-hero)" }}
+                  >
+                    {initials}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[16px] font-semibold text-[var(--tx)] truncate">
+                      {contact?.name ?? quote.client_name ?? "—"}
+                    </div>
+                    <div className="text-[12px] text-[var(--tx3)] truncate">
+                      {contact?.email ?? quote.client_email ?? "—"}
+                      {contact?.phone ? ` · ${contact.phone}` : ""}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mt-2.5">
+                      {clientHistory.pastMoves > 0 && (
+                        <span
+                          className={`${tagCls} !text-[var(--grn)] !bg-[var(--grdim)] !border-[color-mix(in_srgb,var(--grn)_25%,transparent)]`}
+                        >
+                          Repeat client
+                        </span>
+                      )}
+                      {leadSource && <span className={tagCls}>{leadSource}</span>}
+                      <span className={tagCls}>
+                        {serviceTypeDisplayLabel(quote.service_type)}
+                      </span>
+                    </div>
+                    {/* client history stats */}
+                    <div className="grid grid-cols-3 mt-3.5 rounded-lg border border-[var(--brd)] overflow-hidden">
+                      <div className="px-3 py-2.5 border-r border-[var(--brd)]">
+                        <div className={microCls}>Lifetime value</div>
+                        <div
+                          className="text-[17px] text-[var(--tx)] tabular-nums leading-none mt-1"
+                          style={{ fontFamily: "var(--font-hero)" }}
+                        >
+                          {formatCurrency(clientHistory.lifetimeValue)}
+                        </div>
+                      </div>
+                      <div className="px-3 py-2.5 border-r border-[var(--brd)]">
+                        <div className={microCls}>Past moves</div>
+                        <div
+                          className="text-[17px] text-[var(--tx)] tabular-nums leading-none mt-1"
+                          style={{ fontFamily: "var(--font-hero)" }}
+                        >
+                          {clientHistory.pastMoves}
+                        </div>
+                      </div>
+                      <div className="px-3 py-2.5">
+                        <div className={microCls}>Open quotes</div>
+                        <div
+                          className="text-[17px] text-[var(--tx)] tabular-nums leading-none mt-1"
+                          style={{ fontFamily: "var(--font-hero)" }}
+                        >
+                          {clientHistory.openQuotes}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* intent */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-4 content-start">
+                  <div>
+                    <div className={microCls}>Quote views</div>
+                    <div
+                      className="text-[24px] text-[var(--tx)] tabular-nums leading-none mt-1.5"
+                      style={{ fontFamily: "var(--font-hero)" }}
+                    >
+                      {views}
+                      {days > 0 && (
+                        <span className="text-[13px] text-[var(--tx3)] font-sans">
+                          {" "}
+                          · {days}d
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <div className={microCls}>Time on quote</div>
+                    <div
+                      className="text-[24px] text-[var(--tx)] tabular-nums leading-none mt-1.5"
+                      style={{ fontFamily: "var(--font-hero)" }}
+                    >
+                      {mmss}
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className={`${microCls} mb-2`}>
+                      Tier attention{clickTotal > 0 ? ` · keeps opening ${tierLabel[hottest]}` : ""}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {tierOrder.map((t) => {
+                        const c = clicks[t] ?? 0;
+                        const hot = t === hottest && c > 0;
+                        return (
+                          <div
+                            key={t}
+                            className="grid grid-cols-[74px_1fr_20px] items-center gap-2.5 text-[12px]"
+                          >
+                            <span className="font-semibold text-[var(--tx2)]">
+                              {tierLabel[t]}
+                            </span>
+                            <span className="h-2 rounded-full bg-[var(--surface)] overflow-hidden border border-[var(--brd)]">
+                              <span
+                                className="block h-full rounded-full"
+                                style={{
+                                  width: `${Math.round((c / maxClick) * 100)}%`,
+                                  background: hot
+                                    ? "var(--grn)"
+                                    : "var(--admin-primary-fill)",
+                                }}
+                              />
+                            </span>
+                            <span className="text-right font-semibold text-[var(--tx3)] tabular-nums">
+                              {c}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {clickTotal === 0 && views === 0 && (
+                      <p className="text-[11.5px] text-[var(--tx3)] mt-1">
+                        No client engagement recorded yet.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── Inventory ──────────────────────────────────────────────── */}
+        {(() => {
+          const inv = Array.isArray(
+            (quote as { inventory_items?: unknown }).inventory_items,
+          )
+            ? ((quote as { inventory_items: Array<Record<string, unknown>> })
+                .inventory_items)
+            : [];
+          if (inv.length === 0) return null;
+          const totalQty = inv.reduce(
+            (s, it) => s + (Number(it.quantity) || 0),
+            0,
+          );
+          return (
+            <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 md:p-5">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <h2 className="admin-section-h2 mb-0">Inventory</h2>
+                <span className="text-[11px] font-semibold text-[var(--tx3)] tabular-nums">
+                  {inv.length} item{inv.length === 1 ? "" : "s"} · {totalQty}{" "}
+                  piece{totalQty === 1 ? "" : "s"}
+                </span>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-x-6">
+                {inv.map((it, i) => {
+                  const name =
+                    String(it.name ?? it.slug ?? "Item").replace(/_/g, " ") ||
+                    "Item";
+                  return (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between gap-3 py-2 border-b border-[var(--brd)]/50 text-[13px]"
+                    >
+                      <span className="text-[var(--tx2)] capitalize flex items-center gap-2 min-w-0">
+                        <span className="truncate">{name}</span>
+                        {Boolean(it.fragile) && (
+                          <span className="shrink-0 text-[9.5px] font-bold uppercase tracking-wider text-[var(--org)] bg-[var(--ordim)] rounded px-1.5 py-0.5">
+                            Fragile
+                          </span>
+                        )}
+                      </span>
+                      <span className="tabular-nums text-[var(--tx)] font-semibold shrink-0">
+                        ×{Number(it.quantity) || 1}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── Pricing & tiers ────────────────────────────────────────── */}
+        {(() => {
+          const t = ((quote.tiers ?? {}) as Record<
+            string,
+            { price?: number; tax?: number; total?: number }
+          >);
+          const order = ["essential", "signature", "estate"] as const;
+          const present = order.filter(
+            (k) => t[k] && Number(t[k]!.price) > 0,
+          );
+          if (present.length === 0) return null;
+          const rec = String(quote.recommended_tier ?? "signature");
+          const tierName: Record<string, string> = {
+            essential: "Essential",
+            signature: "Signature",
+            estate: "Estate",
+            priority: "Priority",
+          };
+          return (
+            <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 md:p-5">
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <h2 className="admin-section-h2 mb-0">Pricing &amp; tiers</h2>
+                {hasTierRange ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold text-[var(--org)] bg-[var(--ordim)] border border-[color-mix(in_srgb,var(--org)_25%,transparent)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                    Tier not confirmed
+                  </span>
+                ) : quote.selected_tier ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold text-[var(--grn)] bg-[var(--grdim)] border border-[color-mix(in_srgb,var(--grn)_25%,transparent)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                    {tierName[String(quote.selected_tier)] ?? "Booked"} booked
+                  </span>
+                ) : null}
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                {present.map((k) => {
+                  const price = Number(t[k]!.price);
+                  const tax =
+                    typeof t[k]!.tax === "number"
+                      ? (t[k]!.tax as number)
+                      : Math.round(price * 0.13);
+                  const total =
+                    typeof t[k]!.total === "number"
+                      ? (t[k]!.total as number)
+                      : price + tax;
+                  const isRec = k === rec;
+                  return (
+                    <div
+                      key={k}
+                      className={`relative rounded-xl p-4 ${
+                        isRec
+                          ? "border-2 border-[var(--admin-primary-fill)] bg-[var(--gdim)]"
+                          : "border border-[var(--brd)] bg-[var(--surface)]"
+                      }`}
+                    >
+                      {isRec && (
+                        <span className="absolute -top-2.5 right-3 text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--btn-text-on-accent)] bg-[var(--admin-primary-fill)] rounded-full px-2 py-0.5">
+                          Recommended
+                        </span>
+                      )}
+                      <div
+                        className={`text-[11px] font-bold uppercase tracking-[0.08em] ${
+                          isRec ? "text-[var(--admin-primary-fill)]" : "text-[var(--tx3)]"
+                        }`}
+                      >
+                        {tierName[k]}
+                      </div>
+                      <div
+                        className="text-[26px] text-[var(--tx)] tabular-nums leading-none mt-2"
+                        style={{ fontFamily: "var(--font-hero)" }}
+                      >
+                        {formatCurrency(price)}
+                      </div>
+                      <div className="text-[11.5px] text-[var(--tx3)] mt-1.5">
+                        +{formatCurrency(tax)} HST · {formatCurrency(total)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 md:p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
             <div>
@@ -1570,6 +2007,17 @@ export default function QuoteDetailClient({
             </p>
           </div>
         )}
+
+        {/* Phone-missing banner — SMS wasn't sent because there's no
+            phone on the contact. Inline capture writes the number to
+            the contact and fires the quote-link SMS in the same click.
+            Only shown once the quote is actually out the door (status
+            sent / viewed / accepted). */}
+        <PhoneMissingBanner
+          quoteId={quote.quote_id}
+          hasPhone={Boolean(contact?.phone?.trim())}
+          quoteStatus={String(quote.status ?? "")}
+        />
 
         <div className="rounded-lg bg-[var(--card)] px-3 py-2">
           <div className="flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-3 sm:gap-y-1.5">
@@ -3126,6 +3574,133 @@ export default function QuoteDetailClient({
             )}
           </div>
         </div>
+        </div>{/* /main column */}
+
+        {/* ── Decision rail ───────────────────────────────────────────── */}
+        <aside className="space-y-5 lg:sticky lg:top-4">
+          {(() => {
+            const railMicro =
+              "text-[10.5px] font-semibold uppercase tracking-[0.09em] text-[var(--tx3)]";
+            const cardCls =
+              "rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4";
+            const rowCls =
+              "flex items-center justify-between gap-3 py-1.5 text-[12.5px]";
+            const exp = quote.expires_at
+              ? new Date(quote.expires_at as string)
+              : null;
+            const daysLeft = exp
+              ? Math.floor((exp.getTime() - Date.now()) / 86_400_000)
+              : null;
+            const expired = daysLeft != null && daysLeft < 0;
+            const meterPct =
+              daysLeft == null
+                ? 0
+                : Math.max(0, Math.min(100, Math.round((daysLeft / 14) * 100)));
+            return (
+              <>
+                {/* Expiry */}
+                {exp && (
+                  <div className={cardCls}>
+                    <div className={`${railMicro} mb-1.5`}>Expiry</div>
+                    <div className="flex items-baseline justify-between">
+                      <span
+                        className="text-[22px] text-[var(--tx)] tabular-nums leading-none"
+                        style={{ fontFamily: "var(--font-hero)" }}
+                      >
+                        {expired
+                          ? `${Math.abs(daysLeft!)}d ago`
+                          : `${daysLeft} day${daysLeft === 1 ? "" : "s"}`}
+                      </span>
+                      <span className="text-[12px] text-[var(--tx3)]">
+                        {formatPlatformDisplay(quote.expires_at as string, {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                    </div>
+                    <div className="h-2 rounded-full bg-[var(--surface)] overflow-hidden border border-[var(--brd)] mt-2.5">
+                      <span
+                        className="block h-full rounded-full"
+                        style={{
+                          width: `${expired ? 100 : meterPct}%`,
+                          background: expired
+                            ? "var(--red)"
+                            : daysLeft != null && daysLeft <= 3
+                              ? "var(--org)"
+                              : "var(--admin-primary-fill)",
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Pipeline snapshot */}
+                <div className={cardCls}>
+                  <div className={`${railMicro} mb-2`}>Pipeline</div>
+                  <div className={rowCls}>
+                    <span className="text-[var(--tx3)]">Status</span>
+                    <span
+                      className={`dt-badge tracking-[0.04em] ${STATUS_COLORS[quote.status] ?? STATUS_COLORS.draft}`}
+                    >
+                      {getDisplayLabel(quote.status, "quote") ||
+                        toTitleCase(quote.status)}
+                    </span>
+                  </div>
+                  <div className={rowCls}>
+                    <span className="text-[var(--tx3)]">Auto follow-ups</span>
+                    <span className="font-semibold text-[var(--tx)]">
+                      {autoFollowup ? "On" : "Off"} ·{" "}
+                      <span className="tabular-nums">
+                        {followupsSentCount}/{followupMaxAttempts}
+                      </span>
+                    </span>
+                  </div>
+                  {hubspotLinkedId && (
+                    <div className={rowCls}>
+                      <span className="text-[var(--tx3)]">HubSpot deal</span>
+                      <code className="text-[11px] font-mono text-[var(--tx2)]">
+                        {hubspotLinkedId}
+                      </code>
+                    </div>
+                  )}
+                </div>
+
+                {/* Quick actions */}
+                <div className={cardCls}>
+                  <div className={`${railMicro} mb-2.5`}>Actions</div>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowExternalBookingModal(true)}
+                      className="w-full inline-flex items-center justify-center gap-1.5 min-h-[36px] px-3 rounded-lg text-[12px] font-semibold text-[var(--btn-text-on-accent)] bg-[var(--admin-primary-fill)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
+                    >
+                      Record external booking
+                    </button>
+                    {quote.quote_url && (
+                      <a
+                        href={`${quote.quote_url}${quote.quote_url.includes("?") ? "&" : "?"}preview=1`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full inline-flex items-center justify-center gap-1.5 min-h-[34px] px-3 rounded-lg text-[12px] font-semibold text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--admin-primary-fill)] transition-colors"
+                      >
+                        Open client view
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => void handleDuplicate()}
+                      disabled={duplicating}
+                      className="w-full inline-flex items-center justify-center gap-1.5 min-h-[34px] px-3 rounded-lg text-[12px] font-semibold text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--admin-primary-fill)] disabled:opacity-50 transition-colors"
+                    >
+                      {duplicating ? "Duplicating…" : "Duplicate quote"}
+                    </button>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
+        </aside>
+        </div>{/* /dashboard grid */}
       </div>
 
       <ConfirmDialog

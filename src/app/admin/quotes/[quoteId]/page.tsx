@@ -117,6 +117,49 @@ export default async function QuoteDetailPage({ params }: Props) {
       ? (quote as { hubspot_deal_id: string }).hubspot_deal_id.trim() || null
       : null;
 
+  // Client history — makes the contact a real person on the quote page:
+  // lifetime value + completed moves + other open quotes. Moves link to quotes
+  // via quote_id, so we walk quotes(contact_id) -> moves(quote_id).
+  let clientHistory = { lifetimeValue: 0, pastMoves: 0, openQuotes: 0 };
+  const contactId = (quote as { contact_id?: string | null }).contact_id ?? null;
+  if (contactId) {
+    const { data: contactQuotes } = await db
+      .from("quotes")
+      .select("id, status")
+      .eq("contact_id", contactId);
+    const rows = contactQuotes ?? [];
+    const openQuotes = rows.filter((q) =>
+      ["draft", "sent", "viewed", "reactivated"].includes(String(q.status)),
+    ).length;
+    let lifetimeValue = 0;
+    let pastMoves = 0;
+    const quoteIds = rows.map((q) => q.id).filter(Boolean);
+    if (quoteIds.length > 0) {
+      const { data: contactMoves } = await db
+        .from("moves")
+        .select("total_price, amount, status")
+        .in("quote_id", quoteIds);
+      for (const m of contactMoves ?? []) {
+        const done = [
+          "completed",
+          "job_complete",
+          "paid",
+          "delivered",
+        ].includes(String((m as { status?: string }).status));
+        if (done) {
+          pastMoves += 1;
+          lifetimeValue +=
+            Number(
+              (m as { total_price?: number; amount?: number }).total_price ??
+                (m as { amount?: number }).amount ??
+                0,
+            ) || 0;
+        }
+      }
+    }
+    clientHistory = { lifetimeValue, pastMoves, openQuotes };
+  }
+
   return (
     <div className="w-full min-w-0 py-5 md:py-6">
       <QuoteDetailClient
@@ -137,6 +180,7 @@ export default async function QuoteDetailPage({ params }: Props) {
         hasTierRange={hasTierRange}
         scenarios={scenariosData ?? []}
         acceptedScenarioId={(quote as { accepted_scenario_id?: string | null }).accepted_scenario_id ?? null}
+        clientHistory={clientHistory}
       />
     </div>
   );
