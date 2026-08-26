@@ -174,31 +174,20 @@ function registerSerifFont(doc: jsPDF): string {
   return "InstrumentSerif";
 }
 
-/** Register Brown with the jsPDF instance for body copy so
- *  setFont("Brown") resolves. Falls back to jsPDF's built-in
- *  "helvetica" when the TTF is missing (a partial deploy). Brown
- *  ships as woff2 in the app CSS; a build-time conversion produced
- *  the TTF variants under public/fonts/brown/. */
-function registerBrownFont(doc: jsPDF): string {
-  const dir = path.join(process.cwd(), "public", "fonts", "brown");
-  const load = (
-    file: string,
-    styleKey: "normal" | "bold" | "italic" | "bolditalic",
-  ): boolean => {
-    try {
-      const b64 = fs.readFileSync(path.join(dir, file), { encoding: "base64" });
-      doc.addFileToVFS(file, b64);
-      doc.addFont(file, "Brown", styleKey);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-  if (!load("Brown-Regular.ttf", "normal")) return "helvetica";
-  load("Brown-Bold.ttf", "bold");
-  load("Brown-Regular-Italic.ttf", "italic");
-  load("Brown-Bold-Italic.ttf", "bolditalic");
-  return "Brown";
+/** Body sans for the editorial PDFs. Brown is Yugo's canonical body
+ *  face on the web (public/fonts/brown/*.woff2), but the woff2 → TTF
+ *  conversion via wawoff2 produced files that jsPDF's strict TTF
+ *  parser accepts for registration but silently renders as blank
+ *  glyphs when set to bold — so every eyebrow label on the first
+ *  redesigned invoice + receipt disappeared. Until Brown ships as
+ *  jsPDF-safe TTFs (fontforge-generated, with the glyf table jsPDF
+ *  requires), all editorial PDFs use jsPDF's built-in "helvetica"
+ *  for body sans. Renders reliably in normal + bold weights.
+ *
+ *  Kept as a function so the future switch is one line: reintroduce
+ *  the addFileToVFS/addFont loader here and return "Brown". */
+function registerBrownFont(_doc: jsPDF): string {
+  return "helvetica";
 }
 
 /** ─── Editorial Move Summary helpers ────────────────────────────────────
