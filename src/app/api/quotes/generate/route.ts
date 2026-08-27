@@ -1634,6 +1634,49 @@ async function allocateTruck(
 
 type LabourEstimate = { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } | null;
 
+/**
+ * Inventory-truth pricing size (Phase 1 fix, 2026-08).
+ *
+ * The base tariff, tier size factors, minimum-hours floors, supplies
+ * allowance, and Estate day plan all key off `move_size`. When a move is
+ * detected or entered as a small size but the client's inventory volume clearly
+ * exceeds that size's band, the coarse size underprices a large load while
+ * crew/truck/hours (which read the raw inventory score) scale up correctly —
+ * producing a quote whose labour rate falls below the tier floor (see YG-30410:
+ * a score-72.7 "partial move" priced Essential at $800 for a 4-crew / 24ft / 7h
+ * job). These helpers escalate the size used for PRICING to the band that
+ * actually contains the inventory score. The stored/displayed move_size is
+ * untouched. Thresholds mirror expectedScoreRangeForMoveSize() band minimums.
+ */
+const PRICING_SIZE_RANK: Record<string, number> = {
+  studio: 0,
+  partial: 0.5,
+  "1br": 1,
+  "2br": 2,
+  "3br": 3,
+  "4br": 4,
+  "5br_plus": 5,
+};
+
+/** The bedroom size whose typical inventory-score band contains `score`. */
+function pricingSizeForScore(score: number): string {
+  if (score >= 110) return "5br_plus";
+  if (score >= 80) return "4br";
+  if (score >= 55) return "3br";
+  if (score >= 35) return "2br";
+  if (score >= 15) return "1br";
+  return "studio";
+}
+
+/**
+ * Returns whichever move size is larger by capacity. Used so escalation only
+ * ever raises the pricing size (a coordinator's larger explicit choice wins;
+ * a heavier-than-expected inventory raises a too-small one) and never lowers it.
+ */
+function largerPricingSize(a: string, b: string): string {
+  return (PRICING_SIZE_RANK[b] ?? 0) > (PRICING_SIZE_RANK[a] ?? 0) ? b : a;
+}
+
 async function calcResidential(
   sb: SupabaseAdmin,
   input: QuoteInput,
@@ -1675,15 +1718,44 @@ async function calcResidential(
     to_long_carry: input.to_long_carry,
   });
 
+  // ── Effective pricing size: inventory-truth escalation ────────────────────
+  // move_size drives the base tariff, tier size factors, hours floors, supplies
+  // allowance, and the Estate day plan. A large inventory entered/auto-detected
+  // as a small size underprices the job while crew/truck/hours (score-driven)
+  // scale up — landing labour below its floor. Escalate the PRICING size to the
+  // band the inventory score actually falls in. The stored move_size (client
+  // facing + detection) is unchanged; only the pricing basis moves.
+  const detectedSize = ((input.move_size ?? "2br").toLowerCase().trim()) || "2br";
+  const effectiveSize = largerPricingSize(
+    detectedSize,
+    pricingSizeForScore(invResult.inventoryScore),
+  );
+  const sizeEscalated = effectiveSize !== detectedSize;
+  // When the base moves to a larger size, recompute the inventory modifier
+  // against that size's benchmark so a big (capped) modifier is not stacked on
+  // top of an already-larger base, which would double-count the same volume.
+  const effectiveInvModifier = sizeEscalated
+    ? calculateDampenedInventoryModifier(invResult.inventoryScore, effectiveSize, config)
+    : invResult.modifier;
+  if (sizeEscalated) {
+    pd("Step 0 — pricing size escalated (inventory exceeds detected size band):", {
+      detected_move_size: detectedSize,
+      effective_pricing_size: effectiveSize,
+      inventory_score: invResult.inventoryScore,
+      inventory_modifier_original: invResult.modifier,
+      inventory_modifier_effective: effectiveInvModifier,
+    });
+  }
+
   const { data: br } = await sb
     .from("base_rates")
     .select("base_price, min_crew, estimated_hours")
-    .eq("move_size", input.move_size ?? "2br")
+    .eq("move_size", effectiveSize)
     .single();
 
   const baseRate = br?.base_price ?? 999;
-  pd("Step 1 — base_rates (DB row for move_size):", {
-    move_size: input.move_size ?? "2br",
+  pd("Step 1 — base_rates (DB row for effective pricing size):", {
+    move_size: effectiveSize,
     base_price: br?.base_price,
     fallback_used: br?.base_price == null,
     baseRate_effective: baseRate,
@@ -1784,7 +1856,7 @@ async function calcResidential(
 
   // ── PRICING ENGINE v2 ──────────────────────────────────────────────────────
   // Step 2: COST STACK — operational drivers only (inventory × distance)
-  const costStack = invResult.modifier * distanceModifier;
+  const costStack = effectiveInvModifier * distanceModifier;
   let operationalPrice = Math.round(baseRate * costStack);
 
   pd("Step 3 — inventory:", {
@@ -1812,7 +1884,7 @@ async function calcResidential(
     : recommendedTruckFromInventoryScore(truckSizingScore, input.move_size);
   const truckSur = residentialTruckFeeUpgrade(config, input.move_size, recTruck);
 
-  const estateDayPlan = calculateEstateDays(input.move_size ?? "2br", invResult.inventoryScore);
+  const estateDayPlan = calculateEstateDays(effectiveSize, invResult.inventoryScore);
   const loadedRateForEstateSchedule = crewLoadedHourlyRate(config);
   const ESTATE_SCHEDULE_TRUCK_LABELS: Record<string, string> = {
     sprinter: "Extended Sprinter van",
@@ -1989,7 +2061,7 @@ async function calcResidential(
     const { data: bm } = await sb
       .from("volume_benchmarks")
       .select("baseline_crew, baseline_hours")
-      .eq("move_size", input.move_size ?? "2br")
+      .eq("move_size", effectiveSize)
       .single();
     if (bm && typeof bm.baseline_crew === "number" && typeof bm.baseline_hours === "number") {
       benchmark = { baseline_crew: bm.baseline_crew, baseline_hours: bm.baseline_hours };
@@ -2001,7 +2073,7 @@ async function calcResidential(
         "minimum_hours_by_size",
         { studio: 2, "1br": 3, "2br": 4, "3br": 5.5, "4br": 7, "5br_plus": 8.5, partial: 2 },
       );
-      const minHoursFloor = minHoursFloors[input.move_size ?? "2br"] ?? 3;
+      const minHoursFloor = minHoursFloors[effectiveSize] ?? 3;
       // White glove adds +1 minimum hour
       const effectiveMinHours = input.service_type === "white_glove" ? minHoursFloor + 1 : minHoursFloor;
 
@@ -2093,7 +2165,7 @@ async function calcResidential(
       "minimum_hours_by_size",
       { studio: 2, "1br": 3, "2br": 4, "3br": 5.5, "4br": 7, "5br_plus": 8.5, partial: 2 },
     );
-    const minFloorE = minHoursFloorsEstate[input.move_size ?? "2br"] ?? 3;
+    const minFloorE = minHoursFloorsEstate[effectiveSize] ?? 3;
     const effMinE = input.service_type === "white_glove" ? minFloorE + 1 : minFloorE;
     const effHrsE = Math.max(labour.estimatedHours, effMinE);
     const singleDayLoadedCost = Math.round(effHrsE * labour.crewSize * loadedRateForEstateSchedule);
@@ -2165,7 +2237,10 @@ async function calcResidential(
     "5br_plus": 1.08,
     partial: 0.62,
   };
-  const sizeKey = (input.move_size || "2br").toLowerCase().trim();
+  // Tier size factors key off the effective pricing size so an escalated large
+  // load also gets the correct Signature/Estate upgrade scaling (not a small
+  // size's dampened factors).
+  const sizeKey = effectiveSize;
   const signatureMult = signatureMultBase * (SIGNATURE_SIZE_FACTOR[sizeKey] ?? 1.0);
   const estateMultScaled = estateMult * (ESTATE_SIZE_FACTOR[sizeKey] ?? 1.0);
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
@@ -2212,8 +2287,8 @@ async function calcResidential(
     "5br_plus": 850,
   };
   const estateSuppliesAllowance =
-    suppliesBySize[input.move_size ?? "2br"]
-    ?? SUPPLIES_FALLBACK[input.move_size ?? "2br"]
+    suppliesBySize[effectiveSize]
+    ?? SUPPLIES_FALLBACK[effectiveSize]
     ?? 240;
   estBase += estateSuppliesAllowance;
 
@@ -2314,6 +2389,76 @@ async function calcResidential(
   curPrice  = Math.round(curPrice  / rounding) * rounding;
   sigPrice  = Math.round(sigPrice  / rounding) * rounding;
   estPrice  = Math.round(estPrice  / rounding) * rounding;
+
+  // ── Hard margin floor (enforced guardrail, 2026-08) ───────────────────────
+  // The labour-rate and luxury-margin checks downstream are informational only;
+  // they flag a below-cost quote but never correct it. This clamp is the one
+  // enforced rail: no tier may ship below its direct cost plus a minimum gross
+  // margin. Value pricing ABOVE the floor stays coordinator-tunable (the luxury
+  // TRUE-margin targets remain advisory); this only stops a mis-detected size or
+  // a low custom from producing a quote that cannot pay its own crew. Direct
+  // cost is built from the same real crew/hours the ops engine recommends.
+  {
+    const loadedRateFloor = crewLoadedHourlyRate(config);
+    const baseCrewFloor = labour?.crewSize ?? minCrew;
+    const tierCrewFloor = residentialTierCrew(baseCrewFloor, config);
+    const minHoursFloorsClamp = parseJsonConfig<Record<string, number>>(
+      config,
+      "minimum_hours_by_size",
+      { studio: 2, "1br": 3, "2br": 4, "3br": 5.5, "4br": 7, "5br_plus": 8.5, partial: 2 },
+    );
+    const floorHrsBase = minHoursFloorsClamp[effectiveSize] ?? 3;
+    const floorHrs = Math.max(
+      labour?.estimatedHours ?? estHours ?? 4,
+      input.service_type === "white_glove" ? floorHrsBase + 1 : floorHrsBase,
+    );
+    const truckCostFloor = estimateTruckCostPerMove(recTruck, config);
+    const fuelCostFloor = calcThreeLegFuelCost({
+      pickupLat: input.from_lat,
+      pickupLng: input.from_lng,
+      dropoffLat: input.to_lat,
+      dropoffLng: input.to_lng,
+      jobRouteKm: distKm,
+      truckType: recTruck,
+      config,
+    }).total;
+    const suppliesCostFloor = estimateOperationalSuppliesCost(input.inventory_items ?? []);
+    const nonLabourFloor = truckCostFloor + fuelCostFloor + suppliesCostFloor;
+    // Essential/Signature run the lighter crew; Estate carries the full crew.
+    const directCostEssSig =
+      Math.round(floorHrs * tierCrewFloor.essential * loadedRateFloor) + nonLabourFloor;
+    const directCostEstate =
+      Math.round(floorHrs * baseCrewFloor * loadedRateFloor) + nonLabourFloor;
+    // Minimum GROSS margin over direct cost, per tier (config-tunable). Set
+    // BELOW the luxury TRUE-margin targets so coordinators keep a discretionary
+    // band while below-cost quotes are impossible. price = cost / (1 - margin).
+    const floorMarginEss = cfgNum(config, "pricing_hard_floor_margin_essential", 0.35);
+    const floorMarginSig = cfgNum(config, "pricing_hard_floor_margin_signature", 0.45);
+    const floorMarginEst = cfgNum(config, "pricing_hard_floor_margin_estate", 0.5);
+    const floorPrice = (cost: number, m: number) =>
+      m > 0 && m < 0.95 ? Math.ceil(cost / (1 - m) / rounding) * rounding : cost;
+    const curFloor = floorPrice(directCostEssSig, floorMarginEss);
+    const sigFloor = floorPrice(directCostEssSig, floorMarginSig);
+    const estFloor = floorPrice(directCostEstate, floorMarginEst);
+    let curClamped = Math.max(curPrice, curFloor);
+    let sigClamped = Math.max(sigPrice, sigFloor);
+    let estClamped = Math.max(estPrice, estFloor);
+    // Preserve the tier ladder if a floor lifted a lower tier past a higher one.
+    sigClamped = Math.max(sigClamped, curClamped);
+    estClamped = Math.max(estClamped, sigClamped);
+    if (curClamped !== curPrice || sigClamped !== sigPrice || estClamped !== estPrice) {
+      pd("Step 10b — hard margin floor applied:", {
+        floor_margins: { essential: floorMarginEss, signature: floorMarginSig, estate: floorMarginEst },
+        direct_cost: { ess_sig: directCostEssSig, estate: directCostEstate },
+        tier_floors: { essential: curFloor, signature: sigFloor, estate: estFloor },
+        before: { essential: curPrice, signature: sigPrice, estate: estPrice },
+        after: { essential: curClamped, signature: sigClamped, estate: estClamped },
+      });
+    }
+    curPrice = curClamped;
+    sigPrice = sigClamped;
+    estPrice = estClamped;
+  }
 
   pd("Step 10 — final pre-tax tier prices (nearest rounding interval):", {
     rounding_nearest: rounding,
@@ -2418,7 +2563,7 @@ async function calcResidential(
             "minimum_hours_by_size",
             { studio: 2, "1br": 3, "2br": 4, "3br": 5.5, "4br": 7, "5br_plus": 8.5, partial: 2 },
           );
-          const floor = minHoursFloors[input.move_size ?? "2br"] ?? 3;
+          const floor = minHoursFloors[effectiveSize] ?? 3;
           return input.service_type === "white_glove" ? floor + 1 : floor;
         })(),
       )
@@ -2525,7 +2670,13 @@ async function calcResidential(
     estHours,
     factors: {
       base_rate: baseRate,
-      inventory_modifier: invResult.modifier,
+      inventory_modifier: effectiveInvModifier,
+      // Pricing size actually used for the tariff/factors/estate plan. When the
+      // inventory score exceeds the detected size's band it is escalated so the
+      // price tracks the real load (see calcResidential escalation block).
+      pricing_size_detected: detectedSize,
+      pricing_size_effective: effectiveSize,
+      pricing_size_escalated: sizeEscalated,
       distance_modifier: distanceModifier,
       // Long-distance: flags the premium page's transit treatment + records the
       // per-tier transit surcharge for the admin/audit view. Only set when the
