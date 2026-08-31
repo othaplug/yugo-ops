@@ -17,44 +17,40 @@ export function buildETAMessage(messageType: string, data: ETAMessageData): stri
       return [
         `Hi ${firstName},`,
         `Your ${partner}Yugo crew is on the way. Estimated arrival in ${data.etaMinutes} minutes.`,
-        `We will keep you updated as your job progresses.`,
-        `Track your move here:\n${data.trackingLink}`,
+        `Track: ${data.trackingLink}`,
       ].join("\n\n");
 
     case "eta_15_min":
       return [
         `Hi ${firstName},`,
-        `Your ${partner}Yugo crew is about 15 minutes away.`,
-        `Please ensure access is clear and parking is available.`,
-        `Track your move here:\n${data.trackingLink}`,
+        `Your ${partner}Yugo crew is about 15 minutes away. Please make sure access is clear and parking is available.`,
+        `Track: ${data.trackingLink}`,
       ].join("\n\n");
 
     case "crew_arrived":
       return [
         `Hi ${firstName},`,
-        `Your ${partner}Yugo crew has arrived and is ready to begin. You are in great hands.`,
+        `Your ${partner}Yugo crew has arrived and is ready to begin.`,
       ].join("\n\n");
 
     case "in_progress":
       return [
-        `Hi ${firstName},`,
-        `Your move is underway. Your crew is taking exceptional care of your belongings at every step.`,
-        `Track live:\n${data.trackingLink}`,
+        `Your job is underway. Your crew is taking care of every step.`,
+        `Track: ${data.trackingLink}`,
       ].join("\n\n");
 
     case "completed":
       return [
         `Hi ${firstName},`,
         `Your ${partner}move is complete. It was a pleasure taking care of you today.`,
-        `Share your experience:\n${data.trackingLink}`,
+        `Share your experience: ${data.trackingLink}`,
       ].join("\n\n");
 
     case "crew_running_late":
       return [
         `Hi ${firstName},`,
-        `We want to keep you informed. Your ${partner}Yugo crew is running approximately ${data.etaMinutes} minutes behind schedule.`,
-        `We appreciate your patience and will update you as soon as we can.`,
-        `Track your move here:\n${data.trackingLink}`,
+        `Quick update. Your ${partner}Yugo crew is running about ${data.etaMinutes} minutes behind schedule. Thanks for your patience; we will update you as soon as we can.`,
+        `Track: ${data.trackingLink}`,
       ].join("\n\n");
 
     default:

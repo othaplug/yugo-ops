@@ -6,6 +6,15 @@ import { isTerminalMoveStatus } from "@/lib/moves/job-terminal";
 import { resolveGoogleReviewUrl } from "@/lib/google-review-url";
 
 const POST_MOVE_KINDS = new Set(["post_move_review", "post_move_recovery"]);
+/**
+ * Deprecated kinds. `en_route_checkin` and `long_unload_checkin` used to
+ * queue extra reassurance SMS during the move, but they duplicated the
+ * stage-checkpoint SMS fired by `sendClientTrackingCheckpointSms` (both
+ * carry "your belongings are on the way to your new home"). Estate client
+ * on MV-30282 saw both — retired to enforce one-text-per-stage. Any
+ * lingering rows are silently marked skipped so the queue drains.
+ */
+const DEPRECATED_KINDS = new Set(["en_route_checkin", "long_unload_checkin"]);
 const DEFAULT_SUPPORT_PHONE = "(647) 370-4525";
 
 /**
@@ -61,6 +70,16 @@ export async function GET(req: NextRequest) {
 
   for (const row of due || []) {
     results.processed++;
+
+    if (DEPRECATED_KINDS.has(row.kind as string)) {
+      await admin
+        .from("scheduled_move_client_sms")
+        .update({ status: "skipped", last_error: "deprecated_kind" })
+        .eq("id", row.id);
+      results.skipped++;
+      continue;
+    }
+
     const isPostMove = POST_MOVE_KINDS.has(row.kind as string);
 
     const { data: move } = await admin
@@ -117,18 +136,14 @@ export async function GET(req: NextRequest) {
         ].join("\n\n");
       }
     } else {
-      body =
-        row.kind === "en_route_checkin"
-          ? [
-              `Hi ${firstName},`,
-              `Your belongings are on the way to your new home and your crew is making excellent progress.`,
-              `If you need anything at all, reply here or call us at ${DEFAULT_SUPPORT_PHONE}. We are with you every step.`,
-            ].join("\n\n")
-          : [
-              `Hi ${firstName},`,
-              `Your crew has arrived at your new home and is beginning to unload. Almost there.`,
-              `If you have any requests or need anything arranged, just let us know. We want everything to be just right.`,
-            ].join("\n\n");
+      // Guarded above by DEPRECATED_KINDS; nothing else is a valid
+      // non-post-move kind today. Fall through to skip.
+      await admin
+        .from("scheduled_move_client_sms")
+        .update({ status: "skipped", last_error: "unknown_kind" })
+        .eq("id", row.id);
+      results.skipped++;
+      continue;
     }
 
     // ETA toggle only governs the mid-move check-ins. Post-move review texts

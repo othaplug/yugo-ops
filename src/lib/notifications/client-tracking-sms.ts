@@ -1,6 +1,10 @@
 import type { TrackingStatus } from "@/lib/tracking-status-types";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  finalizeStageNotification,
+  reserveStageNotification,
+} from "@/lib/notifications/stage-notification";
 
 // Note: SMS-provider failure alerting moved into sendSMS itself so EVERY
 // caller is covered (partner/crew/bin/lead/quote-photo/supplies/etc.), not
@@ -15,6 +19,18 @@ function firstName(clientName: string | null | undefined): string {
   return s || "there";
 }
 
+/**
+ * Greeting rule: lead with "Hi Name," only on the opening ping (crew
+ * dispatched) and the closing sign-off (completed). Every middle stage
+ * skips the greeting so the same customer does not see "Hi Grant" 4×
+ * across a single service window.
+ */
+function greetLead(status: TrackingStatus, name: string): string {
+  const opens = status === "en_route_to_pickup" || status === "en_route";
+  const closes = status === "completed";
+  return opens || closes ? `Hi ${name},\n\n` : "";
+}
+
 function clientSmsBody(
   status: TrackingStatus,
   jobType: "move" | "delivery",
@@ -27,54 +43,47 @@ function clientSmsBody(
   projectManagerName: string | null = null,
 ): string {
   const name = firstName(clientName);
-  // Put the tracking link in its own paragraph with a clear label, never a bare
-  // URL crammed under the message.
   const linkNoun = eventMove ? "event" : officeMove ? "relocation" : jobType;
-  const link = trackUrl ? `\n\nTrack your ${linkNoun} here:\n${trackUrl}` : "";
+  const link = trackUrl ? `\n\nTrack your ${linkNoun}: ${trackUrl}` : "";
+  const g = greetLead(status, name);
 
-  // ── Office relocation (Priority): 12-step office flow across pack day +
-  // move day. Every office-specific stage (initial_walkthrough / IT / pack /
-  // setup) previously fell through to the residential switch's `default`
-  // ("A quick update from Yugo") — so the client got the same meaningless
-  // text on every transition (looked like duplicate spam on MV-30348).
-  // Now each stage has purpose-built commercial copy, and names the on-site
-  // Project Manager when we have one.
+  // Office relocations: 12-step office flow across pack day + move day.
   if (jobType === "move" && officeMove) {
     const pm = (projectManagerName || "").trim();
     const pmLead = pm ? `${pm} and the crew` : "Your crew";
-    const pmLeadCap = pm ? `${pm} and the crew` : "Your crew";
     switch (status) {
       case "initial_walkthrough":
-        return `Hi ${name},\n\n${pmLead} are on site and starting the walkthrough of your office.${link}`;
+        return `${g}${pmLead} are on site and starting the walkthrough of your office.${link}`;
       case "it_documentation":
-        return `Hi ${name},\n\nWe are documenting and prepping your IT and workstations before anything is packed.${link}`;
+        return `We are documenting and prepping your IT and workstations before anything is packed.${link}`;
       case "packing_started":
-        return `Hi ${name},\n\nPacking has started at your office. Your team can head out whenever they're ready.${link}`;
+        return `Packing has started at your office. Your team can head out whenever they are ready.${link}`;
       case "packing_complete":
-        return `Hi ${name},\n\nEverything is packed and labelled for tomorrow's move. Day 1 is complete.${link}`;
+        return `Everything is packed and labelled for tomorrow's move. Day one is complete.${link}`;
       case "en_route_to_pickup":
       case "en_route":
-        return `Hi ${name},\n\n${pmLeadCap} are on the way to your office to load.${link}`;
+        return `${g}${pmLead} are on the way to your office to load.${link}`;
       case "arrived_at_pickup":
       case "arrived":
-        return `Hi ${name},\n\nYour crew has arrived to load. We're on schedule.${link}`;
+        return `Your crew has arrived to load. On schedule.${link}`;
       case "loading":
-        return `Hi ${name},\n\nLoading is underway at your current office.${link}`;
+        return `Loading is underway at your current office.${link}`;
       case "en_route_to_destination":
-        return `Hi ${name},\n\nEverything is loaded and on the way to your new office.${link}`;
+        return `Everything is loaded and on the way to your new office.${link}`;
       case "arrived_at_destination":
-        return `Hi ${name},\n\nYour crew has arrived at the new office and is ready to unload.${link}`;
+        return `Your crew has arrived at the new office and is ready to unload.${link}`;
       case "unloading":
-        return `Hi ${name},\n\nUnloading is underway at your new office.${link}`;
+        return `Unloading is underway at your new office.${link}`;
       case "setup":
-        return `Hi ${name},\n\nFurniture and IT are being placed to your floor plan. Almost there.${link}`;
+        return `Furniture and IT are being placed to your floor plan. Almost there.${link}`;
       case "completed":
-        return `Hi ${name},\n\nYour office relocation is complete. It was a pleasure handling this for your team.\n\nWarm regards, Yugo`;
+        return `${g}Your office relocation is complete. It was a pleasure handling this for your team.\n\nWarm regards, Yugo`;
       default:
-        return `Hi ${name},\n\nA quick update on your office relocation from Yugo.${link}`;
+        return `A quick update on your office relocation from Yugo.${link}`;
     }
   }
 
+  // Events (delivery leg + return leg)
   if (jobType === "move" && eventMove) {
     const phase = String(eventPhase || "").toLowerCase().trim();
     if (phase === "return") {
@@ -82,38 +91,38 @@ function clientSmsBody(
         case "en_route_to_pickup":
         case "en_route_venue":
         case "en_route":
-          return `Hi ${name},\n\nYour crew is heading back to the venue to collect your items.${link}`;
+          return `${g}Your crew is heading back to the venue to collect your items.${link}`;
         case "arrived_at_pickup":
         case "arrived_venue":
         case "arrived":
-          return `Hi ${name},\n\nYour crew has arrived at the venue to pack up.`;
+          return `Your crew has arrived at the venue to pack up.`;
         case "teardown":
-          return `Hi ${name},\n\nTeardown is underway at the venue.${link}`;
+          return `Teardown is underway at the venue.${link}`;
         case "en_route_return":
         case "en_route_to_destination":
-          return `Hi ${name},\n\nYour items are on the way back.${link}`;
+          return `Your items are on the way back.${link}`;
         case "completed":
-          return `Hi ${name},\n\nEverything is back and your event service is complete. Thank you for trusting Yugo.\n\nWarm regards, Yugo`;
+          return `${g}Everything is back and your event service is complete. Thank you for trusting Yugo.\n\nWarm regards, Yugo`;
         default:
-          return `Hi ${name},\n\nA quick update on your event from Yugo.${link}`;
+          return `A quick update on your event from Yugo.${link}`;
       }
     }
     switch (status) {
       case "en_route_to_pickup":
       case "en_route":
-        return `Hi ${name},\n\nYour crew is on the way to collect your items for the event.${link}`;
+        return `${g}Your crew is on the way to collect your items for the event.${link}`;
       case "arrived_at_pickup":
-        return `Hi ${name},\n\nYour crew has arrived to load your items.`;
+        return `Your crew has arrived to load your items.`;
       case "en_route_venue":
       case "en_route_to_destination":
-        return `Hi ${name},\n\nYour items are on the way to the venue.${link}`;
+        return `Your items are on the way to the venue.${link}`;
       case "arrived_venue":
       case "arrived_at_destination":
-        return `Hi ${name},\n\nYour crew has arrived at the venue and is setting up.`;
+        return `Your crew has arrived at the venue and is setting up.`;
       case "completed":
-        return `Hi ${name},\n\nYour delivery to the venue is complete. We will return to collect everything after your event.${link}`;
+        return `${g}Your delivery to the venue is complete. We will return to collect everything after your event.${link}`;
       default:
-        return `Hi ${name},\n\nA quick update on your event from Yugo.${link}`;
+        return `A quick update on your event from Yugo.${link}`;
     }
   }
 
@@ -122,64 +131,65 @@ function clientSmsBody(
       switch (status) {
         case "en_route_to_pickup":
         case "en_route":
-          return `Hi ${name},\n\nYour Estate crew is on the way. We will keep you updated every step of the journey.${link}`;
+          return `${g}Your Estate crew is on the way. We will text you at each milestone.${link}`;
         case "arrived_at_pickup":
-          return `Hi ${name},\n\nYour crew has arrived and is ready to begin your Estate move. Everything is in good hands.`;
+          return `Your crew has arrived and is ready to begin your Estate move.`;
         case "inventory_check":
         case "loading":
         case "wrapping":
-          return `Hi ${name},\n\nYour crew is on site and taking exceptional care of your belongings. We will update you at the next milestone.${link}`;
+          return `Your crew is on site and taking care of your belongings.${link}`;
         case "en_route_to_destination":
-          return `Hi ${name},\n\nYour belongings are on the way to your new home. Your crew is handling every item with the utmost care.${link}`;
+          return `Your belongings are on the way to your new home.${link}`;
         case "arrived_at_destination":
-          return `Hi ${name},\n\nYour crew has arrived at your new home and is ready to begin unloading. Almost there.`;
+          return `Your crew has arrived at your new home and is ready to unload.`;
         case "completed":
-          return `Hi ${name},\n\nYour Estate move is complete. It was a true privilege taking care of you today.\n\nWarm regards, Yugo`;
+          return `${g}Your Estate move is complete. It was a true privilege caring for you today.\n\nWarm regards, Yugo`;
         case "arrived":
-          return `Hi ${name},\n\nYour crew has arrived.${link}`;
+          return `Your crew has arrived.${link}`;
         default:
-          return `Hi ${name},\n\nA quick update on your Estate move.${link}`;
+          return `A quick update on your Estate move.${link}`;
       }
     }
 
     switch (status) {
       case "en_route_to_pickup":
       case "en_route":
-        return `Hi ${name},\n\nYour moving crew is on the way. We will keep you updated as things progress.${link}`;
+        return `${g}Your Yugo crew is on the way. We will text you at each stage.${link}`;
       case "arrived_at_pickup":
-        return `Hi ${name},\n\nYour crew has arrived and is ready to begin. You are in great hands.`;
+        return `Your crew has arrived and is ready to begin.`;
       case "inventory_check":
       case "loading":
       case "wrapping":
-        return `Hi ${name},\n\nYour crew is on site and taking good care of your belongings. We will check in again at the next step.${link}`;
+        return `Your crew is on site and taking good care of your belongings.${link}`;
       case "en_route_to_destination":
-        return `Hi ${name},\n\nYour belongings are on the way to your new home.${link}`;
+        return `Your belongings are on the way to your new home.${link}`;
       case "arrived_at_destination":
-        return `Hi ${name},\n\nYour crew has arrived at your new home and is ready to unload.`;
+        return `Your crew has arrived at your new home and is ready to unload.`;
       case "completed":
-        return `Hi ${name},\n\nYour move is complete. It was a pleasure taking care of you today.\n\nWarm regards, Yugo`;
+        return `${g}Your move is complete. It was a pleasure taking care of you today.\n\nWarm regards, Yugo`;
       case "arrived":
-        return `Hi ${name},\n\nYour crew has arrived.${link}`;
+        return `Your crew has arrived.${link}`;
       default:
-        return `Hi ${name},\n\nA quick update from Yugo.${link}`;
+        return `A quick update from Yugo.${link}`;
     }
   }
 
+  // Deliveries
   switch (status) {
     case "en_route_to_pickup":
     case "en_route":
-      return `Hi ${name},\n\nYour delivery crew is on the way. We will keep you posted.${link}`;
+      return `${g}Your Yugo crew is on the way to pick up your delivery. We will text you again once we are on the road to you.${link}`;
     case "arrived_at_pickup":
-      return `Hi ${name},\n\nYour crew has arrived at the pickup location and is preparing your delivery.`;
+      return `Your crew has reached the pickup location and is loading your order.`;
     case "en_route_to_destination":
-      return `Hi ${name},\n\nYour delivery is on the way to you.${link}`;
+      return `Your delivery is on the way to you.${link}`;
     case "arrived_at_destination":
     case "arrived":
-      return `Hi ${name},\n\nYour crew has arrived with your delivery. We hope everything is perfect.`;
+      return `Your crew has arrived with your delivery.`;
     case "completed":
-      return `Hi ${name},\n\nYour delivery is complete. Thank you for trusting Yugo.\n\nWarm regards, Yugo`;
+      return `${g}Your delivery is complete. Thanks for choosing Yugo.`;
     default:
-      return `Hi ${name},\n\nA quick update on your delivery from Yugo.${link}`;
+      return `A quick update on your delivery from Yugo.${link}`;
   }
 }
 
@@ -212,57 +222,16 @@ export async function sendClientTrackingCheckpointSms(opts: {
     opts.projectManagerName ?? null,
   ).slice(0, 1500);
 
-  // Cross-pipeline dedup: reserve the milestone in notification_log
-  // before hitting the SMS provider. If any other pipeline (mid-move
-  // cron, manual retry, future checkpoint kind) tries to claim the
-  // same {jobId}:{status} tuple, its insert hits the unique index and
-  // this caller skips silently. Prevents the historical
-  // "belongings-on-the-way sent twice" flavor of bug from ever
-  // resurfacing across pipelines.
   const admin = createAdminClient();
-  const notificationKey = `${opts.jobType}:${opts.jobUuid}:tracking:${opts.status}`;
-  const { data: reserved, error: reserveErr } = await admin
-    .from("notification_log")
-    .insert({
-      channel: "sms",
-      event: `tracking_${opts.status}`,
-      recipient_phone: raw,
-      message: body,
-      status: "pending",
-      job_id: opts.jobUuid,
-      job_type: opts.jobType,
-      notification_key: notificationKey,
-    })
-    .select("id")
-    .single();
-  if (reserveErr || !reserved) {
-    // Unique-index conflict (code 23505) means another pipeline
-    // already sent for this milestone. Any other error we log and
-    // fall back to send-without-reservation so we never miss a
-    // customer-facing SMS on infra hiccups.
-    if ((reserveErr as { code?: string } | null)?.code === "23505") {
-      return;
-    }
-    console.warn(
-      "[client-tracking-sms] reserve failed, sending unguarded:",
-      reserveErr?.message,
-    );
-    await sendSMS(raw, body);
-    return;
-  }
-
+  const outcome = await reserveStageNotification(admin, {
+    jobType: opts.jobType,
+    jobUuid: opts.jobUuid,
+    status: String(opts.status),
+    phone: raw,
+    event: `tracking_${opts.status}`,
+    message: body,
+  });
+  if (!outcome.reserved) return;
   const result = await sendSMS(raw, body);
-  try {
-    await admin
-      .from("notification_log")
-      .update({
-        status: result.success ? "sent" : "failed",
-        error: result.success ? null : result.error ?? "send failed",
-      })
-      .eq("id", reserved.id);
-  } catch {
-    /* logging is best-effort */
-  }
-  // Systemic-failure alerting now lives in sendSMS so this caller (and every
-  // other one) automatically benefits without duplicate calls.
+  await finalizeStageNotification(admin, outcome.id, result.success, result.error);
 }

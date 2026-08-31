@@ -3,48 +3,28 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 const EN_ROUTE_CHECKIN_DELAY_MS = 15 * 60 * 1000;
 
 /**
- * When crew reaches en route to destination, queue a single caring check-in SMS (~15 min later).
- * Idempotent per move via partial unique index (pending + kind).
+ * Deprecated. Both mid-move reassurance texts were retired because they
+ * duplicated the stage-checkpoint SMS ("belongings on the way to your
+ * new home" fired twice on MV-30282 — first by `notifyOnCheckpoint`,
+ * then again by this scheduler's cron drain). The stage-checkpoint SMS
+ * is the single source of truth for one-text-per-stage. These stubs stay
+ * so lingering callers do not error; the cron drains and skips.
  */
 export const scheduleEnRouteMidMoveCheckin = async (
-  admin: SupabaseClient,
-  moveId: string,
-  sendAfter: Date,
+  _admin: SupabaseClient,
+  _moveId: string,
+  _sendAfter: Date,
 ): Promise<void> => {
-  const { error } = await admin.from("scheduled_move_client_sms").insert({
-    move_id: moveId,
-    kind: "en_route_checkin",
-    send_at: sendAfter.toISOString(),
-    status: "pending",
-  });
-  if (error && !String(error.message || "").includes("duplicate") && error.code !== "23505") {
-    console.error("[mid-move-sms] schedule en_route_checkin:", error.message);
-  }
+  return;
 };
 
-/**
- * Long jobs (3+ hours since session start): optional unload check-in when unloading starts.
- */
 export const scheduleLongUnloadCheckinIfNeeded = async (
-  admin: SupabaseClient,
-  moveId: string,
-  sessionStartedAt: string | null,
-  nowIso: string,
+  _admin: SupabaseClient,
+  _moveId: string,
+  _sessionStartedAt: string | null,
+  _nowIso: string,
 ): Promise<void> => {
-  if (!sessionStartedAt) return;
-  const elapsedH =
-    (new Date(nowIso).getTime() - new Date(sessionStartedAt).getTime()) / 3_600_000;
-  if (elapsedH < 3) return;
-
-  const { error } = await admin.from("scheduled_move_client_sms").insert({
-    move_id: moveId,
-    kind: "long_unload_checkin",
-    send_at: nowIso,
-    status: "pending",
-  });
-  if (error && !String(error.message || "").includes("duplicate") && error.code !== "23505") {
-    console.error("[mid-move-sms] schedule long_unload_checkin:", error.message);
-  }
+  return;
 };
 
 export { EN_ROUTE_CHECKIN_DELAY_MS };

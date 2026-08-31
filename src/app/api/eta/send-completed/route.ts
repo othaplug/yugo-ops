@@ -6,6 +6,7 @@ import { buildETAMessage } from "@/lib/sms/etaMessages";
 import {
   buildPublicDeliveryTrackUrl,
   buildPublicMoveTrackUrl,
+  buildSmsTrackUrl,
 } from "@/lib/notifications/public-track-url";
 
 export async function POST(req: NextRequest) {
@@ -31,10 +32,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: false, skipped: "no_phone" });
       }
 
-      const trackingLink = buildPublicMoveTrackUrl({
-        id: move.id,
-        move_code: (move as { move_code?: string | null }).move_code,
-      });
+      const moveCode = (move as { move_code?: string | null }).move_code;
+      const trackingLink = moveCode
+        ? buildSmsTrackUrl(moveCode)
+        : buildPublicMoveTrackUrl({ id: move.id, move_code: moveCode });
 
       if (smsEnabled) {
         const msg = buildETAMessage("completed", {
@@ -82,11 +83,11 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (smsEnabled && org?.customer_notifications_enabled) {
-      const trackingLink = buildPublicDeliveryTrackUrl({
-        id: delivery.id,
-        delivery_number: (delivery as { delivery_number?: string | null })
-          .delivery_number,
-      });
+      const dNumber = (delivery as { delivery_number?: string | null })
+        .delivery_number;
+      const trackingLink = dNumber
+        ? buildSmsTrackUrl(dNumber)
+        : buildPublicDeliveryTrackUrl({ id: delivery.id, delivery_number: dNumber });
       const partnerName = org?.name || "";
 
       const msg = buildETAMessage("completed", {

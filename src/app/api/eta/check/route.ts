@@ -6,6 +6,7 @@ import { buildETAMessage } from "@/lib/sms/etaMessages";
 import {
   buildPublicDeliveryTrackUrl,
   buildPublicMoveTrackUrl,
+  buildSmsTrackUrl,
 } from "@/lib/notifications/public-track-url";
 import { notifyAllAdmins, createPartnerNotification } from "@/lib/notifications";
 
@@ -124,10 +125,10 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
       })
       .eq("id", move.id);
 
-    const trackingLink = buildPublicMoveTrackUrl({
-      id: move.id,
-      move_code: (move as { move_code?: string | null }).move_code,
-    });
+    const moveCode = (move as { move_code?: string | null }).move_code;
+    const trackingLink = moveCode
+      ? buildSmsTrackUrl(moveCode)
+      : buildPublicMoveTrackUrl({ id: move.id, move_code: moveCode });
 
     if (smsEnabled && etaMinutes <= 15 && etaMinutes > 0) {
       const { data: existing15 } = await admin
@@ -367,11 +368,11 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
       })
       .eq("id", delivery.id);
 
-    const trackingLink = buildPublicDeliveryTrackUrl({
-      id: delivery.id,
-      delivery_number: (delivery as { delivery_number?: string | null })
-        .delivery_number,
-    });
+    const dNumber = (delivery as { delivery_number?: string | null })
+      .delivery_number;
+    const trackingLink = dNumber
+      ? buildSmsTrackUrl(dNumber)
+      : buildPublicDeliveryTrackUrl({ id: delivery.id, delivery_number: dNumber });
     const partnerName = org?.name || "";
 
     if (smsEnabled && etaMinutes <= 15 && etaMinutes > 0) {

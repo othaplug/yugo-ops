@@ -1,9 +1,17 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
-import { buildPublicDeliveryTrackUrl, buildPublicMoveTrackUrl } from "@/lib/notifications/public-track-url";
+import {
+  buildPublicDeliveryTrackUrl,
+  buildPublicMoveTrackUrl,
+  buildSmsTrackUrl,
+} from "@/lib/notifications/public-track-url";
 import { sendEmail } from "@/lib/email/send";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { issueDeliveryTrackingTokens } from "@/lib/delivery-tracking-tokens";
+import {
+  finalizeStageNotification,
+  reserveStageNotification,
+} from "@/lib/notifications/stage-notification";
 
 /** Aligns with `TrackingStatus` in tracking-notifications and crew checkpoints. */
 export type PartnerCheckpointStatus =
@@ -99,44 +107,43 @@ function checkpointSmsLine(
   status: PartnerCheckpointStatus,
   jobType: "move" | "delivery",
 ): string {
-  const crew = jobType === "move" ? "Your moving team" : "Your crew";
   if (jobType === "delivery") {
     switch (status) {
       case "en_route_to_pickup":
-        return `${crew} has started your job. We will text you with updates at each step.`;
+        return `Your Yugo crew is on the way to pick up your delivery. We will text again once we are on the road to you.`;
       case "arrived_at_pickup":
-        return `${crew} arrived at pickup.`;
+        return `Your Yugo crew has reached the pickup location and is loading your order.`;
       case "en_route_to_destination":
       case "en_route":
-        return `${crew} is on the way to you.`;
+        return `Your delivery is on the way to you.`;
       case "arrived_at_destination":
       case "arrived":
-        return `${crew} just arrived with your delivery.`;
+        return `Your Yugo crew has arrived with your delivery.`;
       case "completed":
         return `Your delivery is complete. Thanks for choosing Yugo.`;
       default:
-        return `You have a new delivery update from Yugo.`;
+        return `A quick update on your delivery from Yugo.`;
     }
   }
   switch (status) {
     case "en_route_to_pickup":
-      return `${crew} has started the move. We will text you with updates at each step.`;
+      return `Your Yugo crew is on the way. We will text you at each stage.`;
     case "arrived_at_pickup":
-      return `${crew} arrived at pickup.`;
+      return `Your Yugo crew has arrived and is ready to begin.`;
     case "inventory_check":
     case "loading":
     case "wrapping":
-      return `${crew} is working on site.`;
+      return `Your crew is on site and taking care of your belongings.`;
     case "en_route_to_destination":
     case "en_route":
-      return `${crew} is heading to the destination.`;
+      return `Your belongings are on the way to the destination.`;
     case "arrived_at_destination":
     case "arrived":
-      return `${crew} arrived at the destination.`;
+      return `Your crew has arrived at the destination and is ready to unload.`;
     case "completed":
       return `Your move is complete. Thanks for choosing Yugo.`;
     default:
-      return `You have a new move update from Yugo.`;
+      return `A quick update on your move from Yugo.`;
   }
 }
 
@@ -192,40 +199,55 @@ export async function sendPartnerDeliveryCheckpointSms(opts: {
     row.customer_phone ||
     ""
   ).trim();
-  const bizUrl = deliveryBusinessTrackUrl(row);
-  const recUrl = deliveryRecipientTrackUrl(row);
-  // One neutral copy — partner and recipient both get "Your crew".
-  // Tracking URLs still differ (business vs recipient view).
+  // SMS uses the short /t/[code] URL. The long tokenised URL still fires
+  // from email templates that render on wider screens; SMS gets the tidy
+  // one so partners and recipients do not see a spam-looking wall of hex.
+  const shortUrl =
+    row.delivery_number ? buildSmsTrackUrl(row.delivery_number) : deliveryBusinessTrackUrl(row);
   const linePartner = checkpointSmsLine(status, "delivery");
   const lineClient = linePartner;
 
   // Attach the tracking URL only on the FIRST outgoing checkpoint SMS
   // for this delivery (the "job started" ping). Later checkpoints stay
-  // brief — repeating the same long URL every 20 minutes reads as spam
-  // and the customer already has the link saved from message #1.
+  // brief — the customer already has the link saved from message #1.
   const isFirstCheckpoint =
     status === "en_route_to_pickup" || status === "en_route";
   const sent = new Set<string>();
-  const sendIf = async (raw: string, url: string, line: string) => {
+  const sendGuarded = async (raw: string, line: string) => {
     const d = digitsOnly(raw);
     if (d.length < 10) return;
     if (sent.has(d)) return;
     sent.add(d);
     const body = isFirstCheckpoint
-      ? `${line}\n\nTrack: ${url}\n\nQuestions? (647) 370-4525`
+      ? `${line}\n\nTrack: ${shortUrl}\n\nQuestions? (647) 370-4525`
       : line;
-    await sendSMS(raw, body).catch(() => {});
+    // Cross-pipeline dedup: same key shape as client-tracking-sms so a
+    // second sender for the same {job, stage, phone} tuple no-ops.
+    // This is what stops "Chris got two crew-dispatched texts" when the
+    // partner contact IS also the customer_phone on the delivery.
+    const outcome = await reserveStageNotification(admin, {
+      jobType: "delivery",
+      jobUuid: row.id,
+      status: String(status),
+      phone: raw,
+      event: `partner_tracking_${status}`,
+      message: body,
+    });
+    if (!outcome.reserved) return;
+    const result = await sendSMS(raw, body).catch(() => ({ success: false, error: "send_threw" as const }));
+    await finalizeStageNotification(
+      admin,
+      outcome.id,
+      Boolean((result as { success?: boolean }).success),
+      (result as { error?: string | null }).error ?? null,
+    );
   };
 
-  // Cross-role de-dup: when the business contact IS the customer (one-off
-  // deliveries where the partner phone equals the recipient phone), we
-  // must not fire twice. `sendIf` already dedupes by phone, but we
-  // pre-seed it here explicitly for clarity.
   if (notifyPartner && partnerPhone) {
-    await sendIf(partnerPhone, bizUrl, linePartner);
+    await sendGuarded(partnerPhone, linePartner);
   }
   if (notifyClient && endPhone) {
-    await sendIf(endPhone, recUrl, lineClient);
+    await sendGuarded(endPhone, lineClient);
   }
 }
 
@@ -284,30 +306,43 @@ export async function sendPartnerMoveCheckpointSms(opts: {
 
   const orgPhone = (org.phone || "").trim();
   const clientPhone = (row.client_phone || "").trim();
-  const trackUrl = buildPublicMoveTrackUrl({
-    id: row.id,
-    move_code: m?.move_code ?? null,
-  });
-  // One neutral copy for both partner and client — never the crew name.
+  const shortUrl = m?.move_code
+    ? buildSmsTrackUrl(m.move_code)
+    : buildPublicMoveTrackUrl({ id: row.id, move_code: m?.move_code ?? null });
   const linePartner = checkpointSmsLine(status, "move");
   const lineClient = linePartner;
 
   const isFirstCheckpoint =
     status === "en_route_to_pickup" || status === "en_route";
   const sent = new Set<string>();
-  const sendIf = async (raw: string, line: string) => {
+  const sendGuarded = async (raw: string, line: string) => {
     const d = digitsOnly(raw);
     if (d.length < 10) return;
     if (sent.has(d)) return;
     sent.add(d);
     const body = isFirstCheckpoint
-      ? `${line}\n\nTrack: ${trackUrl}\n\nQuestions? (647) 370-4525`
+      ? `${line}\n\nTrack: ${shortUrl}\n\nQuestions? (647) 370-4525`
       : line;
-    await sendSMS(raw, body).catch(() => {});
+    const outcome = await reserveStageNotification(admin, {
+      jobType: "move",
+      jobUuid: row.id,
+      status: String(status),
+      phone: raw,
+      event: `partner_tracking_${status}`,
+      message: body,
+    });
+    if (!outcome.reserved) return;
+    const result = await sendSMS(raw, body).catch(() => ({ success: false, error: "send_threw" as const }));
+    await finalizeStageNotification(
+      admin,
+      outcome.id,
+      Boolean((result as { success?: boolean }).success),
+      (result as { error?: string | null }).error ?? null,
+    );
   };
 
-  if (notifyPartner && orgPhone) await sendIf(orgPhone, linePartner);
-  if (notifyClient && clientPhone) await sendIf(clientPhone, lineClient);
+  if (notifyPartner && orgPhone) await sendGuarded(orgPhone, linePartner);
+  if (notifyClient && clientPhone) await sendGuarded(clientPhone, lineClient);
 }
 
 /** After issue tokens, re-load is optional; we build URLs from row + sign fallback. */
