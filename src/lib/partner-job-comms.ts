@@ -160,7 +160,96 @@ export type PartnerDeliveryCheckpointRow = {
   end_customer_phone?: string | null;
   /** Site / recipient on B2B multi-stop */
   end_client_phone?: string | null;
+  /** Partner brand shown to the recipient ("your delivery from MyNewFloor"). */
+  business_name?: string | null;
+  /**
+   * Recipient split — see migration 20260831120000. When 'separate' the
+   * notifier addresses `recipient_phone` for the receiver leg (only the
+   * three receiver-relevant stages) and keeps `contact_phone` on the
+   * full operational thread. 'partner' collapses both audiences onto
+   * the same contact (default, one SMS per stage).
+   */
+  recipient_mode?: string | null;
+  recipient_name?: string | null;
+  recipient_phone?: string | null;
 };
+
+/**
+ * Recipient-only stages. Alison (the receiving client) only hears about
+ * her own leg — from the moment the truck leaves pickup with her order,
+ * through arrival at her door, to the delivered confirmation. Dispatch
+ * and at-pickup are noise until the truck is on the way to her.
+ */
+const RECIPIENT_STAGES = new Set<PartnerCheckpointStatus>([
+  "en_route_to_destination",
+  "en_route",
+  "arrived_at_destination",
+  "arrived",
+  "completed",
+]);
+
+function firstNameOf(s: string | null | undefined): string {
+  const w = (s || "").trim().split(/\s+/)[0];
+  return w || "there";
+}
+
+/**
+ * Partner-facing copy for a delivery checkpoint. Names the recipient
+ * ("on the way to Alison") so the operator can see at a glance which
+ * client the crew is servicing.
+ */
+function partnerDeliveryLine(
+  status: PartnerCheckpointStatus,
+  recipientName: string | null,
+): string {
+  const forPart = recipientName ? ` to ${firstNameOf(recipientName)}` : "";
+  switch (status) {
+    case "en_route_to_pickup":
+      return `Your Yugo crew is on the way to pick up your delivery. We will text again once we are on the road${forPart}.`;
+    case "arrived_at_pickup":
+      return `Your Yugo crew has reached the pickup location and is loading your order.`;
+    case "en_route_to_destination":
+    case "en_route":
+      return recipientName
+        ? `Your delivery is on the way to ${firstNameOf(recipientName)}.`
+        : `Your delivery is on the way to your client.`;
+    case "arrived_at_destination":
+    case "arrived":
+      return recipientName
+        ? `Your Yugo crew has arrived at ${firstNameOf(recipientName)}'s site with your delivery.`
+        : `Your Yugo crew has arrived with your delivery.`;
+    case "completed":
+      return `Your delivery is complete. Thanks for choosing Yugo.`;
+    default:
+      return `A quick update on your delivery from Yugo.`;
+  }
+}
+
+/**
+ * Recipient-facing copy. Warm greeting on the opening and closing
+ * messages, brand of the partner named so the recipient knows who the
+ * delivery is coming from.
+ */
+function recipientDeliveryLine(
+  status: PartnerCheckpointStatus,
+  recipientName: string | null,
+  brand: string | null,
+): string {
+  const name = firstNameOf(recipientName);
+  const from = brand ? ` from ${brand}` : "";
+  switch (status) {
+    case "en_route_to_destination":
+    case "en_route":
+      return `Hi ${name},\n\nYour delivery${from} has been picked up and is on the way to you.`;
+    case "arrived_at_destination":
+    case "arrived":
+      return `Your Yugo crew has arrived with your delivery${from}.`;
+    case "completed":
+      return `Hi ${name},\n\nYour delivery is complete. Thanks for having us today.`;
+    default:
+      return `A quick update on your delivery from Yugo.`;
+  }
+}
 
 /**
  * SMS partner contact + end customer on crew checkpoints (alongside email).
@@ -193,44 +282,64 @@ export async function sendPartnerDeliveryCheckpointSms(opts: {
     if (op) partnerPhone = op;
   }
 
-  const endPhone = (
-    row.end_client_phone ||
-    row.end_customer_phone ||
-    row.customer_phone ||
-    ""
-  ).trim();
-  // SMS uses the short /t/[code] URL. The long tokenised URL still fires
-  // from email templates that render on wider screens; SMS gets the tidy
-  // one so partners and recipients do not see a spam-looking wall of hex.
-  const shortUrl =
-    row.delivery_number ? buildSmsTrackUrl(row.delivery_number) : deliveryBusinessTrackUrl(row);
-  const linePartner = checkpointSmsLine(status, "delivery");
-  const lineClient = linePartner;
+  // Recipient split: 'separate' mode routes tracking SMS to the
+  // dedicated recipient contact (Alison), otherwise fall back to the
+  // legacy end_client / end_customer / customer chain so pre-split
+  // deliveries keep working. Recipient name feeds the partner copy
+  // ("on the way to Alison") and the recipient greeting ("Hi Alison").
+  const separateMode = String(row.recipient_mode || "partner") === "separate";
+  const recipientPhone = separateMode
+    ? (row.recipient_phone || "").trim()
+    : (
+        row.end_client_phone ||
+        row.end_customer_phone ||
+        row.customer_phone ||
+        ""
+      ).trim();
+  const recipientName = separateMode
+    ? (row.recipient_name || "").trim() || null
+    : null;
+  const brand = (row.business_name || "").trim() || null;
 
-  // Attach the tracking URL only on the FIRST outgoing checkpoint SMS
-  // for this delivery (the "job started" ping). Later checkpoints stay
-  // brief — the customer already has the link saved from message #1.
-  const isFirstCheckpoint =
+  // SMS uses the short /t/[code] URL — no token strings in texts.
+  const shortUrl = row.delivery_number
+    ? buildSmsTrackUrl(row.delivery_number)
+    : deliveryBusinessTrackUrl(row);
+
+  const partnerLine = partnerDeliveryLine(status, recipientName);
+  const recipientLine = recipientDeliveryLine(status, recipientName, brand);
+
+  const isFirstPartnerCheckpoint =
     status === "en_route_to_pickup" || status === "en_route";
+  const isFirstRecipientCheckpoint =
+    status === "en_route_to_destination" || status === "en_route";
+
   const sent = new Set<string>();
-  const sendGuarded = async (raw: string, line: string) => {
+
+  const sendGuarded = async (
+    raw: string,
+    line: string,
+    withUrl: boolean,
+    audience: "partner" | "recipient",
+  ) => {
     const d = digitsOnly(raw);
     if (d.length < 10) return;
     if (sent.has(d)) return;
     sent.add(d);
-    const body = isFirstCheckpoint
+    const body = withUrl
       ? `${line}\n\nTrack: ${shortUrl}\n\nQuestions? (647) 370-4525`
       : line;
-    // Cross-pipeline dedup: same key shape as client-tracking-sms so a
-    // second sender for the same {job, stage, phone} tuple no-ops.
-    // This is what stops "Chris got two crew-dispatched texts" when the
-    // partner contact IS also the customer_phone on the delivery.
+    // Phone-scoped notification_key: any second sender targeting the
+    // same {job, stage, phone} tuple no-ops on the unique index. In
+    // 'partner' mode partner and recipient collapse onto one phone and
+    // one send fires; in 'separate' mode the phones differ and both
+    // audiences get their own message.
     const outcome = await reserveStageNotification(admin, {
       jobType: "delivery",
       jobUuid: row.id,
       status: String(status),
       phone: raw,
-      event: `partner_tracking_${status}`,
+      event: `${audience}_tracking_${status}`,
       message: body,
     });
     if (!outcome.reserved) return;
@@ -243,11 +352,16 @@ export async function sendPartnerDeliveryCheckpointSms(opts: {
     );
   };
 
+  // Partner audience: full operational visibility on every stage +
+  // completion. Track URL rides the opening dispatch text only.
   if (notifyPartner && partnerPhone) {
-    await sendGuarded(partnerPhone, linePartner);
+    await sendGuarded(partnerPhone, partnerLine, isFirstPartnerCheckpoint, "partner");
   }
-  if (notifyClient && endPhone) {
-    await sendGuarded(endPhone, lineClient);
+  // Recipient audience: only the three stages that matter to the
+  // person receiving the goods. Everything before pickup is noise to
+  // them. Track URL rides the opening "on the way to you" text.
+  if (notifyClient && recipientPhone && RECIPIENT_STAGES.has(status)) {
+    await sendGuarded(recipientPhone, recipientLine, isFirstRecipientCheckpoint, "recipient");
   }
 }
 

@@ -429,6 +429,12 @@ export async function notifyOnCheckpoint(
     end_customer_phone?: string | null;
     /** Site / recipient phone on B2B multi-stop (preferred over billing customer_phone for SMS). */
     end_client_phone?: string | null;
+    /** Partner brand name shown to the receiver ("delivery from MyNewFloor"). */
+    business_name?: string | null;
+    /** Recipient split — see migration 20260831120000. */
+    recipient_mode?: string | null;
+    recipient_name?: string | null;
+    recipient_phone?: string | null;
   } | null = null;
 
   if (jobType === "move") {
@@ -512,7 +518,7 @@ export async function notifyOnCheckpoint(
     const { data: delivery } = await admin
       .from("deliveries")
       .select(
-        "id, delivery_number, client_name, customer_name, customer_email, end_customer_email, contact_email, category, organization_id, booking_type, contact_phone, customer_phone, end_customer_phone, end_client_phone, tracking_token, recipient_tracking_token",
+        "id, delivery_number, client_name, customer_name, customer_email, end_customer_email, contact_email, category, organization_id, booking_type, contact_phone, customer_phone, end_customer_phone, end_client_phone, tracking_token, recipient_tracking_token, business_name, recipient_mode, recipient_name, recipient_phone",
       )
       .eq("id", jobId)
       .single();
@@ -538,6 +544,14 @@ export async function notifyOnCheckpoint(
           .end_customer_phone,
         end_client_phone: (delivery as { end_client_phone?: string | null })
           .end_client_phone,
+        business_name: (delivery as { business_name?: string | null })
+          .business_name,
+        recipient_mode: (delivery as { recipient_mode?: string | null })
+          .recipient_mode,
+        recipient_name: (delivery as { recipient_name?: string | null })
+          .recipient_name,
+        recipient_phone: (delivery as { recipient_phone?: string | null })
+          .recipient_phone,
       };
       clientEmail = deliveryContactEmail(
         delivery as Parameters<typeof deliveryContactEmail>[0],
