@@ -55,6 +55,22 @@ export async function POST(req: NextRequest) {
       if (!(body.contact_name || "").trim()) return NextResponse.json({ error: "Contact name is required" }, { status: 400 });
       if (!(body.contact_phone || "").trim()) return NextResponse.json({ error: "Contact phone is required" }, { status: 400 });
     }
+    if (body.recipient_mode === "separate") {
+      if (!(body.recipient_name || "").trim()) {
+        return NextResponse.json({ error: "Recipient name is required" }, { status: 400 });
+      }
+      if (!(body.recipient_phone || "").trim()) {
+        return NextResponse.json({ error: "Recipient phone is required" }, { status: 400 });
+      }
+      const partnerDigits = String(body.contact_phone || "").replace(/\D/g, "");
+      const recipDigits = String(body.recipient_phone || "").replace(/\D/g, "");
+      if (partnerDigits && recipDigits && partnerDigits === recipDigits) {
+        return NextResponse.json(
+          { error: "Recipient phone must differ from the partner phone." },
+          { status: 400 },
+        );
+      }
+    }
     if (!customerName) return NextResponse.json({ error: "Customer name is required" }, { status: 400 });
     if (!deliveryAddress) return NextResponse.json({ error: "Delivery address is required" }, { status: 400 });
     if (!scheduledDate) return NextResponse.json({ error: "Date is required" }, { status: 400 });
@@ -142,6 +158,29 @@ export async function POST(req: NextRequest) {
       customer_name: customerName,
       customer_email: (body.customer_email || "").trim() || null,
       customer_phone: (body.customer_phone || "").trim() || null,
+      // Recipient split: 'partner' collapses partner + recipient onto one
+      // contact (default, preserves old behaviour). 'separate' persists
+      // the receiver identity so stage SMS routes to recipient_phone and
+      // business updates stay on contact_phone; see migration
+      // 20260831120000_deliveries_recipient_split.
+      recipient_mode:
+        body.recipient_mode === "separate" ? "separate" : "partner",
+      recipient_name:
+        body.recipient_mode === "separate"
+          ? (body.recipient_name || "").trim() || null
+          : null,
+      recipient_phone:
+        body.recipient_mode === "separate"
+          ? (body.recipient_phone || "").trim() || null
+          : null,
+      recipient_email:
+        body.recipient_mode === "separate"
+          ? (body.recipient_email || "").trim() || null
+          : null,
+      recipient_notes:
+        body.recipient_mode === "separate"
+          ? (body.recipient_notes || "").trim() || null
+          : null,
       pickup_address: (body.pickup_address || "").trim() || null,
       delivery_address: deliveryAddress,
       scheduled_date: scheduledDate,

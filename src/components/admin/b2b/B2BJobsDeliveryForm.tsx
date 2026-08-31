@@ -425,6 +425,11 @@ export type B2BJobsInitialData = Partial<B2BJobsEmbedSnapshot> & {
   hookupNotes?: string;
   routeMode?: "single" | "multi";
   multiStops?: MultiStopDraftStop[];
+  recipientMode?: "partner" | "separate";
+  recipientName?: string;
+  recipientPhone?: string;
+  recipientEmail?: string;
+  recipientNotes?: string;
 };
 
 export type B2BJobsDeliveryFormProps = {
@@ -483,6 +488,19 @@ export default function B2BJobsDeliveryForm({
   const [contactPhone, setContactPhone] = useState(init?.contactPhone ?? "");
   const [contactEmail, setContactEmail] = useState(init?.contactEmail ?? "");
   const contactPhoneInput = usePhoneInput(contactPhone, setContactPhone);
+
+  // Recipient split (see migration 20260831120000_deliveries_recipient_split).
+  // 'partner' = the partner IS the receiver; one SMS per stage.
+  // 'separate' = a different client receives the goods; partner and recipient
+  // get their own tracking channels so the same phone never fires twice.
+  const [recipientMode, setRecipientMode] = useState<"partner" | "separate">(
+    init?.recipientMode ?? "partner",
+  );
+  const [recipientName, setRecipientName] = useState(init?.recipientName ?? "");
+  const [recipientPhone, setRecipientPhone] = useState(init?.recipientPhone ?? "");
+  const [recipientEmail, setRecipientEmail] = useState(init?.recipientEmail ?? "");
+  const [recipientNotes, setRecipientNotes] = useState(init?.recipientNotes ?? "");
+  const recipientPhoneInput = usePhoneInput(recipientPhone, setRecipientPhone);
 
   const [applyPartnerRates, setApplyPartnerRates] = useState(true);
   const [partnerOrgId, setPartnerOrgId] = useState(init?.partnerOrgId ?? "");
@@ -1691,6 +1709,19 @@ export default function B2BJobsDeliveryForm({
     // partner org owns the billing relationship.
     if (requirePhoneForBooking && !contactPhone.trim())
       return "Contact phone is required to schedule the delivery";
+    // Recipient split: separate mode needs its own contact so the tracking
+    // SMS actually reaches the person receiving the goods. If the recipient
+    // phone matches the partner phone, force a fix — otherwise both roles
+    // land on the same device and we're back to duplicate texts.
+    if (recipientMode === "separate") {
+      if (!recipientName.trim()) return "Recipient name is required";
+      if (!recipientPhone.trim()) return "Recipient phone is required";
+      const partnerDigits = normalizePhone(contactPhone);
+      const recipDigits = normalizePhone(recipientPhone);
+      if (partnerDigits && recipDigits && partnerDigits === recipDigits) {
+        return "Recipient phone must differ from the partner phone; otherwise pick 'partner receives the goods'.";
+      }
+    }
     if (!verticalCode.trim()) return "Delivery vertical is required";
     if (buildEffectiveLines().length === 0)
       return "Add at least one line item (or box count for flooring)";
@@ -1784,10 +1815,33 @@ export default function B2BJobsDeliveryForm({
         ? finStop?.accessType || deliveryAccess
         : deliveryAccess;
 
+    // Recipient split routing. In 'separate' mode the customer_* trio
+    // takes on the recipient identity so downstream surfaces (crew app
+    // dispatch, tracking SMS, delivery emails) address the person who
+    // actually receives the goods, while the partner contact stays in
+    // contact_*. 'partner' mode keeps the pre-split behaviour: partner
+    // IS the recipient, one SMS per stage.
+    const recipientActive =
+      recipientMode === "separate" && recipientPhone.trim().length > 0;
+    const custName = recipientActive ? recipientName.trim() : contactName.trim();
+    const custPhone = recipientActive
+      ? normalizePhone(recipientPhone)
+      : normalizePhone(contactPhone);
+    const custEmail = recipientActive
+      ? recipientEmail.trim() || null
+      : contactEmail.trim() || null;
+
     const basePayload: Record<string, unknown> = {
-      customer_name: contactName.trim(),
-      customer_phone: normalizePhone(contactPhone),
-      customer_email: contactEmail.trim() || null,
+      customer_name: custName,
+      customer_phone: custPhone,
+      customer_email: custEmail,
+      recipient_mode: recipientMode,
+      recipient_name: recipientActive ? recipientName.trim() : null,
+      recipient_phone: recipientActive ? normalizePhone(recipientPhone) : null,
+      recipient_email: recipientActive
+        ? recipientEmail.trim() || null
+        : null,
+      recipient_notes: recipientActive ? recipientNotes.trim() || null : null,
       pickup_address: pickAddr,
       delivery_address: delAddr,
       pickup_access: pickAcc || null,
@@ -2502,6 +2556,103 @@ export default function B2BJobsDeliveryForm({
               {hsSuggest.renderDropdown("email")}
             </div>
           </Field>
+        </div>
+
+        <div className="mt-4 border-t border-[var(--brd)] pt-4">
+          <p className="text-[13px] font-medium text-[var(--tx)]">
+            Who receives this delivery?
+          </p>
+          <p className="mt-0.5 text-[12px] text-[var(--tx-muted)]">
+            Controls which contact gets the tracking SMS on the day of service.
+          </p>
+          <div className="mt-3 space-y-2">
+            <label
+              className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 transition-colors ${
+                recipientMode === "partner"
+                  ? "border-[var(--accent)] bg-[var(--accent-subtle)]"
+                  : "border-[var(--brd)] hover:border-[var(--brd-strong)]"
+              }`}
+            >
+              <input
+                type="radio"
+                name="recipient-mode"
+                checked={recipientMode === "partner"}
+                onChange={() => setRecipientMode("partner")}
+                className="mt-0.5"
+              />
+              <div>
+                <p className="text-[13px] font-medium text-[var(--tx)]">
+                  The partner receives the goods
+                </p>
+                <p className="text-[12px] text-[var(--tx-muted)]">
+                  Only the partner gets tracking texts.
+                </p>
+              </div>
+            </label>
+            <label
+              className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 transition-colors ${
+                recipientMode === "separate"
+                  ? "border-[var(--accent)] bg-[var(--accent-subtle)]"
+                  : "border-[var(--brd)] hover:border-[var(--brd-strong)]"
+              }`}
+            >
+              <input
+                type="radio"
+                name="recipient-mode"
+                checked={recipientMode === "separate"}
+                onChange={() => setRecipientMode("separate")}
+                className="mt-0.5"
+              />
+              <div className="w-full">
+                <p className="text-[13px] font-medium text-[var(--tx)]">
+                  A different client receives the goods
+                </p>
+                <p className="text-[12px] text-[var(--tx-muted)]">
+                  Partner gets business updates. Recipient gets tracking texts. No duplicates.
+                </p>
+                {recipientMode === "separate" && (
+                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <Field label="Recipient name *">
+                      <input
+                        value={recipientName}
+                        onChange={(e) => setRecipientName(e.target.value)}
+                        className={fieldInput}
+                        autoComplete="name"
+                      />
+                    </Field>
+                    <Field label="Recipient phone *">
+                      <input
+                        ref={recipientPhoneInput.ref}
+                        type="tel"
+                        value={recipientPhone}
+                        onChange={recipientPhoneInput.onChange}
+                        placeholder={PHONE_PLACEHOLDER}
+                        className={fieldInput}
+                        autoComplete="tel"
+                      />
+                    </Field>
+                    <Field label="Recipient email">
+                      <input
+                        type="email"
+                        value={recipientEmail}
+                        onChange={(e) => setRecipientEmail(e.target.value)}
+                        className={fieldInput}
+                        autoComplete="email"
+                      />
+                    </Field>
+                    <Field label="Site notes">
+                      <input
+                        value={recipientNotes}
+                        onChange={(e) => setRecipientNotes(e.target.value)}
+                        placeholder="Buzz #402, freight elevator at rear"
+                        className={fieldInput}
+                      />
+                    </Field>
+                  </div>
+                )}
+              </div>
+            </label>
+          </div>
         </div>
       </section>
 
