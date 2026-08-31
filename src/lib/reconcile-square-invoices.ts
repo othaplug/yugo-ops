@@ -3,7 +3,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeDeliveryNumber } from "@/lib/delivery-number";
 import { opsInvoiceNumberForSquareJob } from "@/lib/invoice-display-number";
 import { getSquarePaymentConfig } from "@/lib/square-config";
-import { isSquareInvoicePaidStatus, markLocalInvoicePaidFromSquare } from "@/lib/square-invoice-paid";
+import {
+  isSquareInvoicePaidStatus,
+  markLocalInvoicePaidFromSquare,
+  syncDeliveryPaidFromInvoice,
+} from "@/lib/square-invoice-paid";
 
 /** Same canonical form we store and Square shows (DLV-xxxx, M-…). */
 function canonicalSquareInvoiceNumber(raw: string | null | undefined): string {
@@ -212,6 +216,44 @@ export async function reconcileUnpaidSquareInvoices(
       errors.push(`partner ${squareInvoiceId}: ${msg}`);
       console.error("[reconcile-square-invoices] partner_invoices.get failed:", squareInvoiceId, e);
     }
+  }
+
+  // Heal pass: deliveries whose invoice is already `paid` locally but whose
+  // delivery-level paid marker (deliveries.payment_received_at) was never set —
+  // rows paid before the delivery sync existed, or an invoice-only update. The
+  // main pass above only queries NOT-paid invoices, so Square never re-notifies
+  // and reconcile never revisits these; without this pass they stay stuck on
+  // "Marked as paid" forever (e.g. DLV-30352). syncDeliveryPaidFromInvoice is
+  // idempotent + notify-safe.
+  try {
+    const { data: paidDelInvoices } = await supabase
+      .from("invoices")
+      .select("delivery_id")
+      .eq("status", "paid")
+      .not("delivery_id", "is", null)
+      .limit(limit);
+    const paidDeliveryIds = Array.from(
+      new Set(
+        (paidDelInvoices ?? [])
+          .map((r) => r.delivery_id as string | null)
+          .filter((id): id is string => !!id),
+      ),
+    );
+    if (paidDeliveryIds.length > 0) {
+      const { data: unsyncedDel } = await supabase
+        .from("deliveries")
+        .select("id")
+        .in("id", paidDeliveryIds)
+        .is("payment_received_at", null);
+      for (const d of unsyncedDel ?? []) {
+        // "never": backfilling historical paid deliveries must not message
+        // those customers. It only sets payment_received_at + issues tokens.
+        await syncDeliveryPaidFromInvoice(supabase, d.id as string, "never");
+        markedPaid++;
+      }
+    }
+  } catch (e) {
+    errors.push(`heal paid-unsynced deliveries: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   return { checked, markedPaid, linkedIds, errors };

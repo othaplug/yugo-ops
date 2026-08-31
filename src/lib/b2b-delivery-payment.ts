@@ -6,7 +6,11 @@ import {
   sendB2BTrackingNotifications,
 } from "@/lib/delivery-tracking-tokens";
 
-export type B2BPaymentNotifyMode = "always" | "only_if_newly_paid";
+// "never" is used by the reconcile heal pass, which backfills the paid marker
+// on historical deliveries and must not send tracking messages to those
+// customers. (The shouldNotify guard below already yields false for "never"
+// since it matches neither "always" nor "only_if_newly_paid".)
+export type B2BPaymentNotifyMode = "always" | "only_if_newly_paid" | "never";
 
 export { deliveryEligibleForAdminPrepaidMark } from "@/lib/delivery-prepaid-eligibility";
 

@@ -1,5 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { runB2BOneOffPaymentRecordedFlow } from "@/lib/b2b-delivery-payment";
+import {
+  runB2BOneOffPaymentRecordedFlow,
+  runAdminMarkDeliveryPaidFlow,
+  deliveryEligibleForAdminPrepaidMark,
+  type B2BPaymentNotifyMode,
+} from "@/lib/b2b-delivery-payment";
 
 export function isSquareInvoicePaidStatus(status: string | undefined): boolean {
   return String(status || "").toUpperCase() === "PAID";
@@ -31,42 +36,70 @@ export async function markLocalInvoicePaidFromSquare(opts: {
     return;
   }
 
-  if (String(invRow.status || "").toLowerCase() === "paid") {
-    return;
+  // Flip the invoice to paid the first time we see it. If it is already paid
+  // locally we still fall through to the delivery sync below: a delivery paid
+  // before this sync existed (or by a run that updated the invoice but skipped
+  // the delivery) can still be missing its payment_received_at, and the webhook
+  // will not fire again for it.
+  if (String(invRow.status || "").toLowerCase() !== "paid") {
+    const now = new Date().toISOString();
+    const patch: Record<string, unknown> = {
+      status: "paid",
+      updated_at: now,
+    };
+    if (opts.squareInvoiceUrl) patch.square_invoice_url = opts.squareInvoiceUrl;
+    if (opts.squareReceiptUrl) patch.square_receipt_url = opts.squareReceiptUrl;
+
+    await supabase.from("invoices").update(patch).eq("id", invRow.id);
+
+    await supabase.from("webhook_logs").insert({
+      source: "square",
+      event_type: `${logContext}.paid`,
+      payload: { invoice_id: squareInvoiceId, delivery_id: invRow.delivery_id },
+      status: "processed",
+    });
   }
 
-  const now = new Date().toISOString();
-  const patch: Record<string, unknown> = {
-    status: "paid",
-    updated_at: now,
-  };
-  if (opts.squareInvoiceUrl) patch.square_invoice_url = opts.squareInvoiceUrl;
-  if (opts.squareReceiptUrl) patch.square_receipt_url = opts.squareReceiptUrl;
+  if (invRow.delivery_id) {
+    await syncDeliveryPaidFromInvoice(supabase, invRow.delivery_id);
+  }
+}
 
-  await supabase.from("invoices").update(patch).eq("id", invRow.id);
-
-  await supabase.from("webhook_logs").insert({
-    source: "square",
-    event_type: `${logContext}.paid`,
-    payload: { invoice_id: squareInvoiceId, delivery_id: invRow.delivery_id },
-    status: "processed",
-  });
-
-  const deliveryId = invRow.delivery_id;
-  if (!deliveryId) return;
-
+/**
+ * Mirror a paid delivery invoice's state onto its linked delivery row so the ops
+ * views (paid badge, revenue, dispatch) match Square. Idempotent and notify-safe.
+ *
+ * The pure B2B one-off flow is gated to one-offs; every OTHER B2B-style delivery
+ * (category b2b, a vertical, or an org-linked retail job) uses the generalized
+ * admin-mark flow. Both set deliveries.payment_received_at and run the shared
+ * post-payment steps; "only_if_newly_paid" avoids re-notifying on repeat runs.
+ * A delivery that is neither one-off nor B2B-eligible has no delivery-level paid
+ * marker; the invoices row is its record. Shared by the Square webhook and the
+ * reconcile heal pass. Before this, a paid retail/B2B invoice (e.g. DLV-30352)
+ * flipped invoices.status=paid but left the delivery showing "Marked as paid".
+ */
+export async function syncDeliveryPaidFromInvoice(
+  supabase: ReturnType<typeof createAdminClient>,
+  deliveryId: string,
+  notifyMode: B2BPaymentNotifyMode = "only_if_newly_paid",
+): Promise<void> {
   const { data: del } = await supabase
     .from("deliveries")
-    .select("booking_type, organization_id")
+    .select("booking_type, organization_id, category, vertical_code, status")
     .eq("id", deliveryId)
     .maybeSingle();
 
-  if (del?.booking_type !== "one_off" || del.organization_id) return;
+  if (!del) return;
 
+  const isPureOneOff = del.booking_type === "one_off" && !del.organization_id;
   try {
-    await runB2BOneOffPaymentRecordedFlow(deliveryId, { notifyMode: "only_if_newly_paid" });
+    if (isPureOneOff) {
+      await runB2BOneOffPaymentRecordedFlow(deliveryId, { notifyMode });
+    } else if (deliveryEligibleForAdminPrepaidMark(del)) {
+      await runAdminMarkDeliveryPaidFlow(deliveryId, { notifyMode });
+    }
   } catch (e) {
-    console.error("[square] B2B one-off payment flow:", e);
+    console.error("[square] delivery payment flow:", e);
   }
 }
 
