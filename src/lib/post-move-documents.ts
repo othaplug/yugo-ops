@@ -197,44 +197,21 @@ export async function generatePostMoveDocuments(moveId: string): Promise<void> {
       }),
   ]);
 
-  // ─── Create/update invoice record ───
-  const { data: existingInv } = await admin
-    .from("invoices")
-    .select("id")
-    .eq("move_id", moveId)
-    .limit(1)
-    .maybeSingle();
-
-  if (!existingInv && estimate > 0) {
-    const dueDate = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
-    const lineItems = [
-      { d: "Moving Service", q: 1, r: estimate },
-      ...approvedExtras
-        .filter((e) => Number(e.fee_cents) > 0)
-        .map((e) => ({
-          d: `Extra: ${e.description || "Item"}`,
-          q: e.quantity || 1,
-          r: Number(e.fee_cents) / 100,
-        })),
-      ...approvedChanges
-        .filter((c) => Number(c.fee_cents) > 0)
-        .map((c) => ({
-          d: `Change: ${c.change_type || "Request"}`,
-          q: 1,
-          r: Number(c.fee_cents) / 100,
-        })),
-    ];
-
-    await admin.from("invoices").insert({
-      invoice_number: invoiceNumber,
-      client_name: move.client_name || "Client",
-      amount: Math.round(estimate + (extraFeesCents + changeFeesCents) / 100),
-      status: "sent",
-      due_date: dueDate,
-      move_id: moveId,
-      line_items: JSON.stringify(lineItems),
-    });
-  }
+  // Invoice-row creation moved to /api/invoices/auto-move (fires on every
+  // completion path, including crew signoff skip). Auto-move correctly
+  // gates on org.type — retail (b2c) moves get NO invoice row because
+  // they pay via Stripe/Square at booking + balance and there is no
+  // separate invoice to send. The unconditional insert that used to
+  // live here created ghost "sent" invoices on paid retail moves (e.g.
+  // M-MV-30282 on Grant McAdam, $5,200 stuck at status=sent forever),
+  // which polluted every finance dashboard's outstanding + top-clients
+  // aggregations. Do NOT add it back — auto-move is the single source
+  // of truth for the invoices table.
+  void invoiceNumber;
+  void extraFeesCents;
+  void changeFeesCents;
+  void approvedExtras;
+  void approvedChanges;
 
   // Audit event
   await admin.from("status_events").insert({

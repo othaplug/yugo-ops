@@ -354,14 +354,19 @@ export default function RevenueClient({
   const paidPartnerInvoices = paidInvoicesAll.filter((i) =>
     isPartnerChannelInvoice(i, orgIdToType, clientTypeMap),
   );
+  // Retail move revenue — pre-tax so the total lines up with the
+  // "Before HST" label on the tile. `moves.amount` is stored HST-inclusive
+  // for many moves and mixing it into a pre-tax total would inflate the
+  // figure by ~13%. `estimate` is the reliable pre-tax base.
   const moveRevenue = paidMovesList.reduce(
-    (s, m) => s + Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate ?? 0),
+    (s, m) => s + Number(m.estimate ?? m.final_amount ?? m.total_price ?? m.amount ?? 0),
     0,
   );
-  // PM (property-manager) move revenue — shown in the chart's third segment;
-  // must also be counted in the totals (it was previously omitted).
+  // PM (property-manager) move revenue — shown in the chart's third segment.
+  // Pre-tax basis so it lines up with invoiceRevenue + moveRevenue in the
+  // paidTotal reading. `estimate` first, fall back only when it is null.
   const pmRevenue = pmMovesAll.reduce(
-    (s, m) => s + Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0),
+    (s, m) => s + Number(m.estimate ?? m.final_amount ?? m.total_price ?? m.amount ?? 0),
     0,
   );
   // Partner job count (delivered jobs + paid invoices) for averages.
@@ -381,9 +386,24 @@ export default function RevenueClient({
   const movePct = Math.round((moveRevenue / totalSource) * 100);
   const pmPct = Math.max(0, 100 - invPct - movePct);
 
-  // B2B delivery invoices outstanding (invoices table)
+  // Partner / delivery invoices outstanding.
+  // Filters retail-move ghost invoices (move_id set, no square_invoice_id)
+  // — they were never real bills; the client paid via Stripe/Square. Retail
+  // paid moves already show up in moveRevenue; if a ghost invoice slipped
+  // through the backfill it must not be counted a second time here.
+  const paidMoveIdSet = new Set(paidMovesList.map((m) => String(m.id)));
   const outstandingDeliveryInvoices = all
     .filter((i) => invoiceStatusIsOutstanding(i.status))
+    .filter((i) => {
+      const asAny = i as { move_id?: string | null; square_invoice_id?: string | null };
+      if (asAny.move_id && !asAny.square_invoice_id) {
+        return false;
+      }
+      if (asAny.move_id && paidMoveIdSet.has(String(asAny.move_id))) {
+        return false;
+      }
+      return true;
+    })
     .reduce((s, i) => s + invoicePreTaxForDisplay(i), 0);
 
   // PM billing invoices sent but not paid (partner_invoices table)
@@ -408,20 +428,34 @@ export default function RevenueClient({
     outstandingPMUnbilled;
 
   const byClient: Record<string, number> = {};
+  // Track which move_ids and delivery_ids already contributed via an
+  // invoice, so the paidMoves / delivery-fallback loops below do not
+  // double-count the same job. Historic ghost invoices that snuck past
+  // the backfill still get skipped here — the move total from
+  // paidMovesList is the truth for retail.
+  const invoiceMoveIds = new Set<string>();
   invoicesForBreakdown.forEach((i) => {
     const name = i.client_name ?? "-";
+    const asAny = i as { move_id?: string | null; square_invoice_id?: string | null };
+    // Ghost retail invoice guard: skip on Top Clients too so the paid
+    // move below is the single revenue line for that job.
+    if (asAny.move_id && !asAny.square_invoice_id) return;
+    if (asAny.move_id) invoiceMoveIds.add(String(asAny.move_id));
     byClient[name] = (byClient[name] || 0) + invoicePreTaxForDisplay(i);
   });
   paidMovesList.forEach((m) => {
+    if (invoiceMoveIds.has(String(m.id))) return;
     const name = m.client_name || "-";
     byClient[name] =
-      (byClient[name] || 0) + Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate ?? 0);
+      (byClient[name] || 0) + Number(m.estimate ?? m.final_amount ?? m.total_price ?? m.amount ?? 0);
   });
-  // PM partners — aggregate by organization name (client_name on the move)
+  // PM partners — aggregate by organization name (client_name on the move).
+  // Skip PM moves whose invoice already contributed above.
   pmMovesAll.forEach((m) => {
+    if (invoiceMoveIds.has(String(m.id))) return;
     const name = m.client_name || "PM partner";
     byClient[name] =
-      (byClient[name] || 0) + Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0);
+      (byClient[name] || 0) + Number(m.estimate ?? m.final_amount ?? m.total_price ?? m.amount ?? 0);
   });
   const topClients = Object.entries(byClient)
     .sort((a, b) => b[1] - a[1])

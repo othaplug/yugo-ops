@@ -151,9 +151,31 @@ export default async function ClientDetailPage({
       new Date(String(b.created_at || 0)).getTime() -
       new Date(String(a.created_at || 0)).getTime(),
   );
-  const outstandingInvoices = allInvoices.filter(
-    (i) => i.status === "sent" || i.status === "overdue",
-  );
+  // Ghost-invoice guard: filter move-linked invoices that were never
+  // sent via Square when the underlying move is already paid. See
+  // scripts/backfill-cancel-ghost-invoices.ts. Prevents a retail client
+  // who paid via Stripe from ever seeing "Outstanding $X" on this tile.
+  const moveIdsOnAllInvoices = allInvoices
+    .map((i) => i.move_id as string | null | undefined)
+    .filter((v): v is string => typeof v === "string" && v.length > 0);
+  const paidMoveIdsForOutstanding = new Set<string>();
+  if (moveIdsOnAllInvoices.length > 0) {
+    const { data: linkedMoves } = await db
+      .from("moves")
+      .select("id, payment_marked_paid")
+      .in("id", moveIdsOnAllInvoices);
+    for (const m of linkedMoves || []) {
+      if (m.payment_marked_paid) paidMoveIdsForOutstanding.add(String(m.id));
+    }
+  }
+  const outstandingInvoices = allInvoices.filter((i) => {
+    if (i.status !== "sent" && i.status !== "overdue") return false;
+    const moveId = i.move_id as string | null | undefined;
+    if (moveId && !i.square_invoice_id && paidMoveIdsForOutstanding.has(String(moveId))) {
+      return false;
+    }
+    return true;
+  });
   let outstandingTotal = outstandingInvoices.reduce(
     (s, i) => s + Number(i.amount),
     0,

@@ -48,14 +48,36 @@ export default async function FinanceOverviewPage() {
   const [invRes, tipsRes] = await Promise.all([
     db
       .from("invoices")
-      .select("id, amount, status")
+      .select("id, amount, status, move_id, square_invoice_id")
       .limit(2000),
     db.from("tips").select("amount, net_amount").limit(500),
   ])
   const invoices = invRes.data || []
-  const openInv = invoices.filter((i) =>
+  const openCandidates = invoices.filter((i) =>
     ["sent", "overdue", "partial"].includes(String(i.status || "")),
   )
+  // Ghost-invoice guard: drop retail-move invoices that were never
+  // sent via Square when the underlying move is already paid.
+  const moveIdsOnOpen = openCandidates
+    .map((i) => (i as { move_id?: string | null }).move_id)
+    .filter((v): v is string => typeof v === "string" && v.length > 0)
+  const paidMoveIdSet = new Set<string>()
+  if (moveIdsOnOpen.length > 0) {
+    const { data: linkedMoves } = await db
+      .from("moves")
+      .select("id, payment_marked_paid")
+      .in("id", moveIdsOnOpen)
+    for (const m of linkedMoves || []) {
+      if (m.payment_marked_paid) paidMoveIdSet.add(String(m.id))
+    }
+  }
+  const openInv = openCandidates.filter((i) => {
+    const asAny = i as { move_id?: string | null; square_invoice_id?: string | null }
+    if (asAny.move_id && !asAny.square_invoice_id && paidMoveIdSet.has(String(asAny.move_id))) {
+      return false
+    }
+    return true
+  })
   const openSum = openInv.reduce((s, r) => s + Number(r.amount || 0), 0)
   const tips = tipsRes.data || []
   const tipsSum = tips.reduce(

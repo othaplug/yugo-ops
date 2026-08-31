@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 export async function generateMetadata({
   params,
@@ -32,10 +32,18 @@ export default async function ClientRevenuePage({
 
   const { data: org } = await db
     .from("organizations")
-    .select("id, name")
+    .select("id, name, type")
     .eq("id", orgId)
     .single();
   if (!org) notFound();
+
+  // Retail clients (b2c) are not partners. This page is designed for
+  // partner billing (sent → paid invoice cadence, statement periods,
+  // outstanding AR). Route them to the client profile which shows moves,
+  // payments, and receipts through the retail lens.
+  if ((org.type || "").toLowerCase() === "b2c") {
+    redirect(`/admin/clients/${orgId}`);
+  }
 
   const [byOrg, byName] = await Promise.all([
     db
@@ -53,7 +61,7 @@ export default async function ClientRevenuePage({
       : { data: [] },
   ]);
   const seen = new Set<string>();
-  const invoices = [...(byOrg.data || []), ...(byName.data || [])]
+  const invoicesRaw = [...(byOrg.data || []), ...(byName.data || [])]
     .filter((i) => {
       if (seen.has(i.id)) return false;
       seen.add(i.id);
@@ -64,6 +72,31 @@ export default async function ClientRevenuePage({
         new Date(b.created_at || 0).getTime() -
         new Date(a.created_at || 0).getTime(),
     );
+
+  // Ghost-invoice guard: any invoice row linked to a move but never
+  // published via Square (square_invoice_id null) whose linked move is
+  // already payment_marked_paid was created by the retired
+  // post-move-documents insert. Even after the backfill sweep this
+  // guard keeps historical data honest and catches anything that slips
+  // through in-flight.
+  const moveIdsOnInvoices = invoicesRaw
+    .map((i) => i.move_id as string | null)
+    .filter((v): v is string => !!v);
+  const paidMoveIds = new Set<string>();
+  if (moveIdsOnInvoices.length > 0) {
+    const { data: linkedMoves } = await db
+      .from("moves")
+      .select("id, payment_marked_paid")
+      .in("id", moveIdsOnInvoices);
+    for (const m of linkedMoves || []) {
+      if (m.payment_marked_paid) paidMoveIds.add(String(m.id));
+    }
+  }
+  const invoices = invoicesRaw.filter((i) => {
+    if (!i.move_id) return true;
+    if (i.square_invoice_id) return true;
+    return !paidMoveIds.has(String(i.move_id));
+  });
 
   const all = invoices || [];
   const paid = all.filter((i) => i.status === "paid");
