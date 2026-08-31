@@ -104,6 +104,18 @@ export async function POST(req: NextRequest) {
     (delivery as { created_at?: string | null }).created_at ??
     null;
   const deliveryDate = deliveryDateRaw ? new Date(deliveryDateRaw) : new Date();
+  const rawLineItems = (delivery as { b2b_line_items?: unknown }).b2b_line_items;
+  const b2bLineItems = Array.isArray(rawLineItems)
+    ? (rawLineItems as Array<Record<string, unknown>>).map((row) => ({
+        description: typeof row.description === "string" ? row.description : null,
+        quantity:
+          typeof row.quantity === "number"
+            ? row.quantity
+            : Number(row.quantity ?? row.qty ?? 1),
+      }))
+    : null;
+  const vertical =
+    (delivery as { vertical_code?: string | null }).vertical_code || null;
   const squareResult = await createAndPublishSquareInvoice({
     deliveryId: deliveryUuid,
     deliveryNumber: delivery.delivery_number || deliveryUuid.slice(0, 8),
@@ -116,11 +128,21 @@ export async function POST(req: NextRequest) {
     invoiceDueDays: dueDays,
     invoiceDueDayOfMonth: null,
     jobType: "delivery",
-    // B2B one-off has no partner org, so no vertical — falls back to the
-    // generic "Delivery Services" title.
-    partnerVertical: null,
+    // B2B one-off has no partner org row, but the delivery itself may
+    // carry vertical_code (set at quote time) — use it when present so
+    // the invoice reads "Furniture / Flooring / Cabinetry Delivery
+    // Services" instead of the generic fallback.
+    partnerVertical: vertical,
     billingPeriodStart: deliveryDate,
     billingPeriodEnd: deliveryDate,
+    sourceMove: {
+      from_address: (delivery as { pickup_address?: string | null }).pickup_address ?? null,
+      to_address: addr,
+      b2b_vertical_code: vertical,
+      b2b_line_items: b2bLineItems,
+      company_name: bizName || null,
+      client_name: customerName,
+    },
   });
 
   if (!squareResult) {

@@ -6,6 +6,7 @@ import {
   buildInvoiceMessage,
   buildInvoiceTitle,
   buildLineItemDescription,
+  buildLineItemNote,
   buildHstLineItemName,
   buildHstLineItemNote,
   buildPaymentReminders,
@@ -68,6 +69,14 @@ export interface CreateSquareInvoiceInput {
   /** Multi-line invoice (consolidated PM, multi-move batch, etc.). When set,
    *  `amount` is ignored and the subtotal is computed from these lines. */
   lineItems?: SquareInvoiceLineItem[];
+  /** Optional richer data for the single-job synth path. When the caller
+   *  can pass pickup_address, b2b_vertical_code, or b2b_line_items from
+   *  the source delivery / quote, the invoice's line-item note surfaces
+   *  the pickup, drops, and per-item breakdown the client needs to
+   *  reconcile without opening the source quote. Merged over the
+   *  fields the synth path can already infer (client, drop-off,
+   *  service_type, company). */
+  sourceMove?: Partial<InvoiceLineMove>;
   /** Override the billing contact (banking + emails) — defaults to platform_config. */
   billingContact?: BillingContact;
 }
@@ -160,6 +169,15 @@ export async function createAndPublishSquareInvoice(
     invoiceSequence,
   });
 
+  // Single-job title needs the actual destination + the source service
+  // type (white_glove vs a B2B vertical) so it reads
+  // "White Glove Delivery Services · 54 Gentile Circle"
+  // instead of the generic "Delivery Services · Aug 20, 2026".
+  const singleMove = isSingleJob && lineItems?.[0]?.move ? lineItems[0].move : null;
+  const singleDeliveryAddress =
+    (singleMove?.to_address || singleMove?.delivery_address || deliveryAddress || "").trim() ||
+    null;
+  const singleServiceType = singleMove?.service_type ?? (jobType === "move" ? null : "b2b_delivery");
   const title = buildInvoiceTitle({
     partnerVertical,
     partnerName: orgName,
@@ -169,6 +187,8 @@ export async function createAndPublishSquareInvoice(
     moveCount,
     isSingleJob,
     moveCode: moveCode || (jobType === "move" ? deliveryNumber : null),
+    deliveryAddress: singleDeliveryAddress,
+    serviceType: singleServiceType,
   });
 
   const billingPeriodLabel = formatBillingPeriod(
@@ -182,6 +202,17 @@ export async function createAndPublishSquareInvoice(
     isSingleJob,
     moveCode: moveCode || (jobType === "move" ? deliveryNumber : null),
     contact: billingContact,
+    // "delivery" for B2B / white-glove; falls back to "move" only when
+    // the invoice is explicitly for a residential move (jobType==="move"
+    // AND the linked source is a PM residential move). Everything else
+    // renders as delivery so a Furniture Delivery invoice never reads
+    // "1 move completed".
+    jobNoun:
+      jobType === "delivery" || singleServiceType === "b2b_delivery" || singleServiceType === "b2b_oneoff" || singleServiceType === "white_glove"
+        ? "delivery"
+        : jobType === "move"
+          ? "move"
+          : "job",
   });
 
   try {
@@ -226,38 +257,46 @@ export async function createAndPublishSquareInvoice(
       for (const li of lineItems) {
         const cents = Math.round(li.amount * 100);
         subtotalCents += cents;
-        const note = buildLineItemDescription({
+        const displayName = buildLineItemDescription({
           move: li.move,
           includeMoveCodeSuffix: false,
         });
-        const code = (li.move.move_code || "").trim();
-        // Square shows `name` prominently and `note` as a secondary line.
-        // Put the descriptive copy in `name` and the move code in `note`.
+        // Square's `note` renders under the line name as flowing text.
+        // Use it for the rich breakdown (client, pickup, drop-off, item
+        // list, job ref) so the client never needs to open the source
+        // quote to reconcile the line.
+        const richNote = buildLineItemNote(li.move);
         orderLines.push({
-          name: note,
+          name: displayName,
           quantity: "1",
           basePriceMoney: { amount: BigInt(cents), currency },
-          note: code || undefined,
+          note: richNote || undefined,
         });
       }
     } else {
-      // Legacy single-job path: synthesize one line from the top-level fields.
+      // Legacy single-job path: synthesize one line from the top-level fields,
+      // then layer any richer source data the caller passed (pickup address,
+      // vertical, b2b line items) so the note reads with pickup + item list.
       subtotalCents = Math.round(amount * 100);
-      const note = buildLineItemDescription({
-        move: {
-          move_code: moveCode || deliveryNumber,
-          scheduled_date: billingPeriodStart.toISOString(),
-          to_address: deliveryAddress,
-          delivery_address: deliveryAddress,
-          client_name: customerName,
-          service_type: jobType === "move" ? "move" : "b2b_delivery",
-        },
+      const synthMove: InvoiceLineMove = {
+        move_code: moveCode || deliveryNumber,
+        scheduled_date: billingPeriodStart.toISOString(),
+        to_address: deliveryAddress,
+        delivery_address: deliveryAddress,
+        client_name: customerName,
+        company_name: orgName,
+        service_type: jobType === "move" ? "move" : "b2b_delivery",
+        ...(input.sourceMove ?? {}),
+      };
+      const displayName = buildLineItemDescription({
+        move: synthMove,
       });
+      const richNote = buildLineItemNote(synthMove);
       orderLines.push({
-        name: note,
+        name: displayName,
         quantity: "1",
         basePriceMoney: { amount: BigInt(subtotalCents), currency },
-        note: (moveCode || deliveryNumber || "").trim() || undefined,
+        note: richNote || (moveCode || deliveryNumber || "").trim() || undefined,
       });
     }
 

@@ -36,11 +36,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Invoice already exists", id: existing.id });
   }
 
-  // Fetch delivery details
+  // Fetch delivery details. pickup_address / vertical_code / b2b_line_items
+  // feed the redesigned Square invoice line note so the client sees the
+  // pickup + item breakdown next to the amount.
   const { data: delivery, error: delErr } = await admin
     .from("deliveries")
     .select(
-      "id, delivery_number, business_name, customer_name, client_name, organization_id, delivery_address, scheduled_date, created_at, admin_adjusted_price, total_price, quoted_price, items"
+      "id, delivery_number, business_name, customer_name, client_name, organization_id, delivery_address, pickup_address, vertical_code, b2b_line_items, scheduled_date, created_at, admin_adjusted_price, total_price, quoted_price, items"
     )
     .eq("id", deliveryId)
     .single();
@@ -113,6 +115,21 @@ export async function POST(req: NextRequest) {
       (delivery as { created_at?: string | null }).created_at ??
       null;
     const deliveryDate = deliveryDateRaw ? new Date(deliveryDateRaw) : new Date();
+    const rawLineItems = (delivery as { b2b_line_items?: unknown }).b2b_line_items;
+    const b2bLineItems = Array.isArray(rawLineItems)
+      ? (rawLineItems as Array<Record<string, unknown>>).map((row) => ({
+          description: typeof row.description === "string" ? row.description : null,
+          quantity:
+            typeof row.quantity === "number"
+              ? row.quantity
+              : Number(row.quantity ?? row.qty ?? 1),
+        }))
+      : null;
+    const vertical =
+      (delivery as { vertical_code?: string | null }).vertical_code ||
+      (org as { vertical?: string | null }).vertical ||
+      org.type ||
+      null;
     const result = await createAndPublishSquareInvoice({
       deliveryId,
       deliveryNumber: delivery.delivery_number || deliveryId.slice(0, 8),
@@ -125,10 +142,17 @@ export async function POST(req: NextRequest) {
       invoiceDueDays: org.invoice_due_days === 15 ? 15 : 30,
       invoiceDueDayOfMonth: org.invoice_due_day_of_month === 15 || org.invoice_due_day_of_month === 30 ? org.invoice_due_day_of_month : null,
       jobType: "delivery",
-      partnerVertical:
-        (org as { vertical?: string | null }).vertical || org.type || null,
+      partnerVertical: vertical,
       billingPeriodStart: deliveryDate,
       billingPeriodEnd: deliveryDate,
+      sourceMove: {
+        from_address: (delivery as { pickup_address?: string | null }).pickup_address ?? null,
+        to_address: delivery.delivery_address ?? null,
+        b2b_vertical_code: vertical,
+        b2b_line_items: b2bLineItems,
+        company_name: (delivery as { business_name?: string | null }).business_name || org.name || null,
+        client_name: clientName,
+      },
     });
     if (result) {
       squareInvoiceId = result.squareInvoiceId;

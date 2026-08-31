@@ -29,7 +29,55 @@ export type InvoiceLineMove = {
   pm_reason_code?: string | null;
   service_type?: string | null;
   is_pm_move?: boolean | null;
+  /** B2B vertical code from the source quote's factors_applied — drives
+   *  the "Furniture / Flooring / Cabinetry Delivery" label on the line
+   *  item and the corresponding wording in the invoice title. */
+  b2b_vertical_code?: string | null;
+  /** Per-item breakdown from the source quote (also factors_applied).
+   *  Rendered into the line-item note so the client sees exactly what
+   *  we delivered — Chatlani no longer has to open the source quote to
+   *  reconcile a Square invoice. */
+  b2b_line_items?: Array<{
+    description?: string | null;
+    quantity?: number | string | null;
+  }> | null;
+  /** Business name when the invoice is billed to a company AND we still
+   *  want the individual contact's name on the note. */
+  company_name?: string | null;
 };
+
+/** Short destination string for a title / line item — first comma-separated
+ *  segment of the delivery address, or null when nothing usable is set.
+ *  "54 Gentile Circle, Vaughan, ON L4K 4J4" → "54 Gentile Circle". */
+export function destinationShort(
+  address: string | null | undefined,
+): string | null {
+  const raw = String(address ?? "").trim();
+  if (!raw) return null;
+  const first = raw.split(",")[0]?.trim();
+  return first || null;
+}
+
+/** Map a B2B vertical code (or a bare white-glove service) to the label
+ *  we use as the delivery-service prefix. Falls back to "White Glove"
+ *  per operator direction — a premium term that reads correctly on any
+ *  vertical we haven't explicitly mapped yet. */
+export function verticalDeliveryLabel(
+  vertical: string | null | undefined,
+): string {
+  const v = String(vertical ?? "").toLowerCase();
+  if (v.includes("furniture") || v === "retail" || v === "furniture_retailer") return "Furniture";
+  if (v.includes("floor")) return "Flooring";
+  if (v.includes("appliance")) return "Appliance";
+  if (v.includes("cabinet")) return "Cabinetry";
+  if (v.includes("art") || v.includes("gallery")) return "Art";
+  if (v === "interior_designer" || v === "designer" || v.includes("design")) return "Interior Design";
+  if (v.includes("kitchen") || v.includes("bath")) return "Kitchen & Bath";
+  if (v.includes("lighting")) return "Lighting";
+  if (v.includes("mattress") || v.includes("bedding")) return "Mattress";
+  if (v.includes("home_goods") || v.includes("homegoods")) return "Home Goods";
+  return "White Glove";
+}
 
 /* ─────────────────────────  TITLE  ───────────────────────── */
 
@@ -49,6 +97,15 @@ export type BuildInvoiceTitleInput = {
   isSingleJob: boolean;
   /** When isSingleJob, the move code (e.g. "MV-30205"). */
   moveCode?: string | null;
+  /** Single-job delivery address — surfaces on the title as the destination
+   *  street so the invoice self-identifies without opening it. Ignored on
+   *  consolidated (multi-job) invoices, where a period is more useful. */
+  deliveryAddress?: string | null;
+  /** Service type of the underlying job. Used only when this is a single
+   *  white-glove residential delivery (falls outside the B2B vertical map)
+   *  so the title reads "White Glove Delivery Services · …" rather than
+   *  the generic fallback. */
+  serviceType?: string | null;
 };
 
 /** Lowercased vertical check that tolerates legacy slugs ("retail", "designer"). */
@@ -82,15 +139,14 @@ export function buildInvoiceTitle(input: BuildInvoiceTitleInput): string {
   const end = input.billingPeriodEnd ?? input.billingPeriodStart;
   const period = formatBillingPeriod(input.billingPeriodStart, end);
 
-  // Property management — consolidated billing
+  // Property management stays untouched — separate template, operator
+  // approved as-is.
   if (isPropertyManagement(input.partnerVertical) && !input.isSingleJob) {
     const building = input.buildingName
       ? ` · ${formatBuildingShortName(input.buildingName)}`
       : "";
     return `Residential Relocation Services · ${period}${building}`;
   }
-
-  // Property management — single job
   if (isPropertyManagement(input.partnerVertical) && input.isSingleJob) {
     const ref = (input.moveCode || "").trim();
     const single = formatMonthDay(input.billingPeriodStart);
@@ -99,20 +155,26 @@ export function buildInvoiceTitle(input: BuildInvoiceTitleInput): string {
       : `Residential Relocation · ${single}`;
   }
 
-  if (isFurnitureRetail(input.partnerVertical)) {
-    return `White Glove Delivery Services · ${period}`;
+  // Single-job B2B / white-glove: service label + destination street.
+  // No date — the destination is more useful (Chatlani reads "54 Gentile
+  // Circle" and knows exactly which invoice this is without opening it).
+  if (input.isSingleJob) {
+    const destination = destinationShort(input.deliveryAddress);
+    const svc = String(input.serviceType ?? "").toLowerCase();
+    // White-glove residential delivery — always the "White Glove"
+    // prefix regardless of vertical, matches how those jobs are sold.
+    const label =
+      svc === "white_glove"
+        ? "White Glove"
+        : verticalDeliveryLabel(input.partnerVertical);
+    const base = `${label} Delivery Services`;
+    return destination ? `${base} · ${destination}` : base;
   }
 
-  if (isInteriorDesigner(input.partnerVertical)) {
-    return `Interior Design Logistics · ${period}`;
-  }
-
-  if (verticalIncludes(input.partnerVertical, "gallery")) {
-    return `Art Logistics Services · ${period}`;
-  }
-
-  // Generic B2B delivery fallback
-  return `Delivery Services · ${period}`;
+  // Consolidated (multi-job) B2B / white-glove: label + billing period.
+  // The period is meaningful across jobs; individual destinations aren't.
+  const label = verticalDeliveryLabel(input.partnerVertical);
+  return `${label} Delivery Services · ${period}`;
 }
 
 /* ─────────────────────────  INVOICE ID  ───────────────────────── */
@@ -187,13 +249,21 @@ export function buildInvoiceMessage(input: {
   isSingleJob: boolean;
   moveCode?: string | null;
   contact?: BillingContact;
+  /** "delivery" for B2B / white-glove invoices, "move" for residential /
+   *  PM. Drives the noun in the scope sentence so a B2B client never
+   *  reads "1 move completed" on a Furniture Delivery invoice. Defaults
+   *  to "job" — noun-neutral fallback that reads correctly on anything. */
+  jobNoun?: "delivery" | "move" | "job";
 }): string {
   const c = input.contact ?? DEFAULT_BILLING_CONTACT;
+  const noun = input.jobNoun ?? "job";
+  const nounPlural =
+    noun === "delivery" ? "deliveries" : `${noun}s`;
   const scope =
     input.isSingleJob && input.moveCode
-      ? `This invoice covers services rendered for job ${input.moveCode}.`
-      : `This invoice covers ${input.moveCount} move${
-          input.moveCount !== 1 ? "s" : ""
+      ? `This invoice covers services rendered for ${noun} ${input.moveCode}.`
+      : `This invoice covers ${input.moveCount} ${
+          input.moveCount === 1 ? noun : nounPlural
         } completed during the period ${input.billingPeriod}.`;
 
   const body = [
@@ -279,10 +349,14 @@ export function buildLineItemDescription(
     move.service_type === "b2b_oneoff"
   ) {
     const destination =
-      (move.to_address || move.delivery_address || "")
-        .split(",")[0]
-        ?.trim() || "Delivery";
-    const label = b2bServiceLabel(move.service_type);
+      destinationShort(move.to_address || move.delivery_address) || "Delivery";
+    // White-glove always reads "White Glove Delivery" regardless of
+    // vertical; other B2B jobs pick their label from the vertical
+    // on the source quote (Furniture / Flooring / Cabinetry / …).
+    const label =
+      move.service_type === "white_glove"
+        ? "White Glove Delivery"
+        : `${verticalDeliveryLabel(move.b2b_vertical_code)} Delivery`;
     description = `${label} — ${destination}`;
     if (date) description += ` · ${date}`;
   } else {
@@ -303,6 +377,62 @@ function b2bServiceLabel(serviceType: string | null | undefined): string {
   if (s === "b2b_delivery") return "B2B Delivery";
   if (s === "b2b_oneoff") return "B2B Delivery";
   return "Delivery";
+}
+
+/** Rich per-line note for Square's `note` field. The line-item name
+ *  already carries the label + destination; this note surfaces the
+ *  client, both endpoints, per-item breakdown, and the job reference
+ *  so the client (Chatlani et al.) can reconcile an invoice line
+ *  against the source quote without opening it. Kept to plain text —
+ *  Square renders `note` as flowing text on the emailed invoice. */
+export function buildLineItemNote(move: InvoiceLineMove): string {
+  const lines: string[] = [];
+
+  // Client / company line
+  const clientName = String(move.client_name ?? "").trim();
+  const companyName = String(move.company_name ?? "").trim();
+  if (clientName && companyName && clientName.toLowerCase() !== companyName.toLowerCase()) {
+    lines.push(`Client: ${clientName} · ${companyName}`);
+  } else if (companyName) {
+    lines.push(`Client: ${companyName}`);
+  } else if (clientName) {
+    lines.push(`Client: ${clientName}`);
+  }
+
+  // Route
+  const from = String(move.from_address ?? "").trim();
+  const to = String(move.to_address ?? move.delivery_address ?? "").trim();
+  if (from) lines.push(`Pickup: ${from}`);
+  if (to) lines.push(`Drop-off: ${to}`);
+
+  // Item breakdown from the source quote's b2b_line_items
+  const items = Array.isArray(move.b2b_line_items) ? move.b2b_line_items : [];
+  const formattedItems = items
+    .map((row) => {
+      const desc = String(row?.description ?? "").trim();
+      if (!desc) return null;
+      const qtyRaw = row?.quantity ?? 1;
+      const qty = typeof qtyRaw === "number" ? qtyRaw : Number(qtyRaw) || 1;
+      return qty > 1 ? `${qty}× ${desc}` : desc;
+    })
+    .filter((s): s is string => Boolean(s));
+  if (formattedItems.length > 0) {
+    lines.push(`Items: ${formattedItems.join(", ")}`);
+    const totalQty = items.reduce((sum, row) => {
+      const qtyRaw = row?.quantity ?? 1;
+      const qty = typeof qtyRaw === "number" ? qtyRaw : Number(qtyRaw) || 1;
+      return sum + Math.max(1, qty);
+    }, 0);
+    if (totalQty > formattedItems.length) {
+      lines.push(`Total quantity: ${totalQty}`);
+    }
+  }
+
+  // Job reference — always last so it's easy to scan for
+  const code = String(move.move_code ?? "").trim();
+  if (code) lines.push(`Job ref: ${code}`);
+
+  return lines.join("\n");
 }
 
 /* ─────────────────────────  HST LINE ITEM  ───────────────────────── */
