@@ -126,6 +126,10 @@ interface RevenueClientProps {
   clientTypeMap?: Record<string, string>;
   /** Org id → type (retail, b2c, …). Used so B2B invoices resolve even when client name mismatches. */
   orgIdToType?: Record<string, string>;
+  /** Org id → partner name. Used to aggregate PM moves under the PM
+   *  partner instead of splitting them by tenant/unit name (client_name
+   *  on a PM move is the individual unit, e.g. "1370", "307"). */
+  orgIdToName?: Record<string, string>;
   clientNameToOrgId?: Record<string, string>;
   /** PM billing invoices with status='sent' (not yet paid). */
   sentPartnerInvoices?: SentPartnerInvoice[];
@@ -316,6 +320,7 @@ export default function RevenueClient({
   paidMoves = [],
   clientTypeMap = {},
   orgIdToType = {},
+  orgIdToName = {},
   clientNameToOrgId = {},
   sentPartnerInvoices = [],
   unbilledPMmoves = [],
@@ -449,11 +454,16 @@ export default function RevenueClient({
     byClient[name] =
       (byClient[name] || 0) + Number(m.estimate ?? m.final_amount ?? m.total_price ?? m.amount ?? 0);
   });
-  // PM partners — aggregate by organization name (client_name on the move).
-  // Skip PM moves whose invoice already contributed above.
+  // PM partners — aggregate under the PM partner (organization name),
+  // NOT the individual tenant/unit. `client_name` on a PM move is the
+  // unit or resident (e.g. "1370", "307"); rolling those up individually
+  // makes one property manager look like a fleet of separate clients on
+  // the Top Clients board. Skip PM moves whose invoice already
+  // contributed above.
   pmMovesAll.forEach((m) => {
     if (invoiceMoveIds.has(String(m.id))) return;
-    const name = m.client_name || "PM partner";
+    const orgName = m.organization_id ? orgIdToName[m.organization_id] : null;
+    const name = orgName || m.client_name || "PM partner";
     byClient[name] =
       (byClient[name] || 0) + Number(m.estimate ?? m.final_amount ?? m.total_price ?? m.amount ?? 0);
   });
