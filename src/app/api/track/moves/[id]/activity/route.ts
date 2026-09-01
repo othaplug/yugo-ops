@@ -1,362 +1,206 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
+import { isMoveIdUuid } from "@/lib/move-code";
+import { calculateAddons, type AddonSelection } from "@/lib/quotes/price-addons";
 
 /**
- * Client-facing activity feed for a move.
+ * GET /api/track/moves/[id]/activity
  *
- * Synthesizes a single chronological timeline from disparate tables
- * (`quotes`, `payment_transactions`, `extra_items`,
- * `inventory_change_requests`, the `moves` row itself) so the client can
- * see every event since they accepted the quote in one place.
+ * The client-facing Updates feed for a move: a reverse-chronological timeline of
+ * everything the client should know about, merged from
+ *   - move_timeline_events (precise events written as they happen), and
+ *   - derived events from existing data (booking, add-ons, crew assignment,
+ *     change requests, extra charges, current crew progress),
+ * so even moves booked before this feature have a populated feed.
  *
- * Why a synthesizer instead of a dedicated `move_events` table:
- *   - Every event we care about is already persisted somewhere with a
- *     timestamp — we just need to read and merge.
- *   - A new event table introduces a write-amplification risk (every state
- *     change has to remember to log) and would replay history we already
- *     have.
- *   - Synthesizing on-demand keeps the storage layer small. If query cost
- *     ever matters we can cache the response per-move; for now this runs
- *     once per dashboard load.
- *
- * Driven by P0 of the Chidera Allison (MV-30228) call review on
- * 2026-06-23. Her exact words: "I'm flying blind if the dashboard isn't
- * accurate." This feed makes the dashboard authoritative for state
- * changes that previously only existed in the admin's head.
+ * Returns { items: FeedItem[], latestAt: string|null } where the client tracks
+ * `latestAt` in localStorage to show an unread indicator.
  */
 
-export type ClientActivityEvent = {
+type FeedItem = {
   id: string;
-  /** ISO timestamp — the feed renders newest-first by default. */
-  at: string;
-  /** Short noun phrase shown as the row title. */
+  category: "booking" | "addon" | "crew" | "progress" | "change" | "payment";
   title: string;
-  /** Optional secondary line (amount, item description, etc.). */
-  detail?: string | null;
-  /**
-   * Category drives the icon + tone on the client side. Keep this set small
-   * so the UI can switch on it exhaustively.
-   */
-  kind:
-    | "quote_accepted"
-    | "deposit_paid"
-    | "balance_paid"
-    | "refund_issued"
-    | "scope_charge"
-    | "items_requested"
-    | "items_awaiting_client"
-    | "items_approved"
-    | "items_removed"
-    | "schedule_changed"
-    | "move_confirmed"
-    | "move_completed";
-  /** Optional dollar amount (positive for charges, negative for refunds). */
-  amountCents?: number | null;
+  detail?: string;
+  icon: string;
+  at: string | null; // ISO, null when the time is unknown
 };
 
-function fmtCurrency(cents: number | null | undefined): string {
-  const n = Number(cents ?? 0);
-  if (!Number.isFinite(n) || n === 0) return "";
-  return `$${(Math.abs(n) / 100).toFixed(2)}`;
+const STAGE_LABEL: Record<string, { label: string; icon: string }> = {
+  dispatched: { label: "Crew dispatched", icon: "Truck" },
+  en_route_to_pickup: { label: "Crew is on the way to you", icon: "Truck" },
+  arrived_at_pickup: { label: "Crew arrived", icon: "MapPin" },
+  walkthrough_complete: { label: "Walkthrough complete", icon: "CheckCircle" },
+  loading: { label: "Loading started", icon: "stack" },
+  en_route_to_destination: { label: "On the way to your new home", icon: "Truck" },
+  arrived_at_destination: { label: "Arrived at your new home", icon: "MapPin" },
+  unloading: { label: "Unloading started", icon: "stack" },
+  completed: { label: "Move complete", icon: "CheckCircle" },
+};
+
+function sortKey(at: string | null, fallback: string): number {
+  return new Date(at ?? fallback).getTime();
 }
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id: moveId } = await params;
+  const { id: slug } = await params;
   const token = req.nextUrl.searchParams.get("token") || "";
-  if (!verifyTrackToken("move", moveId, token)) {
-    return NextResponse.json({ error: "Invalid or missing token" }, { status: 401 });
+  const supabase = createAdminClient();
+
+  const sel =
+    "id, move_code, status, stage, created_at, deposit_paid_at, scheduled_date, assigned_members, assigned_crew_name, addons, quote_id";
+  const { data: move } = isMoveIdUuid(slug)
+    ? await supabase.from("moves").select(sel).eq("id", slug).single()
+    : await supabase
+        .from("moves")
+        .select(sel)
+        .ilike("move_code", slug.replace(/^#/, "").toUpperCase())
+        .single();
+
+  if (!move) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!verifyTrackToken("move", move.id, token)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const admin = createAdminClient();
+  const items: FeedItem[] = [];
+  const bookedAt: string =
+    (move.deposit_paid_at as string | null) ??
+    (move.created_at as string | null) ??
+    new Date(0).toISOString();
 
-  const [moveRes, paymentsRes, extrasRes, changesRes] = await Promise.all([
-    admin
-      .from("moves")
-      .select(
-        "id, status, quote_id, service_type, completed_at, payment_marked_paid_at, deposit_paid_at, balance_paid_at, created_at",
-      )
-      .eq("id", moveId)
-      .maybeSingle(),
-    admin
-      .from("payment_transactions")
-      .select("id, amount, type, label, created_at, payment_method")
-      .eq("move_id", moveId)
-      .order("created_at", { ascending: true }),
-    admin
-      .from("extra_items")
-      .select("id, description, quantity, fee_cents, status, added_at, payment_charged")
-      .eq("job_id", moveId)
-      .eq("job_type", "move")
-      .order("added_at", { ascending: true }),
-    admin
-      .from("inventory_change_requests")
-      .select("id, payment_amount, status, created_at")
-      .eq("move_id", moveId)
-      .order("created_at", { ascending: true }),
-  ]);
+  // 1. Booking
+  items.push({
+    id: `booking-${move.id}`,
+    category: "booking",
+    title: "Booking confirmed",
+    detail: "Your move is booked. Your coordinator will be in touch.",
+    icon: "CheckCircle",
+    at: (move.deposit_paid_at as string | null) ?? (move.created_at as string | null),
+  });
 
-  const move = moveRes.data as
-    | (Record<string, unknown> & {
-        quote_id?: string | null;
-        deposit_paid_at?: string | null;
-        balance_paid_at?: string | null;
-        completed_at?: string | null;
-        created_at?: string | null;
-      })
-    | null;
-  if (!move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
-
-  const events: ClientActivityEvent[] = [];
-
-  // 1) Quote accepted — the start of the client's journey. Falls back to
-  //    move.created_at if the linked quote row isn't reachable for some
-  //    reason (deleted, regenerated, etc.).
-  let quoteAcceptedAt: string | null = null;
-  if (move.quote_id) {
-    const { data: q } = await admin
-      .from("quotes")
-      .select("accepted_at, created_at")
-      .eq("id", String(move.quote_id))
-      .maybeSingle();
-    quoteAcceptedAt = (q?.accepted_at as string | null) ?? null;
+  // 2. Add-ons the client selected (resolve names + specifics via the engine)
+  const addonSel = Array.isArray(move.addons) ? (move.addons as AddonSelection[]) : [];
+  if (addonSel.length > 0) {
+    try {
+      const priced = await calculateAddons(supabase, addonSel, 0, null, null);
+      for (const b of priced.breakdown) {
+        if (!b.name) continue;
+        // Admin-added lines carry their own timestamp; client selections landed
+        // at booking.
+        const raw = addonSel.find((s) => s.addon_id === b.addon_id) as
+          | (AddonSelection & { added_at?: string; added_by_admin?: boolean })
+          | undefined;
+        items.push({
+          id: `addon-${b.addon_id}`,
+          category: "addon",
+          title: `${b.name} added`,
+          detail: b.detail,
+          icon: "Package",
+          at: raw?.added_at ?? bookedAt,
+        });
+      }
+    } catch {
+      /* names unresolved; skip add-on lines rather than fail the feed */
+    }
   }
-  const journeyStart = quoteAcceptedAt ?? (move.created_at as string | null);
-  if (journeyStart) {
-    const svc = String(move.service_type ?? "").toLowerCase();
-    const detail =
-      svc === "office_move"
-        ? "Your relocation is booked."
-        : svc === "event"
-          ? "Your event is booked."
-          : svc === "single_item" ||
-              svc === "b2b_delivery" ||
-              svc === "b2b_oneoff"
-            ? "Your delivery is booked."
-            : svc === "white_glove"
-              ? "Your white glove service is booked."
-              : svc === "bin_rental"
-                ? "Your bin rental is booked."
-                : svc === "specialty"
-                  ? "Your specialty transport is booked."
-                  : svc === "labour_only"
-                    ? "Your labour booking is confirmed."
-                    : "Your move is booked.";
-    events.push({
-      id: `accept-${moveId}`,
-      at: journeyStart,
-      title: "Quote accepted",
-      detail,
-      kind: "quote_accepted",
+
+  // 3. Crew assignment (time from a stored event when available; see below)
+  const crewName =
+    (move.assigned_crew_name as string | null) ||
+    (Array.isArray(move.assigned_members) && move.assigned_members.length > 0
+      ? (move.assigned_members as string[]).join(", ")
+      : null);
+
+  // 4. Stored precise events (crew assigned, progress, and anything written live)
+  const { data: stored } = await supabase
+    .from("move_timeline_events")
+    .select("id, event_type, label, icon, occurred_at, metadata")
+    .eq("move_id", move.id)
+    .order("occurred_at", { ascending: true });
+  const storedTypes = new Set((stored ?? []).map((e) => e.event_type));
+  for (const e of stored ?? []) {
+    const meta = (e.metadata ?? {}) as { category?: FeedItem["category"]; detail?: string };
+    items.push({
+      id: e.id,
+      category: meta.category ?? "progress",
+      title: e.label,
+      detail: meta.detail,
+      icon: e.icon || "Bell",
+      at: e.occurred_at as string,
     });
   }
 
-  // 2) Payment transactions (deposit, balance, scope charges, refunds).
-  //    type is the engine's classifier; label is admin-facing. We mirror
-  //    them to a client-friendly title.
-  const payments = (paymentsRes.data ?? []) as Array<{
-    id: string;
-    amount: number | null;
-    type?: string | null;
-    label?: string | null;
-    created_at: string | null;
-    payment_method?: string | null;
-  }>;
-  for (const tx of payments) {
-    if (!tx.created_at) continue;
-    const cents = Math.round(Number(tx.amount ?? 0) * 100);
-    const t = String(tx.type || "").toLowerCase();
-    if (t === "refund" || cents < 0) {
-      events.push({
-        id: `pay-${tx.id}`,
-        at: tx.created_at,
-        title: "Refund issued",
-        detail: fmtCurrency(cents) || null,
-        kind: "refund_issued",
-        amountCents: cents,
-      });
-    } else if (t === "deposit") {
-      events.push({
-        id: `pay-${tx.id}`,
-        at: tx.created_at,
-        title: "Deposit paid",
-        detail: fmtCurrency(cents) || null,
-        kind: "deposit_paid",
-        amountCents: cents,
-      });
-    } else if (t === "balance" || t === "final") {
-      events.push({
-        id: `pay-${tx.id}`,
-        at: tx.created_at,
-        title: "Balance paid",
-        detail: fmtCurrency(cents) || null,
-        kind: "balance_paid",
-        amountCents: cents,
-      });
-    } else if (t === "scope_charge" || t === "extra_item" || t === "change_request") {
-      events.push({
-        id: `pay-${tx.id}`,
-        at: tx.created_at,
-        title: tx.label || "Scope charge",
-        detail: fmtCurrency(cents) || null,
-        kind: "scope_charge",
-        amountCents: cents,
-      });
-    } else {
-      // Unknown payment type — still surface so the client sees nothing is
-      // hidden. Title falls back to a generic phrase.
-      events.push({
-        id: `pay-${tx.id}`,
-        at: tx.created_at,
-        title: tx.label || "Payment",
-        detail: fmtCurrency(cents) || null,
-        kind: cents > 0 ? "scope_charge" : "refund_issued",
-        amountCents: cents,
-      });
-    }
-  }
-
-  // Fallback when no payment_transactions rows exist: synthesize deposit /
-  // balance entries from the move row's *_paid_at columns. Many older flows
-  // never wrote a transaction row.
-  if (
-    payments.length === 0 &&
-    (move.deposit_paid_at || move.balance_paid_at)
-  ) {
-    if (move.deposit_paid_at) {
-      events.push({
-        id: `dep-${moveId}`,
-        at: String(move.deposit_paid_at),
-        title: "Deposit paid",
-        kind: "deposit_paid",
-      });
-    }
-    if (move.balance_paid_at) {
-      events.push({
-        id: `bal-${moveId}`,
-        at: String(move.balance_paid_at),
-        title: "Balance paid",
-        kind: "balance_paid",
-      });
-    }
-  }
-
-  // 3) Extra items (requested / approved / removed).
-  const extras = (extrasRes.data ?? []) as Array<{
-    id: string;
-    description?: string | null;
-    quantity?: number | null;
-    fee_cents?: number | null;
-    status?: string | null;
-    added_at: string | null;
-    payment_charged?: boolean | null;
-  }>;
-  for (const x of extras) {
-    if (!x.added_at) continue;
-    const qty = Number(x.quantity ?? 1);
-    const descBase = x.description?.trim() || "Extra item";
-    const desc = qty > 1 ? `${qty}× ${descBase}` : descBase;
-    const fee = fmtCurrency(x.fee_cents);
-    const status = String(x.status || "").toLowerCase();
-    if (status === "rejected" || status === "cancelled" || status === "removed") {
-      events.push({
-        id: `item-${x.id}`,
-        at: x.added_at,
-        title: "Item removed",
-        detail: desc,
-        kind: "items_removed",
-      });
-    } else if (status === "approved") {
-      events.push({
-        id: `item-${x.id}`,
-        at: x.added_at,
-        title: x.payment_charged ? "Items approved & charged" : "Items approved",
-        detail: fee ? `${desc} · ${fee}` : desc,
-        kind: "items_approved",
-        amountCents: x.fee_cents ?? null,
-      });
-    } else if (status === "awaiting_client") {
-      // Admin staged a fee — client has the email with Accept/Decline. The
-      // activity feed mirrors that so the client sees it on the dashboard
-      // too, not just buried in an email.
-      events.push({
-        id: `item-${x.id}`,
-        at: x.added_at,
-        title: "Awaiting your decision",
-        detail: fee ? `${desc} · ${fee}, tap Accept in your email to approve` : desc,
-        kind: "items_awaiting_client",
-        amountCents: x.fee_cents ?? null,
-      });
-    } else {
-      // Pending — client or crew requested but admin hasn't priced yet.
-      events.push({
-        id: `item-${x.id}`,
-        at: x.added_at,
-        title: "Items requested",
-        detail: fee ? `${desc} · projected ${fee}` : `${desc} · fee TBD`,
-        kind: "items_requested",
-        amountCents: x.fee_cents ?? null,
-      });
-    }
-  }
-
-  // 4) Inventory change requests (crew-side walkthrough delta). Same shape
-  //    as extras for client display purposes.
-  const changes = (changesRes.data ?? []) as Array<{
-    id: string;
-    payment_amount?: number | null;
-    status?: string | null;
-    created_at: string | null;
-  }>;
-  for (const c of changes) {
-    if (!c.created_at) continue;
-    const cents = Math.round(Number(c.payment_amount ?? 0) * 100);
-    const fee = fmtCurrency(cents);
-    const s = String(c.status || "").toLowerCase();
-    if (s === "approved") {
-      events.push({
-        id: `chg-${c.id}`,
-        at: c.created_at,
-        title: "Scope change approved",
-        detail: fee || null,
-        kind: "items_approved",
-        amountCents: cents,
-      });
-    } else if (s === "rejected" || s === "cancelled") {
-      events.push({
-        id: `chg-${c.id}`,
-        at: c.created_at,
-        title: "Scope change cancelled",
-        kind: "items_removed",
-      });
-    } else {
-      events.push({
-        id: `chg-${c.id}`,
-        at: c.created_at,
-        title: "Scope change requested",
-        detail: fee ? `projected ${fee}` : null,
-        kind: "items_requested",
-        amountCents: cents,
-      });
-    }
-  }
-
-  // 5) Move completion is the natural cap.
-  if (move.completed_at) {
-    events.push({
-      id: `done-${moveId}`,
-      at: String(move.completed_at),
-      title: "Move completed",
-      kind: "move_completed",
+  // Crew assigned: only derive when no precise event was stored for it.
+  if (crewName && !storedTypes.has("crew_assigned")) {
+    items.push({
+      id: `crew-${move.id}`,
+      category: "crew",
+      title: `Crew assigned: ${crewName}`,
+      icon: "Users",
+      at: null,
     });
   }
 
-  // Newest first — feeds read naturally as "what changed since I last
-  // looked?" instead of "what happened way back when?"
-  events.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+  // 5. Current crew progress (derived from stage) when not already a stored event.
+  const stage = String(move.stage ?? "").toLowerCase();
+  const statusLc = String(move.status ?? "").toLowerCase();
+  const effectiveStage =
+    statusLc === "completed" || statusLc === "delivered" ? "completed" : stage;
+  if (effectiveStage && STAGE_LABEL[effectiveStage] && !storedTypes.has(`stage_${effectiveStage}`)) {
+    items.push({
+      id: `stage-${effectiveStage}-${move.id}`,
+      category: "progress",
+      title: STAGE_LABEL[effectiveStage].label,
+      icon: STAGE_LABEL[effectiveStage].icon,
+      at: null,
+    });
+  }
 
-  return NextResponse.json({ events });
+  // 6. Change requests
+  const { data: changes } = await supabase
+    .from("move_change_requests")
+    .select("id, type, description, status, created_at")
+    .eq("move_id", move.id)
+    .order("created_at", { ascending: true });
+  for (const c of changes ?? []) {
+    items.push({
+      id: `change-${c.id}`,
+      category: "change",
+      title: `Change requested: ${c.type}`,
+      detail: (c.description as string) || undefined,
+      icon: "PencilSimple",
+      at: c.created_at as string,
+    });
+  }
+
+  // 7. Extra charges / payments (adjustments + balance) from the ledger
+  const { data: ledger } = await supabase
+    .from("move_payment_ledger")
+    .select("id, entry_type, label, pre_tax_amount, hst_amount, paid_at")
+    .eq("move_id", move.id)
+    .in("entry_type", ["adjustment", "balance", "inventory_change"])
+    .order("paid_at", { ascending: true });
+  for (const l of ledger ?? []) {
+    const total = Number(l.pre_tax_amount || 0) + Number(l.hst_amount || 0);
+    items.push({
+      id: `ledger-${l.id}`,
+      category: "payment",
+      title: (l.label as string) || "Charge processed",
+      detail: total > 0 ? `$${total.toFixed(2)}` : undefined,
+      icon: "CreditCard",
+      at: l.paid_at as string,
+    });
+  }
+
+  // Newest first; unknown-time items sort by the booking time as a floor.
+  items.sort((a, b) => sortKey(b.at, bookedAt) - sortKey(a.at, bookedAt));
+
+  const latestAt =
+    items.map((i) => i.at).filter(Boolean).sort().slice(-1)[0] ?? null;
+
+  return NextResponse.json({ items, latestAt });
 }
