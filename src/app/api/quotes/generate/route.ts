@@ -808,6 +808,7 @@ function normalizeTruckType(raw: string | undefined | null): TruckKey {
 // shared lib, which carries the updated 3BR=24ft minimum (was 20ft).
 import {
   floorTruckByMoveSize as floorTruckByMoveSizeShared,
+  truckRankIndex,
   type TruckKey as SharedTruckKey,
 } from "@/lib/quotes/crew-and-truck-minimums";
 
@@ -1892,9 +1893,45 @@ async function calcResidential(
   //      3BR would silently undersize the truck and mis-price the job.
   // The score-based recommender still upsizes ABOVE the floor for heavy loads.
   const truckFloorSize = effectiveSize;
-  const recTruck = input.truck_type
+  let recTruck = input.truck_type
     ? floorTruckByMoveSize(normalizeTruckType(input.truck_type), truckFloorSize)
     : recommendedTruckFromInventoryScore(truckSizingScore, truckFloorSize);
+
+  // ── Sent-truck lock ────────────────────────────────────────────────────────
+  // Once a quote has been SENT, the truck the client already saw must not
+  // silently shrink on a later regeneration — a client caught a 24ft→20ft
+  // downgrade after their quote was regenerated. Floor the recomputed truck to
+  // the previously-sent truck so it can only stay the same or grow (if the load
+  // genuinely needs more), never quietly downsize what was promised. An explicit
+  // coordinator override (input.truck_type) bypasses the lock — that's a
+  // deliberate change. First-generation quotes (no quote_id) are unaffected.
+  let truckLockedFromSent: string | null = null;
+  if (!input.truck_type && input.quote_id?.trim()) {
+    const { data: prior } = await sb
+      .from("quotes")
+      .select("status, sent_at, truck_primary")
+      .eq("quote_id", input.quote_id.trim())
+      .maybeSingle();
+    const wasSent =
+      !!prior &&
+      (!!prior.sent_at ||
+        ["sent", "viewed", "reactivated"].includes(String(prior.status ?? "")));
+    const priorTruck =
+      typeof prior?.truck_primary === "string" ? prior.truck_primary : null;
+    if (
+      wasSent &&
+      priorTruck &&
+      priorTruck !== "none" &&
+      truckRankIndex(priorTruck) > truckRankIndex(recTruck)
+    ) {
+      truckLockedFromSent = recTruck; // what the engine would have produced
+      recTruck = normalizeTruckType(priorTruck);
+      pd(
+        "Sent-truck lock: floored recomputed truck up to the sent truck:",
+        { would_be: truckLockedFromSent, locked_to: recTruck },
+      );
+    }
+  }
   // Upgrade fee measured against the effective size's base truck, so the fee is
   // the delta over the (escalated) base the client is already paying for — not
   // double-counted against the smaller detected size's base.
@@ -2770,6 +2807,10 @@ async function calcResidential(
       subtotal_before_labour: marketAdjustedPrice,
       parking_long_carry_total: plc.total,
       truck_recommended: recTruck,
+      // Set only when the sent-truck lock held the truck up to what the client
+      // was already shown (value = the smaller truck the engine would have
+      // produced). Lets the admin form surface "Locked to sent truck".
+      truck_locked_from_sent: truckLockedFromSent,
       truck_surcharge: truckSur,
       truck_breakdown_line: formatTruckResidentialUpgradeLine(recTruck, truckSur),
       packing_supplies_included: estateSuppliesAllowance,

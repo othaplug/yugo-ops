@@ -15547,6 +15547,21 @@ export default function QuoteFormClient({
                     <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
                       Override truck
                     </p>
+                    {(() => {
+                      const f = (quoteResult.factors ?? {}) as Record<
+                        string,
+                        unknown
+                      >;
+                      const locked = f.truck_locked_from_sent;
+                      return locked ? (
+                        <p className="text-[10px] text-[var(--org)] leading-snug">
+                          Held at {String(f.truck_recommended)} — the truck this
+                          client was already shown on the sent quote (the engine
+                          would size {String(locked)} now). It will not silently
+                          downsize; override below to change it deliberately.
+                        </p>
+                      ) : null;
+                    })()}
                     <div className="grid grid-cols-2 gap-2">
                       <label className="block">
                         <span className="text-[10px] text-[var(--tx3)]">
