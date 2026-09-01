@@ -62,7 +62,7 @@ export default function EmptyField({
     <div className={wrapperClass}>
       <span className={labelClasses}>{label}</span>
       <span className={fallbackValueClasses}>
-        {fallback === "dash" ? "—" : fallbackText}
+        {fallback === "dash" ? "-" : fallbackText}
       </span>
     </div>
   );

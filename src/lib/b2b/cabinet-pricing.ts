@@ -68,12 +68,12 @@ export function calcCabinetPrice(
   });
 
   if (input.zone === "custom") {
-    return fail("Zone beyond 160 km — custom quote required");
+    return fail("Zone beyond 160 km, custom quote required");
   }
 
   const band = getCabinetBand(input.pieceCount);
   if (band === "custom") {
-    return fail("Over 30 pieces — custom quote required");
+    return fail("Over 30 pieces, custom quote required");
   }
 
   const rateType = input.isPartner ? "partner" : "standard";
@@ -83,7 +83,7 @@ export function calcCabinetPrice(
   const baseRate = zoneRates?.[band];
 
   if (!baseRate) {
-    return fail("Rate lookup failed — check rate card configuration");
+    return fail("Rate lookup failed, check rate card configuration");
   }
 
   const breakdown: { label: string; amount: number }[] = [
@@ -122,7 +122,7 @@ export function calcCabinetPrice(
     const charge = a.heavyItemCount * 85;
     addonsTotal += charge;
     breakdown.push({
-      label: `Heavy items (${a.heavyItemCount} × $85, 200–300 lbs)`,
+      label: `Heavy items (${a.heavyItemCount} × $85, 200 to 300 lbs)`,
       amount: charge,
     });
   }
@@ -131,7 +131,7 @@ export function calcCabinetPrice(
     const charge = a.overweightItemCount * 150;
     addonsTotal += charge;
     breakdown.push({
-      label: `Overweight items (${a.overweightItemCount} × $150, 301–400 lbs)`,
+      label: `Overweight items (${a.overweightItemCount} × $150, 301 to 400 lbs)`,
       amount: charge,
     });
   }
@@ -175,12 +175,12 @@ export function calcAppliancePrice(
   });
 
   if (input.zone === "custom") {
-    return fail("Zone beyond 160 km — custom quote required");
+    return fail("Zone beyond 160 km, custom quote required");
   }
 
   const band = getApplianceBand(input.pieceCount);
   if (band === "custom") {
-    return fail("Over 20 appliances — custom quote required");
+    return fail("Over 20 appliances, custom quote required");
   }
 
   const rateType = input.isPartner ? "partner" : "standard";
@@ -190,7 +190,7 @@ export function calcAppliancePrice(
   const baseRate = zoneRates?.[band];
 
   if (!baseRate) {
-    return fail("Rate lookup failed — check rate card configuration");
+    return fail("Rate lookup failed, check rate card configuration");
   }
 
   const breakdown: { label: string; amount: number }[] = [

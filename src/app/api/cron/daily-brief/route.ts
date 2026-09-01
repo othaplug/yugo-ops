@@ -225,11 +225,11 @@ export async function GET(req: NextRequest) {
     staleList && staleList.length > 0
       ? staleList
           .map((s) => {
-            const num = s.lead_number || "—";
+            const num = s.lead_number || "-";
             const nm = s.first_name || "Unknown";
             const src = String(s.source || "").replace(/_/g, " ");
-            const sz = s.move_size || "—";
-            return `<li style="margin-bottom:4px;font-size:12px;color:#f87171;">${num} — ${nm} (${src}, ${sz})</li>`;
+            const sz = s.move_size || "-";
+            return `<li style="margin-bottom:4px;font-size:12px;color:#f87171;">${num}, ${nm} (${src}, ${sz})</li>`;
           })
           .join("")
       : "";

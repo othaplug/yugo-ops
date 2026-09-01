@@ -75,7 +75,7 @@ export async function GET() {
 
     const unitTypes = (p.unit_types as string[] | null) ?? [];
     const unitCounts: Record<string, string> = {};
-    for (const t of unitTypes) unitCounts[t] = "—";
+    for (const t of unitTypes) unitCounts[t] = "-";
 
     return {
       id: pid,
@@ -85,9 +85,9 @@ export async function GET() {
       loading_dock: !!p.has_loading_dock,
       elevator: p.has_move_elevator ? (p.elevator_type as string | null) || "Yes" : "No",
       move_hours: p.move_hours,
-      parking: (p.parking_type as string | null) || "—",
-      contact_name: p.building_contact_name || "—",
-      contact_phone: p.building_contact_phone || "—",
+      parking: (p.parking_type as string | null) || "-",
+      contact_name: p.building_contact_name || "-",
+      contact_phone: p.building_contact_phone || "-",
       notes: p.notes,
       unit_types: unitTypes.length ? unitTypes : ["Studio", "1 BR", "2 BR", "3 BR"],
       unit_counts: unitCounts,

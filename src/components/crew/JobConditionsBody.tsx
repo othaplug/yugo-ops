@@ -66,7 +66,7 @@ export default function JobConditionsBody({
                 className="text-[var(--yu3-warning)]/90"
                 aria-hidden
               />
-              {brief.tempLowC}°–{brief.tempHighC}°C
+              {brief.tempLowC}°-{brief.tempHighC}°C
             </span>
             {brief.windMaxKmh != null && (
               <span className="inline-flex items-center gap-1 text-[var(--yu3-ink-muted)]">

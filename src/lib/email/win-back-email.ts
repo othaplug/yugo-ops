@@ -12,7 +12,7 @@ export function buildWinBackEmailHtml(params: { firstName: string }): string {
   return statusUpdateEmailHtml({
     eyebrow: "Yugo",
     headline: "Still thinking about your move?",
-    body: `Hi ${name},<br/><br/>We know plans change. If you would like a fresh look at pricing or have new dates in mind, we would be happy to help — no pressure, just a quick check-in.<br/><br/>You can start a new quote request in a few minutes. If you prefer to talk it through, reply to this email or call us and we will connect you with your coordinator.`,
+    body: `Hi ${name},<br/><br/>We know plans change. If you would like a fresh look at pricing or have new dates in mind, we would be happy to help, no pressure, just a quick check-in.<br/><br/>You can start a new quote request in a few minutes. If you prefer to talk it through, reply to this email or call us and we will connect you with your coordinator.`,
     ctaUrl,
     ctaLabel: "GET A FRESH QUOTE",
     includeFooter: true,

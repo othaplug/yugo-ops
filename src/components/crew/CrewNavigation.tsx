@@ -740,13 +740,13 @@ function distanceAlongRouteMeters(coords: [number, number][], lat: number, lng: 
 }
 
 function formatDistanceM(m: number): string {
-  if (!Number.isFinite(m) || m < 0) return "—";
+  if (!Number.isFinite(m) || m < 0) return "-";
   if (m < 1000) return `${Math.round(m)} m`;
   return `${(m / 1000).toFixed(1)} km`;
 }
 
 function formatEta(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return "—";
+  if (!Number.isFinite(seconds) || seconds < 0) return "-";
   if (seconds < 50) return "< 1 min";
   const m = Math.max(1, Math.round(seconds / 60));
   if (m < 60) return `${m} min`;
@@ -946,8 +946,8 @@ export function CrewNavigation({
   const [alternatesOpen, setAlternatesOpen] = useState(false);
   const [reportNote, setReportNote] = useState("");
   const [reportBusy, setReportBusy] = useState(false);
-  const [etaLabel, setEtaLabel] = useState("—");
-  const [distRemainLabel, setDistRemainLabel] = useState("—");
+  const [etaLabel, setEtaLabel] = useState("-");
+  const [distRemainLabel, setDistRemainLabel] = useState("-");
   // When the crew is within 500 m of the destination, swap the Exit button
   // for an "I've Arrived" CTA. At 100 m the system also auto-arrives via
   // onArrived (see ARRIVAL_RADIUS_M). The 500 m window gives crew control
@@ -1238,9 +1238,9 @@ export function CrewNavigation({
     setGuidance(resolveTurnGuidance(legSteps, null));
     setSelectedRouteIndex(apiIndex);
     if (dur != null) setEtaLabel(formatEta(dur));
-    else setEtaLabel("—");
+    else setEtaLabel("-");
     if (dist != null) setDistRemainLabel(formatDistanceM(dist));
-    else setDistRemainLabel("—");
+    else setDistRemainLabel("-");
   }, []);
 
   const reverseGeocode = useCallback(async (lat: number, lng: number) => {
@@ -1446,7 +1446,7 @@ export function CrewNavigation({
           displayRemainM < 0 ||
           distToDestM > MAX_DISPLAY_REMAIN_M
         ) {
-          setDistRemainLabel("—");
+          setDistRemainLabel("-");
           setNearDestination(false);
         } else {
           setDistRemainLabel(formatDistanceM(displayRemainM));
@@ -1477,7 +1477,7 @@ export function CrewNavigation({
             d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
           );
         } else if (etaSec == null) {
-          setEtaLabel("—");
+          setEtaLabel("-");
           setArrivalClockLabel(null);
         } else {
           setEtaLabel(formatEta(etaSec));
@@ -1810,7 +1810,7 @@ export function CrewNavigation({
           className="absolute bottom-[calc(10.5rem+env(safe-area-inset-bottom,0px))] left-3 z-10 rounded-xl border border-black/10 bg-white px-3 py-2 shadow-md"
           aria-live="polite"
         >
-          <span className="text-[13px] font-semibold tabular-nums text-[#1A1816]">{speedDisplay ?? "—"}</span>
+          <span className="text-[13px] font-semibold tabular-nums text-[#1A1816]">{speedDisplay ?? "-"}</span>
         </div>
         {mapError && (
           <div className="absolute left-3 right-3 top-[calc(0.65rem+env(safe-area-inset-top,0px))] z-10 rounded-lg bg-red-900/92 px-3 py-2 text-[12px] text-white">

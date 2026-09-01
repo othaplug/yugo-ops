@@ -405,7 +405,7 @@ export default function SeasonalPricingPreview({
             }}
           />
           <span style={{ fontSize: 10, color: FOREST, opacity: 0.6 }}>
-            Peak (Jun–Aug)
+            Peak (Jun-Aug)
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -468,7 +468,7 @@ export default function SeasonalPricingPreview({
               lineHeight: 1.4,
             }}
           >
-            Moving in Jun–Aug costs ~15% more. Booking in May or September could
+            Moving in Jun-Aug costs ~15% more. Booking in May or September could
             save you $
             {(
               selectedMonthData.price -

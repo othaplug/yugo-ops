@@ -249,7 +249,7 @@ ${removed.length > 0 ? `<p><strong>Missing items:</strong><br>${missingLines.rep
         } else if (hasPendingCustomPricing) {
           pricingLine = `Your coordinator will contact you shortly with the adjusted pricing.`;
         } else {
-          pricingLine = `Your quote has been updated — no additional charge.`;
+          pricingLine = `Your quote has been updated, no additional charge.`;
         }
         const clientSms = [
           `Hi ${moveData.client_name?.split(" ")[0] ?? "there"},`,

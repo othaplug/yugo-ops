@@ -121,7 +121,7 @@ export default function InventoryChangeRequestPanel({
         </span>
       </div>
       <p className="text-[9px] text-[var(--tx3)] mb-3 ml-7">
-        Internal pricing — coordinators see this card; clients do not.
+        Internal pricing, coordinators see this card; clients do not.
       </p>
 
       {added.length > 0 && (

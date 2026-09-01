@@ -9,7 +9,7 @@ const PROP_B = "preview-pm-prop-annex";
 const SAMPLE_PROJECTS: PmProjectRow[] = [
   {
     id: "preview-proj-1",
-    project_name: "Spring lease-up — Tower A",
+    project_name: "Spring lease-up, Tower A",
     project_type: "lease_up",
     total_units: 42,
     tracked_units: 18,
@@ -37,7 +37,7 @@ export function buildPmPortalPreviewSample(): PmPortalSummary {
       id: "preview-mov-1",
       move_code: "18402",
       scheduled_date: todayStr,
-      scheduled_time: "10 AM – 12 PM",
+      scheduled_time: "10 AM, 12 PM",
       unit_number: "1408",
       tenant_name: "J. Patel",
       status: "confirmed",
@@ -49,7 +49,7 @@ export function buildPmPortalPreviewSample(): PmPortalSummary {
       id: "preview-mov-2",
       move_code: "18418",
       scheduled_date: d3s,
-      scheduled_time: "8 AM – 10 AM",
+      scheduled_time: "8 AM, 10 AM",
       unit_number: "210",
       tenant_name: "M. Chen",
       status: "scheduled",

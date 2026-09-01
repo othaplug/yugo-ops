@@ -52,7 +52,7 @@ export function detectSpecialtyItems(
       type: "fragile_flag",
       keyword_matched: "fragile_language",
       surcharge: 0,
-      note: "Client used fragile or valuable language — consider Signature or Estate",
+      note: "Client used fragile or valuable language, consider Signature or Estate",
     });
   }
 

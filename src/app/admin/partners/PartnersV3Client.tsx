@@ -407,7 +407,7 @@ export default function PartnersV3Client() {
       <PageHeader
         eyebrow="CRM"
         title="Partners"
-        description="Every B2B relationship — retail, designers, hospitality, gallery, and referral partners."
+        description="Every B2B relationship, retail, designers, hospitality, gallery, and referral partners."
         actions={
           <>
             {activeTab === "property_management" ? (

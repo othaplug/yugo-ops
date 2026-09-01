@@ -342,7 +342,7 @@ export async function GET(req: NextRequest) {
       const html = statusUpdateEmailHtml({
         eyebrow: "Before your move",
         headline: "Reminder: book your elevator",
-        body: `Hi ${first},<br/><br/>Your move is in five days. If you have not already, please book the freight or move elevator with your building. Many buildings need 48–72 hours notice.<br/><br/>Plan for your <strong>${win}</strong> arrival on <strong>${m.scheduled_date}</strong>.<br/><br/>Tips: ask for the freight elevator if available; pad extra time; confirm padding rules with building management.${coordPhone5 ? `<br/><br/>Questions? Call <strong>${coordPhone5}</strong>.` : ""}<br/><br/>Track your move anytime:`,
+        body: `Hi ${first},<br/><br/>Your move is in five days. If you have not already, please book the freight or move elevator with your building. Many buildings need 48 to 72 hours notice.<br/><br/>Plan for your <strong>${win}</strong> arrival on <strong>${m.scheduled_date}</strong>.<br/><br/>Tips: ask for the freight elevator if available; pad extra time; confirm padding rules with building management.${coordPhone5 ? `<br/><br/>Questions? Call <strong>${coordPhone5}</strong>.` : ""}<br/><br/>Track your move anytime:`,
         ctaUrl: trackUrl,
         ctaLabel: "VIEW MOVE DETAILS",
         includeFooter: true,
@@ -442,7 +442,7 @@ export async function GET(req: NextRequest) {
         ? "Your office relocation is in 3 days"
         : "Your move is in 3 days",
       body: isOfficeMove
-        ? `Hi ${first},<br/><br/>Here is your office relocation checklist — phased across the two weeks leading up to move day. Cover COI, freight elevators, IT power-down, floor plan sign-off, and staff comms. Check items off as your team completes them.`
+        ? `Hi ${first},<br/><br/>Here is your office relocation checklist, phased across the two weeks leading up to move day. Cover COI, freight elevators, IT power-down, floor plan sign-off, and staff comms. Check items off as your team completes them.`
         : `Hi ${first},<br/><br/>Here is a quick checklist to help you prepare for move day. Check items off on your phone as you go.`,
       ctaUrl: checklistUrl,
       ctaLabel: "VIEW CHECKLIST",

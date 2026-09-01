@@ -499,7 +499,7 @@ export async function runPostPaymentActions(
             moveCode: input.moveCode,
             moveDate: quote.move_date,
             timeWindow:
-              (move.arrival_window as string) || "Morning (8 AM – 12 PM)",
+              (move.arrival_window as string) || "Morning (8 AM, 12 PM)",
             fromAddress: quote.from_address,
             toAddress: quote.to_address,
             crewSize: siCrew,
@@ -613,7 +613,7 @@ export async function runPostPaymentActions(
         const crewSize =
           (move.crew_size as number) || (quote.est_crew_size as number) || 3;
         const timeWindow =
-          (move.arrival_window as string) || "Morning (7 AM – 12 PM)";
+          (move.arrival_window as string) || "Morning (7 AM, 12 PM)";
 
         // Office-specific: pull day count for the booked tier from
         // factors, and derive project manager name from quote
@@ -1549,7 +1549,7 @@ export async function runPostPaymentActionsB2BDelivery(
         await resend.emails.send({
           from: emailFrom2,
           to: adminEmail,
-          subject: `[B2B Delivery] Paid: ${input.deliveryNumber} — ${clientName || "Client"}`,
+          subject: `[B2B Delivery] Paid: ${input.deliveryNumber}, ${clientName || "Client"}`,
           html: `<p>B2B quote <strong>${input.quoteId}</strong> paid. Delivery <strong>${input.deliveryNumber}</strong>.</p><p><a href="${base}/admin/deliveries/${encodeURIComponent(input.deliveryNumber)}">Open in admin</a></p>`,
         });
       },

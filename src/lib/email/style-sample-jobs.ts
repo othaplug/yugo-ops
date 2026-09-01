@@ -159,7 +159,7 @@ export function getStyleSampleTemplateJobs(ctx: StyleSampleRecipientContext): St
     eventDeposit: 1200,
     eventLegBlocks: [
       {
-        label: "Leg 1 — Load-in",
+        label: "Leg 1, Load-in",
         deliveryDay: "Friday, May 2, 2026",
         returnDay: "Sunday, May 4, 2026",
         origin: "100 Warehouse Rd, Mississauga, ON",
@@ -223,16 +223,16 @@ export function getStyleSampleTemplateJobs(ctx: StyleSampleRecipientContext): St
   };
 
   return [
-    { template: "quote-residential", subject: "[Yugo sample] Quote — residential", data: qRes },
-    { template: "quote-longdistance", subject: "[Yugo sample] Quote — long distance", data: qLong },
-    { template: "quote-office", subject: "[Yugo sample] Quote — office", data: qOffice },
-    { template: "quote-singleitem", subject: "[Yugo sample] Quote — single item", data: qSingle },
-    { template: "quote-whiteglove", subject: "[Yugo sample] Quote — white glove", data: qWg },
-    { template: "quote-specialty", subject: "[Yugo sample] Quote — specialty", data: qSpec },
-    { template: "quote-event", subject: "[Yugo sample] Quote — event", data: qEvent },
-    { template: "quote-labouronly", subject: "[Yugo sample] Quote — labour only", data: qLabour },
-    { template: "quote-binrental", subject: "[Yugo sample] Quote — bin rental", data: qBin },
-    { template: "quote-b2boneoff", subject: "[Yugo sample] Quote — B2B one-off", data: qB2b },
+    { template: "quote-residential", subject: "[Yugo sample] Quote, residential", data: qRes },
+    { template: "quote-longdistance", subject: "[Yugo sample] Quote, long distance", data: qLong },
+    { template: "quote-office", subject: "[Yugo sample] Quote, office", data: qOffice },
+    { template: "quote-singleitem", subject: "[Yugo sample] Quote, single item", data: qSingle },
+    { template: "quote-whiteglove", subject: "[Yugo sample] Quote, white glove", data: qWg },
+    { template: "quote-specialty", subject: "[Yugo sample] Quote, specialty", data: qSpec },
+    { template: "quote-event", subject: "[Yugo sample] Quote, event", data: qEvent },
+    { template: "quote-labouronly", subject: "[Yugo sample] Quote, labour only", data: qLabour },
+    { template: "quote-binrental", subject: "[Yugo sample] Quote, bin rental", data: qBin },
+    { template: "quote-b2boneoff", subject: "[Yugo sample] Quote, B2B one-off", data: qB2b },
 
     {
       template: "pre-move-72hr",
@@ -263,7 +263,7 @@ export function getStyleSampleTemplateJobs(ctx: StyleSampleRecipientContext): St
         crewMembers: ["Jordan", "Connor", "Alex"],
         crewSize: 3,
         truckInfo: "26 ft box truck",
-        arrivalWindow: "8:00 AM – 10:00 AM",
+        arrivalWindow: "8:00 AM, 10:00 AM",
         coordinatorName: "Sam Coordinator",
         coordinatorPhone: "(647) 370-4525",
         trackingUrl: track,
@@ -411,17 +411,17 @@ export function getStyleSampleTemplateJobs(ctx: StyleSampleRecipientContext): St
     },
     {
       template: "review-request-essentials",
-      subject: "[Yugo sample] Review request — essentials template",
+      subject: "[Yugo sample] Review request, essentials template",
       data: { ...rv, tier: "essential" },
     },
     {
       template: "review-request-premier",
-      subject: "[Yugo sample] Review request — premier template",
+      subject: "[Yugo sample] Review request, premier template",
       data: { ...rv, tier: "signature" },
     },
     {
       template: "review-request-essential",
-      subject: "[Yugo sample] Review request — essential (curated renderer)",
+      subject: "[Yugo sample] Review request, essential (curated renderer)",
       data: { ...rv, tier: "essential" },
     },
     {
@@ -535,7 +535,7 @@ export function getStyleSampleTemplateJobs(ctx: StyleSampleRecipientContext): St
     },
     {
       template: "admin-card-expiring-notice",
-      subject: "[Yugo sample] Admin — card expiring notice",
+      subject: "[Yugo sample] Admin, card expiring notice",
       data: {
         entityType: "partner",
         entityName: "Sample Partner Co",
@@ -628,7 +628,7 @@ export function getStyleSampleHtmlJobs(ctx: StyleSampleRecipientContext): StyleS
         delivery_address: "200 Queen St E, Toronto, ON",
         pickup_address: "100 King St W, Toronto, ON",
         scheduled_date: "Saturday, April 19, 2026",
-        delivery_window: "10 AM – 2 PM",
+        delivery_window: "10 AM, 2 PM",
         status: "scheduled",
         items_count: 12,
         trackUrl: `${base}/track/delivery/demo`,
@@ -668,7 +668,7 @@ export function getPremiumBookingHtmlJobs(ctx: StyleSampleRecipientContext): Sty
   const tierCommon = {
     clientName: "Sample Customer",
     moveDate: "2026-05-15" as const,
-    timeWindow: "Morning (7 AM – 12 PM)",
+    timeWindow: "Morning (7 AM, 12 PM)",
     fromAddress: "100 Queen St W, Toronto, ON",
     toAddress: "88 Harbour St, Toronto, ON",
     serviceLabel: "Local Residential Move",

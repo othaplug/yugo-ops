@@ -126,14 +126,14 @@ function buildClientSMS(firstName: string, alertText: string, dateLabel: string)
     return [
       `Hi ${firstName},`,
       `Snow is forecast for your move on ${dateLabel}.`,
-      `Don't worry — we've prepared additional protection for your belongings, including tarps and waterproof covers.`,
+      `Don't worry, we've prepared additional protection for your belongings, including tarps and waterproof covers.`,
       `We've got you covered.`,
     ].join("\n\n");
   }
   return [
     `Hi ${firstName},`,
     `Rain is forecast for your move on ${dateLabel}.`,
-    `Don't worry — we've prepared additional protection for your belongings, including tarps and waterproof covers.`,
+    `Don't worry, we've prepared additional protection for your belongings, including tarps and waterproof covers.`,
     `See you then!`,
   ].join("\n\n");
 }

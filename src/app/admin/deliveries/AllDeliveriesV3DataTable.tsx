@@ -225,7 +225,7 @@ export function AllDeliveriesV3DataTable({
         cell: (d) => (
           <div className="min-w-0">
             <div className="text-[13px] font-medium text-[var(--yu3-ink-strong)] truncate">
-              {d.client_name || "—"}
+              {d.client_name || "-"}
             </div>
             {d.is_multi_stop && d.project_name?.trim() ? (
               <div className="text-[11px] text-[var(--yu3-ink-muted)] truncate mt-0.5">

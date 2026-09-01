@@ -71,7 +71,7 @@ export default function SendCustomerTrackingButton({
       }
       const parts = data.sent_to ?? [];
       toast(
-        `Customer tracking sent (${parts.join(", ") || "delivered"})${data.token_issued ? " — token issued" : ""}`,
+        `Customer tracking sent (${parts.join(", ") || "delivered"})${data.token_issued ? ", token issued" : ""}`,
         "mail",
       );
     } catch {

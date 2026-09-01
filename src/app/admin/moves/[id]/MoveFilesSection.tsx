@@ -49,7 +49,7 @@ type SignOffData = {
 
 function formatShort(iso: string) {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   try {
     return d.toLocaleString("en-US", {
       month: "short",
@@ -58,7 +58,7 @@ function formatShort(iso: string) {
       minute: "2-digit",
     });
   } catch {
-    return "—";
+    return "-";
   }
 }
 

@@ -94,13 +94,13 @@ export default function WidgetLeadDetailClient({
             <div className="flex justify-between gap-4">
               <dt className="text-[var(--tx3)]">From</dt>
               <dd className="text-[var(--tx)] text-right">
-                {lead.from_postal?.toUpperCase() || "—"}
+                {lead.from_postal?.toUpperCase() || "-"}
               </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-[var(--tx3)]">To</dt>
               <dd className="text-[var(--tx)] text-right">
-                {lead.to_postal?.toUpperCase() || "—"}
+                {lead.to_postal?.toUpperCase() || "-"}
               </dd>
             </div>
             {lead.move_date && (
@@ -126,8 +126,8 @@ export default function WidgetLeadDetailClient({
               <dd className="text-[var(--tx)] font-medium text-right">
                 {lead.widget_estimate_low != null &&
                 lead.widget_estimate_high != null
-                  ? `${formatCurrency(lead.widget_estimate_low)} – ${formatCurrency(lead.widget_estimate_high)}`
-                  : "—"}
+                  ? `${formatCurrency(lead.widget_estimate_low)}, ${formatCurrency(lead.widget_estimate_high)}`
+                  : "-"}
               </dd>
             </div>
           </dl>

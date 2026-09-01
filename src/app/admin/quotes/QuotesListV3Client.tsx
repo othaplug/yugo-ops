@@ -86,7 +86,7 @@ function quoteDetailPath(q: Quote): string {
 }
 
 function relTime(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const ms = Date.now() - new Date(iso).getTime();
   const min = Math.floor(ms / 60000);
   if (min < 1) return "just now";
@@ -200,7 +200,7 @@ export default function QuotesListV3Client({
       other: "Other",
     };
     const topLost = Object.entries(lostCounts).sort((a, b) => b[1] - a[1])[0];
-    const topLostReason = topLost ? (LOSS_LABEL[topLost[0]] ?? topLost[0]) : "—";
+    const topLostReason = topLost ? (LOSS_LABEL[topLost[0]] ?? topLost[0]) : "-";
 
     return [
       {

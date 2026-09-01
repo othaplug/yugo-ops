@@ -71,11 +71,11 @@ export async function scoreLeadIntelligence(
       if (days >= 0 && days <= 3) {
         urgencyScore = 100;
         priority = "urgent";
-        reasons.push(`Move in ${days} days — respond immediately`);
+        reasons.push(`Move in ${days} days, respond immediately`);
       } else if (days >= 0 && days <= 7) {
         urgencyScore = 90;
         priority = maxPriority(priority, "urgent");
-        reasons.push(`Move in ${days} days — fast turnaround`);
+        reasons.push(`Move in ${days} days, fast turnaround`);
       } else if (days >= 0 && days <= 14) {
         urgencyScore = 70;
         priority = maxPriority(priority, "high");
@@ -84,7 +84,7 @@ export async function scoreLeadIntelligence(
         urgencyScore = 50;
       } else if (days > 30) {
         urgencyScore = 30;
-        reasons.push(`Move in ${days} days — schedule follow-up`);
+        reasons.push(`Move in ${days} days, schedule follow-up`);
       }
     }
   }
@@ -115,7 +115,7 @@ export async function scoreLeadIntelligence(
       )
     ) {
       priority = maxPriority(priority, "high");
-      reasons.push("Heavy or complex specialty — consider onsite assessment");
+      reasons.push("Heavy or complex specialty, consider onsite assessment");
     }
   }
 
@@ -126,22 +126,22 @@ export async function scoreLeadIntelligence(
   }
 
   if (specialty.some((s) => s.type === "fragile_flag")) {
-    reasons.push("Client flagged fragile or valuable items — consider Signature+");
+    reasons.push("Client flagged fragile or valuable items, consider Signature+");
   }
 
   const wrap = (parsed.wrapping_needed || "").toLowerCase();
   if (wrap === "yes" || wrap === "true") {
-    reasons.push("Wrapping requested — Signature upsell fit");
+    reasons.push("Wrapping requested, Signature upsell fit");
   }
 
   const pack = (parsed.packing_help || "").toLowerCase();
   if (pack === "yes" || pack === "true") {
-    reasons.push("Packing help requested — full-pack upsell");
+    reasons.push("Packing help requested, full-pack upsell");
   }
 
   const ins = (parsed.insurance_preference || "").toLowerCase();
   if (ins && ins !== "none" && ins !== "no") {
-    reasons.push("Insurance interest — premium tier signal");
+    reasons.push("Insurance interest, premium tier signal");
   }
 
   const heard = (parsed.how_heard || "").toLowerCase();
@@ -151,7 +151,7 @@ export async function scoreLeadIntelligence(
     heard.includes("word of mouth")
   ) {
     priority = maxPriority(priority, "high");
-    reasons.push("Referral or word-of-mouth — prioritize");
+    reasons.push("Referral or word-of-mouth, prioritize");
     if (parsed.referral_detail) reasons.push(`Referral detail: ${parsed.referral_detail}`);
   }
 

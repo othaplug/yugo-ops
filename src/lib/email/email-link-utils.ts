@@ -16,7 +16,7 @@ export function emailMapLinkHtml(
   linkColor: string = EMAIL_FOREST,
 ): string {
   const plain = String(address).trim();
-  if (!plain) return "—";
+  if (!plain) return "-";
   const esc = escapeHtmlEmail(plain);
   const href = `https://www.openstreetmap.org/search?query=${encodeURIComponent(plain)}`.replace(
     /&/g,

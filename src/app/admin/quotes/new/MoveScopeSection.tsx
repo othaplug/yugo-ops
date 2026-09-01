@@ -88,11 +88,11 @@ function buildRows(args: {
     // pricing separately from the addon fee.
     locked: tier === "estate" && isLargeHome,
     title: "Packing day",
-    dayNote: hasPacking ? "+1 day" : "Optional — not auto-included",
+    dayNote: hasPacking ? "+1 day" : "Optional, not auto-included",
     amountNote:
       tier === "estate" && isLargeHome
         ? "Included with Estate tier (+ packing day)"
-        : "Add-on fee only — no day rate unless added manually",
+        : "Add-on fee only, no day rate unless added manually",
   })
 
   rows.push({
@@ -115,7 +115,7 @@ function buildRows(args: {
         ? "Included with Estate tier (+ unpacking day)"
         : hasUnpacking
           ? `$${args.packDayRate.toLocaleString("en-CA")} per day`
-          : "Flat add-on fee — no separate day rate",
+          : "Flat add-on fee, no separate day rate",
   })
 
   rows.push({
@@ -293,7 +293,7 @@ export default function MoveScopeSection({
               detectedDaysOnly !== moveScopeDaysOverride && (
                 <p className="text-[10px] text-[var(--tx3)] mt-1 leading-snug">
                   System suggests {detectedDaysOnly}{" "}
-                  {detectedDaysOnly === 1 ? "day" : "days"} —
+                  {detectedDaysOnly === 1 ? "day" : "days"} -
                   coordinator override applied.
                 </p>
               )}

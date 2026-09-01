@@ -80,7 +80,7 @@ export default async function TermsAndConditionsPage() {
         <LegalSection title="4. Cancellation and Rescheduling">
           <ul>
             <li><strong>More than 48 hours before scheduled service:</strong> Full refund or no cancellation fee.</li>
-            <li><strong>24–48 hours before scheduled service:</strong> 25% cancellation fee of the quoted price.</li>
+            <li><strong>24 to 48 hours before scheduled service:</strong> 25% cancellation fee of the quoted price.</li>
             <li><strong>Less than 24 hours before scheduled service:</strong> 50% cancellation fee of the quoted price.</li>
             <li><strong>Day-of cancellation or no-show:</strong> 100% of the minimum quoted fee.</li>
           </ul>

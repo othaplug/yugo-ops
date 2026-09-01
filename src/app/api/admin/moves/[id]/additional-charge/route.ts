@@ -84,7 +84,7 @@ export async function POST(
   }
   if (!move.square_card_id && !move.square_customer_id) {
     return NextResponse.json(
-      { error: "No card on file for this move — can't collect an additional charge automatically." },
+      { error: "No card on file for this move, can't collect an additional charge automatically." },
       { status: 400 },
     );
   }
@@ -102,7 +102,7 @@ export async function POST(
   const hst = Math.round(preTax * HST_RATE * 100) / 100;
   const inclusive = Math.round((preTax + hst) * 100) / 100;
 
-  const label = `Additional charge — ${reason}`;
+  const label = `Additional charge, ${reason}`;
   const result = await chargeApprovedFeeOnCard({
     admin: db,
     moveId,

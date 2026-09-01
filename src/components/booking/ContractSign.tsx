@@ -829,7 +829,7 @@ export default function ContractSign({
             >
               Full rental fee (incl. HST) is collected after you sign, unless
               your coordinator instructs otherwise. A card may stay on file per
-              Sections 3–4 below.
+              Sections 3 to 4 below.
             </p>
           )}
           {paidInFullAtBooking && isLogisticsDeliveryCopy && !isBinRental && (

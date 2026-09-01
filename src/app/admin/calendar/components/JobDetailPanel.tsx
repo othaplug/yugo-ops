@@ -87,7 +87,7 @@ export default function JobDetailPanel({
 
   const timeStr = event.start
     ? event.end
-      ? `${formatTime12(event.start)} – ${formatTime12(event.end)}`
+      ? `${formatTime12(event.start)}, ${formatTime12(event.end)}`
       : formatTime12(event.start)
     : "Time not set";
 

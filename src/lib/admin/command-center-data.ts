@@ -589,7 +589,7 @@ export const loadCommandCenterData = async () => {
           service_type: stRaw || null,
           is_pm_move: isPm,
         })
-        return lbl === "—" ? "Move" : lbl
+        return lbl === "-" ? "Move" : lbl
       })(),
       tier_selected:
         m.tier_selected != null && String(m.tier_selected).trim() !== ""

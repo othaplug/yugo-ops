@@ -25,11 +25,11 @@ export const ESSENTIAL_ADDONS: EssentialAddon[] = [
   {
     key: "assembly_single",
     label: "Furniture assembly / disassembly",
-    description: "Per item — beds, desks, wardrobes, and standard furniture.",
+    description: "Per item, beds, desks, wardrobes, and standard furniture.",
     priceLabel: "$85 per item",
     price: 85,
     pricingType: "per_item",
-    upgradeNote: "Included in Signature — unlimited items",
+    upgradeNote: "Included in Signature, unlimited items",
   },
   {
     key: "assembly_bundle",
@@ -38,7 +38,7 @@ export const ESSENTIAL_ADDONS: EssentialAddon[] = [
     priceLabel: "$199",
     price: 199,
     pricingType: "bundle",
-    upgradeNote: "Included in Signature — unlimited items",
+    upgradeNote: "Included in Signature, unlimited items",
   },
   {
     key: "extra_wrap",
@@ -48,7 +48,7 @@ export const ESSENTIAL_ADDONS: EssentialAddon[] = [
     priceLabel: "$15 per item",
     price: 15,
     pricingType: "per_item",
-    upgradeNote: "Included in Signature — all items wrapped",
+    upgradeNote: "Included in Signature, all items wrapped",
   },
   {
     key: "full_wrap_upgrade",

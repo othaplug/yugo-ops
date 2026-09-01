@@ -408,7 +408,7 @@ export default function PartnerAnalyticsTab({
                       </span>
                     </td>
                     <td className="py-3 pr-4 text-[#5A6B5E]">
-                      {d.rating ? `${d.rating} stars` : "—"}
+                      {d.rating ? `${d.rating} stars` : "-"}
                     </td>
                     <td className="py-3">
                       <span

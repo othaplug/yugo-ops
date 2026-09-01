@@ -36,7 +36,7 @@ async function maybeAlertOnProviderFailure(error: string | null | undefined): Pr
   lastProviderAlertAt = now;
   try {
     await notifyAdmins("sms_provider_failure", {
-      subject: "SMS provider rejecting messages — top up required",
+      subject: "SMS provider rejecting messages, top up required",
       body: `An outbound SMS just failed with: "${error}". No further outbound texts will reach customers, partners, or crew until the SMS provider account is topped up (https://my.quo.com/settings/billing). This alert fires at most once every 24 hours.`,
       description: "Outbound SMS path is silently failing; provider returned an account-level error.",
     });

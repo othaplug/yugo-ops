@@ -32,7 +32,7 @@ export const CLIENT_MOVE_CHECKLIST: ClientChecklistCategoryDef[] = [
     ],
   },
   {
-    category: "2–3 Days Before",
+    category: "2 to 3 Days Before",
     items: [
       { id: "fridge", text: "Defrost fridge and freezer (24 hours before)", conditional: "always" },
       {
@@ -70,7 +70,7 @@ export const CLIENT_OFFICE_CHECKLIST: ClientChecklistCategoryDef[] = [
     category: "2 Weeks Before",
     items: [
       { id: "coi", text: "Certificate of insurance on file with both buildings (your PM handles filing; confirm contacts)", conditional: "always" },
-      { id: "freight_elevators", text: "Freight elevator + loading dock reserved at origin and destination (5–10 business days notice is typical)", conditional: "always" },
+      { id: "freight_elevators", text: "Freight elevator + loading dock reserved at origin and destination (5 to 10 business days notice is typical)", conditional: "always" },
       { id: "floor_plan_signoff", text: "New office floor plan signed off (room-by-room, desk-by-desk placement)", conditional: "always" },
       { id: "staff_comms", text: "Announce the relocation to your team with the move date and what to expect", conditional: "always" },
     ],
@@ -86,10 +86,10 @@ export const CLIENT_OFFICE_CHECKLIST: ClientChecklistCategoryDef[] = [
     ],
   },
   {
-    category: "2–3 Days Before",
+    category: "2 to 3 Days Before",
     items: [
       { id: "labels_distributed", text: "Colour-coded room labels distributed to staff for personal items", conditional: "always" },
-      { id: "employee_personal", text: "Employees packing personal items (laptops, headphones, framed photos) — our crew handles the rest", conditional: "always" },
+      { id: "employee_personal", text: "Employees packing personal items (laptops, headphones, framed photos), our crew handles the rest", conditional: "always" },
       { id: "sensitive_docs", text: "Sensitive documents locked or moved by executive team, not our crew", conditional: "always" },
       { id: "kitchen_perishables", text: "Break-room fridge cleared out; perishables and coffee equipment prepped", conditional: "always" },
       { id: "signage_removal", text: "Old-office signage and branded artwork identified for removal", conditional: "always" },
@@ -102,7 +102,7 @@ export const CLIENT_OFFICE_CHECKLIST: ClientChecklistCategoryDef[] = [
       { id: "servers_shutdown_done", text: "Servers, printers, and network gear powered down as planned", conditional: "always" },
       { id: "final_walkthrough", text: "Walk each floor: no boxes left, no drawers full, no forgotten storage rooms", conditional: "always" },
       { id: "utilities_active", text: "Confirm power, internet, and HVAC are live at the new office", conditional: "always" },
-      { id: "phones_charged", text: "PM will text you as crews arrive — keep your phone charged and on you", conditional: "always" },
+      { id: "phones_charged", text: "PM will text you as crews arrive, keep your phone charged and on you", conditional: "always" },
     ],
   },
 ];

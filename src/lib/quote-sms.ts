@@ -274,7 +274,7 @@ export async function sendMoveReminderSms(params: {
       `Track your relocation live:\n${smsUrl}`,
     ].join("\n\n");
   } else {
-    const crewLine = `Your crew of ${params.crewSize ?? "2–3"} will be arriving${params.scheduledTime ? ` at ${params.scheduledTime}` : ""}.`;
+    const crewLine = `Your crew of ${params.crewSize ?? "2 to 3"} will be arriving${params.scheduledTime ? ` at ${params.scheduledTime}` : ""}.`;
     body = [
       greet,
       `Your Yugo move is tomorrow. We have everything ready for a smooth day.`,

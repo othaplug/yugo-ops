@@ -33,7 +33,7 @@ export async function POST(
     if (project?.partner_id) {
       await createPartnerNotification({
         orgId: project.partner_id,
-        title: `Install Day Scheduled — ${project.project_name}`,
+        title: `Install Day Scheduled, ${project.project_name}`,
         body: `Your install is confirmed for ${installDate}. Job ${deliveryNumber} has been created.`,
         icon: "check",
         link: `/partner?project=${projectId}`,

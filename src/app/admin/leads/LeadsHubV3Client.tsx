@@ -464,7 +464,7 @@ export default function LeadsHubV3Client({
               ${Math.round(r.estimated_value).toLocaleString()}
             </span>
           ) : (
-            <span className="text-[var(--yu3-ink-faint)]">—</span>
+            <span className="text-[var(--yu3-ink-faint)]">-</span>
           ),
       },
       {
@@ -489,7 +489,7 @@ export default function LeadsHubV3Client({
               {new Date(r.preferred_date).toLocaleDateString()}
             </span>
           ) : (
-            <span className="text-[var(--yu3-ink-faint)]">—</span>
+            <span className="text-[var(--yu3-ink-faint)]">-</span>
           ),
         hiddenByDefault: false,
       },
@@ -510,7 +510,7 @@ export default function LeadsHubV3Client({
               <Phone size={11} /> {r.phone}
             </a>
           ) : (
-            <span className="text-[var(--yu3-ink-faint)]">—</span>
+            <span className="text-[var(--yu3-ink-faint)]">-</span>
           ),
         hiddenByDefault: true,
       },
@@ -531,7 +531,7 @@ export default function LeadsHubV3Client({
               <Envelope size={11} /> {r.email}
             </a>
           ) : (
-            <span className="text-[var(--yu3-ink-faint)]">—</span>
+            <span className="text-[var(--yu3-ink-faint)]">-</span>
           ),
         hiddenByDefault: true,
       },
@@ -562,7 +562,7 @@ export default function LeadsHubV3Client({
           if (rows.length === 1 && rows[0]) {
             router.push(`/admin/leads/${rows[0].id}`);
           } else {
-            toast(`Open each lead to assign — bulk assign not yet supported`, "alertTriangle");
+            toast(`Open each lead to assign, bulk assign not yet supported`, "alertTriangle");
           }
         },
       },
@@ -1031,7 +1031,7 @@ function AttentionCard({
         <div>
           <div className="yu3-t-eyebrow">Size</div>
           <div className="yu3-num text-[var(--yu3-ink)]">
-            {lead.move_size ? moveSizeDisplayLabel(lead.move_size) : "—"}
+            {lead.move_size ? moveSizeDisplayLabel(lead.move_size) : "-"}
           </div>
         </div>
         <div>

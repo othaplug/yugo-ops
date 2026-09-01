@@ -357,7 +357,7 @@ export default function EventTrackDashboard({
             title="Your event timeline"
             meta={
               deliveryDate && returnDate
-                ? `${fmtDate(deliveryDate)} – ${fmtDate(returnDate)}`
+                ? `${fmtDate(deliveryDate)}, ${fmtDate(returnDate)}`
                 : fmtDate(deliveryDate) || undefined
             }
           />
@@ -384,7 +384,7 @@ export default function EventTrackDashboard({
                 <div style={{ fontWeight: 650, color: INK, fontSize: 14.5 }}>
                   Insurance &amp; venue access <Tag tone="now">Action needed</Tag>
                 </div>
-                <div style={{ fontSize: 12.5, color: MUTED, marginTop: 1 }}>A few details before load-in — see the checklist below</div>
+                <div style={{ fontSize: 12.5, color: MUTED, marginTop: 1 }}>A few details before load-in, see the checklist below</div>
               </li>
             ) : null}
             {/* Delivery leg */}
@@ -500,7 +500,7 @@ export default function EventTrackDashboard({
             </svg>
             <span>
               <b>We handle the venue&rsquo;s certificate of insurance.</b> Yugo carries full
-              commercial coverage and provides the COI directly to your venue — nothing needed from you.
+              commercial coverage and provides the COI directly to your venue, nothing needed from you.
             </span>
           </div>
           {telHref ? (
@@ -534,7 +534,7 @@ export default function EventTrackDashboard({
               </div>
               <div style={{ fontSize: 12.5, color: MUTED, marginTop: 6 }}>
                 {settled ? (
-                  "Thank you — nothing further due."
+                  "Thank you, nothing further due."
                 ) : (
                   <>
                     {dueLabel ? (
@@ -736,7 +736,7 @@ export default function EventTrackDashboard({
             Need to change your event details?
           </h3>
           <p style={{ color: MUTED, fontSize: 13, margin: "8px 0 16px" }}>
-            Timing, access, or the item list — your coordinator reviews every change before delivery day.
+            Timing, access, or the item list, your coordinator reviews every change before delivery day.
           </p>
           {telHref ? (
             <a

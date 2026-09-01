@@ -194,7 +194,7 @@ export function getLightFullDocumentDarkLockCss(): string {
     color: ${inkMuted} !important;
     -webkit-text-fill-color: ${inkMuted} !important;
   }
-  /* Transactional footer fragment (after Outlook hybrid wrap — not always body > table) */
+  /* Transactional footer fragment (after Outlook hybrid wrap, not always body > table) */
   body.yugo-light-email-doc table[width="100%"][style*="margin-top:24px"],
   body.yugo-light-email-doc table[width="100%"][style*="margin-top: 24px"] {
     background-color: ${page} !important;

@@ -103,10 +103,10 @@ export async function GET() {
       .map(([code, bucket]) => ({
         reasonCode: code,
         type: labelByCode[code] || code.replace(/_/g, " "),
-        studio: String(bucket.studio ?? "—"),
-        oneBr: String(bucket["1br"] ?? "—"),
-        twoBr: String(bucket["2br"] ?? "—"),
-        threeBr: String(bucket["3br"] ?? "—"),
+        studio: String(bucket.studio ?? "-"),
+        oneBr: String(bucket["1br"] ?? "-"),
+        twoBr: String(bucket["2br"] ?? "-"),
+        threeBr: String(bucket["3br"] ?? "-"),
       }));
   } else if (contract?.rate_card && typeof contract.rate_card === "object") {
     const card = contract.rate_card as Record<string, unknown>;
@@ -117,10 +117,10 @@ export async function GET() {
       .map((k) => ({
         reasonCode: k,
         type: k.replace(/_/g, " "),
-        studio: "—",
-        oneBr: "—",
-        twoBr: "—",
-        threeBr: "—",
+        studio: "-",
+        oneBr: "-",
+        twoBr: "-",
+        threeBr: "-",
       }));
   }
 

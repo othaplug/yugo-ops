@@ -97,7 +97,7 @@ export async function syncLeadToHubSpot(sb: SupabaseClient, lead: LeadLike): Pro
     const stageId = (process.env.HUBSPOT_LEADS_DEAL_STAGE_ID || "").trim();
 
     if (pipelineId && stageId) {
-      const dealName = `Lead ${lead.id.slice(0, 8)} — ${first || email || phone || "Yugo"}`;
+      const dealName = `Lead ${lead.id.slice(0, 8)}, ${first || email || phone || "Yugo"}`;
       const dealProps: Record<string, string> = {
         dealname: dealName.slice(0, 255),
         pipeline: pipelineId,

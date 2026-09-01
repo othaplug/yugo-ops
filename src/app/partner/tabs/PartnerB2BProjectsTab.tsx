@@ -882,7 +882,7 @@ export default function PartnerB2BProjectsTab({
               <label className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Vendor *</label>
               <button type="button" onClick={() => setAiShowContact(!aiShowContact)}
                 className="text-[11px] text-[var(--tx)] hover:underline">
-                {aiShowContact ? "– Hide contact details" : "+ Add vendor contact"}
+                {aiShowContact ? "- Hide contact details" : "+ Add vendor contact"}
               </button>
             </div>
             <input value={aiVendorName} onChange={(e) => setAiVendorName(e.target.value)} placeholder="e.g. Poliform, RH, local vendor"
@@ -920,7 +920,7 @@ export default function PartnerB2BProjectsTab({
               </div>
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wide text-[#454545] mb-1">Pickup Window</label>
-                <input value={aiPickupWindow} onChange={(e) => setAiPickupWindow(e.target.value)} placeholder="Mon–Fri 9am–4pm, loading dock"
+                <input value={aiPickupWindow} onChange={(e) => setAiPickupWindow(e.target.value)} placeholder="Mon-Fri 9am-4pm, loading dock"
                   className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] outline-none" />
               </div>
             </div>

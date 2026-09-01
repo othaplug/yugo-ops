@@ -38,5 +38,5 @@ export function displayInvoiceNumber(inv: InvoiceRowForDisplay): string {
       referenceCode: mov.move_code,
     });
   }
-  return String(inv.invoice_number || "").trim() || "—";
+  return String(inv.invoice_number || "").trim() || "-";
 }

@@ -99,7 +99,7 @@ function buildPhotoRequestEmailHtml({
         <tr><td style="padding:32px;">
           <h1 style="margin:0 0 8px;font-size:22px;font-weight:400;color:#2B0416;font-family:Georgia,serif;">Help us see your home</h1>
           <p style="margin:0 0 16px;font-size:15px;color:#555;line-height:1.6;">Hi ${firstName}, to give you the most accurate moving quote possible, we would love to see your space. Quick room-by-room photos take about 5 minutes and help us make sure everything is covered.</p>
-          <p style="margin:0 0 24px;font-size:14px;color:#777;line-height:1.6;">There is nothing to prepare — just snap a quick shot of each room and upload below.</p>
+          <p style="margin:0 0 24px;font-size:14px;color:#777;line-height:1.6;">There is nothing to prepare, just snap a quick shot of each room and upload below.</p>
           <table cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
             <tr><td style="background:#5C1A33;border-radius:8px;padding:14px 28px;">
               <a href="${surveyUrl}" style="display:block;font-size:14px;font-weight:700;color:#FAF7F2;text-decoration:none;letter-spacing:1px;text-transform:uppercase;">Share photos</a>

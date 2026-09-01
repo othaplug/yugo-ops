@@ -21,8 +21,8 @@ const SORT_OPTIONS = [
   { col: "created_at", dir: "asc" as const, label: "Create date: Oldest" },
   { col: "due_date", dir: "desc" as const, label: "Due date: Newest" },
   { col: "due_date", dir: "asc" as const, label: "Due date: Oldest" },
-  { col: "client_name", dir: "asc" as const, label: "Customer name: A–Z" },
-  { col: "client_name", dir: "desc" as const, label: "Customer name: Z–A" },
+  { col: "client_name", dir: "asc" as const, label: "Customer name: A-Z" },
+  { col: "client_name", dir: "desc" as const, label: "Customer name: Z-A" },
   { col: "amount", dir: "desc" as const, label: "Amount: High to low" },
   { col: "amount", dir: "asc" as const, label: "Amount: Low to high" },
 ] as const;

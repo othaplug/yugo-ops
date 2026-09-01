@@ -51,7 +51,7 @@ type Data = {
 };
 
 function fmtDateTime(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     return new Date(iso).toLocaleString("en-CA", {
       month: "short",
@@ -174,14 +174,14 @@ export default function OutboundTrackingClient({ data }: { data: Data }) {
           <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: `${FOREST}99`, margin: "0 0 16px" }}>
             Pickup & milestones
           </p>
-          <Row label="Consignor" value={shipment.consignor.name ?? "—"} />
-          <Row label="Pickup address" value={shipment.consignor.address ?? "—"} />
+          <Row label="Consignor" value={shipment.consignor.name ?? "-"} />
+          <Row label="Pickup address" value={shipment.consignor.address ?? "-"} />
           <Row
             label="Scheduled pickup"
             value={
               shipment.schedule.pickup_date
                 ? `${shipment.schedule.pickup_date}${shipment.schedule.pickup_window ? ` · ${shipment.schedule.pickup_window}` : ""}`
-                : "—"
+                : "-"
             }
           />
           <Row label="Picked up" value={fmtDateTime(shipment.milestones.picked_up_at)} />
@@ -197,9 +197,9 @@ export default function OutboundTrackingClient({ data }: { data: Data }) {
             <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: `${FOREST}99`, margin: "0 0 16px" }}>
               Pallet specs
             </p>
-            <Row label="Count" value={shipment.pallet.count?.toString() ?? "—"} />
-            <Row label="Dimensions" value={shipment.pallet.dimensions ?? "—"} />
-            <Row label="Weight" value={shipment.pallet.weight_lb ? `${shipment.pallet.weight_lb} lb` : "—"} />
+            <Row label="Count" value={shipment.pallet.count?.toString() ?? "-"} />
+            <Row label="Dimensions" value={shipment.pallet.dimensions ?? "-"} />
+            <Row label="Weight" value={shipment.pallet.weight_lb ? `${shipment.pallet.weight_lb} lb` : "-"} />
           </div>
         )}
 
@@ -209,9 +209,9 @@ export default function OutboundTrackingClient({ data }: { data: Data }) {
             <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: `${FOREST}99`, margin: "0 0 16px" }}>
               Carrier handoff
             </p>
-            <Row label="Carrier" value={shipment.carrier.name ?? "—"} />
-            <Row label="BOL" value={shipment.carrier.bol_number ?? "—"} monospace />
-            <Row label="PRO" value={shipment.carrier.pro_number ?? "—"} monospace />
+            <Row label="Carrier" value={shipment.carrier.name ?? "-"} />
+            <Row label="BOL" value={shipment.carrier.bol_number ?? "-"} monospace />
+            <Row label="PRO" value={shipment.carrier.pro_number ?? "-"} monospace />
           </div>
         )}
 
@@ -234,8 +234,8 @@ export default function OutboundTrackingClient({ data }: { data: Data }) {
               <Row label="Declared value handling" value={`$${shipment.pricing.declared_value_fee.toFixed(2)}`} />
             ) : null}
             <hr style={{ border: 0, borderTop: `1px solid ${FOREST}1F`, margin: "12px 0" }} />
-            <Row label="Subtotal" value={shipment.pricing.subtotal ? `$${shipment.pricing.subtotal.toFixed(2)}` : "—"} />
-            <Row label="HST" value={shipment.pricing.tax_amount ? `$${shipment.pricing.tax_amount.toFixed(2)}` : "—"} />
+            <Row label="Subtotal" value={shipment.pricing.subtotal ? `$${shipment.pricing.subtotal.toFixed(2)}` : "-"} />
+            <Row label="HST" value={shipment.pricing.tax_amount ? `$${shipment.pricing.tax_amount.toFixed(2)}` : "-"} />
             <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${FOREST}1F` }}>
               <Row label="Total CAD" value={`$${shipment.pricing.total_price.toFixed(2)}`} bold />
             </div>

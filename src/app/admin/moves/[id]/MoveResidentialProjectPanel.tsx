@@ -175,7 +175,7 @@ export default function MoveResidentialProjectPanel(props: {
               </div>
               {(d.origin_address || d.destination_address) && (
                 <p className="text-[10px] text-[var(--yu3-ink-muted)] mt-1 leading-snug break-words">
-                  {String(d.origin_address || "").trim() || "—"}
+                  {String(d.origin_address || "").trim() || "-"}
                   {d.destination_address ? ` · ${String(d.destination_address).trim()}` : ""}
                 </p>
               )}

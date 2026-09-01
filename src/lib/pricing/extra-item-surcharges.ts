@@ -45,7 +45,7 @@ const ITEM_CATEGORY: Record<string, keyof typeof EXTRA_ITEM_SURCHARGES> = {
   Wardrobe: "large",
   "Bookshelf (large)": "large",
   'TV (55"+)': "large",
-  'TV (55–65")': "large",
+  'TV (55-65")': "large",
   "Desk (large)": "large",
   "China cabinet": "large",
   Refrigerator: "extra_large",

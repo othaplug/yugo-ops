@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
   const rating = Number(body.rating);
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    return NextResponse.json({ error: "rating must be 1–5" }, { status: 400 });
+    return NextResponse.json({ error: "rating must be 1 to 5" }, { status: 400 });
   }
 
   const platform = String(body.platform || "google").toLowerCase();

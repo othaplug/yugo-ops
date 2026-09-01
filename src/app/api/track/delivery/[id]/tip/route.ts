@@ -82,7 +82,7 @@ export async function POST(
       sourceId,
       amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
       referenceId: deliveryId,
-      note: `Tip (delivery) – ${delivery.customer_name || delivery.client_name || deliveryId}`,
+      note: `Tip (delivery), ${delivery.customer_name || delivery.client_name || deliveryId}`,
       idempotencyKey,
       locationId,
     });

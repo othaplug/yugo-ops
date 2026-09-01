@@ -320,7 +320,7 @@ export default function ScopeChargeModal({
                         })
                       }
                       className={inputBase}
-                      title="Weight tier — recorded for crew/truck planning"
+                      title="Weight tier, recorded for crew/truck planning"
                     >
                       <option value={0.4}>Light</option>
                       <option value={1.0}>Standard</option>

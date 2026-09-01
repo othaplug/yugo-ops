@@ -526,7 +526,7 @@ export default function PartnerHealthClient() {
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-[13px] text-[var(--yu3-ink-strong)]">
-                        {p.revenue_30d > 0 ? fmtCurrency(p.revenue_30d) : "—"}
+                        {p.revenue_30d > 0 ? fmtCurrency(p.revenue_30d) : "-"}
                       </span>
                     </td>
                     <td className="px-4 py-3">

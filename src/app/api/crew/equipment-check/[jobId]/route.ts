@@ -354,11 +354,11 @@ export async function POST(
     const parts = nonConsumableShortages.map((c) => `${c.shortage}× ${byEq.get(c.equipment_id)?.name}`).join(", ");
     const retrieveNote =
       shortageBatchReason === "left_at_client" && leftAtClientWillRetrieve !== true
-        ? " Not returning now to retrieve — coordinate pickup with the client if needed."
+        ? " Not returning now to retrieve, coordinate pickup with the client if needed."
         : "";
     await notifyAllAdmins({
       title: `Equipment shortage after job`,
-      body: `${jobType === "move" ? "Move" : "Delivery"} ${entityId.slice(0, 8)}… Missing: ${parts}. Reason: ${shortageBatchReason || "—"}. Crew: ${payload.name || "Lead"}.${retrieveNote}`,
+      body: `${jobType === "move" ? "Move" : "Delivery"} ${entityId.slice(0, 8)}… Missing: ${parts}. Reason: ${shortageBatchReason || "-"}. Crew: ${payload.name || "Lead"}.${retrieveNote}`,
       icon: "warning",
       link: jobType === "move" ? `/admin/moves/${entityId}` : `/admin/deliveries/${entityId}`,
       sourceType: "equipment_check",

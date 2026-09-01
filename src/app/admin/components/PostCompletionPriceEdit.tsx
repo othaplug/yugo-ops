@@ -98,7 +98,7 @@ export default function PostCompletionPriceEdit({
     // in the audit history ("$X to $X. <reason>") and confuses operators
     // reading the trail later. Server enforces the same rule.
     if (Math.abs(n - currentPrice) < 0.005) {
-      setError("New price is the same as the current price — nothing to save.");
+      setError("New price is the same as the current price, nothing to save.");
       return;
     }
     if (!reason.trim() || reason.trim().length < 3) {
@@ -247,7 +247,7 @@ export default function PostCompletionPriceEdit({
 
           {priceDiff > 0 ? (
             <div className="rounded-md border border-[var(--org)]/30 bg-[var(--odim,rgba(234,179,8,0.08))] px-3 py-2 text-xs text-[var(--tx2)] leading-relaxed">
-              This only corrects the recorded price — it does <strong>not</strong> collect the
+              This only corrects the recorded price, it does <strong>not</strong> collect the
               difference from the customer. To actually charge the extra (with HST + card
               recovery) and post a receipt to their portal, close this and use{" "}
               <strong>&ldquo;Charge extra&rdquo;</strong> instead.

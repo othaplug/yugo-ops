@@ -136,7 +136,7 @@ export default function OutboundShipmentDetailClient({ id }: { id: string }) {
             {shipment.shipment_number}
           </h1>
           <p className="text-[12px] text-[var(--tx2)] mt-1">
-            {shipment.partner_name ?? "—"} · {shipment.business_name ?? ""}
+            {shipment.partner_name ?? "-"} · {shipment.business_name ?? ""}
           </p>
         </div>
         <div className="text-right">
@@ -279,15 +279,15 @@ export default function OutboundShipmentDetailClient({ id }: { id: string }) {
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 lg:col-span-8 space-y-4">
           <SummaryCard title="Consignor">
-            <SumRow label="Name" value={shipment.consignor_name ?? "—"} />
-            <SumRow label="Pickup address" value={shipment.consignor_address ?? "—"} />
-            <SumRow label="Scheduled" value={`${shipment.scheduled_pickup_date ?? "—"}${shipment.scheduled_pickup_window ? ` · ${shipment.scheduled_pickup_window}` : ""}`} />
+            <SumRow label="Name" value={shipment.consignor_name ?? "-"} />
+            <SumRow label="Pickup address" value={shipment.consignor_address ?? "-"} />
+            <SumRow label="Scheduled" value={`${shipment.scheduled_pickup_date ?? "-"}${shipment.scheduled_pickup_window ? ` · ${shipment.scheduled_pickup_window}` : ""}`} />
           </SummaryCard>
 
           <SummaryCard title="Items">
             {(shipment.items ?? []).map((it, i) => (
               <div key={i} className="py-1 border-b border-[var(--brd)]/40 last:border-b-0">
-                <p className="text-[12px] font-semibold text-[var(--tx)]">{String(it.name ?? "—")}</p>
+                <p className="text-[12px] font-semibold text-[var(--tx)]">{String(it.name ?? "-")}</p>
                 <p className="text-[10px] text-[var(--tx3)]">
                   {it.dimensions ? `${it.dimensions} · ` : ""}
                   {it.weight_lb ? `${it.weight_lb} lb · ` : ""}
@@ -299,15 +299,15 @@ export default function OutboundShipmentDetailClient({ id }: { id: string }) {
           </SummaryCard>
 
           <SummaryCard title="Pallet specs">
-            <SumRow label="Pallet count" value={shipment.pallet_count?.toString() ?? "—"} />
-            <SumRow label="Dimensions" value={shipment.pallet_dimensions ?? "—"} />
-            <SumRow label="Weight" value={shipment.pallet_weight_lb ? `${shipment.pallet_weight_lb} lb` : "—"} />
+            <SumRow label="Pallet count" value={shipment.pallet_count?.toString() ?? "-"} />
+            <SumRow label="Dimensions" value={shipment.pallet_dimensions ?? "-"} />
+            <SumRow label="Weight" value={shipment.pallet_weight_lb ? `${shipment.pallet_weight_lb} lb` : "-"} />
           </SummaryCard>
 
           <SummaryCard title="Carrier handoff">
-            <SumRow label="Carrier" value={shipment.carrier_name ?? "—"} />
-            <SumRow label="BOL" value={shipment.carrier_bol_number ?? "—"} mono />
-            <SumRow label="PRO" value={shipment.carrier_pro_number ?? "—"} mono />
+            <SumRow label="Carrier" value={shipment.carrier_name ?? "-"} />
+            <SumRow label="BOL" value={shipment.carrier_bol_number ?? "-"} mono />
+            <SumRow label="PRO" value={shipment.carrier_pro_number ?? "-"} mono />
           </SummaryCard>
 
           {shipment.internal_notes && (
@@ -319,11 +319,11 @@ export default function OutboundShipmentDetailClient({ id }: { id: string }) {
 
         <div className="col-span-12 lg:col-span-4 space-y-4">
           <SummaryCard title="Pricing">
-            <SumRow label="Declared value" value={shipment.declared_value ? `$${shipment.declared_value}` : "—"} />
-            <SumRow label="Subtotal" value={shipment.subtotal ? `$${Number(shipment.subtotal).toFixed(2)}` : "—"} />
-            <SumRow label="HST" value={shipment.tax_amount ? `$${Number(shipment.tax_amount).toFixed(2)}` : "—"} />
+            <SumRow label="Declared value" value={shipment.declared_value ? `$${shipment.declared_value}` : "-"} />
+            <SumRow label="Subtotal" value={shipment.subtotal ? `$${Number(shipment.subtotal).toFixed(2)}` : "-"} />
+            <SumRow label="HST" value={shipment.tax_amount ? `$${Number(shipment.tax_amount).toFixed(2)}` : "-"} />
             <div className="pt-2 mt-2 border-t border-[var(--brd)]/50">
-              <SumRow label="Total CAD" value={shipment.total_price ? `$${Number(shipment.total_price).toFixed(2)}` : "—"} bold />
+              <SumRow label="Total CAD" value={shipment.total_price ? `$${Number(shipment.total_price).toFixed(2)}` : "-"} bold />
             </div>
           </SummaryCard>
 
@@ -395,7 +395,7 @@ function SumRow({ label, value, mono, bold }: { label: string; value: string; mo
 }
 
 function fmtMs(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     return new Date(iso).toLocaleString("en-CA", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
   } catch {

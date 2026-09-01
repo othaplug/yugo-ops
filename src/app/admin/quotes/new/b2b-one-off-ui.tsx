@@ -186,7 +186,7 @@ export const B2B_PARKING_PILLS: { value: string; label: string }[] = [
 /** @deprecated Use weightTierSelectOptions() — kept for older embeds that still read this id. */
 export const B2B_WEIGHT_PILLS = weightTierSelectOptions().map((o) => ({
   value: o.value,
-  label: o.label.split(" — ")[0] ?? o.label,
+  label: o.label.split(", ")[0] ?? o.label,
   hint: o.shortHint,
 }));
 
@@ -550,7 +550,7 @@ export function B2bItemRowView(props: {
           {weightTierSelectOptions().map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
-              {o.shortHint !== "Base" ? ` (${o.shortHint})` : ""} —{" "}
+              {o.shortHint !== "Base" ? ` (${o.shortHint})` : ""} -{" "}
               {getWeightTier(o.value)?.examples ?? ""}
             </option>
           ))}

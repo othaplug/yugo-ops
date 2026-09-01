@@ -100,7 +100,7 @@ export default async function OfficeWelcomePage({
       Number(m[3]) + (officeDayCount - 1),
     );
     const endIso = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
-    return `${start} – ${formatMoveDate(endIso)}`;
+    return `${start}, ${formatMoveDate(endIso)}`;
   })();
 
   let moveProjectSchedule: {

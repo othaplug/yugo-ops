@@ -317,7 +317,7 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
       // Custom deal properties haven't been created in this HubSpot portal yet.
       // Fall back to standard properties only so the deal still gets created.
       console.warn(
-        `[HubSpot] Custom deal properties missing for ${quoteIdText} — retrying with standard properties only. Error: ${errText.slice(0, 500)}`,
+        `[HubSpot] Custom deal properties missing for ${quoteIdText}, retrying with standard properties only. Error: ${errText.slice(0, 500)}`,
       );
       const standardBody: { properties: Record<string, unknown>; associations?: unknown } = {
         properties: {

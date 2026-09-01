@@ -82,9 +82,9 @@ function detailsBlock(ctx: PartnerEmailContext): string {
   return `
 <table width="100%" style="font-size:13px;line-height:1.6;color:${FOREST};margin:8px 0 16px;">
 <tr><td style="padding:6px 0;width:140px;color:${FOREST}99;">Shipment</td><td style="padding:6px 0;font-weight:600;">${ctx.shipmentNumber}</td></tr>
-<tr><td style="padding:6px 0;color:${FOREST}99;">Consignor</td><td style="padding:6px 0;">${ctx.consignorName ?? "—"}</td></tr>
-<tr><td style="padding:6px 0;color:${FOREST}99;">Pickup address</td><td style="padding:6px 0;">${ctx.consignorAddress ?? "—"}</td></tr>
-<tr><td style="padding:6px 0;color:${FOREST}99;">Pickup date</td><td style="padding:6px 0;">${ctx.scheduledPickupDate ?? "—"}${window}</td></tr>
+<tr><td style="padding:6px 0;color:${FOREST}99;">Consignor</td><td style="padding:6px 0;">${ctx.consignorName ?? "-"}</td></tr>
+<tr><td style="padding:6px 0;color:${FOREST}99;">Pickup address</td><td style="padding:6px 0;">${ctx.consignorAddress ?? "-"}</td></tr>
+<tr><td style="padding:6px 0;color:${FOREST}99;">Pickup date</td><td style="padding:6px 0;">${ctx.scheduledPickupDate ?? "-"}${window}</td></tr>
 ${ctx.declaredValue ? `<tr><td style="padding:6px 0;color:${FOREST}99;">Declared value</td><td style="padding:6px 0;">$${Number(ctx.declaredValue).toFixed(2)} CAD</td></tr>` : ""}
 </table>`;
 }
@@ -99,14 +99,14 @@ export function renderConfirmationEmail(ctx: PartnerEmailContext): {
   ${header("Shipment confirmed", `Pickup booked for ${ctx.scheduledPickupDate ?? "your shipment"}`)}
   <p style="font-size:14px;line-height:1.6;">Hi ${greeting},</p>
   <p style="font-size:14px;line-height:1.6;">
-    We're confirmed for your outbound staging shipment. Below is the booking summary — you can track every step at the link at the bottom of this email.
+    We're confirmed for your outbound staging shipment. Below is the booking summary, you can track every step at the link at the bottom of this email.
   </p>
   ${detailsBlock(ctx)}
   ${pricingTable(ctx.totalPrice)}
   ${footer(ctx.trackingUrl)}
 </td></tr>`;
   return {
-    subject: `Yugo shipment ${ctx.shipmentNumber} confirmed — pickup ${ctx.scheduledPickupDate ?? "scheduled"}`,
+    subject: `Yugo shipment ${ctx.shipmentNumber} confirmed, pickup ${ctx.scheduledPickupDate ?? "scheduled"}`,
     html: shell(inner),
   };
 }
@@ -156,7 +156,7 @@ export function renderReadyForCarrierEmail(
   ${header("Ready for pickup", "Your shipment is ready for the carrier")}
   <p style="font-size:14px;line-height:1.6;">Hi ${greeting},</p>
   <p style="font-size:14px;line-height:1.6;">
-    Palletizing is complete and the shipment is staged at the Yugo warehouse. Please coordinate a pickup appointment with your carrier — we'll release at the door once they arrive with a matching BOL.
+    Palletizing is complete and the shipment is staged at the Yugo warehouse. Please coordinate a pickup appointment with your carrier, we'll release at the door once they arrive with a matching BOL.
   </p>
   ${palletSpec ? `<div style="margin:18px 0;padding:14px;background:${CREAM};border-radius:8px;font-size:13px;line-height:1.6;"><strong style="color:${FOREST};">Pallet specs:</strong> ${palletSpec}</div>` : ""}
   ${footer(ctx.trackingUrl)}

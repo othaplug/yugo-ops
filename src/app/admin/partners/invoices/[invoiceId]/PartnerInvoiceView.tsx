@@ -61,7 +61,7 @@ function fmt(n: number) {
 }
 
 function fmtDate(d: string | null) {
-  if (!d) return "—";
+  if (!d) return "-";
   return formatPlatformDisplay(new Date(d + (d.includes("T") ? "" : "T12:00:00")), {
     month: "short",
     day: "numeric",
@@ -152,7 +152,7 @@ export default function PartnerInvoiceView({
                 {statusCfg.label}
               </span>
               <span className="text-[12px] text-[var(--tx3)]">
-                {fmtDate(invoice.period_start)} – {fmtDate(invoice.period_end)}
+                {fmtDate(invoice.period_start)} - {fmtDate(invoice.period_end)}
               </span>
             </div>
           </div>
@@ -256,7 +256,7 @@ export default function PartnerInvoiceView({
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-[12px] text-[var(--tx)]">
-                        {m.client_name || "—"}
+                        {m.client_name || "-"}
                       </td>
                       <td className="px-4 py-3 text-[12px] text-[var(--tx3)] whitespace-nowrap">
                         {m.scheduled_date ? fmtDate(m.scheduled_date) : fmtDate(m.completed_at)}
@@ -267,11 +267,11 @@ export default function PartnerInvoiceView({
                             {extractCity(m.from_address)} → {extractCity(m.to_address)}
                           </span>
                         ) : (
-                          m.from_address || "—"
+                          m.from_address || "-"
                         )}
                       </td>
                       <td className="px-4 py-3 text-[13px] font-bold text-[var(--tx)]">
-                        {rev > 0 ? fmt(rev) : <span className="text-[var(--tx3)] font-normal">—</span>}
+                        {rev > 0 ? fmt(rev) : <span className="text-[var(--tx3)] font-normal">-</span>}
                       </td>
                     </tr>
                   );

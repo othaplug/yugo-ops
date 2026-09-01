@@ -283,7 +283,7 @@ export function buildNotificationTitle(
     quote_expired: "Quote expired",
     quote_declined: "Quote declined",
     quote_cold: "Quote went cold",
-    quote_hot: "Hot quote — multiple views",
+    quote_hot: "Hot quote, multiple views",
     payment_received: "Payment received",
     payment_failed: "Payment failed",
     quote_comparison_signal: "Quote comparison signal",

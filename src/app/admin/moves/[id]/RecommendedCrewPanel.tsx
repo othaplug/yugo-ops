@@ -167,7 +167,7 @@ export default function RecommendedCrewPanel({
                   {rec.crew.total_jobs > 0 ? (
                     <>
                       <span>
-                        Satisfaction {rec.crew.avg_satisfaction?.toFixed(1) ?? "—"}
+                        Satisfaction {rec.crew.avg_satisfaction?.toFixed(1) ?? "-"}
                       </span>
                       <span>
                         {rec.crew.damage_rate === 0

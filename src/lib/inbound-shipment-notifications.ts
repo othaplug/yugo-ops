@@ -94,7 +94,7 @@ export async function notifyInboundShipmentStakeholders(
     case "created": {
       const shipTo = await hqAddress();
       await sendPartner(
-        `Shipment confirmed — ${row.shipment_number}`,
+        `Shipment confirmed, ${row.shipment_number}`,
         wrapHtml(
           "Your inbound shipment is confirmed",
           `<p>Reference <strong>${row.shipment_number}</strong>. Please ship to:</p>
@@ -110,7 +110,7 @@ export async function notifyInboundShipmentStakeholders(
         `${row.shipment_number} is in transit`,
         wrapHtml(
           "Shipment in transit",
-          `<p><strong>${row.shipment_number}</strong> — ${label}</p>
+          `<p><strong>${row.shipment_number}</strong>, ${label}</p>
            ${row.carrier_name ? `<p>Carrier: ${row.carrier_name}</p>` : ""}
            ${row.carrier_tracking_number ? `<p>Tracking: ${row.carrier_tracking_number}</p>` : ""}
            ${row.carrier_eta ? `<p>Expected arrival: ${row.carrier_eta}</p>` : ""}
@@ -124,7 +124,7 @@ export async function notifyInboundShipmentStakeholders(
         `${row.shipment_number} received and inspected`,
         wrapHtml(
           "Received and inspected",
-          `<p><strong>${row.shipment_number}</strong> — ${summary} arrived in good condition after inspection.</p>
+          `<p><strong>${row.shipment_number}</strong>, ${summary} arrived in good condition after inspection.</p>
            <p>Please provide your customer&apos;s delivery details so we can schedule white glove delivery.</p>
            <p><a href="${customerUrl}" style="display:inline-block;margin-top:8px;padding:10px 16px;background:#1f5f3f;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Provide customer details</a></p>
            <p style="font-size:13px;margin-top:12px;"><a href="${trackUrl}" style="color:#b8860b;">View timeline</a></p>`,
@@ -137,7 +137,7 @@ export async function notifyInboundShipmentStakeholders(
         `Urgent: issue on ${row.shipment_number}`,
         wrapHtml(
           "Inspection issue",
-          `<p><strong>${row.shipment_number}</strong> — we noted a condition issue during inspection.</p>
+          `<p><strong>${row.shipment_number}</strong>, we noted a condition issue during inspection.</p>
            ${row.inspection_notes ? `<p style="background:#fff8f0;padding:12px;border-radius:8px;">${row.inspection_notes}</p>` : ""}
            <p>Please review photos on the status page and reply with instructions.</p>
            <p><a href="${trackUrl}" style="color:#b8860b;">Open shipment</a> · <a href="${customerUrl}" style="color:#b8860b;">Send notes</a></p>`,
@@ -182,7 +182,7 @@ export async function notifyInboundShipmentStakeholders(
     }
     case "delivery_scheduled": {
       await sendPartner(
-        `${row.shipment_number} — delivery scheduled`,
+        `${row.shipment_number}, delivery scheduled`,
         wrapHtml(
           "Delivery scheduled",
           `<p><strong>${row.shipment_number}</strong> is scheduled${
@@ -195,7 +195,7 @@ export async function notifyInboundShipmentStakeholders(
         try {
           await sendEmail({
             to: row.customer_email.trim(),
-            subject: `Your delivery is scheduled — ${row.shipment_number}`,
+            subject: `Your delivery is scheduled, ${row.shipment_number}`,
             html: wrapHtml(
               "Delivery scheduled",
               `<p>Hi ${row.customer_name || "there"},</p>
@@ -227,7 +227,7 @@ export async function notifyInboundShipmentStakeholders(
     }
     case "delivered": {
       await sendPartner(
-        `${row.shipment_number} — delivered`,
+        `${row.shipment_number}, delivered`,
         wrapHtml(
           "Delivery complete",
           `<p><strong>${row.shipment_number}</strong> has been delivered and proof of delivery captured.</p>
@@ -238,7 +238,7 @@ export async function notifyInboundShipmentStakeholders(
     }
     case "completed": {
       await sendPartner(
-        `${row.shipment_number} — closed`,
+        `${row.shipment_number}, closed`,
         wrapHtml(
           "Shipment completed",
           `<p><strong>${row.shipment_number}</strong> is fully closed on our side. Thank you for shipping with Yugo.</p>`,

@@ -163,8 +163,8 @@ export async function POST(req: Request) {
             grandTotal: grandTotalForCheck,
           });
           const errMsg = fullPaymentByServicePolicy
-            ? `${svc.replace(/_/g, " ")} bookings collect the full amount at booking — no deposit split. Refresh the page and the form will switch to full payment automatically.`
-            : `Your move is in ${decision.hoursUntilMove} hours, so the full balance is collected at booking. Refresh the page — the form will switch to full payment automatically.`;
+            ? `${svc.replace(/_/g, " ")} bookings collect the full amount at booking, no deposit split. Refresh the page and the form will switch to full payment automatically.`
+            : `Your move is in ${decision.hoursUntilMove} hours, so the full balance is collected at booking. Refresh the page, the form will switch to full payment automatically.`;
           return NextResponse.json(
             {
               error: errMsg,
@@ -215,7 +215,7 @@ export async function POST(req: Request) {
       } catch (e) {
         const structured = squareThrownErrorStructured(e);
         console.error(
-          `[Square] customer create failed: quote=${quoteId} code=${structured.code ?? "—"} ` +
+          `[Square] customer create failed: quote=${quoteId} code=${structured.code ?? "-"} ` +
             `status=${structured.statusCode ?? "?"} detail=${(structured.detail ?? "").slice(0, 200)}`,
         );
         // Persist the failure so the admin notification & retry surface
@@ -253,9 +253,9 @@ export async function POST(req: Request) {
         notifyAdmins("payment_failed", {
           quoteId,
           sourceId: quote.id,
-          subject: `Square customer create failed — ${quoteId}`,
+          subject: `Square customer create failed, ${quoteId}`,
           description:
-            `${quoteId} — ${clientEmail}: customer create failed before payment was attempted.` +
+            `${quoteId}, ${clientEmail}: customer create failed before payment was attempted.` +
             (structured.code ? ` [code=${structured.code}]` : "") +
             (structured.detail ? `\n\nDetail: ${structured.detail}` : ""),
           clientName,
@@ -311,7 +311,7 @@ export async function POST(req: Request) {
           // re-write it onto the move and force a fresh charge below.
           console.warn(
             `[payments/process] discarded stale square_payment_id on ${quoteId}: ` +
-              `points to reference_id=${refId ?? "—"} status=${status ?? "—"} (must match ${quoteId} + COMPLETED/APPROVED)`,
+              `points to reference_id=${refId ?? "-"} status=${status ?? "-"} (must match ${quoteId} + COMPLETED/APPROVED)`,
           );
           await supabase
             .from("quotes")
@@ -348,8 +348,8 @@ export async function POST(req: Request) {
         const cardErr = squareThrownErrorStructured(e);
         const isCardTokenUsed = cardErr.code === "CARD_TOKEN_USED";
         console.error(
-          `[Square] card storage failed: code=${cardErr.code ?? "—"} ` +
-            `category=${cardErr.category ?? "—"} status=${cardErr.statusCode ?? "?"}`,
+          `[Square] card storage failed: code=${cardErr.code ?? "-"} ` +
+            `category=${cardErr.category ?? "-"} status=${cardErr.statusCode ?? "?"}`,
         );
         // Card create failed — the card may already be on file from a prior session.
         // Fall back to listing the customer's stored cards before giving up.
@@ -375,8 +375,8 @@ export async function POST(req: Request) {
           notifyAdmins("payment_failed", {
             quoteId,
             sourceId: quoteId,
-            subject: "Card storage failed at checkout — no card on file",
-            description: `${quoteId} — ${clientEmail}: Square card.create failed and no existing card found. Balance will require manual collection.`,
+            subject: "Card storage failed at checkout, no card on file",
+            description: `${quoteId}, ${clientEmail}: Square card.create failed and no existing card found. Balance will require manual collection.`,
             clientName,
             excludeRecipientEmails: clientEmail.trim() ? [clientEmail.trim().toLowerCase()] : [],
           }).catch(() => {});
@@ -463,7 +463,7 @@ export async function POST(req: Request) {
         const msg = structured.message;
         console.error(
           `[Square] payment failed: quote=${quoteId} status=${structured.statusCode ?? "?"} ` +
-            `code=${structured.code ?? "—"} category=${structured.category ?? "—"} ` +
+            `code=${structured.code ?? "-"} category=${structured.category ?? "-"} ` +
             `detail=${(structured.detail ?? "").slice(0, 200)}`,
         );
         const nextRetry = retryCount + 1;
@@ -537,13 +537,13 @@ export async function POST(req: Request) {
           quoteId,
           sourceId: quote.id,
           subject: structured.code
-            ? `Quote payment failed — ${structured.code}`
+            ? `Quote payment failed, ${structured.code}`
             : "Quote payment failed",
           // Surface the structured code + Square detail so the admin email
           // identifies whether it's a bank decline, an SDK timeout, or a
           // config issue — not just the generic client-facing copy.
           description:
-            `${quoteId} — ${clientEmail}: ${msg}` +
+            `${quoteId}, ${clientEmail}: ${msg}` +
             (structured.code ? ` [code=${structured.code}]` : "") +
             (structured.category ? ` [category=${structured.category}]` : "") +
             (structured.statusCode ? ` [status=${structured.statusCode}]` : "") +
@@ -586,7 +586,7 @@ export async function POST(req: Request) {
           .then((html) =>
             sendEmail({
               to: clientEmail,
-              subject: "We could not process your payment — quick fix needed",
+              subject: "We could not process your payment, quick fix needed",
               html,
             }),
           )
@@ -769,7 +769,7 @@ export async function POST(req: Request) {
           ? "B2B delivery creation failed AFTER successful payment"
           : "Move creation failed AFTER successful payment",
         description:
-          `${quoteId} — ${clientEmail}: Square accepted payment ` +
+          `${quoteId}, ${clientEmail}: Square accepted payment ` +
           `${squarePaymentId ?? "(unknown id)"} for $${amount.toLocaleString()} ` +
           `but ${isB2bPay ? "delivery" : "move"} row insert threw:\n\n${errMsg}\n\n` +
           `Run /api/admin/quotes/recover-move or fix the underlying DB error.`,

@@ -106,7 +106,7 @@ export const InvoiceDrawer = ({
               >
                 {linkedMove.number}
               </Link>
-            ) : invoice.moveId ? "–" : "None",
+            ) : invoice.moveId ? "-" : "None",
           },
           {
             label: "Subtotal",
@@ -123,7 +123,7 @@ export const InvoiceDrawer = ({
           { label: "Due", value: formatShortDate(invoice.dueAt) },
           {
             label: "Paid",
-            value: invoice.paidAt ? formatShortDate(invoice.paidAt) : "–",
+            value: invoice.paidAt ? formatShortDate(invoice.paidAt) : "-",
           },
           {
             label: "Status",

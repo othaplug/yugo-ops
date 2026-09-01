@@ -179,9 +179,9 @@ export const WG_ITEM_CATEGORIES: {
 
 export const WG_WEIGHT_CLASS_OPTIONS: { value: WhiteGloveWeightClass; label: string }[] = [
   { value: "under_50", label: "Under 50 lbs" },
-  { value: "50_150", label: "50–150 lbs" },
-  { value: "150_300", label: "150–300 lbs" },
-  { value: "300_500", label: "300–500 lbs" },
+  { value: "50_150", label: "50 to 150 lbs" },
+  { value: "150_300", label: "150 to 300 lbs" },
+  { value: "300_500", label: "300 to 500 lbs" },
   { value: "over_500", label: "Over 500 lbs" },
 ]
 

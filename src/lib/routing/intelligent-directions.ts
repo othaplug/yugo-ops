@@ -61,7 +61,7 @@ export type FetchIntelligentRouteOptions = {
 };
 
 function formatEta(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return "—";
+  if (!Number.isFinite(seconds) || seconds < 0) return "-";
   const m = Math.max(1, Math.round(seconds / 60));
   if (m < 60) return `${m} min`;
   const h = Math.floor(m / 60);
@@ -70,7 +70,7 @@ function formatEta(seconds: number): string {
 }
 
 function formatDistanceM(m: number): string {
-  if (!Number.isFinite(m) || m < 0) return "—";
+  if (!Number.isFinite(m) || m < 0) return "-";
   if (m < 1000) return `${Math.round(m)} m`;
   return `${(m / 1000).toFixed(1)} km`;
 }

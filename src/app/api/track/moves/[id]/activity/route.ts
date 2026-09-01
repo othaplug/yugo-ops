@@ -286,7 +286,7 @@ export async function GET(
         id: `item-${x.id}`,
         at: x.added_at,
         title: "Awaiting your decision",
-        detail: fee ? `${desc} · ${fee} — tap Accept in your email to approve` : desc,
+        detail: fee ? `${desc} · ${fee}, tap Accept in your email to approve` : desc,
         kind: "items_awaiting_client",
         amountCents: x.fee_cents ?? null,
       });

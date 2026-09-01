@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
   const billingMethod = (org.billing_method || "per_delivery").trim().toLowerCase();
   if (billingMethod === "monthly_statement") {
     return NextResponse.json({
-      message: "Partner billed on monthly statement — per-move invoice skipped",
+      message: "Partner billed on monthly statement, per-move invoice skipped",
       skipped: true,
     });
   }

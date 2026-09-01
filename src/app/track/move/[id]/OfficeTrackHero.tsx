@@ -492,7 +492,7 @@ export function OfficeTrackHero({
             }}
           >
             <strong style={{ color: palette.ink }}>Share this link</strong> with
-            anyone on your team who needs visibility — building management, IT
+            anyone on your team who needs visibility, building management, IT
             lead, office manager. Everyone sees the same live plan.
           </div>
         )}

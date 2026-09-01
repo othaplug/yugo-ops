@@ -1005,7 +1005,7 @@ export default function RevenueClient({
             {period === "monthly"
               ? now.toLocaleString("en-US", { month: "long", year: "numeric" })
               : period === "ytd"
-                ? `Jan – ${currentMonthLabel} ${now.getFullYear()}`
+                ? `Jan, ${currentMonthLabel} ${now.getFullYear()}`
                 : period === "6mo"
                   ? "Last 6 Months"
                   : period === "all"

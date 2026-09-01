@@ -109,7 +109,7 @@ export async function POST(
       customerId: customerId ?? undefined,
       buyerEmailAddress: move.client_email || undefined,
       referenceId: moveId,
-      note: `Tip – ${move.client_name || moveId}`,
+      note: `Tip, ${move.client_name || moveId}`,
       idempotencyKey,
       locationId,
     });

@@ -271,7 +271,7 @@ export default function QuoteResidentialDisplaySection({
       setJsonAdvancedError(null);
       setMetaJsonAdvanced("");
       setMetaJsonAdvancedError(null);
-      toast("Overrides cleared — code defaults are active in platform_config", "check");
+      toast("Overrides cleared, code defaults are active in platform_config", "check");
     } catch {
       toast("Clear failed", "x");
     } finally {
@@ -293,7 +293,7 @@ export default function QuoteResidentialDisplaySection({
       title={
         <>
           <ListBullets className="w-[14px] h-[14px]" aria-hidden />
-          Client quote — residential tiers
+          Client quote, residential tiers
         </>
       }
       subtitle="Essential is the full bullet list on the Essential tier card. Signature and Estate use additions after “Everything in Essential / Signature, plus:” on those cards only. The client-facing Your Move Includes section uses built-in complete lists per selected tier (not merged from these rows). Optional merge key and highlight still apply to how additions appear on tier cards. Truck and crew lines on cards still follow live quote data."

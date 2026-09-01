@@ -280,7 +280,7 @@ function AddReviewModal({
       }
       onSaved();
     } catch {
-      setError("Network error — try again");
+      setError("Network error, try again");
     } finally {
       setLoading(false);
     }
@@ -303,7 +303,7 @@ function AddReviewModal({
               Log external review
             </h2>
             <p className="text-[12px] text-[var(--yu3-ink-muted)] mt-1">
-              For reviews left directly on Google or another platform — not through the emailed link.
+              For reviews left directly on Google or another platform, not through the emailed link.
             </p>
           </div>
           <button
@@ -503,7 +503,7 @@ export default function ReviewsListClient({
       <PageHeader
         eyebrow="Operations"
         title="Client reviews"
-        description="Post-move client reviews. Crew sign-off ratings live on /admin/crew/analytics — those are a separate on-tablet score and tend to read higher."
+        description="Post-move client reviews. Crew sign-off ratings live on /admin/crew/analytics, those are a separate on-tablet score and tend to read higher."
       />
 
       <KpiStrip
@@ -511,7 +511,7 @@ export default function ReviewsListClient({
           {
             id: "avg",
             label: "Average rating",
-            value: stats.rated > 0 ? stats.avg.toFixed(1) : "—",
+            value: stats.rated > 0 ? stats.avg.toFixed(1) : "-",
             hint: `${stats.rated} of ${stats.total} reviewed`,
           },
           {
@@ -601,13 +601,13 @@ export default function ReviewsListClient({
                           </span>
                         </div>
                       ) : (
-                        <span className="text-[var(--yu3-ink-muted)] text-[12px]">—</span>
+                        <span className="text-[var(--yu3-ink-muted)] text-[12px]">-</span>
                       )}
                     </td>
 
                     <td className="px-4 py-3">
                       <div className="font-semibold text-[var(--yu3-ink-strong)]">
-                        {r.client_name || "—"}
+                        {r.client_name || "-"}
                       </div>
                       {r.client_email && (
                         <div className="text-[11px] text-[var(--yu3-ink-muted)]">{r.client_email}</div>
@@ -623,7 +623,7 @@ export default function ReviewsListClient({
                           {r.move_code || "view"}
                         </Link>
                       ) : (
-                        <span className="text-[var(--yu3-ink-muted)]">—</span>
+                        <span className="text-[var(--yu3-ink-muted)]">-</span>
                       )}
                       {r.scheduled_date && (
                         <div className="text-[11px] text-[var(--yu3-ink-muted)]">{r.scheduled_date}</div>
@@ -663,7 +663,7 @@ export default function ReviewsListClient({
                                 : "neutral"
                             }
                           >
-                            {r.status || "—"}
+                            {r.status || "-"}
                           </StatusPill>
                           {r.review_clicked && (
                             <div className="text-[10px] text-[var(--yu3-ink-muted)] mt-1">
@@ -687,7 +687,7 @@ export default function ReviewsListClient({
 
       <p className="mt-4 text-[11px] text-[var(--yu3-ink-muted)]">
         Showing {filtered.length} of {reviews.length} review request{reviews.length === 1 ? "" : "s"}.
-        Last 500 only — older reviews are paginated server-side in a later pass.
+        Last 500 only, older reviews are paginated server-side in a later pass.
       </p>
     </div>
   );

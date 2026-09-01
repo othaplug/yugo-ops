@@ -198,7 +198,7 @@ export function useHubSpotContactSuggest({
                 onClick={dismissNoMatch}
                 className="w-full text-left px-2 py-1.5 rounded-md text-[11px] font-semibold text-[var(--accent-text)] border border-[var(--gold)]/40 hover:bg-[var(--gold)]/10 transition-colors"
               >
-                Ignore search — continue
+                Ignore search, continue
               </button>
             </div>
           )}

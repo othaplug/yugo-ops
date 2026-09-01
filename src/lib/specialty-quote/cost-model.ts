@@ -34,8 +34,8 @@ export const ZONE_FEES: Record<ZoneTier, number> = {
 
 export const ZONE_LABELS: Record<ZoneTier, string> = {
   gta_core: "GTA Core (under 40 km)",
-  zone_2: "Zone 2 (40–80 km)",
-  zone_3: "Zone 3 (80–120 km)",
+  zone_2: "Zone 2 (40 to 80 km)",
+  zone_3: "Zone 3 (80 to 120 km)",
   outside: "Outside (over 120 km)",
 };
 

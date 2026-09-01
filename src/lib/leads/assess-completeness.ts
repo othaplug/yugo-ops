@@ -43,18 +43,18 @@ export function assessCompleteness(
   else missing.push("name");
 
   if (parsed.email || parsed.phone) present.push("contact");
-  else missing.push("contact — no email or phone");
+  else missing.push("contact, no email or phone");
 
   const fromA = normAddr(parsed.from_address);
   const toA = normAddr(parsed.to_address);
   if (fromA.length > 10) present.push("from_address");
-  else if (fromA.length > 0) clarifications.push("From address seems incomplete — confirm full address");
+  else if (fromA.length > 0) clarifications.push("From address seems incomplete, confirm full address");
   else missing.push("from_address");
 
   if (toA.length > 10) {
     if (fromA && toA && fromA.toLowerCase() === toA.toLowerCase()) {
       clarifications.push(
-        "From and To are the same address — is this an in-building move or labour-only?",
+        "From and To are the same address, is this an in-building move or labour-only?",
       );
       present.push("to_address");
     } else {
@@ -75,32 +75,32 @@ export function assessCompleteness(
       present.push(`service_type (auto-detected: ${guess.slug})`);
       if (guess.confidence < 0.8) {
         clarifications.push(
-          `Service type detected as "${guess.slug}" but confidence is low — verify`,
+          `Service type detected as "${guess.slug}" but confidence is low, verify`,
         );
       }
     } else {
-      clarifications.push("Service type unclear — use form or describe the job in your reply");
+      clarifications.push("Service type unclear, use form or describe the job in your reply");
     }
   } else {
     present.push("service_type");
     const inf = ctx?.service_inferred;
     if (inf && inf.slug === st && inf.confidence < 0.8) {
-      clarifications.push(`Service type inferred as "${st}" with moderate confidence — verify`);
+      clarifications.push(`Service type inferred as "${st}" with moderate confidence, verify`);
     }
   }
 
   const moveNa = st && MOVE_SIZE_NA.has(st);
   if (parsed.move_size) present.push("move_size");
-  else if (moveNa) present.push("move_size — not applicable for this service type");
-  else clarifications.push("Move size not specified — estimate from inventory or ask");
+  else if (moveNa) present.push("move_size, not applicable for this service type");
+  else clarifications.push("Move size not specified, estimate from inventory or ask");
 
   const blob = `${parsed.message || ""}\n${parsed.inventory_text || ""}`;
   if (inventory.items.length > 0 && inventory.confidence !== "none") {
     present.push(`inventory (${inventory.totalItems} items parsed)`);
   } else if ((parsed.message || "").trim().length > 50) {
-    clarifications.push("No inventory list — client described needs in message. Review manually.");
+    clarifications.push("No inventory list, client described needs in message. Review manually.");
   } else {
-    missing.push("inventory — no items provided");
+    missing.push("inventory, no items provided");
   }
 
   const multi = detectMultipleDates(blob);
@@ -126,7 +126,7 @@ export function assessCompleteness(
     path = clarifications.length > 2 ? "manual_review" : path === "auto_quote" ? "needs_info" : path;
   }
 
-  if (missing.includes("contact — no email or phone")) {
+  if (missing.includes("contact, no email or phone")) {
     path = "manual_review";
   }
 

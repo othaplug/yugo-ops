@@ -16,7 +16,7 @@ function PmPreviewBanner() {
       className="shrink-0 z-40 text-center text-[12px] sm:text-[13px] font-semibold py-2.5 px-3 sm:px-4 border-b leading-snug bg-[#FAF7F2]/98 border-[#2C3E2D]/18 text-[var(--tx)]"
       role="status"
     >
-      Sample UI — static data.{" "}
+      Sample UI, static data.{" "}
       <span className="text-[var(--tx2)] font-normal">
         Open{" "}
         <code className="text-[11px] font-mono bg-[#2C3E2D]/8 px-1 py-0.5 rounded">

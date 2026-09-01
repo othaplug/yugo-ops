@@ -77,7 +77,7 @@ export function buildQuoteUrgencySmsBody(params: {
     : `we need to confirm your crew and truck.`;
   return [
     `Hi ${name},`,
-    `Your Yugo ${noun} is ${window} — ${confirmLine}`,
+    `Your Yugo ${noun} is ${window}, ${confirmLine}`,
     `Lock it in:\n${params.quoteUrl}`,
     `Or call (647) 370-4525.`,
   ].join("\n\n");

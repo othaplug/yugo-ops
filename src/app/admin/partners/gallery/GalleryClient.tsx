@@ -165,7 +165,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                 const isExhibition = p.project_type === "exhibition" || (!p.project_type && p.status !== "delivered");
                 const start = p.start_date ? formatDateShort(p.start_date) : null;
                 const end = p.end_date ? formatDateShort(p.end_date) : null;
-                const dates = start && end ? `${start} – ${end}` : start || end || null;
+                const dates = start && end ? `${start}, ${end}` : start || end || null;
                 const subtitle = [
                   p.gallery,
                   isExhibition ? p.location : (p.address || p.location),
@@ -209,7 +209,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                           {p.start_date && (
                             <div>
                               <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-0.5">Dates</div>
-                              <div className="text-[11px] text-[var(--tx)]">{formatDate(p.start_date)}{p.end_date ? ` – ${formatDate(p.end_date)}` : ""}</div>
+                              <div className="text-[11px] text-[var(--tx)]">{formatDate(p.start_date)}{p.end_date ? `, ${formatDate(p.end_date)}` : ""}</div>
                             </div>
                           )}
                           {p.insurance_value && (
@@ -312,7 +312,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Dates</div>
-                <div className="text-[var(--tx)]">{formatDate(projectDetail.start_date)} – {formatDate(projectDetail.end_date)}</div>
+                <div className="text-[var(--tx)]">{formatDate(projectDetail.start_date)} - {formatDate(projectDetail.end_date)}</div>
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Estimate</div>

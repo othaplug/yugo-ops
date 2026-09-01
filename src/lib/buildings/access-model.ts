@@ -172,7 +172,7 @@ function schedulingFlags(row: Row, complexity: number): SchedulingFlag[] {
     const dep = num(row.coi_deposit);
     flags.push({ key: "coi", label: dep ? `Send COI + $${dep} deposit to property mgmt` : "Send COI to property mgmt" });
   }
-  if (bool(row.one_move_per_day)) flags.push({ key: "one_move", label: "One move per day — book early" });
+  if (bool(row.one_move_per_day)) flags.push({ key: "one_move", label: "One move per day, book early" });
   const hours = str(row.move_hours);
   if (hours) flags.push({ key: "move_hours", label: `Move hours: ${hours}` });
   if (complexity >= 4) flags.push({ key: "site_check", label: "Pre-move site check recommended" });

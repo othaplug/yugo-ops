@@ -104,7 +104,7 @@ export function invoiceGrossForDisplay(inv: {
  */
 export function formatDeliveryPriceForAdminList(d: DeliveryPriceFields): string {
   const pre = deliveryPreTaxForAdminList(d);
-  if (pre <= 0) return "—";
+  if (pre <= 0) return "-";
   return formatWithHST(pre);
 }
 

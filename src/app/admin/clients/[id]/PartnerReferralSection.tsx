@@ -84,7 +84,7 @@ export default function PartnerReferralSection({
       </div>
       <p className="text-[11px] text-[var(--tx3)] mb-4">
         Service partners contract Yugo for on-site moves. Referral partners send
-        personal-move leads for a commission. A PM company can be both — track
+        personal-move leads for a commission. A PM company can be both, track
         the referral relationship here separately from the service contract.
       </p>
       <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)] mb-4 cursor-pointer">

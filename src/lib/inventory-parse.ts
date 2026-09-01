@@ -1,3 +1,5 @@
+import { cleanItemName } from "@/lib/text/dedash";
+
 /**
  * Parse item name and quantity from move_inventory item_name.
  * Supports: "Club chairs x2", "Night tables ×2", "Queen bed frame x1 (requires disassembly)"
@@ -72,17 +74,19 @@ function splitTopLevelCommas(s: string): string[] {
   return out;
 }
 
-/** Expand "Table x1, Couch x2" into rows for display */
+/** Expand "Table x1, Couch x2" into rows for display.
+ *  Labels are run through cleanItemName so stored em/en dashes (e.g.
+ *  "Mattress — Queen") never reach the UI or a CSV export. */
 export function expandItemRow(itemName: string): { label: string; qty: number }[] {
   const parts = splitTopLevelCommas(itemName)
     .map((p) => p.trim())
     .filter(Boolean);
   if (parts.length === 0) {
     const { baseName, qty } = parseItemNameAndQty(itemName);
-    return [{ label: baseName || itemName, qty }];
+    return [{ label: cleanItemName(baseName || itemName), qty }];
   }
   return parts.map((part) => {
     const { baseName, qty } = parseItemNameAndQty(part);
-    return { label: baseName || part, qty };
+    return { label: cleanItemName(baseName || part), qty };
   });
 }

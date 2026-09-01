@@ -134,7 +134,7 @@ export function moveSizeInventoryMismatchMessage(
   if (score >= range.min && score <= range.max) return null;
   const sugLabel = moveSizeLabel(suggestedSize);
   if (score < range.min) {
-    return `Inventory score (${score.toFixed(1)}) is below the typical range for ${moveSizeLabel(moveSize)} (about ${range.min}–${range.max}). This may produce a higher quote than the volume suggests. Auto-detected: ${sugLabel}.`;
+    return `Inventory score (${score.toFixed(1)}) is below the typical range for ${moveSizeLabel(moveSize)} (about ${range.min}-${range.max}). This may produce a higher quote than the volume suggests. Auto-detected: ${sugLabel}.`;
   }
-  return `Inventory score (${score.toFixed(1)}) is above the typical range for ${moveSizeLabel(moveSize)} (about ${range.min}–${range.max}). Confirm move size or adjust inventory. Auto-detected: ${sugLabel}.`;
+  return `Inventory score (${score.toFixed(1)}) is above the typical range for ${moveSizeLabel(moveSize)} (about ${range.min}-${range.max}). Confirm move size or adjust inventory. Auto-detected: ${sugLabel}.`;
 }

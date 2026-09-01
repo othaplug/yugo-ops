@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { cleanItemName } from "@/lib/text/dedash";
 import { formatAccessForDisplay } from "@/lib/format-text";
 import { formatAddressWithUnit } from "@/lib/address-format";
 import { createBinOrderFromBinRentalQuote } from "@/lib/automations/create-bin-order-from-quote";
@@ -928,7 +929,7 @@ export async function createMoveFromQuote(
       const inventoryRows = (wgItems as Array<Record<string, unknown>>)
         .filter((item) => item && typeof item.description === "string" && item.description.trim())
         .map((item, idx) => {
-          const desc = String(item.description).trim();
+          const desc = cleanItemName(String(item.description).trim());
           const qty =
             typeof item.quantity === "number" && Number.isFinite(item.quantity) && item.quantity > 1
               ? Math.round(item.quantity)
@@ -952,7 +953,9 @@ export async function createMoveFromQuote(
       const inventoryRows = (rawInventoryItems as Array<Record<string, unknown>>)
         .filter((item) => item && typeof item.name === "string" && (item.name as string).trim())
         .map((item, idx) => {
-          const name = String(item.name).trim();
+          // cleanItemName strips em/en dashes so no dash reaches move_inventory
+          // (client tracking, CSV export, PDF, admin) regardless of the source.
+          const name = cleanItemName(String(item.name).trim());
           const qty = typeof item.quantity === "number" && item.quantity > 1
             ? item.quantity
             : 1;

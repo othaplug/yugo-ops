@@ -106,7 +106,7 @@ export const BuildingDrawer = ({
             label: "Last move",
             value: building.lastMoveAt
               ? formatShortDate(building.lastMoveAt)
-              : "–",
+              : "-",
           },
         ]}
       />
@@ -129,12 +129,12 @@ export const BuildingDrawer = ({
         {[
           {
             id: "1",
-            note: "Service elevator off Parker Street. Loading dock opens 7–11.",
+            note: "Service elevator off Parker Street. Loading dock opens 7 to 11.",
             author: "Crew lead · J. Ramirez",
           },
           {
             id: "2",
-            note: "Hallways tight on 4–6, plan for piece-by-piece staging.",
+            note: "Hallways tight on 4 to 6, plan for piece-by-piece staging.",
             author: "Crew lead · A. Patel",
           },
         ].map((entry) => (

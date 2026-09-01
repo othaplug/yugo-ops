@@ -959,7 +959,7 @@ export async function POST(req: NextRequest) {
             clientName: clientName || emailTrimmed,
             moveCode: jobIdDisplay,
             moveDate: scheduledDate || null,
-            timeWindow: (body.arrival_window as string)?.trim() || "Morning (7 AM – 12 PM)",
+            timeWindow: (body.arrival_window as string)?.trim() || "Morning (7 AM, 12 PM)",
             fromAddress,
             toAddress,
             tierLabel: "Estate",
@@ -1016,7 +1016,7 @@ export async function POST(req: NextRequest) {
             moveDate: (body.scheduled_date as string)?.trim() || null,
             timeWindow:
               (body.arrival_window as string)?.trim() ||
-              "Morning (7 AM – 12 PM)",
+              "Morning (7 AM, 12 PM)",
             fromAddress,
             toAddress,
             tierLabel: "Priority",

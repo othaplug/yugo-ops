@@ -125,7 +125,7 @@ export default function TipsClient({
         width: 100,
         cell: (r) => (
           <span className="text-[11px] text-[var(--yu3-ink-muted)] uppercase">
-            {r.method || "—"}
+            {r.method || "-"}
           </span>
         ),
       },
@@ -137,7 +137,7 @@ export default function TipsClient({
         width: 120,
         cell: (r) => (
           <span className="text-[11px] text-[var(--yu3-ink-muted)]">
-            {serviceTypeDisplayLabel(r.service_type) || "—"}
+            {serviceTypeDisplayLabel(r.service_type) || "-"}
           </span>
         ),
       },

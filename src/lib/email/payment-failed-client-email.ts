@@ -25,4 +25,4 @@ export async function buildPaymentFailedClientEmailHtml(params: {
   });
 }
 
-export const PAYMENT_FAILED_CLIENT_SUBJECT = "We could not process your payment — quick fix needed";
+export const PAYMENT_FAILED_CLIENT_SUBJECT = "We could not process your payment, quick fix needed";

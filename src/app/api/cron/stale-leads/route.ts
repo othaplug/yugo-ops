@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     const name = (lead.first_name as string) || "Unknown";
     const svc = (lead.service_type as string) || "Move";
     const url = `${base}/admin/leads/${lead.id}`;
-    const line = `STALE LEAD (${mins} min): ${name} — ${svc}. Nobody has responded. ${url}`;
+    const line = `STALE LEAD (${mins} min): ${name}, ${svc}. Nobody has responded. ${url}`;
 
     for (const a of admins || []) {
       const p = a.phone as string | null;

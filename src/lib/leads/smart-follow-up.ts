@@ -25,7 +25,7 @@ export function buildSmartFollowUpQuestions(completeness: CompletenessCheck): st
           "How many bedrooms is the home? (Or describe the scope of work.)",
         );
         break;
-      case "inventory — no items provided":
+      case "inventory, no items provided":
         missingQuestions.push(
           "Could you list the main furniture items? (Sofas, beds, tables, etc.)",
         );

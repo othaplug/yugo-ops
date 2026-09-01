@@ -396,12 +396,12 @@ export function fmtPricePerLb(n: number) {
 }
 
 export function fmtDate(d: string | null) {
-  if (!d) return "\u2014";
+  if (!d) return "-";
   return formatPlatformDisplay(new Date(d + "T00:00:00"), {
     weekday: "long",
     month: "long",
     day: "numeric",
-  }, "\u2014");
+  }, "-");
 }
 
 export function fmtShortDate(d: Date) {

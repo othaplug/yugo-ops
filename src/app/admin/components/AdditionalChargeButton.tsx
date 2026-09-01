@@ -157,7 +157,7 @@ export default function AdditionalChargeButton({
           ) : (
             <>
               <p className="text-xs text-[var(--tx3)] leading-relaxed">
-                Collects an extra charge on the card on file — HST and card-processing recovery are added
+                Collects an extra charge on the card on file, HST and card-processing recovery are added
                 automatically, and a receipt is posted to the client&apos;s portal. This does not change the
                 original contract total.
               </p>

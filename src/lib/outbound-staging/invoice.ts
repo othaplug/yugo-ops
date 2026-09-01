@@ -38,7 +38,7 @@ export async function sendOutboundShipmentInvoice(
     return {
       ok: false,
       skipped: true,
-      reason: `Invoice already sent (square_invoice_id=${row.square_invoice_id ?? "—"})`,
+      reason: `Invoice already sent (square_invoice_id=${row.square_invoice_id ?? "-"})`,
     };
   }
 
@@ -46,7 +46,7 @@ export async function sendOutboundShipmentInvoice(
   if (!Number.isFinite(total) || total <= 0) {
     return {
       ok: false,
-      reason: "No total_price stored on shipment row — refusing to invoice $0",
+      reason: "No total_price stored on shipment row, refusing to invoice $0",
     };
   }
 
@@ -54,7 +54,7 @@ export async function sendOutboundShipmentInvoice(
   if (!partnerEmail) {
     return {
       ok: false,
-      reason: "No partner_contact_email — Square invoice needs a recipient",
+      reason: "No partner_contact_email, Square invoice needs a recipient",
     };
   }
 

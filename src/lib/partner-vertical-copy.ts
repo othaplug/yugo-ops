@@ -38,7 +38,7 @@ export type PartnerPortalTerminology = {
 
 const FURNITURE_DELIVERY_TYPES: DeliveryTypeRow[] = [
   { value: "single_item", label: "Single Item", desc: "One piece of furniture" },
-  { value: "multi_piece", label: "Multi-Piece", desc: "2–5 items, same drop" },
+  { value: "multi_piece", label: "Multi-Piece", desc: "2 to 5 items, same drop" },
   { value: "full_room", label: "Full Room Setup", desc: "Complete room delivery + setup" },
   { value: "curbside", label: "Curbside Drop", desc: "Drop at building entrance" },
   { value: "oversized", label: "Oversized / Fragile", desc: "Piano, safe, art, etc." },
@@ -62,7 +62,7 @@ const CABINETRY_DELIVERY_TYPES: DeliveryTypeRow[] = [
 
 const ART_DELIVERY_TYPES: DeliveryTypeRow[] = [
   { value: "single_item", label: "Single Piece", desc: "One artwork or object" },
-  { value: "multi_piece", label: "Multi-Piece", desc: "2–5 pieces, same venue" },
+  { value: "multi_piece", label: "Multi-Piece", desc: "2 to 5 pieces, same venue" },
   { value: "full_room", label: "Full Placement", desc: "Full room or exhibition install" },
   { value: "curbside", label: "Dock / Entrance", desc: "Drop at loading or entrance" },
   { value: "oversized", label: "Oversized / Crated", desc: "Crated art, sculpture, etc." },
@@ -78,7 +78,7 @@ const MEDICAL_DELIVERY_TYPES: DeliveryTypeRow[] = [
 
 const HVAC_DELIVERY_TYPES: DeliveryTypeRow[] = [
   { value: "single_item", label: "Single Unit", desc: "One furnace, air handler, or major component" },
-  { value: "multi_piece", label: "Multi-Unit", desc: "2–5 units or coils, same site" },
+  { value: "multi_piece", label: "Multi-Unit", desc: "2 to 5 units or coils, same site" },
   { value: "full_room", label: "Full System", desc: "Complete system delivery + placement" },
   { value: "curbside", label: "Curbside / Dock", desc: "Drop at loading area" },
   { value: "oversized", label: "Oversized / Rooftop", desc: "RTU, large air handlers, etc." },
@@ -207,7 +207,7 @@ export function getPartnerPortalTerminology(rawVertical: string): PartnerPortalT
           "Storage",
         ],
         formatItemCountPipe: (count, rest) => formatPipe(count, rest, "unit", "units"),
-        addItemPlaceholder: "e.g. Wall cabinets — run A, 4 boxes",
+        addItemPlaceholder: "e.g. Wall cabinets, run A, 4 boxes",
       });
 
     case "medical_equipment":
@@ -223,7 +223,7 @@ export function getPartnerPortalTerminology(rawVertical: string): PartnerPortalT
           "Storage",
         ],
         formatItemCountPipe: (count, rest) => formatPipe(count, rest, "unit", "units"),
-        addItemPlaceholder: "e.g. Patient lift — model / serial",
+        addItemPlaceholder: "e.g. Patient lift, model / serial",
       });
 
     case "hvac":
@@ -239,7 +239,7 @@ export function getPartnerPortalTerminology(rawVertical: string): PartnerPortalT
           "Storage",
         ],
         formatItemCountPipe: (count, rest) => formatPipe(count, rest, "unit", "units"),
-        addItemPlaceholder: "e.g. 3-ton heat pump — model",
+        addItemPlaceholder: "e.g. 3-ton heat pump, model",
       });
 
     case "av_technology":
@@ -261,7 +261,7 @@ export function getPartnerPortalTerminology(rawVertical: string): PartnerPortalT
           "Storage",
         ],
         formatItemCountPipe: (count, rest) => formatPipe(count, rest, "unit", "units"),
-        addItemPlaceholder: "e.g. 85″ display — line item",
+        addItemPlaceholder: "e.g. 85″ display, line item",
       });
 
     case "appliances":
@@ -295,7 +295,7 @@ export function getPartnerPortalTerminology(rawVertical: string): PartnerPortalT
           "Storage",
         ],
         formatItemCountPipe: (count, rest) => formatPipe(count, rest, "piece", "pieces"),
-        addItemPlaceholder: "e.g. Oil on canvas — 48 × 60″ framed",
+        addItemPlaceholder: "e.g. Oil on canvas, 48 × 60″ framed",
       });
 
     case "interior_designer":
@@ -312,7 +312,7 @@ export function getPartnerPortalTerminology(rawVertical: string): PartnerPortalT
           "Storage",
         ],
         formatItemCountPipe: (count, rest) => formatPipe(count, rest, "piece", "pieces"),
-        addItemPlaceholder: "e.g. Lounge sectional — vendor PO",
+        addItemPlaceholder: "e.g. Lounge sectional, vendor PO",
       });
 
     case "hospitality":
@@ -328,7 +328,7 @@ export function getPartnerPortalTerminology(rawVertical: string): PartnerPortalT
           "Storage",
         ],
         formatItemCountPipe: (count, rest) => formatPipe(count, rest, "piece", "pieces"),
-        addItemPlaceholder: "e.g. Guest room package — SKU list",
+        addItemPlaceholder: "e.g. Guest room package, SKU list",
       });
 
     case "furniture_retailer":

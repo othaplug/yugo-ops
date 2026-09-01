@@ -166,7 +166,7 @@ export async function GET(req: NextRequest) {
       const billingEmail = partner.billing_email || partner.email;
       const baseUrl = getEmailBaseUrl();
       if (billingEmail) {
-        const periodLabel = `${new Date(periodStart).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}–${new Date(periodEnd).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}`;
+        const periodLabel = `${new Date(periodStart).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}-${new Date(periodEnd).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}`;
         const statementUrl = `${baseUrl}/admin/partners/statements/${stmt.id}`;
         const html = buildStatementEmail({
           partnerName: partner.name,

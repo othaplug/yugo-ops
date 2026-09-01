@@ -60,7 +60,7 @@ export async function generateInstallPhotoReport(projectId: string): Promise<voi
 
   await sendEmail({
     to: toEmail,
-    subject: `Install Complete — ${project.project_name} (${project.project_number})`,
+    subject: `Install Complete, ${project.project_name} (${project.project_number})`,
     html,
   });
 
@@ -119,7 +119,7 @@ function buildPhotoReportHtml(data: {
         ${
           item.delivery_photo_url
             ? `<a href="${item.delivery_photo_url}" style="display:inline-block;margin-top:8px;">
-                <img src="${item.delivery_photo_url}" alt="${item.item_name} — installed" width="280"
+                <img src="${item.delivery_photo_url}" alt="${item.item_name}, installed" width="280"
                   style="border-radius:6px;display:block;max-width:280px;height:auto;border:1px solid #ece8e0;" />
               </a>`
             : ""
@@ -134,7 +134,7 @@ function buildPhotoReportHtml(data: {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Install Complete — ${data.projectName}</title>
+  <title>Install Complete, ${data.projectName}</title>
 </head>
 <body style="margin:0;padding:0;background:${EMAIL_PREMIUM_PAGE};font-family:Georgia,serif;">
   <table width="100%" cellpadding="0" cellspacing="0">
@@ -196,7 +196,7 @@ function buildPhotoReportHtml(data: {
 
               <p style="margin:28px 0 0;font-size:14px;color:#3a2a1a;font-family:sans-serif;line-height:1.6;">
                 Thank you for choosing Yugo for this project.<br />
-                — ${data.coordinatorName}
+, ${data.coordinatorName}
               </p>
             </td>
           </tr>

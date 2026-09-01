@@ -84,7 +84,7 @@ export function TVMountVariantPicker({
   if (!config) {
     return (
       <div className="ml-6 text-[10px] text-amber-500">
-        TV mount pricing not loaded — refresh the page.
+        TV mount pricing not loaded, refresh the page.
       </div>
     );
   }
@@ -156,7 +156,7 @@ export function TVMountVariantPicker({
               )}
               {!band && typeof inchesValue === "number" && (
                 <span className="text-[10px] text-red-400 ml-auto">
-                  We support {sizeFloor}&quot;–{sizeCap}&quot; only.
+                  We support {sizeFloor}&quot;-{sizeCap}&quot; only.
                 </span>
               )}
             </div>

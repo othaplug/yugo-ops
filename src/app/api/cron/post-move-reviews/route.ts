@@ -137,7 +137,7 @@ export async function GET(req: NextRequest) {
               : `${effectiveScore}/5`;
           await sendEmail({
             to: adminEmail,
-            subject: `Low satisfaction: ${move.client_name} ${move.move_code} (${ratingSourceLabel}) — DO NOT send Google review`,
+            subject: `Low satisfaction: ${move.client_name} ${move.move_code} (${ratingSourceLabel}), DO NOT send Google review`,
             html: alertHtml,
           });
         }

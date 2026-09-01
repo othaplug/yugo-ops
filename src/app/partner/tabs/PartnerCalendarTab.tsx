@@ -396,7 +396,7 @@ export default function PartnerCalendarTab({
         month: "short",
         day: "numeric",
       });
-      return `${fm} – ${lm}`;
+      return `${fm}, ${lm}`;
     }
     return formatPlatformDisplay(new Date(selectedDate + "T12:00:00"), {
       weekday: "long",

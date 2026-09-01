@@ -61,6 +61,7 @@ import {
   expectedInventoryScoreForMoveSize,
 } from "@/lib/pricing/margin-cost-model";
 import { calcThreeLegFuelCost } from "@/lib/pricing/three-leg-fuel";
+import { cleanItemName } from "@/lib/text/dedash";
 import { calcLongDistanceTransit, type LongDistanceTransit } from "@/lib/pricing/long-distance";
 import { evaluateServiceAreaForQuote } from "@/lib/pricing/service-area";
 import {
@@ -885,8 +886,8 @@ const B2B_WEIGHT_SURCHARGES_FALLBACK: Record<string, number> = {
 function singleItemWeightCategory(weightClass: string | undefined | null): string {
   const w = (weightClass || "").toLowerCase();
   if (w.includes("over 500")) return "oversized";
-  if (w.includes("300-500") || w.includes("300–500")) return "very_heavy";
-  if (w.includes("150-300") || w.includes("150–300")) return "heavy";
+  if (w.includes("300-500")) return "very_heavy";
+  if (w.includes("150-300")) return "heavy";
   return "standard";
 }
 
@@ -1745,7 +1746,7 @@ async function calcResidential(
     ? calculateDampenedInventoryModifier(invResult.inventoryScore, effectiveSize, config)
     : invResult.modifier;
   if (sizeEscalated) {
-    pd("Step 0 — pricing size escalated (inventory exceeds detected size band):", {
+    pd("Step 0, pricing size escalated (inventory exceeds detected size band):", {
       detected_move_size: detectedSize,
       effective_pricing_size: effectiveSize,
       inventory_score: invResult.inventoryScore,
@@ -1761,7 +1762,7 @@ async function calcResidential(
     .single();
 
   const baseRate = br?.base_price ?? 999;
-  pd("Step 1 — base_rates (DB row for effective pricing size):", {
+  pd("Step 1, base_rates (DB row for effective pricing size):", {
     move_size: effectiveSize,
     base_price: br?.base_price,
     fallback_used: br?.base_price == null,
@@ -1813,7 +1814,7 @@ async function calcResidential(
     distanceModifier = distModVeryLong;
   }
 
-  pd("Step 2 — distance_km:", distKm, "| buckets (km):", {
+  pd("Step 2, distance_km:", distKm, "| buckets (km):", {
     ultraShort: `≤${distUltraShortKm}`,
     short: `≤${distShortKm}`,
     baseline: `≤${distBaselineKm}`,
@@ -1821,7 +1822,7 @@ async function calcResidential(
     long: `≤${distLongKm}`,
     veryLong: `≤${distVeryLongKm}`,
   });
-  pd("Step 2 — distance modifier coeffs:", {
+  pd("Step 2, distance modifier coeffs:", {
     distModUltraShort,
     distModShort,
     distModMedium,
@@ -1829,7 +1830,7 @@ async function calcResidential(
     distModVeryLong,
     distModExtreme,
   });
-  pd("Step 2 — distance_modifier (applied):", distanceModifier);
+  pd("Step 2, distance_modifier (applied):", distanceModifier);
 
   // ── Access + specialty surcharges (flat — not multiplied by tier) ──────────
   const [fromAccessLegacy, toAccessLegacy] = await Promise.all([
@@ -1866,14 +1867,14 @@ async function calcResidential(
   const costStack = effectiveInvModifier * distanceModifier;
   let operationalPrice = Math.round(baseRate * costStack);
 
-  pd("Step 3 — inventory:", {
+  pd("Step 3, inventory:", {
     inventory_modifier: invResult.modifier,
     inventory_score: invResult.inventoryScore,
     inventory_benchmark_expected: invResult.benchmarkScore,
     inventory_items_count: invResult.totalItems,
   });
-  pd("Step 3 — cost_stack (inv_modifier × distance_modifier):", costStack);
-  pd("Step 3 — baseRate × cost_stack (rounded, before surcharges):", operationalPrice);
+  pd("Step 3, cost_stack (inv_modifier × distance_modifier):", costStack);
+  pd("Step 3, baseRate × cost_stack (rounded, before surcharges):", operationalPrice);
 
   // Step 3: FIXED SURCHARGES — additive, not multiplicative
   const plc = parkingLongCarryLineTotal(config, input, "both");
@@ -2048,7 +2049,7 @@ async function calcResidential(
     multiPickupPremium;
   operationalPrice += surchargesTotal;
 
-  pd("Step 4 — fixed surcharges (additive):", {
+  pd("Step 4, fixed surcharges (additive):", {
     access_from: fromAccess,
     access_to: toAccess,
     access_total: accessSurcharge,
@@ -2069,7 +2070,7 @@ async function calcResidential(
     multi_pickup_premium: multiPickupPremium,
     surcharges_total: surchargesTotal,
   });
-  pd("Step 4 — operational_price after surcharges (before market stack):", operationalPrice);
+  pd("Step 4, operational_price after surcharges (before market stack):", operationalPrice);
 
   // Step 4: MARKET STACK — price perception drivers, capped to prevent excessive compounding
   const marketStackRaw = dateMult.multiplier * neighbourhood.multiplier;
@@ -2081,7 +2082,7 @@ async function calcResidential(
   // Keep a "subtotal" alias for the coordinator breakdown view (price before labour)
   const subtotal = marketAdjustedPrice;
 
-  pd("Step 5 — market stack:", {
+  pd("Step 5, market stack:", {
     date_multiplier: dateMult.multiplier,
     neighbourhood_multiplier: neighbourhood.multiplier,
     neighbourhood_tier: neighbourhood.tier,
@@ -2173,7 +2174,7 @@ async function calcResidential(
       // Legacy single delta (essential rate) for backward-compatible breakdown display
       labourDelta = tieredLabourDelta.essential;
 
-      pd("Step 6.5 — labour delta sanity guard:", {
+      pd("Step 6.5, labour delta sanity guard:", {
         marketAdjustedPrice,
         actualManHours,
         actualManHoursEssential,
@@ -2187,7 +2188,7 @@ async function calcResidential(
         suppressed: rateAlreadyAboveFloor || extraManHoursRaw > maxExtraManHours,
       });
 
-      pd("Step 6 — labour vs benchmark:", {
+      pd("Step 6, labour vs benchmark:", {
         labour_crew: labour.crewSize,
         labour_estimated_hours: labour.estimatedHours,
         essential_estimated_hours: essentialLabour?.estimatedHours ?? labour.estimatedHours,
@@ -2205,10 +2206,10 @@ async function calcResidential(
         tiered_labour_delta: tieredLabourDelta,
       });
     } else {
-      pd("Step 6 — labour: no benchmark row or missing labour estimate; labour deltas stay 0");
+      pd("Step 6, labour: no benchmark row or missing labour estimate; labour deltas stay 0");
     }
   } else {
-    pd("Step 6 — labour: skipped (no labour estimate)");
+    pd("Step 6, labour: skipped (no labour estimate)");
   }
 
   let estateMultiDayLabourUplift = 0;
@@ -2310,7 +2311,7 @@ async function calcResidential(
     tieredLabourDelta.estate +
     estateMultiDayLabourUplift;
 
-  pd("Step 7 — tier multipliers & rounding (config):", {
+  pd("Step 7, tier multipliers & rounding (config):", {
     tier_essential_multiplier: curatedMult,
     tier_signature_multiplier: signatureMult,
     tier_signature_size_factor: SIGNATURE_SIZE_FACTOR[sizeKey] ?? 1.0,
@@ -2321,7 +2322,7 @@ async function calcResidential(
     minimum_job_amount: minJob,
     tax_rate: taxRate,
   });
-  pd("Step 7a — tier bases = roundTo(subtotal × tier_mult, rounding) + tier_labour_delta:", {
+  pd("Step 7a, tier bases = roundTo(subtotal × tier_mult, rounding) + tier_labour_delta:", {
     subtotal,
     essential: curBase,
     signature: sigBase,
@@ -2358,7 +2359,7 @@ async function calcResidential(
   sigBase += cratingTotal;
   estBase += cratingTotal;
 
-  pd("Step 7b — estate packing supplies allowance (estate tier only):", {
+  pd("Step 7b, estate packing supplies allowance (estate tier only):", {
     estateSuppliesAllowance,
     cratingTotal,
     curBase,
@@ -2373,7 +2374,7 @@ async function calcResidential(
   if (sigBase < curBase) sigBase = curBase;
   if (estBase < sigBase) estBase = sigBase;
 
-  pd("Step 7c — after min_job + tier monotonicity:", {
+  pd("Step 7c, after min_job + tier monotonicity:", {
     minJob,
     curBase_before: curBaseBeforeMin,
     curBase_after: curBase,
@@ -2413,7 +2414,7 @@ async function calcResidential(
   sigPrice += addonForSig;
   estPrice += addonForEst;
 
-  pd("Step 8 — tier spread caps on bases, then per-tier add-ons layered:", {
+  pd("Step 8, tier spread caps on bases, then per-tier add-ons layered:", {
     addon_line_total: addonResult.total,
     addon_for_essential: addonForCur,
     addon_for_signature: addonForSig,
@@ -2433,7 +2434,7 @@ async function calcResidential(
   sigPrice  = grossUpForProcessing(sigPrice,  config);
   estPrice  = grossUpForProcessing(estPrice,  config);
 
-  pd("Step 9 — processing recovery (shared helper):", {
+  pd("Step 9, processing recovery (shared helper):", {
     pre_processing: preProcessing,
     after_processing_before_nearest_rounding: { essential: curPrice, signature: sigPrice, estate: estPrice },
   });
@@ -2500,7 +2501,7 @@ async function calcResidential(
     sigClamped = Math.max(sigClamped, curClamped);
     estClamped = Math.max(estClamped, sigClamped);
     if (curClamped !== curPrice || sigClamped !== sigPrice || estClamped !== estPrice) {
-      pd("Step 10b — hard margin floor applied:", {
+      pd("Step 10b, hard margin floor applied:", {
         floor_margins: { essential: floorMarginEss, signature: floorMarginSig, estate: floorMarginEst },
         direct_cost: { ess_sig: directCostEssSig, estate: directCostEstate },
         tier_floors: { essential: curFloor, signature: sigFloor, estate: estFloor },
@@ -2513,7 +2514,7 @@ async function calcResidential(
     estPrice = estClamped;
   }
 
-  pd("Step 10 — final pre-tax tier prices (nearest rounding interval):", {
+  pd("Step 10, final pre-tax tier prices (nearest rounding interval):", {
     rounding_nearest: rounding,
     essential: curPrice,
     signature: sigPrice,
@@ -3728,7 +3729,7 @@ async function calcSpecialty(
   ];
   if (input.specialty_access_difficulty === "requires_rigging_or_crane") {
     specialtyIncludes.push(
-      "Crane/rigging adds $1,500–3,000. Coordinator will confirm exact cost.",
+      "Crane/rigging adds $1,500 to 3,000. Coordinator will confirm exact cost.",
     );
   }
 
@@ -3784,7 +3785,7 @@ async function loadB2bPricingExtras(
       if (z3 > 0) lines.push({ label: "Outside GTA core (zone 3: 80+ km)", amount: z3 });
     } else if (deliveryKmFromGta >= 40) {
       gtaZone = 2;
-      if (z2 > 0) lines.push({ label: "Outside GTA core (zone 2: 40–80 km)", amount: z2 });
+      if (z2 > 0) lines.push({ label: "Outside GTA core (zone 2: 40 to 80 km)", amount: z2 });
     } else {
       gtaZone = 1;
     }
@@ -5639,7 +5640,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     labourClient = {
       crewSize: minCrew,
       estimatedHours: Number(estHours),
-      hoursRange: `${lo}–${hi} hours`,
+      hoursRange: `${lo}-${hi} hours`,
       truckSize,
     };
   }
@@ -5716,7 +5717,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         ...labour,
         estimatedHours: newHours,
         hoursRange:
-          lo === hi ? `${lo} hours` : `${lo}–${hi} hours`,
+          lo === hi ? `${lo} hours` : `${lo}-${hi} hours`,
       };
     }
     if (
@@ -6717,7 +6718,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json(
         {
           error:
-            "Global quote override is not used for B2B — use the dimensional override fields.",
+            "Global quote override is not used for B2B, use the dimensional override fields.",
         },
         { status: 400 },
       );
@@ -7263,7 +7264,15 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       factors_applied: factors,
       selected_addons: addonResult.breakdown,
       expires_at: new Date(Date.now() + expiryDays * 86_400_000).toISOString(),
-      inventory_items: input.inventory_items ?? [],
+      // Strip em/en dashes from item names at the write boundary so no dash can
+      // reach the quote, the created move's inventory, exports, or the client
+      // page — regardless of catalog data or custom items.
+      inventory_items: (input.inventory_items ?? []).map((it) =>
+        it && typeof it === "object" &&
+        typeof (it as { name?: unknown }).name === "string"
+          ? { ...it, name: cleanItemName((it as { name: string }).name) }
+          : it,
+      ),
       client_box_count: input.client_box_count ?? null,
       inventory_warnings: inventoryWarnings.length > 0 ? inventoryWarnings : [],
       // Assembly auto-detection (residential)

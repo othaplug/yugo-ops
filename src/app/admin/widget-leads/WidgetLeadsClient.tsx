@@ -295,7 +295,7 @@ export default function WidgetLeadsClient({
                     </td>
                     <td className="font-medium text-[var(--yu3-ink-strong)] [font-feature-settings:'tnum'_1]">
                       {l.widget_estimate_low && l.widget_estimate_high
-                        ? `${formatCurrency(l.widget_estimate_low)}–${formatCurrency(l.widget_estimate_high)}`
+                        ? `${formatCurrency(l.widget_estimate_low)}-${formatCurrency(l.widget_estimate_high)}`
                         : ""}
                     </td>
                     <td className="px-4 py-3.5">

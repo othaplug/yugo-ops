@@ -786,7 +786,7 @@ export default function SpecialtyTransportQuoteBuilder({
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Required — crew-facing details, access, risks, client expectations"
+              placeholder="Required, crew-facing details, access, risks, client expectations"
               rows={3}
               className="field-input-compact w-full"
             />

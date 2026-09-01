@@ -67,7 +67,7 @@ export default function GoogleCalendarSection() {
       const d = await res.json() as StatusData
       setStatus(d)
       if (d.testOk) {
-        toast(`Connected — calendar: ${d.calendarSummary || d.calendarId}`, "check")
+        toast(`Connected, calendar: ${d.calendarSummary || d.calendarId}`, "check")
       } else {
         toast(d.testError ?? "Connection failed", "x")
       }
@@ -186,7 +186,7 @@ export default function GoogleCalendarSection() {
                   ? `Connected · ${status.calendarSummary || "Calendar found"}`
                   : status?.testOk === false
                   ? "Connection failed"
-                  : configured ? "Env vars set — not tested yet" : "Not configured"}
+                  : configured ? "Env vars set, not tested yet" : "Not configured"}
               </p>
               {status?.clientEmail ? (
                 <p className="text-[11px] text-[var(--tx3)] font-mono">{status.clientEmail}</p>
@@ -233,11 +233,11 @@ export default function GoogleCalendarSection() {
             <ol className="list-decimal list-inside space-y-2">
               <li>
                 <span className="font-medium text-[var(--tx)]">Create a Google Cloud service account</span>
-                {" "}— Google Cloud Console → IAM → Service Accounts → Create → download JSON key.
+                {" "}- Google Cloud Console → IAM → Service Accounts → Create → download JSON key.
               </li>
               <li>
                 <span className="font-medium text-[var(--tx)]">Share your Google Calendar</span>
-                {" "}— open the calendar settings, "Share with specific people", add the service account email with "Make changes to events".
+                {" "}- open the calendar settings, "Share with specific people", add the service account email with "Make changes to events".
               </li>
               <li>
                 <span className="font-medium text-[var(--tx)]">Add 3 environment variables</span>
@@ -310,7 +310,7 @@ export default function GoogleCalendarSection() {
                 <p className="text-[11px] text-amber-900 leading-relaxed">
                   Your Workspace admin has restricted external sharing. Skip the policy
                   fight: have the service account create its own calendar (it becomes
-                  the owner with full write access — no admin permission needed).
+                  the owner with full write access, no admin permission needed).
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2 mt-2">
                   <input
@@ -341,13 +341,13 @@ export default function GoogleCalendarSection() {
           <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-2">
             <div className="flex items-center gap-2">
               <Icon name="check" className="w-[13px] h-[13px] text-blue-700" />
-              <p className="text-[12px] font-bold text-blue-900">Calendar created — check Google Calendar</p>
+              <p className="text-[12px] font-bold text-blue-900">Calendar created, check Google Calendar</p>
             </div>
             <p className="text-[11px] text-blue-900 leading-relaxed">
               The service account now owns this calendar and has full write access.
               {shareEmail.trim()
-                ? ` An invitation was sent to ${shareEmail.trim()} — check your email and click "Add to calendar". It will appear under "Other calendars" in the sidebar.`
-                : " Check your Google Calendar sidebar under \"Other calendars\" — it should appear there if you entered your email before creating."}
+                ? ` An invitation was sent to ${shareEmail.trim()}, check your email and click "Add to calendar". It will appear under "Other calendars" in the sidebar.`
+                : " Check your Google Calendar sidebar under \"Other calendars\", it should appear there if you entered your email before creating."}
             </p>
             <code className="block text-[10px] font-mono text-blue-700 break-all">{createdCalendarId}</code>
           </div>
@@ -385,7 +385,7 @@ export default function GoogleCalendarSection() {
                 type="button"
                 onClick={() => void handleSync(true)}
                 disabled={syncing}
-                title="Wipes all event IDs and recreates every event from scratch — use when times look wrong"
+                title="Wipes all event IDs and recreates every event from scratch, use when times look wrong"
                 className="text-[11px] font-semibold border border-[var(--brd)] px-3 py-1.5 rounded text-[var(--tx2)] hover:bg-[var(--bg2)] disabled:opacity-50"
               >
                 Force resync (recreate all)

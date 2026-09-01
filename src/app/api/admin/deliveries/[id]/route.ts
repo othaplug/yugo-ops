@@ -198,7 +198,7 @@ export async function PATCH(
       entity_type: "delivery",
       entity_id: id,
       event_type: "price_override",
-      description: `Price override set to $${updates.override_price} for delivery ${label}. Reason: ${updates.override_reason || "—"}`,
+      description: `Price override set to $${updates.override_price} for delivery ${label}. Reason: ${updates.override_reason || "-"}`,
       icon: "dollar",
     }).catch(() => {});
   }

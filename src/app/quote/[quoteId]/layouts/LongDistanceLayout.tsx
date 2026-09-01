@@ -117,7 +117,7 @@ export default function LongDistanceLayout({
                 className="text-[11px] font-semibold"
                 style={{ color: FOREST }}
               >
-                {quote.distance_km ?? "\u2014"} km
+                {quote.distance_km ?? "-"} km
               </span>
             </div>
             {quote.drive_time_min != null && (

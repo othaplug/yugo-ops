@@ -94,7 +94,7 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
         cell: (p) => (
           <div>
             <div className="text-[12px] font-medium text-[var(--yu3-ink)]">
-              {p.organizations?.name || "—"}
+              {p.organizations?.name || "-"}
             </div>
             <div className="text-[10px] text-[var(--yu3-ink-faint)]">
               {p.organizations?.type ? organizationTypeLabel(p.organizations.type) : ""}
@@ -136,7 +136,7 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
         width: 100,
         cell: (p) => (
           <span className="text-[11px] text-[var(--yu3-ink-muted)] uppercase">
-            {p.active_phase?.replace(/_/g, " ") || "—"}
+            {p.active_phase?.replace(/_/g, " ") || "-"}
           </span>
         ),
       },
@@ -152,7 +152,7 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
         cell: (p) => (
           <div>
             <div className="text-[12px] font-medium text-[var(--yu3-ink)]">
-              {p.estimated_budget ? formatCurrency(p.estimated_budget) : "—"}
+              {p.estimated_budget ? formatCurrency(p.estimated_budget) : "-"}
             </div>
             {p.actual_cost != null && p.actual_cost > 0 ? (
               <div className="text-[10px] text-[var(--yu3-ink-faint)]">
@@ -172,7 +172,7 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
           <span className="text-[11px] text-[var(--yu3-ink-faint)]">
             {p.start_date
               ? new Date(p.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
-              : "—"}
+              : "-"}
             {p.target_end_date
               ? ` → ${new Date(p.target_end_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
               : ""}

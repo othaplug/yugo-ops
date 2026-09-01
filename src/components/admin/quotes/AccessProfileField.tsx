@@ -277,7 +277,7 @@ export function AccessProfileField({
                 : "Save as building profile"}
           </button>
           {saveState === "error" ? (
-            <span className="text-[12px] text-[var(--org)]">Could not save — try again</span>
+            <span className="text-[12px] text-[var(--org)]">Could not save, try again</span>
           ) : (
             <span className="text-[12px] text-[var(--tx3)]">Reuse this access on future quotes</span>
           )}

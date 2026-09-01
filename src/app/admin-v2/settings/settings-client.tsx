@@ -263,7 +263,7 @@ const PlatformTab = () => {
       ...(peakId ? [{ id: peakId, multiplier: 1 + peak / 100 }] : []),
     ]
     if (rows.length === 0) {
-      toast.info("No factors loaded — changes not saved")
+      toast.info("No factors loaded, changes not saved")
       setSaving(false)
       return
     }
@@ -719,7 +719,7 @@ const AuditTab = () => {
           user: String(log.user_email ?? log.user_id ?? "System"),
           module: String(log.resource_type ?? log.action ?? "").split("_")[0] ?? "system",
           action: String(log.action ?? "").replace(/_/g, " "),
-          target: String(log.resource_id ?? log.resource_type ?? "–"),
+          target: String(log.resource_id ?? log.resource_type ?? "-"),
           at: String(log.created_at ?? new Date().toISOString()),
         }))
         setRows(mapped.length > 0 ? mapped : AUDIT)

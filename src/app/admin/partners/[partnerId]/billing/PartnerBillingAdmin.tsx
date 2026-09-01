@@ -358,8 +358,8 @@ function PmInvoicesPanel({
         <div className="grid grid-cols-4 gap-3">
           {[
             { label: "Current",   value: aging.current, color: "#22c55e" },
-            { label: "1–30 Days", value: aging.days30,  color: "#f59e0b" },
-            { label: "31–60 Days",value: aging.days60,  color: "#f97316" },
+            { label: "1 to 30 Days", value: aging.days30,  color: "#f59e0b" },
+            { label: "31 to 60 Days",value: aging.days60,  color: "#f97316" },
             { label: "60+ Days",  value: aging.days90,  color: "#ef4444" },
           ].map(({ label, value, color }) => (
             <div key={label} className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl p-4 text-center">
@@ -411,7 +411,7 @@ function PmInvoicesPanel({
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-[12px] text-[var(--tx3)]">
-                        {fmtDate(inv.period_start)} – {fmtDate(inv.period_end)}
+                        {fmtDate(inv.period_start)} - {fmtDate(inv.period_end)}
                       </td>
                       <td className="px-4 py-3 text-[12px] text-[var(--tx)] text-center">
                         {inv.move_count}
@@ -483,7 +483,7 @@ function DeliveryStatementsPanel({
   const totalOutstanding = aging.current + aging.days30 + aging.days60 + aging.days90;
 
   function periodLabel(s: Statement) {
-    return `${fmtDate(s.period_start)} – ${fmtDate(s.period_end)}`;
+    return `${fmtDate(s.period_start)}, ${fmtDate(s.period_end)}`;
   }
 
   async function generateStatement() {
@@ -590,8 +590,8 @@ function DeliveryStatementsPanel({
         <div className="grid grid-cols-4 gap-3">
           {[
             { label: "Current",    value: aging.current, color: "#22c55e" },
-            { label: "1–30 Days",  value: aging.days30,  color: "#f59e0b" },
-            { label: "31–60 Days", value: aging.days60,  color: "#f97316" },
+            { label: "1 to 30 Days",  value: aging.days30,  color: "#f59e0b" },
+            { label: "31 to 60 Days", value: aging.days60,  color: "#f97316" },
             { label: "60+ Days",   value: aging.days90,  color: "#ef4444" },
           ].map(({ label, value, color }) => (
             <div key={label} className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl p-4 text-center">

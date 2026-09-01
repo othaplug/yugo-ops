@@ -248,7 +248,7 @@ export async function POST(req: NextRequest) {
         subject: `New bin order ${orderNumber}, ${clientName}`,
         html: internalAdminAlertEmail({
           kicker: "New bin order",
-          title: `${clientName} — ${orderNumber}`,
+          title: `${clientName}, ${orderNumber}`,
           summary: `A new bin rental was booked. The client is expected to be ready for drop-off on ${formatDateShort(dropOffDate)}.`,
           keyValues: [
             { label: "Order", value: orderNumber, accent: "forest" },
@@ -257,7 +257,7 @@ export async function POST(req: NextRequest) {
               label: "Email",
               valueHtml: clientEmail
                 ? `<a href="mailto:${encodeURIComponent(clientEmail)}" style="color:#2C3E2D;text-decoration:underline;font-weight:600;">${clientEmail}</a>`
-                : "—",
+                : "-",
             },
             { label: "Address", value: deliveryAddress },
             { label: "Bundle", value: `${bundleType} (${binCount} bins)` },

@@ -28,7 +28,7 @@ const PRESETS: Record<
 > = {
   small: {
     label: "Small",
-    sub: "1–5 employees",
+    sub: "1 to 5 employees",
     lines: [
       { slug: "desk_standard", quantity: 5 },
       { slug: "office_chair", quantity: 5 },
@@ -40,7 +40,7 @@ const PRESETS: Record<
   },
   medium: {
     label: "Medium",
-    sub: "6–15 employees",
+    sub: "6 to 15 employees",
     lines: [
       { slug: "desk_standard", quantity: 12 },
       { slug: "office_chair", quantity: 15 },
@@ -55,7 +55,7 @@ const PRESETS: Record<
   },
   large: {
     label: "Large",
-    sub: "16–30 employees",
+    sub: "16 to 30 employees",
     lines: [
       { slug: "desk_standard", quantity: 25 },
       { slug: "office_chair", quantity: 30 },

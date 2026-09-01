@@ -39,7 +39,7 @@ export async function POST(
       admin.from("move_documents").insert({
         move_id: moveId,
         type: "invoice",
-        title: `Payment Receipt – ${new Date().toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" })}`,
+        title: `Payment Receipt, ${new Date().toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" })}`,
         storage_path: null,
         external_url: null,
       }),

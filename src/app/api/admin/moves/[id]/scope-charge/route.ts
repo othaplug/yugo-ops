@@ -286,7 +286,7 @@ export async function POST(
   await db.from("move_payment_ledger").insert({
     move_id: moveId,
     entry_type: "adjustment",
-    label: `Scope charge — ${reasonLine}`.slice(0, 200),
+    label: `Scope charge, ${reasonLine}`.slice(0, 200),
     pre_tax_amount: preTaxDelta,
     hst_amount: hstDelta,
     inventory_change_request_id: requestRow.id,

@@ -230,14 +230,14 @@ export default function PmLinkSection({
             Building
           </p>
           <p className="text-[var(--tx)] font-medium truncate">
-            {resolvedBuilding ?? buildingName ?? "—"}
+            {resolvedBuilding ?? buildingName ?? "-"}
           </p>
         </div>
         <div>
           <p className="text-[10px] uppercase tracking-wider text-[var(--tx3)] mb-0.5">
             Unit
           </p>
-          <p className="text-[var(--tx)] font-mono">{unitNumber ?? "—"}</p>
+          <p className="text-[var(--tx)] font-mono">{unitNumber ?? "-"}</p>
         </div>
         <div>
           <p className="text-[10px] uppercase tracking-wider text-[var(--tx3)] mb-0.5">
@@ -246,7 +246,7 @@ export default function PmLinkSection({
           <p
             className={`truncate ${tenantIsSynthetic(tenantName, unitNumber) ? "text-[var(--tx3)] italic" : "text-[var(--tx)]"}`}
           >
-            {displayTenant(tenantName, unitNumber) || "—"}
+            {displayTenant(tenantName, unitNumber) || "-"}
           </p>
         </div>
       </div>
@@ -285,11 +285,11 @@ export default function PmLinkSection({
             </span>
             <span>
               <span className="text-[var(--tx3)]">Unit: </span>
-              {linked.unit_number ?? "—"}
+              {linked.unit_number ?? "-"}
             </span>
             <span>
               <span className="text-[var(--tx3)]">Date: </span>
-              {linked.scheduled_date ?? "—"}
+              {linked.scheduled_date ?? "-"}
             </span>
           </div>
         </div>
@@ -298,7 +298,7 @@ export default function PmLinkSection({
           <p className="text-[11px] text-[var(--tx2)]">
             Link this move to a related one (e.g. the matching move-out for a
             move-in in the same unit). Search by move code, unit, or tenant
-            name — defaults to other moves in the same building.
+            name, defaults to other moves in the same building.
           </p>
           <input
             type="text"
@@ -345,7 +345,7 @@ export default function PmLinkSection({
                       </div>
                       <p className="text-[10px] text-[var(--tx3)] truncate mt-0.5">
                         {humanReason(c.pm_reason_code)} · Unit{" "}
-                        {c.unit_number ?? "—"}
+                        {c.unit_number ?? "-"}
                         {tenantStr ? ` · ${tenantStr}` : ""} ·{" "}
                         {c.scheduled_date ?? "no date"}
                       </p>
@@ -355,7 +355,7 @@ export default function PmLinkSection({
                           "already linked" before, with no context. */}
                       {c.linked_move_id && (
                         <p className="text-[10px] text-amber-700 dark:text-amber-300 mt-0.5">
-                          Linked to {c.linked_move_code ?? "another move"} —
+                          Linked to {c.linked_move_code ?? "another move"} -
                           unlink that pair first to use this one
                         </p>
                       )}
@@ -380,7 +380,7 @@ export default function PmLinkSection({
 }
 
 function humanReason(code: string | null | undefined): string {
-  if (!code) return "—";
+  if (!code) return "-";
   return code
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());

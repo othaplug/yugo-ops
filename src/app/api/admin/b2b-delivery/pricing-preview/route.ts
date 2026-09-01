@@ -258,7 +258,7 @@ export async function POST(req: NextRequest) {
           {
             error:
               fb.error ||
-              "Rate card not configured — run the b2b_rate_card SQL migration",
+              "Rate card not configured, run the b2b_rate_card SQL migration",
           },
           { status: 500 },
         );

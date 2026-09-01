@@ -130,13 +130,13 @@ export async function GET(req: NextRequest) {
             subject: `Overdue bin order: ${order.order_number}, ${daysOverdue} days late`,
             html: internalAdminAlertEmail({
               kicker: "Bin pickup overdue",
-              title: `${order.order_number} — ${daysOverdue} days past pickup`,
+              title: `${order.order_number}, ${daysOverdue} days past pickup`,
               summary: `${order.client_name}'s bin rental is overdue. Daily late fees of $${lateFeePerDay} are now accruing.`,
               keyValues: [
-                { label: "Order", value: order.order_number || "—", accent: "forest" },
-                { label: "Client", value: order.client_name || "—" },
-                { label: "Phone", value: order.client_phone || "—" },
-                { label: "Address", value: order.delivery_address || "—" },
+                { label: "Order", value: order.order_number || "-", accent: "forest" },
+                { label: "Client", value: order.client_name || "-" },
+                { label: "Phone", value: order.client_phone || "-" },
+                { label: "Address", value: order.delivery_address || "-" },
                 { label: "Days overdue", value: String(daysOverdue), accent: "forest" },
               ],
               callout: {
@@ -208,13 +208,13 @@ export async function GET(req: NextRequest) {
             subject: `Escalation: ${order.order_number} ${daysOverdue} days late`,
             html: internalAdminAlertEmail({
               kicker: "Escalation",
-              title: `${order.order_number} — ${daysOverdue} days late`,
+              title: `${order.order_number}, ${daysOverdue} days late`,
               summary: `This bin rental has been overdue for more than two weeks and is approaching write-off. Personal outreach is recommended.`,
               keyValues: [
-                { label: "Order", value: order.order_number || "—", accent: "forest" },
-                { label: "Client", value: order.client_name || "—" },
-                { label: "Phone", value: order.client_phone || "—" },
-                { label: "Address", value: order.delivery_address || "—" },
+                { label: "Order", value: order.order_number || "-", accent: "forest" },
+                { label: "Client", value: order.client_name || "-" },
+                { label: "Phone", value: order.client_phone || "-" },
+                { label: "Address", value: order.delivery_address || "-" },
                 { label: "Days overdue", value: String(daysOverdue), accent: "forest" },
                 { label: "Late fees accrued", value: `$${totalLate.toFixed(0)}`, accent: "forest" },
               ],

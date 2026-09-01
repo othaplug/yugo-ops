@@ -216,7 +216,7 @@ export default function InvoicesTable({
         width: 120,
         cell: (r) => {
           const d = (r as { due_date?: string | null }).due_date
-          if (!d) return "—"
+          if (!d) return "-"
           return (
             <span className="text-[12px] text-[var(--yu3-ink)]">
               {typeof d === "string" && d.match(/^\d{4}-\d{2}-\d{2}/)

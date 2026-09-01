@@ -59,9 +59,9 @@ function NpsLabel({ score }: { score: number }) {
 }
 
 function formatSignOffDate(iso: string | null | undefined): string {
-  if (!iso || typeof iso !== "string") return "—";
+  if (!iso || typeof iso !== "string") return "-";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return d.toLocaleString();
 }
 

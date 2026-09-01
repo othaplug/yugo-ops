@@ -212,7 +212,7 @@ export const mapQuote = (row: QuoteRow, customerName?: string): Quote => {
     id: str(row.id),
     number: str(row.quote_number || row.quote_id || row.id).toString(),
     customerId: str(row.contact_id),
-    customerName: customerName || str(row.client_name) || "—",
+    customerName: customerName || str(row.client_name) || "-",
     customerEmail: str(row.client_email),
     tier,
     serviceType: mapServiceType(row.service_type),

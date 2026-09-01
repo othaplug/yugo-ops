@@ -1265,7 +1265,7 @@ function CrewDetailView({
                                       {hasUntracked && (
                                         <div className="mt-2 p-2.5 bg-[var(--org)]/10 border border-[var(--org)]/25 rounded-lg text-[11px] text-[var(--tx2)]">
                                           <span className="font-semibold">Untracked time detected.</span>{" "}
-                                          Stage transitions may have been missed — likely loading or unloading that happened while the app sat on a previous stage.
+                                          Stage transitions may have been missed, likely loading or unloading that happened while the app sat on a previous stage.
                                           {efficiency.score < 70 && efficiency.untrackedMinutes > 30 && (
                                             <span className="block mt-1 text-[var(--tx3)]">
                                               {efficiency.untrackedMinutes}m untracked · {efficiency.score}% tracked efficiency. Consider reviewing with crew lead.

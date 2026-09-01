@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
     return {
       id: m.id as string,
       date: m.scheduled_date as string | null,
-      building_name: pid ? propById.get(pid) ?? "—" : "—",
+      building_name: pid ? propById.get(pid) ?? "-" : "-",
       unit: m.unit_number as string | null,
       move_type: typeLabel,
       reason_code: rc,

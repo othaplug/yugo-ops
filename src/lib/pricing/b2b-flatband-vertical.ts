@@ -115,7 +115,7 @@ export function computeB2bFlatBandPrice(
   };
 
   if (!rateCard) {
-    return { ...empty, error: "Rate card not configured — run the b2b_rate_card SQL migration" };
+    return { ...empty, error: "Rate card not configured, run the b2b_rate_card SQL migration" };
   }
 
   const stairFlights =

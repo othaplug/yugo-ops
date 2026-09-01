@@ -185,7 +185,7 @@ export async function POST(
   const ext = await recordExternalSquarePayment({
     amountInclusive: payAmount,
     referenceId: humanQuoteId,
-    note: `${isFullPayment ? "Full payment" : "Deposit"} for ${humanQuoteId} — recorded by Yugo (offline)`,
+    note: `${isFullPayment ? "Full payment" : "Deposit"} for ${humanQuoteId}, recorded by Yugo (offline)`,
     method: (quote.deposit_method as string | null) ?? "other",
     buyerEmail: clientEmail,
     idempotencySuffix: `offline-${quoteId}-${kind}`,

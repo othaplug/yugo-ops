@@ -102,7 +102,7 @@ export async function GET(req: NextRequest) {
 
     const r = await sendEmail({
       to: email,
-      subject: `Today: ${String(day.label || "Project day")} — ${String(proj.project_name || "Yugo")}`,
+      subject: `Today: ${String(day.label || "Project day")}, ${String(proj.project_name || "Yugo")}`,
       html,
     });
 
@@ -182,7 +182,7 @@ export async function GET(req: NextRequest) {
 
       const r = await sendEmail({
         to: email,
-        subject: `Coming up: ${String(ph.phase_name || "Phase")} — ${String(proj.project_name || "Yugo")}`,
+        subject: `Coming up: ${String(ph.phase_name || "Phase")}, ${String(proj.project_name || "Yugo")}`,
         html,
       });
       if (r.success) {
@@ -271,7 +271,7 @@ export async function GET(req: NextRequest) {
 
         const r = await sendEmail({
           to: email,
-          subject: `Payment reminder — ${String(proj.project_name || "Yugo")}`,
+          subject: `Payment reminder, ${String(proj.project_name || "Yugo")}`,
           html,
         });
         if (r.success) {

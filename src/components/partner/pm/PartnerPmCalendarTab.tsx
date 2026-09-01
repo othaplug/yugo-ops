@@ -357,9 +357,9 @@ export function PartnerPmCalendarTab({
       const to = sundayOfWeekYmd(focusDate);
       if (from.slice(0, 7) === to.slice(0, 7)) {
         const a = formatDateYmd(from, { month: "short", day: "numeric" });
-        return `${a} – ${parseYmd(to).getDate()}`;
+        return `${a}, ${parseYmd(to).getDate()}`;
       }
-      return `${formatDateYmd(from, { month: "short", day: "numeric", year: "numeric" })} – ${formatDateYmd(to, { month: "short", day: "numeric", year: "numeric" })}`;
+      return `${formatDateYmd(from, { month: "short", day: "numeric", year: "numeric" })}, ${formatDateYmd(to, { month: "short", day: "numeric", year: "numeric" })}`;
     }
     if (viewMode === "year") {
       return String(year);
@@ -692,15 +692,15 @@ export function PartnerPmCalendarTab({
                       >
                         <div className="min-w-0">
                           <p className="text-[14px] font-semibold text-[#1a1f1b] truncate">
-                            {m.tenant_name || "—"} · Unit {m.unit_number || "—"}
+                            {m.tenant_name || "-"} · Unit {m.unit_number || "-"}
                           </p>
                           <p className="text-[12px] text-[#5A6B5E] truncate">
-                            {m.building_name || "—"}
+                            {m.building_name || "-"}
                             {m.move_type_label ? ` · ${m.move_type_label}` : ""}
                           </p>
                         </div>
                         <div className="text-left sm:text-right shrink-0">
-                          <p className="text-[13px] font-medium text-[#1a1f1b]">{m.scheduled_time || "—"}</p>
+                          <p className="text-[13px] font-medium text-[#1a1f1b]">{m.scheduled_time || "-"}</p>
                           <span className="text-[11px] font-semibold text-[#5A6B5E]">{labelStatus(m.status || "")}</span>
                           {m.tracking_url && (
                             <a
@@ -769,7 +769,7 @@ export function PartnerPmCalendarTab({
                                   }}
                                 >
                                   <span className="font-bold text-[#2D3A26] block truncate">
-                                    {m.scheduled_time || "—"}
+                                    {m.scheduled_time || "-"}
                                   </span>
                                   <span className="text-[#5A6B5E] block truncate">{m.tenant_name || "Move"}</span>
                                 </button>
@@ -881,15 +881,15 @@ export function PartnerPmCalendarTab({
                         {formatDateYmd(m.dateStr, { weekday: "short", month: "short", day: "numeric" })}
                       </p>
                       <p className="text-[14px] font-semibold text-[#1a1f1b] truncate">
-                        {m.tenant_name || "—"} · Unit {m.unit_number || "—"}
+                        {m.tenant_name || "-"} · Unit {m.unit_number || "-"}
                       </p>
                       <p className="text-[12px] text-[#5A6B5E] truncate">
-                        {m.building_name || "—"}
+                        {m.building_name || "-"}
                         {m.move_type_label ? ` · ${m.move_type_label}` : ""}
                       </p>
                     </div>
                     <div className="text-left sm:text-right shrink-0">
-                      <p className="text-[13px] text-[#1a1f1b]">{m.scheduled_time || "—"}</p>
+                      <p className="text-[13px] text-[#1a1f1b]">{m.scheduled_time || "-"}</p>
                       <span className="text-[11px] font-semibold text-[#5A6B5E]">{labelStatus(m.status || "")}</span>
                       {m.tracking_url && (
                         <a

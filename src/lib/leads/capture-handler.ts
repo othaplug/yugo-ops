@@ -102,10 +102,10 @@ export async function createLeadFromParsedCapture(
       clarifications_needed: [
         ...completeness.clarifications_needed,
         ...(heavyWeight
-          ? [`Weight over 300 lb detected (${Math.round(textMetrics.maxWeightLbs!)} lb) — specialty coordinator quote`]
+          ? [`Weight over 300 lb detected (${Math.round(textMetrics.maxWeightLbs!)} lb), specialty coordinator quote`]
           : []),
         ...(specialtyService && !heavyWeight
-          ? ["Specialty or one-off commercial delivery — use Specialty Quote Builder (no auto-quote)"]
+          ? ["Specialty or one-off commercial delivery, use Specialty Quote Builder (no auto-quote)"]
           : []),
       ],
     };

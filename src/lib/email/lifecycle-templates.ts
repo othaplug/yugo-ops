@@ -208,7 +208,7 @@ export function preMove72hrEmail(d: PreMove72hrData): string {
     toAccessLabel !== "None"
   )
     accessNotes.push(
-      `${ACCESS_NOTE_LABEL} <span style="font-size:11px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.07em;text-transform:uppercase;font-family:${PREMIUM_FONT};">PICKUP:</span> ${fromAccessLabel}; <span style="font-size:11px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.07em;text-transform:uppercase;font-family:${PREMIUM_FONT};">DROP-OFF:</span> ${toAccessLabel} — please reserve the elevator/loading dock.`,
+      `${ACCESS_NOTE_LABEL} <span style="font-size:11px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.07em;text-transform:uppercase;font-family:${PREMIUM_FONT};">PICKUP:</span> ${fromAccessLabel}; <span style="font-size:11px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.07em;text-transform:uppercase;font-family:${PREMIUM_FONT};">DROP-OFF:</span> ${toAccessLabel}, please reserve the elevator/loading dock.`,
     );
   else if (fromAccessLabel && fromAccessLabel !== "None")
     accessNotes.push(
@@ -229,13 +229,13 @@ export function preMove72hrEmail(d: PreMove72hrData): string {
     <div class="yugo-on-wine" style="${EQ_PANEL}">
       <div style="${PANEL_KICKER_ON_WINE_UPPER};margin-bottom:14px;">Pre-move checklist</div>
       <div style="font-size:13px;${EQ_ON_WINE_PANEL_STYLE};line-height:2;font-family:${PREMIUM_FONT}">
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Book elevator or loading dock at both locations</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Reserve parking access for our truck</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Finish packing any remaining boxes</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Clear hallways and pathways throughout</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Arrange care for pets and young children on the day</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Keep valuables, medications, and important documents with you</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Defrost the freezer and empty the fridge</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Book elevator or loading dock at both locations</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Reserve parking access for our truck</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Finish packing any remaining boxes</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Clear hallways and pathways throughout</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Arrange care for pets and young children on the day</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Keep valuables, medications, and important documents with you</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Defrost the freezer and empty the fridge</div>
       </div>
     </div>
 
@@ -382,13 +382,13 @@ export function officePreMoveSurveyEmail(d: OfficePreMoveSurveyData): string {
     <div class="yugo-on-wine" style="${EQ_PANEL}">
       <div style="${PANEL_KICKER_ON_WINE_UPPER};margin-bottom:14px;">What we need</div>
       <div style="font-size:13px;${EQ_ON_WINE_PANEL_STYLE};line-height:2;font-family:${PREMIUM_FONT}">
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Current floor plan (PDF or photo)</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— New office floor plan with seat assignments</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Confirmed workstation count</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— IT equipment inventory (monitors, docks, servers)</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Elevator + loading dock reservation windows at both locations</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Building management contact (for the COI)</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Your on-site IT lead's name + phone</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Current floor plan (PDF or photo)</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- New office floor plan with seat assignments</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Confirmed workstation count</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- IT equipment inventory (monitors, docks, servers)</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Elevator + loading dock reservation windows at both locations</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Building management contact (for the COI)</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Your on-site IT lead's name + phone</div>
       </div>
     </div>
 
@@ -434,14 +434,14 @@ export function preMove72hrOfficeEmail(d: PreMove72hrOfficeData): string {
     <div class="yugo-on-wine" style="${EQ_PANEL}">
       <div style="${PANEL_KICKER_ON_WINE_UPPER};margin-bottom:14px;">Before we arrive</div>
       <div style="font-size:13px;${EQ_ON_WINE_PANEL_STYLE};line-height:2;font-family:${PREMIUM_FONT}">
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Confirm elevator + loading dock reservations at both offices</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Label workstations with employee name + destination desk number</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Prepare an IT power-down plan (which machines go down when)</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Collect access cards, fobs, and keys for both locations</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Backup critical systems + confirm data snapshots complete</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Notify staff of pack day / move day + arrival windows</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Clear hallways, remove personal valuables from workstations</div>
-        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Confirm your on-site point of contact for each location</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Confirm elevator + loading dock reservations at both offices</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Label workstations with employee name + destination desk number</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Prepare an IT power-down plan (which machines go down when)</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Collect access cards, fobs, and keys for both locations</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Backup critical systems + confirm data snapshots complete</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Notify staff of pack day / move day + arrival windows</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Clear hallways, remove personal valuables from workstations</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">- Confirm your on-site point of contact for each location</div>
       </div>
     </div>
 
@@ -454,7 +454,7 @@ export function preMove72hrOfficeEmail(d: PreMove72hrOfficeData): string {
 
     ${ctaButton(d.trackingUrl, PREMIUM_TRACK_CTA_LABEL)}
     <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${PREMIUM_FONT}">
-      Anything unclear? Reply here — ${pm} is on the other side.
+      Anything unclear? Reply here, ${pm} is on the other side.
     </p>
   `);
 }
@@ -826,7 +826,7 @@ export function internalLowSatAlertEmail(d: InternalLowSatAlertData): string {
   const emailRaw = (d.clientEmail || "").trim();
   const emailCell = emailRaw
     ? `<a href="mailto:${emailRaw.replace(/&/g, "&amp;")}" style="color:#F5EEE6 !important;-webkit-text-fill-color:#F5EEE6;text-decoration:underline;font-weight:600;">${escapeHtmlEmail(emailRaw)}</a>`
-    : "—";
+    : "-";
   const wineKvLabel =
     `padding:5px 8px 5px 0;color:${WINE_PANEL_CREAM_MUTED} !important;-webkit-text-fill-color:${WINE_PANEL_CREAM_MUTED};font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top`;
   const wineKvVal =
@@ -834,7 +834,7 @@ export function internalLowSatAlertEmail(d: InternalLowSatAlertData): string {
   const wineKvRule = `1px solid ${WINE_INSET_RULE}`;
   return legacyEmailLayout(`
     <div style="${ALERT_EYEBROW_UPPER}">Low satisfaction alert</div>
-    <div role="heading" aria-level="1" style="font-size:20px;font-weight:700;margin:0 0 20px;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-family:${HERO_SERIF}">${escapeHtmlEmail(d.moveCode)} — ${escapeHtmlEmail(d.clientName)}</div>
+    <div role="heading" aria-level="1" style="font-size:20px;font-weight:700;margin:0 0 20px;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-family:${HERO_SERIF}">${escapeHtmlEmail(d.moveCode)}, ${escapeHtmlEmail(d.clientName)}</div>
 
     <div style="background:rgba(209,67,67,0.1);border:1px solid rgba(209,67,67,0.2);border-radius:0;padding:14px;margin-bottom:20px">
       <div style="font-size:12px;color:#D14343;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">NPS/SATISFACTION SCORE: ${d.npsScore ?? "N/A"}/5</div>
@@ -862,14 +862,14 @@ export function internalLowSatAlertEmail(d: InternalLowSatAlertData): string {
           labelStyle: wineKvLabel,
           valueStyle: wineKvVal,
           label: "Phone",
-          valueHtml: d.clientPhone ? escapeHtmlEmail(formatPhone(d.clientPhone)) : "—",
+          valueHtml: d.clientPhone ? escapeHtmlEmail(formatPhone(d.clientPhone)) : "-",
         })}
         ${emailNestedKvRow({
           borderTop: wineKvRule,
           labelStyle: wineKvLabel,
           valueStyle: wineKvVal,
           label: "Move date",
-          valueHtml: d.moveDate ? escapeHtmlEmail(dateDisplay(d.moveDate)) : "—",
+          valueHtml: d.moveDate ? escapeHtmlEmail(dateDisplay(d.moveDate)) : "-",
         })}
       </table>
     </div>
@@ -1302,7 +1302,7 @@ function renderPaymentHistoryBlock(
       const labelHtml = labelParts.join(" · ");
       const receiptLink = entry.receiptUrl
         ? `<a href="${entry.receiptUrl}" style="color:${EMAIL_FOREST};text-decoration:underline;font-family:${PREMIUM_FONT};font-size:13px;">View receipt</a>`
-        : `<span style="color:${PROMO_CREAM_MUTED};font-family:${PREMIUM_FONT};font-size:13px;">—</span>`;
+        : `<span style="color:${PROMO_CREAM_MUTED};font-family:${PREMIUM_FONT};font-size:13px;">-</span>`;
       return `
         <tr>
           <td style="padding:10px 14px;font-family:${PREMIUM_FONT};font-size:13px;color:${EMAIL_FOREST};border-top:1px solid ${CONTRACT_DIVIDER_STRONG};">
@@ -1496,10 +1496,10 @@ export function balanceChargeFailedAdminEmail(
   const admValRed = `padding:6px 12px 6px 8px;font-size:12px;line-height:1.35;text-align:right;color:#D14343 !important;-webkit-text-fill-color:#D14343;font-weight:700;vertical-align:top`;
   return emailLayout(`
     <div style="${ALERT_EYEBROW_UPPER}">Urgent</div>
-    <div role="heading" aria-level="1" style="${EQ_H1}">${escapeHtmlEmail(d.moveCode)} — charge failed</div>
+    <div role="heading" aria-level="1" style="${EQ_H1}">${escapeHtmlEmail(d.moveCode)}, charge failed</div>
 
     <div style="background:rgba(209,67,67,0.1);border:1px solid rgba(209,67,67,0.22);border-radius:0;padding:${PROMO_CREAM_CALLOUT_PAD};margin-bottom:16px;font-family:${PREMIUM_FONT}">
-      <div style="font-size:12px;color:#D14343 !important;-webkit-text-fill-color:#D14343;font-weight:700;line-height:1.35;text-transform:uppercase;letter-spacing:0.05em">Auto-charge failed — ${formatCurrencyEmail(d.balanceAmount)}</div>
+      <div style="font-size:12px;color:#D14343 !important;-webkit-text-fill-color:#D14343;font-weight:700;line-height:1.35;text-transform:uppercase;letter-spacing:0.05em">Auto-charge failed, ${formatCurrencyEmail(d.balanceAmount)}</div>
       <div style="font-size:11px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};margin-top:8px;line-height:1.45"><span style="font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};">Error:</span> ${errHuman}</div>
     </div>
 
@@ -1514,14 +1514,14 @@ export function balanceChargeFailedAdminEmail(
         labelStyle: admLbl,
         valueStyle: admVal,
         label: "Phone",
-        valueHtml: d.clientPhone ? escapeHtmlEmail(formatPhone(d.clientPhone)) : "—",
+        valueHtml: d.clientPhone ? escapeHtmlEmail(formatPhone(d.clientPhone)) : "-",
       })}
       ${emailNestedKvRow({
         borderTop: admDiv,
         labelStyle: admLbl,
         valueStyle: admVal,
         label: "Move date",
-        valueHtml: d.moveDate ? escapeHtmlEmail(dateDisplay(d.moveDate)) : "—",
+        valueHtml: d.moveDate ? escapeHtmlEmail(dateDisplay(d.moveDate)) : "-",
       })}
       ${emailNestedKvRow({
         borderTop: admDiv,
@@ -1859,7 +1859,7 @@ export function quoteFollowupExpiryWarningEmail(
     <div role="heading" aria-level="1" style="${PROMO_CREAM_H1}">${heading}</div>
     <p style="${PROMO_CREAM_P}">Your ${d.serviceLabel.toLowerCase()} quote is held at its current rate until <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.expiresAt)}</strong>. After that, pricing may shift based on availability and we cannot guarantee your crew slot.<br/><br/><span style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};font-weight:700;letter-spacing:0.04em;text-transform:uppercase;font-size:13px;">Lock in your rate</span></p>
     ${equinoxPromoCta(d.quoteUrl, "View and Accept")}
-    ${equinoxPromoFinePrint(`Need more time or want to adjust anything? Email <a href="mailto:${getClientSupportEmail()}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;">${getClientSupportEmail()}</a> — happy to help.`)}
+    ${equinoxPromoFinePrint(`Need more time or want to adjust anything? Email <a href="mailto:${getClientSupportEmail()}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;">${getClientSupportEmail()}</a>, happy to help.`)}
     ${quoteFollowupDeclineAndPixelFooter(d.declineUrl, d.openPixelSrc)}
   `,
     "quote",
@@ -1904,7 +1904,7 @@ export function postMovePerksEmail(d: PostMovePerksEmailData): string {
                       : "Special offer";
             return `
           <div style="border-top:1px solid ${PROMO_CREAM_RULE};padding:16px 0;">
-            <div style="font-size:13px;font-weight:600;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-family:Helvetica Neue,Helvetica,Arial,sans-serif;margin-bottom:4px;text-transform:capitalize;">${escapeHtmlEmail(p.title)} <span style="font-size:10px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};font-weight:400;text-transform:none;">— ${offerLabel}</span></div>
+            <div style="font-size:13px;font-weight:600;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-family:Helvetica Neue,Helvetica,Arial,sans-serif;margin-bottom:4px;text-transform:capitalize;">${escapeHtmlEmail(p.title)} <span style="font-size:10px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};font-weight:400;text-transform:none;">- ${offerLabel}</span></div>
             ${p.description ? `<div style="font-size:13px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};margin-bottom:8px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${escapeHtmlEmail(p.description)}</div>` : ""}
             ${p.redemption_code ? `<span style="font-family:monospace;font-size:12px;font-weight:700;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};letter-spacing:0;">${escapeHtmlEmail(p.redemption_code)}</span>` : ""}
             ${p.redemption_url ? `<a href="${hrefAttr(p.redemption_url)}" style="font-size:11px;font-weight:700;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;margin-left:${p.redemption_code ? "12px" : "0"};letter-spacing:0.08em;text-transform:uppercase;">REDEEM</a>` : ""}

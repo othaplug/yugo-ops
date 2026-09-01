@@ -275,7 +275,7 @@ export default function AllMovesV3Client({
       estate: "Estate",
     };
     const topTierEntry = Object.entries(tierCounts).sort((a, b) => b[1] - a[1])[0];
-    const topTier = topTierEntry ? (TIER_LABEL[topTierEntry[0]] ?? topTierEntry[0]) : "—";
+    const topTier = topTierEntry ? (TIER_LABEL[topTierEntry[0]] ?? topTierEntry[0]) : "-";
 
     const hoodCounts: Record<string, number> = {};
     for (const m of completedMoves) {
@@ -283,7 +283,7 @@ export default function AllMovesV3Client({
       if (h) hoodCounts[h] = (hoodCounts[h] || 0) + 1;
     }
     const topHoodEntry = Object.entries(hoodCounts).sort((a, b) => b[1] - a[1])[0];
-    const topHood = topHoodEntry ? topHoodEntry[0] : "—";
+    const topHood = topHoodEntry ? topHoodEntry[0] : "-";
 
     return [
       {
@@ -645,17 +645,17 @@ export default function AllMovesV3Client({
                 </StatusPill>
               </div>
               <div className="text-[var(--yu3-ink)] font-medium">
-                {m.client_name || "—"}
+                {m.client_name || "-"}
               </div>
               <div className="text-[10px] text-[var(--yu3-ink-muted)]">
                 {portfolioPmMoveServiceLabel(m)}
               </div>
               <div className="text-[10px] text-[var(--yu3-ink-muted)] truncate">
-                {m.from_address || "—"}
+                {m.from_address || "-"}
               </div>
               <div className="flex items-center justify-between text-[11px] pt-1 border-t border-[var(--yu3-line-subtle)]">
                 <span className="text-[var(--yu3-ink-muted)]">
-                  {m.scheduled_date ? formatMoveDate(m.scheduled_date) : "—"}
+                  {m.scheduled_date ? formatMoveDate(m.scheduled_date) : "-"}
                 </span>
                 <span className="font-semibold text-[var(--yu3-ink)] tabular-nums">
                   {formatCurrency(Number(m.estimate ?? m.final_amount ?? 0))}

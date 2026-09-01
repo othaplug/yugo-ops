@@ -95,7 +95,7 @@ export default function NewDesignerProjectForm({
       }
       router.push(`/admin/b2b/designer-projects/${data.project.id}`);
     } catch {
-      setError("Network error — please try again");
+      setError("Network error, please try again");
     } finally {
       setLoading(false);
     }
@@ -151,7 +151,7 @@ export default function NewDesignerProjectForm({
           <input
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
-            placeholder="Project name (e.g. Grubner Suite 402 — Glenhill Condominium)"
+            placeholder="Project name (e.g. Grubner Suite 402, Glenhill Condominium)"
             className={input}
           />
           <div className="grid grid-cols-2 gap-3">

@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
 
   if (clientPricePreTax + 1e-6 < effectiveSubtotal && !priceOverride) {
     return NextResponse.json(
-      { error: "Price is below calculated cost — enable override and add a reason, or raise the price" },
+      { error: "Price is below calculated cost, enable override and add a reason, or raise the price" },
       { status: 400 },
     );
   }

@@ -413,7 +413,7 @@ export default function LeadsHubClient({
                 firstResponseAt={lead.first_response_at}
               />
               <span className="truncate text-[13px] font-bold text-[var(--tx)]">
-                {lead.lead_number} — {name}
+                {lead.lead_number} - {name}
               </span>
             </div>
             <p className="text-[10px] font-semibold text-[var(--tx2)] mt-1">
@@ -595,7 +595,7 @@ export default function LeadsHubClient({
             <h2 className={`${sectionTitle} flex-wrap`}>
               <Lightning size={14} className="text-[var(--tx2)]" aria-hidden />
               <span className="flex items-center gap-1.5 flex-wrap">
-                Speed to lead — today
+                Speed to lead, today
                 <SpeedToLeadHint iconSize={14} ariaLabel="Speed to lead" />
               </span>
             </h2>
@@ -645,7 +645,7 @@ export default function LeadsHubClient({
             </p>
             {attention.length === 0 ? (
               <p className="py-14 text-center text-[15px] text-[var(--tx3)]/85">
-                No leads waiting — great job.
+                No leads waiting, great job.
               </p>
             ) : (
               <div className="space-y-4">
@@ -657,7 +657,7 @@ export default function LeadsHubClient({
           </section>
 
           <section aria-label="This month funnel">
-            <h2 className={sectionTitle}>This month — funnel</h2>
+            <h2 className={sectionTitle}>This month, funnel</h2>
             <div className="overflow-hidden rounded-2xl bg-[var(--brd)]/[0.28] p-px shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:bg-[var(--brd)]/35 dark:shadow-none">
               <dl className="grid gap-px sm:grid-cols-2 lg:grid-cols-3">
                 {(

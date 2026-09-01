@@ -57,7 +57,7 @@ export async function POST(
   }
   if (!move.client_email && !move.client_phone) {
     return NextResponse.json(
-      { error: "Move has no client_email or client_phone — cannot send a reminder." },
+      { error: "Move has no client_email or client_phone, cannot send a reminder." },
       { status: 400 },
     );
   }

@@ -658,8 +658,8 @@ function DateFactorsSection() {
   const LABELS: Record<string, string> = {
     monday: "Monday", tuesday: "Tuesday", wednesday: "Wednesday", thursday: "Thursday",
     friday: "Friday", saturday: "Saturday", sunday: "Sunday",
-    peak_jun_aug: "Peak (Jun–Aug)", shoulder_sep_nov: "Shoulder (Sep–Nov)",
-    off_peak_jan_mar: "Off-peak (Jan–Mar)", spring_apr_may: "Spring (Apr–May)",
+    peak_jun_aug: "Peak (Jun-Aug)", shoulder_sep_nov: "Shoulder (Sep-Nov)",
+    off_peak_jan_mar: "Off-peak (Jan-Mar)", spring_apr_may: "Spring (Apr-May)",
     month_end: "Month-end (last 3 days)", last_minute_7days: "Last-minute (<7 days)",
     early_bird_30plus: "Early bird (>30 days)",
   };
@@ -784,7 +784,7 @@ function SingleItemSection() {
           { key: "single_item_heavy", label: "Heavy base ($)" },
           { key: "single_item_extra_heavy", label: "Extra heavy base ($)" },
           { key: "single_item_fragile", label: "Fragile base ($)" },
-          { key: "single_item_additional_item_rate", label: "Additional item rate (0–1)" },
+          { key: "single_item_additional_item_rate", label: "Additional item rate (0 to 1)" },
           { key: "single_item_dist_free_km", label: "Single item: free km before per-km", hint: "First N km have no single-item distance surcharge (default 40). Overrides hardcoded behaviour when set." },
           { key: "single_item_per_km", label: "$/km beyond free km threshold" },
           { key: "single_item_assembly", label: "Assembly/disassembly ($)" },
@@ -836,7 +836,7 @@ function SingleItemSection() {
 
 /* ────────── S8: DEPOSIT RULES ────────── */
 const BRACKETS = ["under_500", "500_999", "1000_2999", "3000_4999", "5000_plus"];
-const BRACKET_LABELS: Record<string, string> = { under_500: "<$500", "500_999": "$500–999", "1000_2999": "$1K–2.9K", "3000_4999": "$3K–4.9K", "5000_plus": "$5K+" };
+const BRACKET_LABELS: Record<string, string> = { under_500: "<$500", "500_999": "$500 to 999", "1000_2999": "$1K-2.9K", "3000_4999": "$3K-4.9K", "5000_plus": "$5K+" };
 const SERVICE_TYPES = ["residential", "long_distance", "office", "single_item", "white_glove", "specialty"];
 
 const DEPOSIT_TIER_KEYS = [
@@ -2335,7 +2335,7 @@ function SuppliesAndCratingSection() {
   };
   const CRATING_DEFAULTS: Record<string, number> = { small: 175, medium: 250, large: 350, oversized: 500 };
   const CRATING_LABELS: Record<string, string> = {
-    small: 'Small (under 24")', medium: 'Medium (24–48")', large: 'Large (48–72")', oversized: 'Oversized (72"+)',
+    small: 'Small (under 24")', medium: 'Medium (24 to 48")', large: 'Large (48 to 72")', oversized: 'Oversized (72"+)',
   };
 
   const parseJson = (row: Row | undefined, defaults: Record<string, number>) => {
@@ -2414,7 +2414,7 @@ function SuppliesAndCratingSection() {
                 </td>
                 <td className={td}>
                   <span className="text-[10px] text-[var(--tx3)]">
-                    {key === "small" ? "Art under 24in" : key === "medium" ? "Art/mirrors 24–48in" : key === "large" ? "Furniture/sculptures 48–72in" : "72in+"}
+                    {key === "small" ? "Art under 24in" : key === "medium" ? "Art/mirrors 24 to 48in" : key === "large" ? "Furniture/sculptures 48 to 72in" : "72in+"}
                   </span>
                 </td>
               </tr>
@@ -2522,7 +2522,7 @@ function DistanceDeadheadSection() {
       <div>
         <h4 className="text-[11px] font-bold text-[var(--tx)] mb-1">Distance Modifiers</h4>
         <p className="text-[11px] text-[var(--tx3)] mb-3">
-          Applied multiplicatively to base rate. Replaces the old flat per-km surcharge. Baseline (6–20 km) = ×1.0.
+          Applied multiplicatively to base rate. Replaces the old flat per-km surcharge. Baseline (6 to 20 km) = ×1.0.
         </p>
         <table className="w-full text-[11px] border-collapse">
           <thead>
@@ -2775,17 +2775,17 @@ function EventPricingSection() {
     {
       title: "Return leg & deposit",
       keys: [
-        { key: "event_default_return_rate_different", label: "Auto return rate — different addresses (0–1)" },
-        { key: "event_default_return_rate_same_venue", label: "Auto return rate — same venue / on-site (0–1)" },
-        { key: "event_return_discount", label: "Legacy: used as fallback for old presets (0–1)" },
+        { key: "event_default_return_rate_different", label: "Auto return rate, different addresses (0 to 1)" },
+        { key: "event_default_return_rate_same_venue", label: "Auto return rate, same venue / on-site (0 to 1)" },
+        { key: "event_return_discount", label: "Legacy: used as fallback for old presets (0 to 1)" },
         { key: "event_min_deposit", label: "Minimum deposit ($)" },
       ],
     },
     {
       title: "Legacy display (optional)",
       keys: [
-        { key: "event_base_hourly_rate", label: "Deprecated — old team hourly (not used by new engine)" },
-        { key: "event_luxury_hourly_rate", label: "Deprecated — old luxury hourly" },
+        { key: "event_base_hourly_rate", label: "Deprecated, old team hourly (not used by new engine)" },
+        { key: "event_luxury_hourly_rate", label: "Deprecated, old luxury hourly" },
       ],
     },
   ];
@@ -3092,10 +3092,10 @@ function LabourOnlyPricingSection() {
   const fields = [
     { key: "labour_only_per_mover_hour", label: "Rate per mover-hour ($)", hint: "Crew × hours × this rate (per mover)." },
     { key: "labour_only_truck_fee", label: "Truck fee when required ($)", hint: "Added when customer selects truck on site." },
-    { key: "labour_only_visit2_discount", label: "Visit 2 discount (0–1)", hint: "Second visit labour subtotal multiplier before truck/access." },
+    { key: "labour_only_visit2_discount", label: "Visit 2 discount (0 to 1)", hint: "Second visit labour subtotal multiplier before truck/access." },
     { key: "labour_only_minimum", label: "Minimum subtotal ($)", hint: "Floor before tax." },
     { key: "labour_only_weekend", label: "Weekend surcharge ($)", hint: "Flat add-on when weekend is selected or inferred." },
-    { key: "labour_only_after_hours_multiplier", label: "After-hours multiplier (0–2)", hint: "Applied to labour subtotal when after-hours is selected." },
+    { key: "labour_only_after_hours_multiplier", label: "After-hours multiplier (0 to 2)", hint: "Applied to labour subtotal when after-hours is selected." },
     { key: "storage_weekly_rate", label: "Storage between visits ($/week)", hint: "Used when storage between labour visits is selected." },
   ];
 
@@ -3188,8 +3188,8 @@ function EngineConfigSection() {
     { key: "deadhead_rate_per_km", label: "Deadhead Rate ($/km)", hint: "Cost per km beyond the free zone. Crew travel from 507 King St E." },
     { key: "deadhead_free_zone_km", label: "Deadhead Free Zone (km)", hint: "Jobs within this radius from HQ have no deadhead charge (default 40 km)." },
     // Mobilization
-    { key: "mobilization_25_35", label: "Mobilization Fee, 25–35 km ($)", hint: "Flat fee for jobs 25–35 km from HQ." },
-    { key: "mobilization_35_50", label: "Mobilization Fee, 35–50 km ($)", hint: "Flat fee for jobs 35–50 km from HQ." },
+    { key: "mobilization_25_35", label: "Mobilization Fee, 25 to 35 km ($)", hint: "Flat fee for jobs 25 to 35 km from HQ." },
+    { key: "mobilization_35_50", label: "Mobilization Fee, 35 to 50 km ($)", hint: "Flat fee for jobs 35 to 50 km from HQ." },
     { key: "mobilization_50plus", label: "Mobilization Fee, 50+ km ($)", hint: "Flat fee for jobs beyond 50 km from HQ." },
     // Cost tracking
     { key: "cost_per_mover_hour", label: "Cost Per Mover-Hour ($)", hint: "Internal labour cost per mover per hour (for margin calculations, not pricing)." },

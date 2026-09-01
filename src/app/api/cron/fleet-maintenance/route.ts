@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
           <tbody>${rowsHtml}</tbody>
         </table>
       </div>`,
-      `Fleet — ${flagged.length} vehicle${flagged.length !== 1 ? "s" : ""} need attention`
+      `Fleet, ${flagged.length} vehicle${flagged.length !== 1 ? "s" : ""} need attention`
     );
     await sendEmail({
       to: adminTo,

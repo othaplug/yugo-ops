@@ -90,7 +90,7 @@ export function autoParseInventory<T extends ItemWeightLike>(
         weight_score: null,
         confidence: "low",
         needs_review: true,
-        note: "Vague description — coordinator review",
+        note: "Vague description, coordinator review",
       });
       continue;
     }
@@ -120,7 +120,7 @@ export function autoParseInventory<T extends ItemWeightLike>(
         weight_score: null,
         confidence: "low",
         needs_review: true,
-        note: "No confident catalog match — coordinator review",
+        note: "No confident catalog match, coordinator review",
       });
     }
   }

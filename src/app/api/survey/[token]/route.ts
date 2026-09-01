@@ -143,7 +143,7 @@ export async function PUT(
         const moveCode = (move.move_code as string | null) ?? "";
         await notifyAllAdmins({
           eventSlug: "client_survey_photos_submitted",
-          title: `Pre-move photos submitted${moveCode ? ` — ${moveCode}` : ""}`,
+          title: `Pre-move photos submitted${moveCode ? `, ${moveCode}` : ""}`,
           body:
             (clientName ? `${clientName} ` : "Client ") +
             `submitted ${photoCount} room photo${photoCount === 1 ? "" : "s"}. ` +

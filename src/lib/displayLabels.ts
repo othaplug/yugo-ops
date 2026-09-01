@@ -21,7 +21,7 @@ export const MOVE_SIZE_LABELS: Record<string, string> = {
  * Falls back to title-casing with underscore replacement.
  */
 export function moveSizeDisplayLabel(value: string | null | undefined): string {
-  if (!value) return "—";
+  if (!value) return "-";
   const v = value.trim();
   return MOVE_SIZE_LABELS[v] ?? v.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
@@ -55,7 +55,7 @@ export const SERVICE_TYPE_LABELS: Record<string, string> = {
  */
 export function serviceTypeDisplayLabel(value: string | null | undefined): string {
   const v = typeof value === "string" ? value.trim() : "";
-  if (!v) return "—";
+  if (!v) return "-";
   const fromMap = getDisplayLabel(v, "service_type");
   return fromMap || displayLabel(v);
 }
@@ -160,7 +160,7 @@ export function portfolioPmMoveServiceLabel(move: {
   }
   if (isPm) {
     const st = serviceTypeDisplayLabel(move.service_type);
-    if (!st.trim() || st === "—") return "PM Move";
+    if (!st.trim() || st === "-") return "PM Move";
     return st;
   }
   return serviceTypeDisplayLabel(move.service_type);

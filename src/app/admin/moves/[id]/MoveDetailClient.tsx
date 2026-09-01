@@ -962,7 +962,7 @@ export default function MoveDetailClient({
 
   const kpiTiles = useMemo(
     () => [
-      { id: "id", label: "Move", value: String(move.move_code || "—") },
+      { id: "id", label: "Move", value: String(move.move_code || "-") },
       {
         id: "date",
         label: "Scheduled",
@@ -973,7 +973,7 @@ export default function MoveDetailClient({
       {
         id: "status",
         label: "Status",
-        value: toTitleCase(getStatusLabel(String(move.status || "")) || "—"),
+        value: toTitleCase(getStatusLabel(String(move.status || "")) || "-"),
       },
       {
         id: "value",
@@ -1606,7 +1606,7 @@ export default function MoveDetailClient({
                   From{additionalOrigins.length > 0 && ` (${additionalOrigins.length + 1} pickups)`}
                 </p>
                 <p className="text-[var(--yu3-ink)] leading-snug">
-                  {move.from_address || "—"}
+                  {move.from_address || "-"}
                 </p>
                 {additionalOrigins.map((s, i) => {
                   const a = (s?.address ?? "").trim();
@@ -1636,12 +1636,12 @@ export default function MoveDetailClient({
                     const raw = String(
                       move.to_address || move.delivery_address || "",
                     ).trim();
-                    if (!raw) return "—";
+                    if (!raw) return "-";
                     const holdMatch = raw.match(
                       /^([A-Za-z0-9\-]+)\s*\(holding\)$/i,
                     );
                     if (holdMatch && move.is_pm_move) {
-                      return `Unit ${holdMatch[1]} — holding bay`;
+                      return `Unit ${holdMatch[1]}, holding bay`;
                     }
                     return raw;
                   })()}
@@ -1686,7 +1686,7 @@ export default function MoveDetailClient({
                 </div>
                 {isCompleted ? (
                   <p className="text-[var(--yu3-ink)]">
-                    {move.scheduled_date ? formatMoveDate(move.scheduled_date) : "—"}
+                    {move.scheduled_date ? formatMoveDate(move.scheduled_date) : "-"}
                     {move.arrival_window ? (
                       <span className="text-[var(--yu3-ink-muted)] ml-1.5">
                         · {move.arrival_window}
@@ -1700,7 +1700,7 @@ export default function MoveDetailClient({
                     className="text-left text-[var(--yu3-ink)] hover:text-[var(--yu3-wine)] transition-colors"
                     aria-label="Edit date and arrival window"
                   >
-                    {move.scheduled_date ? formatMoveDate(move.scheduled_date) : "—"}
+                    {move.scheduled_date ? formatMoveDate(move.scheduled_date) : "-"}
                     {move.arrival_window ? (
                       <span className="text-[var(--yu3-ink-muted)] ml-1.5">
                         · {move.arrival_window}
@@ -1742,7 +1742,7 @@ export default function MoveDetailClient({
                   }
                   return (
                     <p className="text-[var(--yu3-ink)]">
-                      {clientName || "—"}
+                      {clientName || "-"}
                     </p>
                   );
                 })()}
@@ -1808,7 +1808,7 @@ export default function MoveDetailClient({
                             Bills to partner
                           </span>
                         )
-                      : "—"}
+                      : "-"}
                 </p>
               </div>
               {/* Tier — only shown for service types that use tier packages
@@ -2009,7 +2009,7 @@ export default function MoveDetailClient({
                       <ul className="list-disc pl-5 text-[12px] text-amber-900/90 leading-relaxed space-y-1">
                         <li>
                           <strong>Call within 24 hours.</strong> The first
-                          24 hours is the recovery window — a phone call
+                          24 hours is the recovery window, a phone call
                           from the coordinator (or owner for 1-2 stars)
                           beats any email.
                         </li>
@@ -2035,7 +2035,7 @@ export default function MoveDetailClient({
                         <li>
                           <strong>Re-invite a review only after recovery.</strong>{" "}
                           If the issue is resolved to their satisfaction,
-                          THEN you can ask for a Google review manually —
+                          THEN you can ask for a Google review manually -
                           not before.
                         </li>
                       </ul>
@@ -2384,7 +2384,7 @@ export default function MoveDetailClient({
               title={
                 moveInProgress
                   ? isSuperAdmin
-                    ? "Move in progress — super admin override"
+                    ? "Move in progress, super admin override"
                     : "Cannot reassign job in progress"
                   : "Change crew"
               }
@@ -2446,7 +2446,7 @@ export default function MoveDetailClient({
                 title={
                   moveInProgress
                     ? isSuperAdmin
-                      ? "Move in progress — super admin override"
+                      ? "Move in progress, super admin override"
                       : "Cannot reassign job in progress"
                     : undefined
                 }
@@ -3205,24 +3205,24 @@ export default function MoveDetailClient({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-[var(--yu3-ink-muted)]">
                     <p>
                       <span className="text-[var(--yu3-ink-muted)]">Bundle · bins: </span>
-                      {String(b.bundle_type ?? "—")} ·{" "}
-                      {String(b.bin_count ?? "—")}
+                      {String(b.bundle_type ?? "-")} ·{" "}
+                      {String(b.bin_count ?? "-")}
                     </p>
                     <p>
                       <span className="text-[var(--yu3-ink-muted)]">Drop-off: </span>
                       {b.drop_off_date
                         ? formatMoveDate(String(b.drop_off_date))
-                        : "—"}
+                        : "-"}
                     </p>
                     <p>
                       <span className="text-[var(--yu3-ink-muted)]">Move day: </span>
-                      {b.move_date ? formatMoveDate(String(b.move_date)) : "—"}
+                      {b.move_date ? formatMoveDate(String(b.move_date)) : "-"}
                     </p>
                     <p>
                       <span className="text-[var(--yu3-ink-muted)]">Pickup: </span>
                       {b.pickup_date
                         ? formatMoveDate(String(b.pickup_date))
-                        : "—"}
+                        : "-"}
                     </p>
                   </div>
                   {(Boolean(b.delivery_address) ||
@@ -3572,7 +3572,7 @@ export default function MoveDetailClient({
               </p>
               <p>
                 This move is in progress. The active crew is on-site. Changes
-                here do NOT auto-notify them — call the lead first before
+                here do NOT auto-notify them, call the lead first before
                 saving. The change is audit-logged.
               </p>
             </div>
@@ -3709,7 +3709,7 @@ export default function MoveDetailClient({
                 </p>
               ) : (
                 <p className="text-[11px] text-amber-600 text-center">
-                  No members checked — Save will leave this move unassigned.
+                  No members checked, Save will leave this move unassigned.
                 </p>
               )}
               <button
@@ -4655,7 +4655,7 @@ function SingleItemTaskBlock({
         ? "Delivery address (destination)"
         : junkPickupFrom === "both"
           ? "Both addresses"
-          : "—";
+          : "-";
 
   return (
     <div className="rounded-xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 mb-3 space-y-3">

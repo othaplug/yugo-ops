@@ -65,9 +65,9 @@ const PM_TENANT_SERVICE_LABELS: Record<string, string> = Object.fromEntries(
 );
 
 const FREQUENCY_OPTIONS = [
-  { value: "1_5", label: "1–5 / month" },
-  { value: "5_15", label: "5–15 / month" },
-  { value: "15_30", label: "15–30 / month" },
+  { value: "1_5", label: "1 to 5 / month" },
+  { value: "5_15", label: "5 to 15 / month" },
+  { value: "15_30", label: "15 to 30 / month" },
   { value: "30_plus", label: "30+ / month" },
 ];
 
@@ -1476,7 +1476,7 @@ function Step1BusinessDetails({
                       onChange={(e) => patchPmProperty(idx, { elevator_type: e.target.value })}
                       className={inputCls}
                     >
-                      <option value="">—</option>
+                      <option value="">-</option>
                       <option value="dedicated">Dedicated</option>
                       <option value="shared">Shared</option>
                       <option value="none">None</option>
@@ -1494,7 +1494,7 @@ function Step1BusinessDetails({
                       }
                       className={inputCls}
                     >
-                      <option value="8to6">8 AM – 6 PM</option>
+                      <option value="8to6">8 AM, 6 PM</option>
                       <option value="24_7">24/7</option>
                       <option value="custom">Custom</option>
                     </select>
@@ -1507,7 +1507,7 @@ function Step1BusinessDetails({
                         value={prop.custom_move_hours}
                         onChange={(e) => patchPmProperty(idx, { custom_move_hours: e.target.value })}
                         className={inputCls}
-                        placeholder="e.g., 6 AM – 8 PM weekdays, 7 AM – 5 PM weekends"
+                        placeholder="e.g., 6 AM, 8 PM weekdays, 7 AM, 5 PM weekends"
                       />
                     </div>
                   )}
@@ -1709,7 +1709,7 @@ function Step2PmOperations({
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-[var(--gold)]/35 bg-[var(--gold)]/5 px-4 py-3">
-        <p className="text-[12px] font-semibold text-[var(--tx)]">Property portfolio — {verticalLabel}</p>
+        <p className="text-[12px] font-semibold text-[var(--tx)]">Property portfolio, {verticalLabel}</p>
         <p className="text-[11px] text-[var(--tx3)] mt-1.5 leading-relaxed">
           Buildings and contract terms were captured in step 1. Here, set the move services and logistics defaults for
           this portfolio (not B2B retail vertical pricing).
@@ -1844,7 +1844,7 @@ function Step2ServicePreferences({
             key={code}
             className="rounded-xl border border-[var(--brd)]/70 p-4 space-y-3 bg-[var(--bg)]/40"
           >
-            <p className="text-[12px] font-semibold text-[var(--tx)]">{label} — rate customization</p>
+            <p className="text-[12px] font-semibold text-[var(--tx)]">{label} - rate customization</p>
             <div className="flex flex-wrap items-center gap-2">
               <label className="text-[11px] text-[var(--tx3)]">Use default rates?</label>
               <select
@@ -2375,9 +2375,9 @@ const TERMS_LABELS: Record<string, string> = {
   prepay: "Pre-pay, credits pre-loaded",
 };
 const TERMS_LABELS_PM: Record<string, string> = {
-  due_on_receipt: "Due on Receipt — per move or service",
-  net_15: "Net 15 — portfolio statements 1st & 16th",
-  net_30: "Net 30 — monthly portfolio statement",
+  due_on_receipt: "Due on Receipt, per move or service",
+  net_15: "Net 15, portfolio statements 1st & 16th",
+  net_30: "Net 30, monthly portfolio statement",
   prepay: "Pre-pay / credits",
 };
 const DELIVERY_LABELS: Record<string, string> = Object.fromEntries(

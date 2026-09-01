@@ -63,7 +63,7 @@ export function QuotesFollowupAutomationHint({
         >
           Platform → Business
         </Link>
-        . Manual send uses the same rules (stages 1–3) and shows quote IDs
+        . Manual send uses the same rules (stages 1 to 3) and shows quote IDs
         first.
       </p>
     </InfoHint>
@@ -111,7 +111,7 @@ export function SpeedToLeadHint({
       iconSize={iconSize}
     >
       <p className="text-[12px] leading-relaxed">
-        Speed to lead: respond in under five minutes when you can — it drives
+        Speed to lead: respond in under five minutes when you can, it drives
         conversion.
       </p>
     </InfoHint>

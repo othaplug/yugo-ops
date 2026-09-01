@@ -103,10 +103,10 @@ export const MetricCard = ({
 }
 
 const metricValueToString = (value: React.ReactNode): string => {
-  if (value == null) return "—"
+  if (value == null) return "-"
   if (typeof value === "string" || typeof value === "number")
     return String(value)
-  return "—"
+  return "-"
 }
 
 export const MetricStrip = ({

@@ -99,7 +99,7 @@ function resolveTitleLabel(input: GCalJobInput): string {
       is_pm_move: true,
       pm_reason_code: input.pmReasonCode ?? null,
     });
-    if (label && label.trim() && label !== "—") return label;
+    if (label && label.trim() && label !== "-") return label;
   }
   return serviceTypeDisplayLabel(input.serviceType) || input.serviceType;
 }

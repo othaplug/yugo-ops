@@ -112,7 +112,7 @@ export const CalendarClient = ({ moves: initialMoves, invoices = [] }: CalendarC
     if (view === "week") {
       const start = startOfWeek(anchor)
       const end = addDays(start, 6)
-      return `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+      return `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })}, ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
     }
     return anchor.toLocaleDateString("en-US", {
       month: "long",
@@ -265,7 +265,7 @@ export const CalendarClient = ({ moves: initialMoves, invoices = [] }: CalendarC
               </div>
               <div className="min-h-[64px] p-2 space-y-1">
                 {inSlot.length === 0 ? (
-                  <span className="body-xs text-fg-subtle">–</span>
+                  <span className="body-xs text-fg-subtle">-</span>
                 ) : (
                   inSlot.map(renderMovePill)
                 )}

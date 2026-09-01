@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
         order.client_phone,
         [
           `Hi ${fn},`,
-          `Your Yugo bins arrive tomorrow between 9 AM–5 PM.`,
+          `Your Yugo bins arrive tomorrow between 9 AM-5 PM.`,
           `Please ensure access to your unit or lobby.`,
           `Bins will be picked up on ${pickupDate}.`,
           `Questions? (647) 370-4525`,
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
         order.client_phone,
         [
           `Hi ${fn2},`,
-          `We're picking up your Yugo bins tomorrow between 9 AM–5 PM.`,
+          `We're picking up your Yugo bins tomorrow between 9 AM-5 PM.`,
           `Please stack bins by the door.`,
           `Questions? (647) 370-4525`,
         ].join("\n\n"),

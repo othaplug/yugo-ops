@@ -102,7 +102,7 @@ const Harness = () => {
         <div>
           <p className="display-sm text-fg">Admin v2 · Primitives</p>
           <p className="body-sm text-fg-muted">
-            Dev harness — review every component, variant, and state.{" "}
+            Dev harness, review every component, variant, and state.{" "}
             <Link
               className="text-fg underline decoration-fg/30 hover:decoration-fg/60"
               href="/admin/_dev/yu3-ui-lab"

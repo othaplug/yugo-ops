@@ -111,7 +111,7 @@ export async function ensureHubSpotCustomProperties(
             result.created.push(name)
           } else if (res.status === 404) {
             console.error(
-              `[HubSpot setup] Property ${name} missing in portal — create it manually under Settings → Properties → Deals.`,
+              `[HubSpot setup] Property ${name} missing in portal, create it manually under Settings → Properties → Deals.`,
             )
             result.failed.push(name)
           } else {

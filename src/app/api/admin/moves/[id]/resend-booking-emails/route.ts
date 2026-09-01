@@ -158,7 +158,7 @@ export async function POST(
   const crewSize =
     (move.crew_size as number) || (quote.est_crew_size as number) || 3;
   const timeWindow =
-    (move.arrival_window as string) || "Morning (7 AM – 12 PM)";
+    (move.arrival_window as string) || "Morning (7 AM, 12 PM)";
 
   const resend = getResend();
   const emailFrom = await getEmailFrom();
@@ -397,14 +397,14 @@ export async function POST(
           `<ul style="margin:0;padding-left:18px;line-height:1.55;">` +
           `<li>Confirm the inventory we built from your intake</li>` +
           `<li>Flag bulky or fragile pieces before crew day</li>` +
-          `<li>Check access details — elevators, stairs, narrow doors</li>` +
+          `<li>Check access details, elevators, stairs, narrow doors</li>` +
           `<li>Arrive with the right truck, blankets, and dollies</li>` +
           `</ul>` +
           `<br/>` +
           `<strong>What to photograph (about two minutes):</strong>` +
           `<br/>` +
           `<ul style="margin:0;padding-left:18px;line-height:1.55;">` +
-          `<li>Each room from the doorway — wide shots, not close-ups</li>` +
+          `<li>Each room from the doorway, wide shots, not close-ups</li>` +
           `<li>Anything heavy, oversized, or fragile</li>` +
           `<li>The building entrance and elevator if you have one</li>` +
           `</ul>` +

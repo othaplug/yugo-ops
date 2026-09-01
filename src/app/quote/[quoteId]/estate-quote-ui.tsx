@@ -139,7 +139,7 @@ export const EstateExperienceSection = React.forwardRef<
                  as a range so the schedule's per-day breakdown is the source
                  of truth, not this card. */}
               <EstateFeatureCard
-                title={`Professional crew sized for your home (${Math.max(2, crewN - 1)}–${crewN} specialists across pack and move days)`}
+                title={`Professional crew sized for your home (${Math.max(2, crewN - 1)}-${crewN} specialists across pack and move days)`}
                 description="Licensed, insured, background-checked. The same team across pack day, move day, and unpacking."
               />
               <EstateFeatureCard

@@ -105,7 +105,7 @@ export default function CrewEndOfDayPage() {
           value:
             preview.summary.averageSatisfaction != null
               ? String(preview.summary.averageSatisfaction)
-              : "—",
+              : "-",
         },
       ]
     : [];

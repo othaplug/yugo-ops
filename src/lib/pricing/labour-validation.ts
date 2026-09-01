@@ -226,13 +226,13 @@ export function validateLabourRate(
   if (effectiveRate > ceiling.max) {
     status = "above_ceiling"
     message =
-      `This quote is pricing labour at $${effectiveRate.toFixed(0)}/hr per mover, but the ${String(ceilingKey)} tier targets $${ceiling.min}–$${ceiling.max}/hr. ` +
+      `This quote is pricing labour at $${effectiveRate.toFixed(0)}/hr per mover, but the ${String(ceilingKey)} tier targets $${ceiling.min}-$${ceiling.max}/hr. ` +
       `Either lower the price, or bump up the crew so the implied per-hour rate falls back into market range.`
   } else if (effectiveRate < ceiling.min) {
     status = "below_floor"
     message =
       `This quote is pricing labour at $${effectiveRate.toFixed(0)}/hr per mover, which is under the ${String(ceilingKey)} tier floor of $${ceiling.min}/hr. ` +
-      `Usually the crew count is too high — try the Crew override on the form, or trim hours, before lowering the price further.`
+      `Usually the crew count is too high, try the Crew override on the form, or trim hours, before lowering the price further.`
   }
 
   return {

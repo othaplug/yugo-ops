@@ -5,7 +5,7 @@ import { toTitleCase } from "@/lib/format-text";
  * it maps `paid` → "Scheduled" on purpose for moves.
  */
 export function getInvoiceStatusLabel(status: string | null | undefined): string {
-  if (!status) return "—";
+  if (!status) return "-";
   const k = status.toLowerCase().trim().replace(/\s+/g, "_");
   const map: Record<string, string> = {
     draft: "Draft",

@@ -189,7 +189,7 @@ export async function PATCH(
         admin,
         moveId: request.move_id,
         feeInclusive: Number(requestWithFee?.fee_cents ?? 0) / 100,
-        label: `Change request — ${request.type}`,
+        label: `Change request, ${request.type}`,
         idemSuffix: id,
       });
       if (result.charged) {

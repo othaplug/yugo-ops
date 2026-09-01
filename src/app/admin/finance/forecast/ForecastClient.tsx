@@ -545,7 +545,7 @@ function MetricRow({
   invertColor?: boolean;
   isNew?: boolean;
 }) {
-  let changeDisplay = "\u2014";
+  let changeDisplay = "-";
   let changeColor = "text-[var(--tx3)]";
 
   if (isNew) {

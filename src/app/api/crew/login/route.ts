@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     if (isDeviceFlow) {
       if (!pin || pin.length < 4 || pin.length > 6 || !/^\d+$/.test(pin)) {
-        return NextResponse.json({ error: "PIN must be 4–6 digits" }, { status: 400 });
+        return NextResponse.json({ error: "PIN must be 4 to 6 digits" }, { status: 400 });
       }
       if (!deviceId) {
         return NextResponse.json({ error: "Device identification required. Refresh the page or re-register this tablet." }, { status: 400 });

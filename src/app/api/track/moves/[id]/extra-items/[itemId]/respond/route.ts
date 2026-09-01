@@ -93,7 +93,7 @@ export async function GET(
       .from("extra_items")
       .update({ status: "approved" })
       .eq("id", itemId);
-    const msg = encodeURIComponent("Thanks — no charge was needed.");
+    const msg = encodeURIComponent("Thanks, no charge was needed.");
     return NextResponse.redirect(`${portalUrl}&notice=${msg}`);
   }
 
@@ -101,7 +101,7 @@ export async function GET(
     admin,
     moveId,
     feeInclusive: feeCents / 100,
-    label: `Extra item — ${String(item.description || "Added item")}`,
+    label: `Extra item, ${String(item.description || "Added item")}`,
     idemSuffix: itemId,
   });
   if (!result.charged) {
@@ -122,7 +122,7 @@ export async function GET(
     .eq("id", itemId);
 
   const ok = encodeURIComponent(
-    `Thanks — $${(feeCents / 100).toFixed(2)} was charged to your card on file.`,
+    `Thanks, $${(feeCents / 100).toFixed(2)} was charged to your card on file.`,
   );
   return NextResponse.redirect(`${portalUrl}&notice=${ok}`);
 }

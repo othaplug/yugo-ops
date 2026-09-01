@@ -79,9 +79,9 @@ export function displayLabel(raw: string): string {
 }
 
 export function safeDisplay(value: unknown): string {
-  if (value === null || value === undefined) return "—"
+  if (value === null || value === undefined) return "-"
   if (typeof value === "boolean") return value ? "Yes" : "No"
-  if (typeof value === "object") return "—"
+  if (typeof value === "object") return "-"
   if (typeof value === "number") return value.toLocaleString()
   return String(value)
 }

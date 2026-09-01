@@ -149,7 +149,7 @@ function quoteEmailLayout(innerHtml: string): string {
     ${INSTRUMENT_SERIF_FACE}
     :root, html { color-scheme: only light; }
     .yugo-quote-body { color-scheme: only light; }
-    /* Apple Mail / iOS “dark” mail view — lock surfaces to our light palette (no auto-invert). */
+    /* Apple Mail / iOS “dark” mail view, lock surfaces to our light palette (no auto-invert). */
     @media (prefers-color-scheme: dark) {
       .yugo-quote-body {
         background-color: ${SHELL_PAGE} !important;
@@ -185,7 +185,7 @@ function quoteEmailLayout(innerHtml: string): string {
         -webkit-filter: none !important;
       }
     }
-    /* Wine panel ink-lock — runs in BOTH light and dark mode because some
+    /* Wine panel ink-lock, runs in BOTH light and dark mode because some
        email clients (e.g. Gmail Android, Outlook on Mac) inject color-shift
        rules unconditionally. Forces every descendant of .yugo-on-wine to
        cream so the $price/label never disappears into the wine background. */
@@ -440,7 +440,7 @@ function whyYugoBlock(): string {
               .map(
                 ([strong, rest]) => `
               <tr>
-                <td style="padding:6px 0;font-size:10px;color:${EMAIL_WINE};vertical-align:top;width:18px;line-height:1.6;">—</td>
+                <td style="padding:6px 0;font-size:10px;color:${EMAIL_WINE};vertical-align:top;width:18px;line-height:1.6;">-</td>
                 <td style="padding:6px 0;font-size:12px;color:${SHELL_TX2};line-height:1.6;"><strong style="color:${SHELL_TX};font-weight:600;">${strong}</strong> - ${rest}</td>
               </tr>
             `,
@@ -602,7 +602,7 @@ function tierCards(
       const includesRows = shownIncludes
         .map(
           (item) =>
-            `<tr><td style="color:${bulletColor} !important;-webkit-text-fill-color:${bulletColor};font-size:10px;padding:4px 0;vertical-align:top;width:16px;line-height:1.5;">—</td><td style="color:${lineColor} !important;-webkit-text-fill-color:${lineColor};font-size:11px;padding:4px 0;line-height:1.5;">${item}</td></tr>`,
+            `<tr><td style="color:${bulletColor} !important;-webkit-text-fill-color:${bulletColor};font-size:10px;padding:4px 0;vertical-align:top;width:16px;line-height:1.5;">-</td><td style="color:${lineColor} !important;-webkit-text-fill-color:${lineColor};font-size:11px;padding:4px 0;line-height:1.5;">${item}</td></tr>`,
         )
         .join("");
 

@@ -49,7 +49,7 @@ export default class QuoteFormErrorBoundary extends React.Component<Props, State
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error(
-      `[QuoteForm rail crash${this.props.label ? ` — ${this.props.label}` : ""}]`,
+      `[QuoteForm rail crash${this.props.label ? `, ${this.props.label}` : ""}]`,
       error,
       info.componentStack,
     );
@@ -75,7 +75,7 @@ export default class QuoteFormErrorBoundary extends React.Component<Props, State
             {message}
           </code>
           <p className="text-[11px] text-[var(--tx2)] leading-snug">
-            Try regenerating, or refresh the page — your draft is saved on
+            Try regenerating, or refresh the page, your draft is saved on
             the server.
           </p>
           <button

@@ -95,7 +95,7 @@ function fmtStmtDate(d: string) {
 }
 
 function fmtStmtPeriod(start: string, end: string) {
-  return `${new Date(start + "T12:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" })} – ${fmtStmtDate(end)}`;
+  return `${new Date(start + "T12:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" })}, ${fmtStmtDate(end)}`;
 }
 
 type MonthlyRow = {

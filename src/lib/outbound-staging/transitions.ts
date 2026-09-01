@@ -102,7 +102,7 @@ export function guardTransition(
   if (!canTransition(from, to)) {
     return {
       ok: false,
-      reason: `Cannot move from '${from}' to '${to}' — not a valid transition.`,
+      reason: `Cannot move from '${from}' to '${to}', not a valid transition.`,
     };
   }
   const required = REQUIRED_FIELDS_FOR_TRANSITION[to] ?? [];
@@ -111,7 +111,7 @@ export function guardTransition(
     if (v === null || v === undefined || v === "" || (typeof v === "number" && !Number.isFinite(v))) {
       return {
         ok: false,
-        reason: `Cannot move to '${to}' — '${f}' is required and missing.`,
+        reason: `Cannot move to '${to}', '${f}' is required and missing.`,
       };
     }
   }

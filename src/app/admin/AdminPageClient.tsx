@@ -298,7 +298,7 @@ function formatAdminHeaderWeather(brief: MoveWeatherBrief): string {
   if (brief.tempLowC === brief.tempHighC) {
     return `${cap} · ${brief.tempHighC}°C`;
   }
-  return `${cap} · ${brief.tempLowC}°–${brief.tempHighC}°C`;
+  return `${cap} · ${brief.tempLowC}°-${brief.tempHighC}°C`;
 }
 
 const TAG_COLORS: Record<string, string> = {
@@ -774,7 +774,7 @@ export default function AdminPageClient({
         {liveSessionsError && (
           <div className="mb-3 text-[11px] text-[var(--tx3)] flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
-            Live crew tracking unavailable — retrying
+            Live crew tracking unavailable, retrying
           </div>
         )}
         {liveSessions.length > 0 && (
@@ -1187,7 +1187,7 @@ export default function AdminPageClient({
                                   className="text-orange-300/90 shrink-0"
                                   aria-hidden
                                 />
-                                {b.tempLowC}°–{b.tempHighC}°C
+                                {b.tempLowC}°-{b.tempHighC}°C
                                 {b.feelsLikeAvgC != null && (
                                   <span className="text-[var(--tx3)]">
                                     (feels ~{b.feelsLikeAvgC}°)
@@ -1497,7 +1497,7 @@ export default function AdminPageClient({
               <div className="flex items-end gap-[3px] h-[56px] w-full min-w-0">
                 {(monthlyRevenue.length > 0
                   ? monthlyRevenue
-                  : ([{ m: "\u2014", moves: 0, partner: 0 }] as MonthRevenue[])
+                  : ([{ m: "-", moves: 0, partner: 0 }] as MonthRevenue[])
                 ).map((d, i) => {
                   const total = d.moves + d.partner;
                   const maxV = Math.max(

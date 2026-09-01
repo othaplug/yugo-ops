@@ -6,6 +6,7 @@ export function normalizeEmailSubject(subject: string): string {
   const trimmed = subject.trim()
   if (!trimmed) return trimmed
   let s = trimmed
+  // eslint-disable-next-line no-restricted-syntax -- functional: this IS the normalizer that strips em-dash kickers from subjects; it must match the character.
   const em = s.indexOf("—")
   if (em >= 0) {
     s = s.slice(0, em).trim()

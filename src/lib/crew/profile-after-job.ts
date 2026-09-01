@@ -110,7 +110,7 @@ async function tryClaimJobCompletionLedger(
   if (!error) return "fresh";
   if (isPgDuplicateError(error)) return "duplicate";
   console.error(
-    "[crew-profile] crew_profile_job_completion insert failed — applying profile deltas without ledger (run migration 20260406170000).",
+    "[crew-profile] crew_profile_job_completion insert failed, applying profile deltas without ledger (run migration 20260406170000).",
     error,
   );
   return "untracked";
@@ -306,7 +306,7 @@ export async function notifyTipRecordedForCrewProfiles(
   if (ledgerErr) {
     if (isPgDuplicateError(ledgerErr)) return;
     console.error(
-      "[crew-profile] crew_profile_tip_applied insert failed — rolling up tip anyway (run migration 20260406170000).",
+      "[crew-profile] crew_profile_tip_applied insert failed, rolling up tip anyway (run migration 20260406170000).",
       ledgerErr,
     );
   }

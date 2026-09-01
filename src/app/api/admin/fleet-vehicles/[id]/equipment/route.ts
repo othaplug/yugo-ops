@@ -145,7 +145,7 @@ export async function POST(
     }));
 
   if (inserts.length === 0) {
-    return NextResponse.json({ ok: true, truckId, added: 0, message: "Nothing to add — truck already has all active items." });
+    return NextResponse.json({ ok: true, truckId, added: 0, message: "Nothing to add, truck already has all active items." });
   }
 
   const { error: insErr } = await admin.from("truck_equipment").insert(inserts);

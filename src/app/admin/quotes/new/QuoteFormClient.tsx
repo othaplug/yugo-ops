@@ -420,28 +420,28 @@ const BIN_BUNDLE_OPTIONS: {
   {
     value: "studio",
     label: "Studio",
-    detail: "15 bins, 2 wardrobe boxes — $99",
+    detail: "15 bins, 2 wardrobe boxes, $99",
   },
   {
     value: "1br",
     label: "1 Bedroom",
-    detail: "30 bins, 4 wardrobe boxes — $179",
+    detail: "30 bins, 4 wardrobe boxes, $179",
   },
   {
     value: "2br",
     label: "2 Bedroom",
-    detail: "50 bins, 6 wardrobe boxes — $279",
+    detail: "50 bins, 6 wardrobe boxes, $279",
     popular: true,
   },
   {
     value: "3br",
     label: "3 Bedroom",
-    detail: "70 bins, 8 wardrobe boxes — $399",
+    detail: "70 bins, 8 wardrobe boxes, $399",
   },
   {
     value: "4br_plus",
     label: "4 Bedroom+",
-    detail: "90 bins, 10 wardrobe boxes — $529",
+    detail: "90 bins, 10 wardrobe boxes, $529",
   },
   {
     value: "custom",
@@ -453,14 +453,14 @@ const BIN_BUNDLE_OPTIONS: {
 /** Legacy platform_config weight keys when vertical DB unavailable */
 const B2B_WEIGHT_OPTIONS = [
   { value: "standard", label: "Standard (under 100 lbs)" },
-  { value: "heavy", label: "Heavy (100–250 lbs)" },
-  { value: "very_heavy", label: "Very Heavy (250–500 lbs)" },
+  { value: "heavy", label: "Heavy (100 to 250 lbs)" },
+  { value: "very_heavy", label: "Very Heavy (250 to 500 lbs)" },
   { value: "oversized_fragile", label: "Oversized / Fragile" },
 ];
 
 const B2B_LINE_WEIGHT_OPTIONS = [
   { value: "light", label: "Light (under 30 lb)" },
-  { value: "medium", label: "Medium (30–60 lb)" },
+  { value: "medium", label: "Medium (30 to 60 lb)" },
   { value: "heavy", label: "Heavy (60 lb+)" },
   { value: "extra_heavy", label: "Extra Heavy (300+ lb)" },
 ];
@@ -506,7 +506,7 @@ const PARKING_OPTIONS = [
 
 const EVENT_LEG_RETURN_RATE_OPTIONS = [
   { value: "auto", label: "Auto (60% different addresses · 80% same venue)" },
-  { value: "60", label: "60% (standard delivery–return)" },
+  { value: "60", label: "60% (standard delivery-return)" },
   { value: "80", label: "80% (same venue / reduced return)" },
   { value: "65", label: "65% (legacy preset)" },
   { value: "85", label: "85% (legacy preset)" },
@@ -650,9 +650,9 @@ const SPECIALTY_TYPES = [
 
 const SPECIALTY_WEIGHT_OPTIONS = [
   { value: "under_100", label: "Under 100 lbs" },
-  { value: "100_250", label: "100–250 lbs" },
-  { value: "250_500", label: "250–500 lbs" },
-  { value: "500_1000", label: "500–1000 lbs" },
+  { value: "100_250", label: "100 to 250 lbs" },
+  { value: "250_500", label: "250 to 500 lbs" },
+  { value: "500_1000", label: "500 to 1000 lbs" },
   { value: "over_1000", label: "Over 1000 lbs" },
 ];
 
@@ -695,7 +695,7 @@ const ITEM_CATEGORIES = [
   { value: "appliance", label: "Heavy appliance (fridge, washer, dryer)" },
   { value: "oversized", label: "Extra heavy (piano, safe, pool table)" },
   { value: "fragile_specialty", label: "Fragile (art, antique, glass)" },
-  { value: "multiple_2_to_5", label: "Multiple (2–5 items)" },
+  { value: "multiple_2_to_5", label: "Multiple (2 to 5 items)" },
 ];
 
 const SINGLE_ITEM_CATEGORIES = ITEM_CATEGORIES.filter(
@@ -1056,8 +1056,8 @@ function b2bParkingLongCarryTotalFromConfig(
 
 const CRATING_SIZE_LABELS: Record<string, string> = {
   small: 'Small (under 24")',
-  medium: 'Medium (24–48")',
-  large: 'Large (48–72")',
+  medium: 'Medium (24 to 48")',
+  large: 'Large (48 to 72")',
   oversized: 'Oversized (72"+)',
 };
 const CRATING_SIZE_FALLBACK: Record<string, number> = {
@@ -1723,7 +1723,7 @@ export default function QuoteFormClient({
   const [eventSameDay, setEventSameDay] = useState(false);
   const [eventReturnLeg, setEventReturnLeg] = useState(true);
   const [eventPickupTimeAfter, setEventPickupTimeAfter] =
-    useState("Evening 6–9 PM");
+    useState("Evening 6 to 9 PM");
   const [eventItems, setEventItems] = useState<EventItemFormRow[]>([]);
   const [eventCrewOverride, setEventCrewOverride] = useState("");
   const [eventHoursOverride, setEventHoursOverride] = useState("");
@@ -4346,6 +4346,17 @@ export default function QuoteFormClient({
             const filtered = rows.filter((r) => r.name);
             if (filtered.length > 0) setInventoryItems(filtered);
           }
+          // Restore the box count on edit/regenerate. Without this, loading an
+          // existing residential quote left clientBoxCount empty, so buildPayload
+          // sent client_box_count = 0 and every regeneration silently wiped the
+          // boxes the client entered (they then vanished from the move inventory
+          // list). Mirrors the single_item restore above.
+          const cbcNum = Number(
+            (Q as { client_box_count?: unknown }).client_box_count,
+          );
+          if (Number.isFinite(cbcNum) && cbcNum > 0) {
+            setClientBoxCount(String(Math.round(cbcNum)));
+          }
         }
 
         // Specialty extras beyond the top-level fields
@@ -4489,7 +4500,7 @@ export default function QuoteFormClient({
         const quoteCode = cStr(Q.quote_id) || resumeDraftParam;
         if (sourceStatus === "draft" || !sourceStatus) {
           setLeadQuoteBanner(
-            `Resuming draft ${quoteCode}. Edit fields, then Save to update — a new quote will not be created.`,
+            `Resuming draft ${quoteCode}. Edit fields, then Save to update, a new quote will not be created.`,
           );
         } else {
           const versionLabel = sourceVersion ? ` · v${sourceVersion}` : "";
@@ -5728,7 +5739,7 @@ export default function QuoteFormClient({
       } else if (km >= 40) {
         if (z2 > 0)
           lines.push({
-            label: "Outside GTA core (zone 2: 40–80 km)",
+            label: "Outside GTA core (zone 2: 40 to 80 km)",
             amount: z2,
           });
       }
@@ -7233,7 +7244,7 @@ export default function QuoteFormClient({
       if (data.quote_blocked) {
         setServiceAreaBlock(data);
         toast(
-          data.message || "Outside Yugo service area — quote not generated.",
+          data.message || "Outside Yugo service area, quote not generated.",
           "alertTriangle",
         );
         return;
@@ -7544,7 +7555,7 @@ export default function QuoteFormClient({
           : 0;
       if (items === 0 && minutes === 0) {
         toast(
-          "Assembly is set to Required but no inventory items have assembly. Add the items that need assembly OR switch the assembly flag to Auto / No before sending — otherwise the crew arrives to work they're not paid for.",
+          "Assembly is set to Required but no inventory items have assembly. Add the items that need assembly OR switch the assembly flag to Auto / No before sending, otherwise the crew arrives to work they're not paid for.",
           "alertTriangle",
         );
         return;
@@ -7954,7 +7965,7 @@ export default function QuoteFormClient({
                     className="border-b border-[var(--brd)]/60 align-top"
                   >
                     <td className="px-4 py-2.5 text-[var(--tx)]">
-                      <span className="font-medium">{row.raw_text || "—"}</span>
+                      <span className="font-medium">{row.raw_text || "-"}</span>
                       {row.note ? (
                         <p className="text-[10px] text-[var(--tx3)] mt-1">
                           {row.note}
@@ -7975,7 +7986,7 @@ export default function QuoteFormClient({
                       )}
                     </td>
                     <td className="px-4 py-2.5 uppercase text-[var(--tx3)]">
-                      {row.confidence || "—"}
+                      {row.confidence || "-"}
                     </td>
                     <td className="px-4 py-2.5">
                       <div className="flex flex-wrap gap-1.5 justify-end">
@@ -8936,9 +8947,9 @@ export default function QuoteFormClient({
                                 (use when truck is 50m+ from entrance)
                               </span>
                               {fromLongCarry ? (
-                                <span className="ml-1 text-emerald-600 font-medium">— applied</span>
+                                <span className="ml-1 text-emerald-600 font-medium">- applied</span>
                               ) : (
-                                <span className="ml-1 text-[var(--tx3)]">— not applied</span>
+                                <span className="ml-1 text-[var(--tx3)]">- not applied</span>
                               )}
                             </span>
                           </label>
@@ -9000,9 +9011,9 @@ export default function QuoteFormClient({
                               (use when truck is 50m+ from entrance)
                             </span>
                             {toLongCarry ? (
-                              <span className="ml-1 text-emerald-600 font-medium">— applied</span>
+                              <span className="ml-1 text-emerald-600 font-medium">- applied</span>
                             ) : (
-                              <span className="ml-1 text-[var(--tx3)]">— not applied</span>
+                              <span className="ml-1 text-[var(--tx3)]">- not applied</span>
                             )}
                           </span>
                         </label>
@@ -9176,9 +9187,9 @@ export default function QuoteFormClient({
                                 (use when truck is 50m+ from entrance)
                               </span>
                               {toLongCarry ? (
-                                <span className="ml-1 text-emerald-600 font-medium">— applied</span>
+                                <span className="ml-1 text-emerald-600 font-medium">- applied</span>
                               ) : (
-                                <span className="ml-1 text-[var(--tx3)]">— not applied</span>
+                                <span className="ml-1 text-[var(--tx3)]">- not applied</span>
                               )}
                             </span>
                           </label>
@@ -9521,7 +9532,7 @@ export default function QuoteFormClient({
                               {moveSizeSuggestion.confidence === "high"
                                 ? " (high confidence)"
                                 : " (medium confidence)"}
-                              {" — "}
+                              {" - "}
                               {moveSizeSuggestion.reason}
                             </span>
                           </p>
@@ -9580,10 +9591,10 @@ export default function QuoteFormClient({
                                 </p>
                                 <p className="text-[10px] text-amber-700 leading-snug">
                                   Inventory scores{" "}
-                                  <strong>{inventoryScoreWithBoxes.toFixed(1)}</strong> — typical for{" "}
+                                  <strong>{inventoryScoreWithBoxes.toFixed(1)}</strong> - typical for{" "}
                                   {moveSizeLabel(moveSizeSuggestion.suggested)}, not{" "}
                                   {moveSizeLabel(moveSize)} (typical:{" "}
-                                  {range?.min}–{range?.max}). Using{" "}
+                                  {range?.min}-{range?.max}). Using{" "}
                                   {moveSizeLabel(moveSize)} pricing will significantly overprice this quote.
                                 </p>
                                 {!sizeOverrideConfirmed ? (
@@ -9604,7 +9615,7 @@ export default function QuoteFormClient({
                                       className="px-3 py-1.5 border border-amber-300 text-amber-700 rounded-lg text-[10px] font-medium"
                                       onClick={() => setSizeOverrideConfirmed(true)}
                                     >
-                                      Keep {moveSizeLabel(moveSize)} — I&apos;ve verified this
+                                      Keep {moveSizeLabel(moveSize)} - I&apos;ve verified this
                                     </button>
                                   </div>
                                 ) : (
@@ -9683,7 +9694,7 @@ export default function QuoteFormClient({
                                 {fmtPrice(
                                   cfgNum(config, "bin_bundle_2br", 279),
                                 )}{" "}
-                                — delivery is free when coordinated with your
+                                - delivery is free when coordinated with your
                                 move (uncheck material delivery or link the move
                                 when booked).
                               </p>
@@ -9828,13 +9839,13 @@ export default function QuoteFormClient({
                               className={fieldInput}
                             >
                               <option value="">Not specified</option>
-                              <option value="5">1–5 boxes</option>
-                              <option value="10">5–10 boxes</option>
-                              <option value="20">10–20 boxes</option>
-                              <option value="30">20–30 boxes</option>
-                              <option value="40">30–40 boxes</option>
-                              <option value="50">40–50 boxes</option>
-                              <option value="75">50–100 boxes</option>
+                              <option value="5">1 to 5 boxes</option>
+                              <option value="10">5 to 10 boxes</option>
+                              <option value="20">10 to 20 boxes</option>
+                              <option value="30">20 to 30 boxes</option>
+                              <option value="40">30 to 40 boxes</option>
+                              <option value="50">40 to 50 boxes</option>
+                              <option value="75">50 to 100 boxes</option>
                               <option value="custom">Custom amount…</option>
                             </select>
                             {![
@@ -10260,7 +10271,7 @@ export default function QuoteFormClient({
                                   : ""
                               } need assembly`
                             : assemblyDetection.required && assemblyDetection.confidence === "likely"
-                              ? "Some items may need assembly — confirm with client"
+                              ? "Some items may need assembly, confirm with client"
                               : "No assembly items detected in inventory"}
                         </p>
                         {assemblyOverride !== null && (
@@ -10273,7 +10284,7 @@ export default function QuoteFormClient({
                         {assemblyOverride === false && assemblyDetection.required && (
                           <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-2">
                             <p className="text-[11px] font-semibold text-amber-800">
-                              Client declined assembly — verify on move day
+                              Client declined assembly, verify on move day
                             </p>
                             <p className="text-[10px] text-amber-700 mt-0.5 leading-snug">
                               {assemblyDetection.itemsRequiringAssembly.slice(0, 3).join(", ")}
@@ -10290,12 +10301,12 @@ export default function QuoteFormClient({
                         {assemblyOverride === true && !assemblyDetection.required && (
                           <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-2">
                             <p className="text-[11px] font-semibold text-amber-800">
-                              Assembly requested — not detected in inventory
+                              Assembly requested, not detected in inventory
                             </p>
                             <p className="text-[10px] text-amber-700 mt-0.5 leading-snug">
                               Client indicated assembly on their intake form, but no assembly items
                               were found in the inventory list. Confirm with the client before
-                              sending — if no assembly is needed, reset to auto.
+                              sending, if no assembly is needed, reset to auto.
                             </p>
                           </div>
                         )}
@@ -10809,7 +10820,7 @@ export default function QuoteFormClient({
                       </p>
                       <p className="text-[10px] text-[var(--tx3)] leading-snug">
                         Disposal + truck volume is covered by the tier you
-                        picked. The crew uses any facility on their schedule —
+                        picked. The crew uses any facility on their schedule -
                         no drop address required.
                       </p>
                       <div>
@@ -11174,7 +11185,7 @@ export default function QuoteFormClient({
                     {specialtyAccessDifficulty ===
                     "requires_rigging_or_crane" ? (
                       <p className="text-[10px] text-amber-700 mt-1.5">
-                        Crane/rigging adds $1,500–3,000. Coordinator will
+                        Crane/rigging adds $1,500 to 3,000. Coordinator will
                         confirm exact cost.
                       </p>
                     ) : null}
@@ -11897,8 +11908,8 @@ export default function QuoteFormClient({
                                   }
                                   className={`${fieldInput} max-w-xs`}
                                 >
-                                  <option value="Evening 6–9 PM">Evening 6–9 PM</option>
-                                  <option value="Evening 8–10 PM">Evening 8–10 PM</option>
+                                  <option value="Evening 6 to 9 PM">Evening 6 to 9 PM</option>
+                                  <option value="Evening 8 to 10 PM">Evening 8 to 10 PM</option>
                                   <option value="After midnight">After midnight</option>
                                   <option value="Next morning">Next morning</option>
                                 </select>
@@ -12079,7 +12090,7 @@ export default function QuoteFormClient({
                                 />
                               ) : (
                                 <p className="text-[10px] text-[var(--tx3)] rounded-lg border border-[var(--brd)] px-3 py-2 bg-[var(--bg)]">
-                                  Venue same as origin — no road transit.
+                                  Venue same as origin, no road transit.
                                 </p>
                               )}
 
@@ -12244,9 +12255,9 @@ export default function QuoteFormClient({
                                     }
                                     className={`${fieldInput} max-w-xs`}
                                   >
-                                    <option value="Evening 6–9 PM">Evening 6–9 PM</option>
-                                    <option value="Evening 8–10 PM">
-                                      Evening 8–10 PM
+                                    <option value="Evening 6 to 9 PM">Evening 6 to 9 PM</option>
+                                    <option value="Evening 8 to 10 PM">
+                                      Evening 8 to 10 PM
                                     </option>
                                     <option value="After midnight">After midnight</option>
                                     <option value="Next morning">Next morning</option>
@@ -12371,10 +12382,10 @@ export default function QuoteFormClient({
                                 }
                                 className={`${fieldInput} w-44`}
                               >
-                                <option value={1}>1 hour — $150</option>
-                                <option value={2}>2 hours — $275</option>
-                                <option value={3}>3 hours — $400</option>
-                                <option value={99}>Half day — $600</option>
+                                <option value={1}>1 hour, $150</option>
+                                <option value={2}>2 hours, $275</option>
+                                <option value={3}>3 hours, $400</option>
+                                <option value={99}>Half day, $600</option>
                               </select>
                             </Field>
                             <Field label="Instructions">
@@ -12413,10 +12424,10 @@ export default function QuoteFormClient({
                                 }
                                 className={`${fieldInput} w-44`}
                               >
-                                <option value={1}>1 hour — $150</option>
-                                <option value={2}>2 hours — $275</option>
-                                <option value={3}>3 hours — $400</option>
-                                <option value={99}>Half day — $600</option>
+                                <option value={1}>1 hour, $150</option>
+                                <option value={2}>2 hours, $275</option>
+                                <option value={3}>3 hours, $400</option>
+                                <option value={99}>Half day, $600</option>
                               </select>
                             </Field>
                             <Field label="Instructions">
@@ -12630,9 +12641,9 @@ export default function QuoteFormClient({
                         }
                         className={fieldInput}
                       >
-                        <option value="standard">Standard — clear access, light furniture</option>
-                        <option value="moderate">Moderate — some heavy items, stairs, tight spaces</option>
-                        <option value="complex">Complex — heavy items, multiple floors, high assembly</option>
+                        <option value="standard">Standard, clear access, light furniture</option>
+                        <option value="moderate">Moderate, some heavy items, stairs, tight spaces</option>
+                        <option value="complex">Complex, heavy items, multiple floors, high assembly</option>
                       </select>
                       <p className="text-[10px] text-[var(--tx3)] mt-0.5">Moderate +25% · Complex +50%</p>
                     </Field>
@@ -12644,9 +12655,9 @@ export default function QuoteFormClient({
                         }
                         className={fieldInput}
                       >
-                        <option value="standard">Standard — typical household furniture</option>
-                        <option value="heavy">Heavy — appliances, gym equipment, safes</option>
-                        <option value="very_heavy">Very Heavy — piano, commercial equipment</option>
+                        <option value="standard">Standard, typical household furniture</option>
+                        <option value="heavy">Heavy, appliances, gym equipment, safes</option>
+                        <option value="very_heavy">Very Heavy, piano, commercial equipment</option>
                       </select>
                       <p className="text-[10px] text-[var(--tx3)] mt-0.5">Heavy +20% · Very Heavy +45%</p>
                     </Field>
@@ -12888,7 +12899,7 @@ export default function QuoteFormClient({
                       onChange={(e) => setBinPackingPaper(e.target.checked)}
                       className="accent-[var(--gold)]"
                     />
-                    Packing paper —{" "}
+                    Packing paper -{" "}
                     {fmtPrice(cfgNum(config, "bin_packing_paper_fee", 20))}
                   </label>
                   <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)] cursor-pointer">
@@ -12898,14 +12909,14 @@ export default function QuoteFormClient({
                       onChange={(e) => setBinMaterialDelivery(e.target.checked)}
                       className="accent-[var(--gold)]"
                     />
-                    Material delivery charge —{" "}
+                    Material delivery charge -{" "}
                     {fmtPrice(cfgNum(config, "bin_delivery_charge", 20))}{" "}
                     <span className="text-[10px] text-[var(--tx3)]">
-                      (waived if bins are being delivered with a Yugo move —
+                      (waived if bins are being delivered with a Yugo move -
                       link move ID or uncheck)
                     </span>
                   </label>
-                  <Field label="Linked move ID (optional — waives delivery when set)">
+                  <Field label="Linked move ID (optional, waives delivery when set)">
                     <input
                       value={binLinkedMoveId}
                       onChange={(e) => setBinLinkedMoveId(e.target.value)}
@@ -12941,7 +12952,7 @@ export default function QuoteFormClient({
                         </p>
                       ) : (
                         <p className="text-[var(--tx2)]">
-                          Fleet capacity: {binLivePreview.cap} bins total —
+                          Fleet capacity: {binLivePreview.cap} bins total -
                           generate quote to confirm live availability
                         </p>
                       )}
@@ -13188,7 +13199,7 @@ export default function QuoteFormClient({
                                 {addon.name}
                               </p>
                               <p className="text-[10px] text-[var(--tx3)] mt-0.5 leading-snug">
-                                Included from item selection — no extra charge.
+                                Included from item selection, no extra charge.
                               </p>
                             </div>
                             <span className="text-[10px] font-semibold text-[var(--grn)] shrink-0">
@@ -13341,7 +13352,7 @@ export default function QuoteFormClient({
                                   {addon.name}
                                 </p>
                                 <p className="text-[10px] text-[var(--tx3)] mt-0.5 leading-snug">
-                                  Included from item selection — no extra charge.
+                                  Included from item selection, no extra charge.
                                 </p>
                               </div>
                               <span className="text-[10px] font-semibold text-[var(--grn)] shrink-0">
@@ -13840,7 +13851,7 @@ export default function QuoteFormClient({
                     <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
                       Multi-scenario quote
                     </span>
-                    <span className="text-[10px] text-[var(--tx3)]">— offer 2+ scheduling options</span>
+                    <span className="text-[10px] text-[var(--tx3)]">- offer 2+ scheduling options</span>
                   </label>
 
                   {isMultiScenario && (
@@ -14162,7 +14173,7 @@ export default function QuoteFormClient({
                     <p className="text-[10px] text-[var(--tx3)]">
                       Quote generation is paused. Use override only for
                       subcontracting, partner crews, or another confirmed
-                      arrangement — not for a standard Toronto-base move.
+                      arrangement, not for a standard Toronto-base move.
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -14771,7 +14782,7 @@ export default function QuoteFormClient({
                         </p>
                         <p className="text-[10px] text-[var(--tx2)] uppercase tracking-wide">
                           {b2bPreviewDistanceKm != null
-                            ? `${b2bPreviewDistanceKm} Km · ~${b2bPreviewDriveMin ?? "—"} Min Drive`
+                            ? `${b2bPreviewDistanceKm} Km · ~${b2bPreviewDriveMin ?? "-"} Min Drive`
                             : b2bPreviewDistanceLabel}
                         </p>
                         <p className="text-[10px] text-[var(--tx3)] flex flex-wrap gap-x-3 gap-y-0.5">
@@ -14914,7 +14925,7 @@ export default function QuoteFormClient({
                             Suggested Range
                           </p>
                           <p className="text-[18px] font-bold text-[var(--gold)]">
-                            {fmtPrice(specialtyLivePreview.min)} –{" "}
+                            {fmtPrice(specialtyLivePreview.min)} -{" "}
                             {fmtPrice(specialtyLivePreview.max)}
                           </p>
                           <p className="text-[10px] text-[var(--tx3)] mt-1 leading-snug">
@@ -15133,7 +15144,7 @@ export default function QuoteFormClient({
                       ) {
                         const legs = quoteResult.factors.event_legs as Array<{ delivery_date?: string }>;
                         const dates = legs.map((l) => l.delivery_date).filter(Boolean) as string[];
-                        if (dates.length >= 2) return `${dates[0]} – ${dates[dates.length - 1]}`;
+                        if (dates.length >= 2) return `${dates[0]}, ${dates[dates.length - 1]}`;
                         if (dates.length === 1) return dates[0];
                       }
                       return quoteResult.move_date || "-";
@@ -15251,7 +15262,7 @@ export default function QuoteFormClient({
                             </ul>
                             {pickups.length > 1 && (
                               <p className="text-[9px] text-[var(--tx3)] mt-1">
-                                {pickups.length} pickup locations — crew will
+                                {pickups.length} pickup locations, crew will
                                 visit each stop.
                               </p>
                             )}
@@ -15555,7 +15566,7 @@ export default function QuoteFormClient({
                       const locked = f.truck_locked_from_sent;
                       return locked ? (
                         <p className="text-[10px] text-[var(--org)] leading-snug">
-                          Held at {String(f.truck_recommended)} — the truck this
+                          Held at {String(f.truck_recommended)} - the truck this
                           client was already shown on the sent quote (the engine
                           would size {String(locked)} now). It will not silently
                           downsize; override below to change it deliberately.
@@ -15891,7 +15902,7 @@ export default function QuoteFormClient({
                         return {
                           cls: "text-red-400",
                           Icon: XCircle,
-                          hint: "Unprofitable — review pricing before sending.",
+                          hint: "Unprofitable, review pricing before sending.",
                         };
                       }
                       if (m < 25) {
@@ -15950,7 +15961,7 @@ export default function QuoteFormClient({
                                   ))}
                                 </ul>
                                 <p className="text-amber-600/90 dark:text-amber-300/75 text-[9px] mt-1">
-                                  Informational — pricing algorithm is not auto-bumping.
+                                  Informational, pricing algorithm is not auto-bumping.
                                   Review inputs or proceed manually if the price is intentional.
                                 </p>
                               </div>
@@ -16253,7 +16264,7 @@ export default function QuoteFormClient({
                   <div className="flex justify-between text-[10px] gap-2">
                     <span className="text-[var(--tx3)]">Band (floor to ceiling)</span>
                     <span className="text-[var(--tx)] tabular-nums">
-                      ${quoteResult.labour_validation.floor ?? "—"}–${quoteResult.labour_validation.ceiling ?? "—"}/hr
+                      ${quoteResult.labour_validation.floor ?? "-"}-${quoteResult.labour_validation.ceiling ?? "-"}/hr
                     </span>
                   </div>
                   <div className="flex justify-between text-[10px] gap-2">
@@ -16295,7 +16306,7 @@ export default function QuoteFormClient({
                         const rateNum = Number(row.effectiveRate ?? NaN);
                         const rateLabel = Number.isFinite(rateNum)
                           ? `$${rateNum.toFixed(0)}/hr`
-                          : "$—/hr";
+                          : "$-/hr";
                         return (
                           <div
                             key={tk}
@@ -16927,7 +16938,7 @@ function EventPriceDisplay({
     const lastDate = eventLegs[eventLegs.length - 1]?.delivery_date;
     const dateRange =
       firstDate && lastDate && firstDate !== lastDate
-        ? `${fmtShortEventAdmin(firstDate)} – ${fmtShortEventAdmin(lastDate)}`
+        ? `${fmtShortEventAdmin(firstDate)}, ${fmtShortEventAdmin(lastDate)}`
         : firstDate
           ? fmtShortEventAdmin(firstDate)
           : null;
@@ -17249,7 +17260,7 @@ function B2BPriceDisplay({
         {dimensional && breakdown.length > 0 ? (
           breakdown.map((line, i) => (
             <div key={i} className="flex justify-between gap-2">
-              <span className={PRICE_CARD.muted}>{line.label ?? "—"}</span>
+              <span className={PRICE_CARD.muted}>{line.label ?? "-"}</span>
               <span className={`font-medium shrink-0 ${PRICE_CARD.body}`}>
                 {fmtPrice(Number(line.amount) || 0)}
               </span>
@@ -17322,7 +17333,7 @@ function B2BPriceDisplay({
             <div className="space-y-0.5">
               {standardBreakdown.map((line, i) => (
                 <div key={i} className="flex justify-between gap-2">
-                  <span className={PRICE_CARD.muted}>{line.label ?? "—"}</span>
+                  <span className={PRICE_CARD.muted}>{line.label ?? "-"}</span>
                   <span className={`font-medium shrink-0 ${PRICE_CARD.body}`}>
                     {fmtPrice(Number(line.amount) || 0)}
                   </span>
@@ -17406,7 +17417,7 @@ function BinRentalPriceDisplay({
           month: "short",
           day: "numeric",
         })
-      : "—";
+      : "-";
   const isV2 = useQuoteFormIsV2();
   const ink = getCreamTierInk(isV2);
   const card = getCreamCardPreview(isV2);
@@ -17738,7 +17749,7 @@ function AssemblyLabourPreview({
         <span className="tabular-nums font-semibold">+{minutes}m · ~{hours}h</span>
       </div>
       <p className="text-[10px] text-[var(--tx3)] leading-snug">
-        Assembly is not a separate fee — it inflates labour hours which feeds the quoted
+        Assembly is not a separate fee, it inflates labour hours which feeds the quoted
         price. Toggle off above to remove.
       </p>
     </div>

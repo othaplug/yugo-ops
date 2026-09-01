@@ -200,16 +200,16 @@ const DELIVERY_TYPE_LABELS: Record<string, string> = {
   hosp_pos: "POS / electronics system",
   hosp_display: "Display case",
   med_equipment_small: "Small equipment (<50 lbs)",
-  med_equipment_medium: "Medium equipment (50–200 lbs)",
-  med_equipment_large: "Large equipment (200–500 lbs)",
+  med_equipment_medium: "Medium equipment (50 to 200 lbs)",
+  med_equipment_large: "Large equipment (200 to 500 lbs)",
   med_equipment_heavy: "Heavy equipment (500+ lbs)",
   med_server_rack: "Server rack / data cabinet",
   med_imaging: "Imaging equipment (MRI, CT, X-ray)",
 };
 const OVERAGE_TIER_LABELS: Record<string, string> = {
-  full_7_10: "Full Day 7–10 stops",
+  full_7_10: "Full Day 7 to 10 stops",
   full_11_plus: "Full Day 11+",
-  half_4_6: "Half Day 4–6 stops",
+  half_4_6: "Half Day 4 to 6 stops",
   half_7_plus: "Half Day 7+",
   art_extra_stop: "Extra stop (beyond included)",
   art_wait_30min: "Wait time (beyond 15 min at stop)",
@@ -907,23 +907,23 @@ export default function PartnerRateCardTab({
                     <tbody className="divide-y divide-[var(--brd)]/30">
                       <tr>
                         <td className="px-3 py-2 font-semibold text-[var(--tx)]">Essential</td>
-                        <td className="px-3 py-2 text-[var(--tx)]">{rates?.essential != null ? `${Math.round(rates.essential * 100)}% of move value` : "—"}</td>
+                        <td className="px-3 py-2 text-[var(--tx)]">{rates?.essential != null ? `${Math.round(rates.essential * 100)}% of move value` : "-"}</td>
                         <td className="px-3 py-2 text-[var(--tx2)]">Move completed and paid</td>
                       </tr>
                       <tr>
                         <td className="px-3 py-2 font-semibold text-[var(--tx)]">Signature</td>
-                        <td className="px-3 py-2 text-[var(--tx)]">{rates?.signature != null ? `${Math.round(rates.signature * 100)}% of move value` : "—"}</td>
+                        <td className="px-3 py-2 text-[var(--tx)]">{rates?.signature != null ? `${Math.round(rates.signature * 100)}% of move value` : "-"}</td>
                         <td className="px-3 py-2 text-[var(--tx2)]">Move completed and paid</td>
                       </tr>
                       <tr>
                         <td className="px-3 py-2 font-semibold text-[var(--tx)]">Estate</td>
-                        <td className="px-3 py-2 text-[var(--tx)]">{rates?.estate != null ? `${Math.round(rates.estate * 100)}% of move value` : "—"}</td>
+                        <td className="px-3 py-2 text-[var(--tx)]">{rates?.estate != null ? `${Math.round(rates.estate * 100)}% of move value` : "-"}</td>
                         <td className="px-3 py-2 text-[var(--tx2)]">Move completed and paid</td>
                       </tr>
                       <tr>
                         <td className="px-3 py-2 font-semibold text-[var(--tx)]">Flat per referral</td>
                         <td className="px-3 py-2 text-[var(--tx)]">
-                          {cs?.flat_rate != null ? formatCurrency(Number(cs.flat_rate)) : "—"}
+                          {cs?.flat_rate != null ? formatCurrency(Number(cs.flat_rate)) : "-"}
                         </td>
                         <td className="px-3 py-2 text-[var(--tx2)]">Move completed and paid</td>
                       </tr>
@@ -932,7 +932,7 @@ export default function PartnerRateCardTab({
                 </div>
                 <p className="text-[10px] text-[var(--tx3)]">
                   Default model: <span className="font-semibold text-[var(--tx2)]">{type === "flat" ? "Flat per referral" : "Percentage-based tiers"}</span>
-                  {cs?.note != null ? ` — ${String(cs.note)}` : ""}
+                  {cs?.note != null ? `, ${String(cs.note)}` : ""}
                 </p>
                 {rt && (
                   <div className="rounded-lg border border-[var(--brd)] bg-[var(--bgsub)]/40 px-4 py-3 text-[11px] text-[var(--tx2)] space-y-1">
@@ -1031,7 +1031,7 @@ export default function PartnerRateCardTab({
       {showPortfolioMatrix && (
         <div className="mb-8 space-y-4">
           <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82">
-            Rate card — residential moves (local)
+            Rate card, residential moves (local)
             {showTemplatePmMatrix ? (
               <span className="block mt-1 normal-case font-normal text-[var(--tx3)]">Showing template defaults until contract rates are seeded.</span>
             ) : null}
@@ -1086,7 +1086,7 @@ export default function PartnerRateCardTab({
                         if (v == null || Number.isNaN(v)) {
                           return (
                             <td key={u} className="px-3 py-2.5 text-right tabular-nums text-[var(--tx3)]">
-                              —
+                              -
                             </td>
                           );
                         }
@@ -1156,13 +1156,13 @@ export default function PartnerRateCardTab({
               const hi = Math.max(...vals);
               return lo === hi
                 ? `+${formatCurrency(lo)}`
-                : `+${formatCurrency(lo)}–${formatCurrency(hi)}`;
+                : `+${formatCurrency(lo)}-${formatCurrency(hi)}`;
             };
             const pct = (vals: number[]) => {
               if (vals.length === 0) return "+0%";
               const lo = Math.round(Math.min(...vals) * 100);
               const hi = Math.round(Math.max(...vals) * 100);
-              return lo === hi ? `+${lo}%` : `+${lo}–${hi}%`;
+              return lo === hi ? `+${lo}%` : `+${lo}-${hi}%`;
             };
             const varies = (vals: number[]) =>
               new Set(vals).size > 1 ? (
@@ -1332,7 +1332,7 @@ export default function PartnerRateCardTab({
                     {isQuote ? (
                       <>
                         <td className="px-3 py-2.5 text-right text-[11px] font-semibold text-[var(--tx2)]">Quote</td>
-                        <td className="px-3 py-2.5 text-right text-[11px] text-[var(--tx3)]">—</td>
+                        <td className="px-3 py-2.5 text-right text-[11px] text-[var(--tx3)]">-</td>
                       </>
                     ) : (
                       <>
@@ -1381,16 +1381,16 @@ export default function PartnerRateCardTab({
                 const dist =
                   minK != null && !Number.isNaN(minK)
                     ? maxK != null && !Number.isNaN(maxK)
-                      ? `${minK}–${maxK} km`
+                      ? `${minK}-${maxK} km`
                       : `${minK}+ km`
-                    : "—";
+                    : "-";
                 return (
                   <tr key={r.id} className="hover:bg-[var(--bgsub)]/50 transition-colors">
                     <td className="px-3 py-2.5 text-[11px] font-semibold text-[var(--tx)]">Zone {r.zone_number}</td>
                     <td className="px-3 py-2.5 text-[11px] text-[var(--tx2)]">{r.zone_name}</td>
                     <td className="px-3 py-2.5 text-[10px] text-[var(--tx3)]">{pricingTierLabel(r.pricing_tier)}</td>
                     <td className="px-3 py-2.5 text-[10px] text-[var(--tx3)] whitespace-nowrap">{dist}</td>
-                    <td className="px-3 py-2.5 text-[10px] text-[var(--tx2)] max-w-[220px]">{r.coverage_areas || "—"}</td>
+                    <td className="px-3 py-2.5 text-[10px] text-[var(--tx2)] max-w-[220px]">{r.coverage_areas || "-"}</td>
                     <RateCell value={sc.value} source={sc.source} override={sc.override} onClick={canEditRates ? () => openCell("zones", r.id, "surcharge", `Zone ${r.zone_number} Surcharge`, r.surcharge) : undefined} />
                     {showStatusCol ? (
                       <td className="px-3 py-2.5">
@@ -1507,7 +1507,7 @@ export default function PartnerRateCardTab({
               {volumeBonuses.map((r) => (
                 <tr key={r.id}>
                   <td className="px-3 py-2.5 text-[11px] text-[var(--tx)]">
-                    {r.min_deliveries}{r.max_deliveries ? `–${r.max_deliveries}` : "+"}
+                    {r.min_deliveries}{r.max_deliveries ? `-${r.max_deliveries}` : "+"}
                   </td>
                   <td className="px-3 py-2.5 text-right text-[11px] font-semibold text-[var(--grn)]">
                     {r.discount_pct > 0 ? `${r.discount_pct}% off` : "Base rate"}

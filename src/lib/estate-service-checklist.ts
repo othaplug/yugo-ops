@@ -34,12 +34,12 @@ export function buildEstateServiceChecklistItems(
     ? {
         label: "Packing materials & visit",
         detail:
-          "Everything we need arrives before pack day, coordinated with your schedule — then a dedicated visit to pack, label, and protect before move day.",
+          "Everything we need arrives before pack day, coordinated with your schedule, then a dedicated visit to pack, label, and protect before move day.",
       }
     : {
         label: "Packing & protection",
         detail:
-          "Materials and full packing support are coordinated as part of your Estate visit — no loose ends before the truck rolls.",
+          "Materials and full packing support are coordinated as part of your Estate visit, no loose ends before the truck rolls.",
       };
 
   const items: EstateServiceChecklistItem[] = [
@@ -47,7 +47,7 @@ export function buildEstateServiceChecklistItems(
       id: "estate_walkthrough",
       label: "Pre-move walkthrough",
       detail:
-        "Your coordinator introduces themselves and your priorities, then we schedule and complete a room-by-room walkthrough — access, fragile pieces, and special handling on record.",
+        "Your coordinator introduces themselves and your priorities, then we schedule and complete a room-by-room walkthrough, access, fragile pieces, and special handling on record.",
     },
     {
       id: "estate_packing",

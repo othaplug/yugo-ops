@@ -176,11 +176,11 @@ const ZONE_LABELS: Record<string, string> = {
 };
 
 const TIME_WINDOWS = [
-  "8 AM – 10 AM",
-  "10 AM – 12 PM",
-  "12 PM – 2 PM",
-  "2 PM – 4 PM",
-  "4 PM – 6 PM",
+  "8 AM, 10 AM",
+  "10 AM, 12 PM",
+  "12 PM, 2 PM",
+  "2 PM, 4 PM",
+  "4 PM, 6 PM",
 ];
 
 /** Align with main partner dashboard (`PartnerPortalClient`): cream cards, forest hairlines, wine focus. */
@@ -236,7 +236,7 @@ function PmContextTabHeader({ tab }: { tab: PmTabId }) {
 }
 
 function unitLine(address: string, unit: string) {
-  return `${address} (Unit ${unit.trim() || "—"})`;
+  return `${address} (Unit ${unit.trim() || "-"})`;
 }
 
 export default function PartnerPropertyManagementPortal({
@@ -532,7 +532,7 @@ export default function PartnerPropertyManagementPortal({
                           onCancel={() => setTab("overview")}
                           onBooked={() => {
                             toast(
-                              "Booking submitted — our team will confirm within two hours during business hours.",
+                              "Booking submitted, our team will confirm within two hours during business hours.",
                               "check",
                             );
                             load();
@@ -882,7 +882,7 @@ function PmBookForm({
         setReasons(r1.value.reasons ?? []);
       } else {
         setReasonsError(true);
-        toast("Could not load move types — tap retry", "x");
+        toast("Could not load move types, tap retry", "x");
       }
       setAddons(r2.status === "fulfilled" ? (r2.value.addons ?? []) : []);
       setProjects(r3.status === "fulfilled" ? (r3.value.projects ?? []) : []);
@@ -1066,7 +1066,7 @@ function PmBookForm({
   const submitBooking = async (e: FormEvent) => {
     e.preventDefault();
     if (!contract?.id) {
-      toast("No active contract — contact Yugo.", "x");
+      toast("No active contract, contact Yugo.", "x");
       return;
     }
     if (suiteMode && (!suiteFrom.trim() || !suiteTo.trim())) {
@@ -1189,7 +1189,7 @@ function PmBookForm({
               )}
             </div>
             <p className="text-[10px] text-[var(--tx3)] max-w-[9rem] text-right leading-snug">
-              Your contract rate — refines with dates and options below
+              Your contract rate, refines with dates and options below
             </p>
           </div>
         </div>
@@ -1227,9 +1227,9 @@ function PmBookForm({
         <div className="px-0 sm:px-1 pt-2 pb-4 flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5A6B5E]/80 mb-1.5">
-              {pmStep === 1 && "PER MOVE — BUILDING, UNIT & MOVE TYPE"}
-              {pmStep === 2 && "PER MOVE — LOCATIONS, SCHEDULE & OPTIONS"}
-              {pmStep === 3 && "PER MOVE — REVIEW & SUBMIT"}
+              {pmStep === 1 && "PER MOVE, BUILDING, UNIT & MOVE TYPE"}
+              {pmStep === 2 && "PER MOVE, LOCATIONS, SCHEDULE & OPTIONS"}
+              {pmStep === 3 && "PER MOVE, REVIEW & SUBMIT"}
             </p>
             <h2 className="font-hero text-[24px] sm:text-[28px] font-normal text-[#5C1A33] leading-[1.1] tracking-tight">
               {stepMeta.label}
@@ -1256,7 +1256,7 @@ function PmBookForm({
               <span key={s.id} className="contents">
                 {i > 0 ? (
                   <span className="text-[var(--tx3)] px-0.5 select-none" aria-hidden>
-                    —
+                    -
                   </span>
                 ) : null}
                 <span
@@ -1297,7 +1297,7 @@ function PmBookForm({
         >
           {summary.properties.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.building_name} — {p.address}
+              {p.building_name} - {p.address}
             </option>
           ))}
         </select>
@@ -1439,7 +1439,7 @@ function PmBookForm({
             onChange={(e) => setPmProjectId(e.target.value)}
             className={fieldInput}
           >
-            <option value="">None — standalone job</option>
+            <option value="">None, standalone job</option>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.project_name}
@@ -1452,7 +1452,7 @@ function PmBookForm({
       <div className="rounded-sm border border-[#2C3E2D]/10 bg-[#FAF7F2]/60 px-4 py-3">
         <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5A6B5E] mb-1">Your rate</p>
         <p className="text-[12px] text-[#5A6B5E] leading-relaxed">
-          Continue to add locations and schedule — your contract estimate appears after origin and destination are set.
+          Continue to add locations and schedule, your contract estimate appears after origin and destination are set.
         </p>
       </div>
           </div>
@@ -1467,7 +1467,7 @@ function PmBookForm({
             checked={vacantNoTenant}
             onChange={(e) => setVacantNoTenant(e.target.checked)}
           />
-          No tenant — vacant unit
+          No tenant, vacant unit
         </label>
       </div>
 
@@ -1651,7 +1651,7 @@ function PmBookForm({
                   }
                 />
                 <span>
-                  {a.label} — {formatCurrency(Number(a.price))}
+                  {a.label} - {formatCurrency(Number(a.price))}
                   {a.price_type !== "flat"
                     ? ` (${a.price_type.replace("_", " ")})`
                     : ""}
@@ -1730,8 +1730,8 @@ function PmBookForm({
                     Building
                   </dt>
                   <dd className="text-[var(--tx)] leading-relaxed">
-                    {prop?.building_name ?? "—"}
-                    {prop?.address ? ` — ${prop.address}` : ""}
+                    {prop?.building_name ?? "-"}
+                    {prop?.address ? `, ${prop.address}` : ""}
                   </dd>
                 </div>
                 <div>
@@ -1739,7 +1739,7 @@ function PmBookForm({
                     Unit
                   </dt>
                   <dd className="text-[var(--tx)]">
-                    {unitNumber || "—"}
+                    {unitNumber || "-"}
                     {unitFloor ? ` · Floor ${unitFloor}` : ""}
                   </dd>
                 </div>
@@ -1773,13 +1773,13 @@ function PmBookForm({
                       <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
                         From unit
                       </dt>
-                      <dd className="text-[var(--tx)]">{suiteFrom || "—"}</dd>
+                      <dd className="text-[var(--tx)]">{suiteFrom || "-"}</dd>
                     </div>
                     <div>
                       <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
                         To unit
                       </dt>
-                      <dd className="text-[var(--tx)]">{suiteTo || "—"}</dd>
+                      <dd className="text-[var(--tx)]">{suiteTo || "-"}</dd>
                     </div>
                   </>
                 ) : null}
@@ -1792,7 +1792,7 @@ function PmBookForm({
                       ? "Vacant unit"
                       : [tenantName, tenantPhone, tenantEmail]
                           .filter(Boolean)
-                          .join(" · ") || "—"}
+                          .join(" · ") || "-"}
                   </dd>
                 </div>
                 <div className="sm:col-span-2">
@@ -1800,7 +1800,7 @@ function PmBookForm({
                     Origin
                   </dt>
                   <dd className="text-[var(--tx)] whitespace-pre-wrap leading-relaxed">
-                    {fromAddress || "—"}
+                    {fromAddress || "-"}
                   </dd>
                 </div>
                 <div className="sm:col-span-2">
@@ -1808,7 +1808,7 @@ function PmBookForm({
                     Destination
                   </dt>
                   <dd className="text-[var(--tx)] whitespace-pre-wrap leading-relaxed">
-                    {toAddress || "—"}
+                    {toAddress || "-"}
                   </dd>
                 </div>
                 <div>
@@ -1816,7 +1816,7 @@ function PmBookForm({
                     Move date
                   </dt>
                   <dd className="text-[var(--tx)]">
-                    {scheduledDate ? formatDate(scheduledDate) : "—"}
+                    {scheduledDate ? formatDate(scheduledDate) : "-"}
                   </dd>
                 </div>
                 {needsReturn ? (
@@ -1825,7 +1825,7 @@ function PmBookForm({
                       Return date
                     </dt>
                     <dd className="text-[var(--tx)]">
-                      {returnDate ? formatDate(returnDate) : "—"}
+                      {returnDate ? formatDate(returnDate) : "-"}
                     </dd>
                   </div>
                 ) : null}

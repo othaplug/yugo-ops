@@ -35,7 +35,7 @@ export default async function AdminMoveProjectDetailPage({
         <h1 className="admin-page-hero text-[var(--tx)] mt-2">{String(project.project_name)}</h1>
         <p className="text-[11px] text-[var(--tx3)] mt-1">
           {project.start_date ? formatMoveDate(String(project.start_date)) : ""}
-          {project.end_date ? ` — ${formatMoveDate(String(project.end_date))}` : ""}
+          {project.end_date ? `, ${formatMoveDate(String(project.end_date))}` : ""}
           {typeof project.total_days === "number" ? ` · ${project.total_days} days` : ""}
         </p>
       </div>

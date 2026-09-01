@@ -2,9 +2,9 @@
  * Human-readable relative time for coordinator UIs.
  */
 export function formatTimeAgo(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const t = new Date(iso).getTime();
-  if (!Number.isFinite(t)) return "—";
+  if (!Number.isFinite(t)) return "-";
   const sec = Math.max(0, Math.floor((Date.now() - t) / 1000));
   if (sec < 60) return "just now";
   const min = Math.floor(sec / 60);

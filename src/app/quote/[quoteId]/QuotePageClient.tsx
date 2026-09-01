@@ -58,6 +58,7 @@ import {
 import YugoLogo from "@/components/YugoLogo";
 import YugoMarketingFooter from "@/components/YugoMarketingFooter";
 import { isQuoteExpiredForBooking } from "@/lib/quote-expiry";
+import { cleanItemName } from "@/lib/text/dedash";
 import { formatMoveDate, formatPlatformDisplay } from "@/lib/date-format";
 import { DEFAULT_GOOGLE_REVIEW_COUNT_LABEL } from "@/lib/google-review-url";
 
@@ -1545,7 +1546,7 @@ export default function QuotePageClient({
             v.type as TVMountType,
           );
           if (!cell) continue;
-          const sizeDisplay = v.size.replace("-", "–") + '"';
+          const sizeDisplay = v.size.replace("-", "-") + '"';
           const typeDisplay = typeLabelMap[v.type] ?? v.type;
           const label = cell.mount_model
             ? `${addon.name} (${sizeDisplay} · ${typeDisplay} · ${cell.mount_model})`
@@ -2149,7 +2150,7 @@ export default function QuotePageClient({
     try {
       const start = new Date(`${quote.move_date}T12:00:00`);
       const end = new Date(start.getTime() + spanDays * 86_400_000);
-      return `${formatMoveDate(quote.move_date)} – ${formatMoveDate(
+      return `${formatMoveDate(quote.move_date)}, ${formatMoveDate(
         end.toISOString().slice(0, 10),
       )}`;
     } catch {
@@ -4232,7 +4233,7 @@ function RoomSection({
                 className="text-[12px] flex-1 leading-snug"
                 style={{ color: item.isSpecialty ? p.strong : p.body }}
               >
-                {item.name}
+                {cleanItemName(item.name)}
                 {item.isSpecialty && (
                   <span
                     className="ml-1 text-[11px] font-semibold"
@@ -4412,7 +4413,7 @@ function InventoryCollapsible({
   const roomMap: Record<string, InvItem[]> = {};
   for (const item of rawItems) {
     const room = item.room || "other";
-    const name = (item.name || item.slug || "Item").trim();
+    const name = cleanItemName((item.name || item.slug || "Item").trim());
     const isSpecialty = room === "specialty" || (item.weight_score ?? 0) >= 10;
     if (!roomMap[room]) roomMap[room] = [];
     roomMap[room]!.push({ name, quantity: item.quantity ?? 1, isSpecialty });
@@ -6745,7 +6746,7 @@ function AddOnsSection({
                   tilt: "Tilting",
                   full_motion: "Full motion",
                 };
-                const sizeDisplay = a.variant.size.replace("-", "–") + '"';
+                const sizeDisplay = a.variant.size.replace("-", "-") + '"';
                 const typeDisplay =
                   typeLabelMap[a.variant.type] ?? a.variant.type;
                 variantSubline = a.variant.mount_model

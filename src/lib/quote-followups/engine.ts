@@ -693,7 +693,7 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
         const subjectNoun = isDeliveryService ? "delivery" : "move";
         const subject =
           daysUntilMove <= 1
-            ? `Your ${subjectNoun} is ${daysUntilMove === 0 ? "today" : "tomorrow"} — confirm now`
+            ? `Your ${subjectNoun} is ${daysUntilMove === 0 ? "today" : "tomorrow"}, confirm now`
             : `Your ${subjectNoun} is ${daysUntilMove} days away`;
 
         const res = await sendEmail({
@@ -903,8 +903,8 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
       if (q.hubspot_deal_id) {
         await createHubSpotTask(
           q.hubspot_deal_id,
-          `Hot quote ${q.quote_id} — ${views} views, no booking`,
-          `${contact?.name || "Client"} has viewed quote ${q.quote_id} ${views} times without booking. Engagement signals a real decision is being made — consider a 2-minute personal call.`,
+          `Hot quote ${q.quote_id}, ${views} views, no booking`,
+          `${contact?.name || "Client"} has viewed quote ${q.quote_id} ${views} times without booking. Engagement signals a real decision is being made, consider a 2-minute personal call.`,
         );
       }
 

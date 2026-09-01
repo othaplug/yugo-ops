@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
             ? Object.values(rooms).filter(Boolean).length
             : 0;
         if (roomCount > 0) {
-          recapLine = `Your home is packed and protected — ${roomCount} ${
+          recapLine = `Your home is packed and protected, ${roomCount} ${
             roomCount === 1 ? "room" : "rooms"
           } wrapped and ready for moving day.`;
         }
@@ -249,7 +249,7 @@ export async function POST(req: NextRequest) {
             lastSess as Parameters<typeof sessionJobDurationMinutes>[0],
           ) / 60;
         if (actualHrs > estHrs * 1.25) {
-          overrunNote = ` · ran ${actualHrs.toFixed(1)}h vs ${estHrs}h planned — reconfirm next-day timing with the client`;
+          overrunNote = ` · ran ${actualHrs.toFixed(1)}h vs ${estHrs}h planned, reconfirm next-day timing with the client`;
         }
       }
     }

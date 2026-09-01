@@ -224,7 +224,7 @@ function headlineForTrackingCheckpoint(
       case "packing_started":
         return "Packing has started at your office. Your team can leave when ready.";
       case "packing_complete":
-        return "Day 1 is complete — everything is packed and staged for tomorrow's move.";
+        return "Day 1 is complete, everything is packed and staged for tomorrow's move.";
       case "en_route_to_pickup":
         return "Day 2: your relocation crew is on the way to load the truck.";
       case "arrived_at_pickup":
@@ -356,7 +356,7 @@ export async function notifyOnCheckpoint(
             ? `${teamName} en route to destination ${toAddress || "-"}`
             : status === "arrived_at_destination" || status === "arrived"
               ? `${teamName} arrived at ${toAddress || "-"}`
-              : `${teamName} — ${getStatusLabel(status)}`;
+              : `${teamName}, ${getStatusLabel(status)}`;
 
   if (cfg.notifyAdmin) {
     try {

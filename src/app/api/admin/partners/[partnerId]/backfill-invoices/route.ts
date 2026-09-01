@@ -108,7 +108,7 @@ export async function POST(
         period_start: periodStart,
         period_end: periodEnd,
         total_amount: totalAmount,
-        notes: `Backfilled — ${monthMoves.length} move${monthMoves.length === 1 ? "" : "s"}`,
+        notes: `Backfilled, ${monthMoves.length} move${monthMoves.length === 1 ? "" : "s"}`,
       })
       .select()
       .single();

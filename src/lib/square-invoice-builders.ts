@@ -340,7 +340,7 @@ export function buildLineItemDescription(
     else if (isMoveOut) action = "Move-Out";
     else action = humanizeSlug(kind) || "Residential Relocation";
 
-    description = unit ? `${action} — Unit ${unit}` : action;
+    description = unit ? `${action}, Unit ${unit}` : action;
     if (tenant) description += ` · ${tenant}`;
     if (date) description += ` · ${date}`;
   } else if (
@@ -357,7 +357,7 @@ export function buildLineItemDescription(
       move.service_type === "white_glove"
         ? "White Glove Delivery"
         : `${verticalDeliveryLabel(move.b2b_vertical_code)} Delivery`;
-    description = `${label} — ${destination}`;
+    description = `${label}, ${destination}`;
     if (date) description += ` · ${date}`;
   } else {
     const label = humanizeSlug(move.service_type) || "Move Service";
@@ -438,7 +438,7 @@ export function buildLineItemNote(move: InvoiceLineMove): string {
 /* ─────────────────────────  HST LINE ITEM  ───────────────────────── */
 
 export function buildHstLineItemName(subtotal: number): string {
-  return `HST (13%) — on $${formatCurrency(subtotal)} subtotal`;
+  return `HST (13%), on $${formatCurrency(subtotal)} subtotal`;
 }
 
 export function buildHstLineItemNote(hstRegistration: string): string {
@@ -486,9 +486,9 @@ export function formatBillingPeriod(start: Date, end: Date): string {
     return `${startMonth} ${startDay}, ${year}`;
   }
   if (startMonth === endMonth && start.getFullYear() === end.getFullYear()) {
-    return `${startMonth} ${startDay}–${endDay}, ${year}`;
+    return `${startMonth} ${startDay}-${endDay}, ${year}`;
   }
-  return `${startMonth} ${startDay} – ${endMonth} ${endDay}, ${year}`;
+  return `${startMonth} ${startDay}, ${endMonth} ${endDay}, ${year}`;
 }
 
 export function formatBuildingShortName(address: string): string {

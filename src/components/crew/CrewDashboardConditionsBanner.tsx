@@ -27,7 +27,7 @@ function condensedSummaryLine(
     const wx = weatherByJobId[j.id];
     const brief = j.weatherBrief || wx?.brief;
     if (brief?.conditionsSummary) {
-      return `${brief.conditionsSummary} · ${brief.tempLowC}–${brief.tempHighC}°C`;
+      return `${brief.conditionsSummary} · ${brief.tempLowC}-${brief.tempHighC}°C`;
     }
   }
   for (const j of jobs) {

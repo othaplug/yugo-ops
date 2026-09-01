@@ -19,7 +19,7 @@ function GenerateQuoteUrlBanner() {
 
   return (
     <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-1.5">
-      <p className="text-[11px] font-semibold text-amber-800">HubSpot CRM Card — Generate Quote URL</p>
+      <p className="text-[11px] font-semibold text-amber-800">HubSpot CRM Card, Generate Quote URL</p>
       <p className="text-[11px] text-amber-700 leading-relaxed">
         If your HubSpot &quot;Generate Quote&quot; button is not opening or is loading the wrong domain, update the button URL in your HubSpot CRM card settings to:
       </p>
@@ -161,7 +161,7 @@ export default function HubSpotIntegrationSection() {
       }
       const r = data as { created?: string[]; existing?: string[]; failed?: string[] }
       if (r.failed?.length) {
-        toast(`${r.failed.length} propert${r.failed.length === 1 ? "y" : "ies"} failed — see details`, "x")
+        toast(`${r.failed.length} propert${r.failed.length === 1 ? "y" : "ies"} failed, see details`, "x")
       } else {
         toast(
           r.created?.length

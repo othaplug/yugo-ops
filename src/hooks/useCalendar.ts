@@ -242,7 +242,7 @@ export function useCalendar({ role, initialView = "month" }: UseCalendarOptions)
       sunday.setDate(monday.getDate() + 6);
       const fm = monday.toLocaleDateString("en-US", { month: "short", day: "numeric" });
       const lm = sunday.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-      return `${fm} – ${lm}`;
+      return `${fm}, ${lm}`;
     }
     if (view === "day") {
       return new Date(selectedDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });

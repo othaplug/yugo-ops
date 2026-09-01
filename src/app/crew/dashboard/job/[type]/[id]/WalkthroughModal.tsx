@@ -640,7 +640,7 @@ export default function WalkthroughModal({
                     <>
                       Document the condition of each piece before it goes on
                       the truck. Photograph any pre-existing damage so the
-                      vendor — not Yugo — owns it.
+                      vendor, not Yugo, owns it.
                     </>
                   ) : logistics ? (
                     <>

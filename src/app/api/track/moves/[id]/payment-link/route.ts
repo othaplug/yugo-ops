@@ -110,7 +110,7 @@ export async function POST(
     try {
       createRes = await squareClient.checkout.paymentLinks.create({
         idempotencyKey,
-        description: `Move payment – ${move.client_name || moveId}`,
+        description: `Move payment, ${move.client_name || moveId}`,
         quickPay: {
           name: "Move balance",
           priceMoney: {

@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
   const voicemailText =
     String(data.voicemail_transcript || data.transcription || data.voicemail_text || "") ||
-    (isVoicemail ? "Voicemail received" : "Missed call — no voicemail");
+    (isVoicemail ? "Voicemail received" : "Missed call, no voicemail");
 
   try {
     const sb = createAdminClient();

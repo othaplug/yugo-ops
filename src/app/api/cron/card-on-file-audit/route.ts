@@ -155,19 +155,19 @@ async function alertNoCard(
     const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.yugoplus.co"}/admin/moves/${move.move_code || move.id}`;
     await sendEmail({
       to: adminEmail,
-      subject: `No card on file: ${move.move_code} — manual balance collection needed`,
+      subject: `No card on file: ${move.move_code}, manual balance collection needed`,
       html: internalAdminAlertEmail({
         kicker: "Action required",
-        title: `No card on file — ${move.move_code || "Move"}`,
+        title: `No card on file, ${move.move_code || "Move"}`,
         summary: reason,
         keyValues: [
-          { label: "Move", value: move.move_code || "—", accent: "forest" },
-          { label: "Client", value: move.client_name || "—" },
+          { label: "Move", value: move.move_code || "-", accent: "forest" },
+          { label: "Client", value: move.client_name || "-" },
           {
             label: "Email",
             valueHtml: move.client_email
               ? `<a href="mailto:${encodeURIComponent(move.client_email)}" style="color:#2C3E2D;text-decoration:underline;font-weight:600;">${move.client_email}</a>`
-              : "—",
+              : "-",
           },
           { label: "Move date", value: dateDisplay },
           { label: "Balance", value: `$${balance.toFixed(2)}`, accent: "forest" },
@@ -193,7 +193,7 @@ async function alertNoCard(
         },
         body: JSON.stringify({
           properties: {
-            hs_task_subject: `Manual balance collection — ${move.move_code}`,
+            hs_task_subject: `Manual balance collection, ${move.move_code}`,
             hs_task_body: `${reason} Balance: $${Number(move.balance_amount || 0).toFixed(2)}. Watch pay@helloyugo.com for incoming e-transfer.`,
             hs_task_status: "NOT_STARTED",
             hs_task_priority: "HIGH",

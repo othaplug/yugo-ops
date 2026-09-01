@@ -477,7 +477,7 @@ export function estimateLabourFromScore(
   let rangeLow = Math.max(minHours, roundHalf(totalHours * 0.93));
   let rangeHigh = roundHalf(totalHours * 1.07);
   if (rangeHigh - rangeLow > 1.5) rangeHigh = rangeLow + 1.5;
-  const hoursRange = rangeLow === rangeHigh ? `${rangeLow} hours` : `${rangeLow}–${rangeHigh} hours`;
+  const hoursRange = rangeLow === rangeHigh ? `${rangeLow} hours` : `${rangeLow}-${rangeHigh} hours`;
 
   return {
     crewSize,

@@ -45,16 +45,16 @@ function elevatorSummary(p: PartnerPropertyRow): string {
   if (t === "shared") return "Shared elevator";
   if (t === "none" || (!p.has_move_elevator && !t)) return "No elevator";
   if (p.has_move_elevator && t) return `${t.charAt(0).toUpperCase() + t.slice(1)} elevator`;
-  return p.elevator_type || "—";
+  return p.elevator_type || "-";
 }
 
 function parkingSummary(p: PartnerPropertyRow): string {
   const raw = (p.parking_type || "").trim().toLowerCase();
-  if (!raw) return "—";
+  if (!raw) return "-";
   if (raw === "dedicated" || raw.includes("dedicated")) return "Dedicated parking";
   if (raw === "street" || raw.includes("street")) return "Street parking";
   if (raw === "none" || raw === "no") return "No parking";
-  return p.parking_type || "—";
+  return p.parking_type || "-";
 }
 
 function addressShowsPostal(address: string, postal: string | null | undefined): boolean {
@@ -295,7 +295,7 @@ export default function PartnerBuildingsTab({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <p className="text-[9px] font-bold tracking-widest uppercase text-[var(--tx3)]">Units</p>
-                    <p className="text-[13px] font-semibold text-[var(--tx)] mt-1">{p.total_units != null ? p.total_units : "—"}</p>
+                    <p className="text-[13px] font-semibold text-[var(--tx)] mt-1">{p.total_units != null ? p.total_units : "-"}</p>
                     {p.unit_types && p.unit_types.length > 0 ? (
                       <p className="text-[10px] text-[var(--tx3)] mt-0.5">
                         {p.unit_types.map((u) => PM_UNIT_OPTS.find((o) => o.id === u)?.label ?? u).join(", ")}
@@ -314,8 +314,8 @@ export default function PartnerBuildingsTab({
                   </div>
                   <div>
                     <p className="text-[9px] font-bold tracking-widest uppercase text-[var(--tx3)]">Building contact</p>
-                    <p className="text-[13px] font-semibold text-[var(--tx)] mt-1">{p.building_contact_name || "—"}</p>
-                    <p className="text-[10px] text-[var(--tx3)] mt-0.5">{formatPhoneDisplay(p.building_contact_phone || "") || "—"}</p>
+                    <p className="text-[13px] font-semibold text-[var(--tx)] mt-1">{p.building_contact_name || "-"}</p>
+                    <p className="text-[10px] text-[var(--tx3)] mt-0.5">{formatPhoneDisplay(p.building_contact_phone || "") || "-"}</p>
                   </div>
                 </div>
 
@@ -418,7 +418,7 @@ export default function PartnerBuildingsTab({
                 }
                 className="admin-premium-input w-full"
               >
-                <option value="">—</option>
+                <option value="">-</option>
                 <option value="dedicated">Dedicated</option>
                 <option value="shared">Shared</option>
                 <option value="none">None</option>
@@ -437,7 +437,7 @@ export default function PartnerBuildingsTab({
                 }
                 className="admin-premium-input w-full"
               >
-                <option value="8to6">8:00 AM – 6:00 PM</option>
+                <option value="8to6">8:00 AM, 6:00 PM</option>
                 <option value="24_7">24/7</option>
                 <option value="custom">Custom</option>
               </select>
@@ -449,7 +449,7 @@ export default function PartnerBuildingsTab({
                   value={form.custom_move_hours}
                   onChange={(e) => setForm((f) => ({ ...f, custom_move_hours: e.target.value }))}
                   className="admin-premium-input w-full"
-                  placeholder="e.g. 7 AM – 8 PM weekdays"
+                  placeholder="e.g. 7 AM, 8 PM weekdays"
                 />
               </div>
             )}

@@ -63,7 +63,7 @@ export async function markQuoteCold(
   await notifyAdmins("quote_cold", {
     quoteId: quote.quote_id,
     sourceId: quote.id,
-    description: `${quote.quote_id} went cold (${reason}). ${contact?.name ? `${contact.name} — ` : ""}Consider a quick call.`,
+    description: `${quote.quote_id} went cold (${reason}). ${contact?.name ? `${contact.name}, ` : ""}Consider a quick call.`,
     clientName: contact?.name ?? undefined,
     excludeRecipientEmails: contactEmail ? [contactEmail.toLowerCase()] : [],
   }).catch(() => {});

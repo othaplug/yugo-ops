@@ -28,7 +28,7 @@ export function YugoBetaBanner() {
       aria-label="Beta notice"
     >
       <span className="opacity-90">
-        Welcome to the new Yugo experience. We are in beta — if you notice anything, let us know at{" "}
+        Welcome to the new Yugo experience. We are in beta, if you notice anything, let us know at{" "}
         <a
           href="mailto:support@helloyugo.com"
           className="underline underline-offset-2 hover:opacity-100 opacity-95"

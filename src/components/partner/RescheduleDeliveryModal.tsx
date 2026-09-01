@@ -4,9 +4,9 @@ import { useState } from "react";
 import { X, CalendarBlank, Check, Warning } from "@phosphor-icons/react";
 
 const WINDOW_OPTIONS = [
-  { value: "morning", label: "Morning", sub: "8 AM – 12 PM" },
-  { value: "afternoon", label: "Afternoon", sub: "12 PM – 5 PM" },
-  { value: "evening", label: "Evening", sub: "5 PM – 8 PM" },
+  { value: "morning", label: "Morning", sub: "8 AM, 12 PM" },
+  { value: "afternoon", label: "Afternoon", sub: "12 PM, 5 PM" },
+  { value: "evening", label: "Evening", sub: "5 PM, 8 PM" },
   { value: "flexible", label: "Flexible", sub: "Best available" },
 ];
 

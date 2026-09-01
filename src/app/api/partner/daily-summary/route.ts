@@ -113,9 +113,9 @@ export async function POST() {
       const recipient = d.customer_name || d.client_name || "-";
       const address = d.delivery_address || "-";
       const timeSlot = d.time_slot
-        ? d.time_slot.replace(/morning/i, "Morning (8am–12pm)")
-            .replace(/afternoon/i, "Afternoon (12pm–5pm)")
-            .replace(/evening/i, "Evening (5pm–9pm)")
+        ? d.time_slot.replace(/morning/i, "Morning (8am-12pm)")
+            .replace(/afternoon/i, "Afternoon (12pm-5pm)")
+            .replace(/evening/i, "Evening (5pm-9pm)")
         : "Flexible";
       return `
         <tr>
@@ -264,7 +264,7 @@ export async function POST() {
 
   const result = await sendEmail({
     to: partnerEmail,
-    subject: `Daily Summary – ${deliveriesToday.length} delivery${deliveriesToday.length !== 1 ? "ies" : ""} today · ${today.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`,
+    subject: `Daily Summary, ${deliveriesToday.length} delivery${deliveriesToday.length !== 1 ? "ies" : ""} today · ${today.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`,
     html,
   });
 

@@ -223,7 +223,7 @@ export function TVMountClientPicker({
                   className="text-[11px] ml-auto"
                   style={{ color: "#E37A6A" }}
                 >
-                  We support {sizeFloor}&quot;–{sizeCap}&quot; only.
+                  We support {sizeFloor}&quot;-{sizeCap}&quot; only.
                 </span>
               )}
             </div>

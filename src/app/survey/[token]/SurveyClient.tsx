@@ -121,7 +121,7 @@ export default function SurveyClient({
             const head = typeof j.error === "string" ? j.error : "Upload failed";
             const tail =
               typeof j.detail === "string" && j.detail.trim()
-                ? ` — ${j.detail.trim()}`
+                ? `, ${j.detail.trim()}`
                 : "";
             throw new Error(`${head}${tail}`);
           }
@@ -145,9 +145,9 @@ export default function SurveyClient({
       });
       if (!res.ok) throw new Error("Could not mark complete");
       setCompleted(true);
-      setMsg("Thank you — your coordinator will review your photos.");
+      setMsg("Thank you, your coordinator will review your photos.");
     } catch {
-      setMsg("Could not finalize — try again.");
+      setMsg("Could not finalize, try again.");
     }
   }, [token]);
 
@@ -194,7 +194,7 @@ export default function SurveyClient({
             className="text-[13px] md:text-[14px] leading-relaxed"
             style={{ color: INK_MUTED }}
           >
-            Hi {first} — quick photos from your phone help your crew plan the
+            Hi {first} - quick photos from your phone help your crew plan the
             move. About two minutes.
           </p>
         </header>

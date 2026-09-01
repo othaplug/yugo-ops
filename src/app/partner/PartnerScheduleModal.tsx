@@ -609,7 +609,7 @@ export default function PartnerScheduleModal({
               <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5A6B5E]/80 mb-1.5">
                 {bookingType === "day_rate" ? "Day booking" : "Per delivery"}
                 <span className="text-[var(--tx3)] mx-1.5" aria-hidden>
-                  —
+                  -
                 </span>
                 {currentStep.description}
               </p>
@@ -653,7 +653,7 @@ export default function PartnerScheduleModal({
                 <span key={s.id} className="contents">
                   {i > 0 ? (
                     <span className="text-[var(--tx3)] px-0.5 select-none" aria-hidden>
-                      —
+                      -
                     </span>
                   ) : null}
                   <button
@@ -814,12 +814,12 @@ export default function PartnerScheduleModal({
             <div className="space-y-0 divide-y divide-[#2C3E2D]/10">
               <div className="pb-5 space-y-3">
                 {[
-                  ["Date",     dayScheduledDate || "—"],
+                  ["Date",     dayScheduledDate || "-"],
                   ["Time",     DAY_TIME_WINDOWS.find((w) => w.value === dayTimeWindow)?.label ?? dayTimeWindow],
                   ["Vehicle",  VEHICLE_TYPES.find((v) => v.value === vehicleType)?.label ?? vehicleType],
                   ["Duration", dayType === "full_day" ? "Full Day" : "Half Day"],
                   ["Stops",    String(dayStops.length)],
-                  ["Pickup",   dayPickupAddress || "—"],
+                  ["Pickup",   dayPickupAddress || "-"],
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between gap-4 text-[13px]">
                     <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#5A6B5E] shrink-0">{k}</span>
@@ -1151,9 +1151,9 @@ export default function PartnerScheduleModal({
               <section className="space-y-2">
                 <SectionLabel>Zone</SectionLabel>
                 <select value={zone} onChange={(e) => setZone(Number(e.target.value))} className={fieldInput}>
-                  <option value={1}>Zone 1, GTA (0–40 km), Included</option>
-                  <option value={2}>Zone 2, Outer GTA (40–70 km), +$120–$145</option>
-                  <option value={3}>Zone 3, Extended (70–100 km), +$210–$245</option>
+                  <option value={1}>Zone 1, GTA (0 to 40 km), Included</option>
+                  <option value={2}>Zone 2, Outer GTA (40 to 70 km), +$120-$145</option>
+                  <option value={3}>Zone 3, Extended (70 to 100 km), +$210-$245</option>
                   <option value={4}>Zone 4, Remote (100+ km), Custom</option>
                 </select>
               </section>
@@ -1177,8 +1177,8 @@ export default function PartnerScheduleModal({
                 <SectionLabel>Item Weight</SectionLabel>
                 <select value={itemWeightCategory} onChange={(e) => setItemWeightCategory(e.target.value)} className={fieldInput}>
                   <option value="standard">Standard (under 100 lbs)</option>
-                  <option value="heavy">Heavy (100–250 lbs), +$50</option>
-                  <option value="very_heavy">Very Heavy (250–500 lbs), +$100</option>
+                  <option value="heavy">Heavy (100 to 250 lbs), +$50</option>
+                  <option value="very_heavy">Very Heavy (250 to 500 lbs), +$100</option>
                   <option value="oversized_fragile">Oversized / Fragile (3+ crew), +$175</option>
                 </select>
               </section>
@@ -1187,7 +1187,7 @@ export default function PartnerScheduleModal({
                 <SectionLabel>Heavy / Oversized Items</SectionLabel>
                 <p className="text-[11px] text-[var(--tx3)] -mt-2">Items over 250 lbs incur additional surcharges.</p>
                 <div className="border-t border-[#2C3E2D]/10 pt-1">
-                  {([{ label: "250–400 lbs", tier: "250_400" as const }, { label: "400–600 lbs", tier: "400_600" as const }]).map((t) => {
+                  {([{ label: "250 to 400 lbs", tier: "250_400" as const }, { label: "400 to 600 lbs", tier: "400_600" as const }]).map((t) => {
                     const existing = heavyItems.find((h) => h.tier === t.tier);
                     const count = existing?.count ?? 0;
                     return (
@@ -1364,7 +1364,7 @@ export default function PartnerScheduleModal({
                       <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
                         <span className="text-[#5A6B5E]">Vertical</span>
                         <span className="font-medium text-[#1a1f1b] text-right">
-                          {partnerB2bVerticals.find((v) => v.code === b2bVerticalCode)?.name || b2bVerticalCode || "—"}
+                          {partnerB2bVerticals.find((v) => v.code === b2bVerticalCode)?.name || b2bVerticalCode || "-"}
                         </span>
                         <span className="text-[#5A6B5E]">Access</span>
                         <span className="font-medium text-[#1a1f1b] text-right uppercase">{deliveryAccess.replace(/_/g, " ")}</span>
@@ -1374,13 +1374,13 @@ export default function PartnerScheduleModal({
                       <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#5A6B5E] mb-3">Client</p>
                       <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
                         <span className="text-[#5A6B5E]">Name</span>
-                        <span className="font-medium text-[#1a1f1b] text-right">{form.customer_name || "—"}</span>
+                        <span className="font-medium text-[#1a1f1b] text-right">{form.customer_name || "-"}</span>
                         <span className="text-[#5A6B5E]">Date</span>
-                        <span className="font-medium text-[#1a1f1b] text-right">{form.scheduled_date || "—"}</span>
+                        <span className="font-medium text-[#1a1f1b] text-right">{form.scheduled_date || "-"}</span>
                         <span className="text-[#5A6B5E]">Pickup</span>
-                        <span className="font-medium text-[#1a1f1b] text-right truncate max-w-full">{pickupResolved || "—"}</span>
+                        <span className="font-medium text-[#1a1f1b] text-right truncate max-w-full">{pickupResolved || "-"}</span>
                         <span className="text-[#5A6B5E]">Deliver to</span>
-                        <span className="font-medium text-[#1a1f1b] text-right truncate max-w-full">{form.delivery_address || "—"}</span>
+                        <span className="font-medium text-[#1a1f1b] text-right truncate max-w-full">{form.delivery_address || "-"}</span>
                       </div>
                     </div>
                     {b2bItems.filter((i) => i.description.trim()).length > 0 && (
@@ -1421,11 +1421,11 @@ export default function PartnerScheduleModal({
                       <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#5A6B5E] mb-3">Client</p>
                       <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
                         <span className="text-[#5A6B5E]">Name</span>
-                        <span className="font-medium text-[#1a1f1b] text-right">{form.customer_name || "—"}</span>
+                        <span className="font-medium text-[#1a1f1b] text-right">{form.customer_name || "-"}</span>
                         <span className="text-[#5A6B5E]">Date</span>
-                        <span className="font-medium text-[#1a1f1b] text-right">{form.scheduled_date || "—"}</span>
+                        <span className="font-medium text-[#1a1f1b] text-right">{form.scheduled_date || "-"}</span>
                         <span className="text-[#5A6B5E]">Deliver to</span>
-                        <span className="font-medium text-[#1a1f1b] text-right truncate max-w-full">{form.delivery_address || "—"}</span>
+                        <span className="font-medium text-[#1a1f1b] text-right truncate max-w-full">{form.delivery_address || "-"}</span>
                       </div>
                     </div>
                     {inventory.length > 0 && (
@@ -1561,7 +1561,7 @@ export default function PartnerScheduleModal({
                 </div>
               </div>
               <span className="text-[12px] font-semibold text-[var(--tx)] shrink-0 tabular-nums">
-                {fmtCurrency(svc.price_min)}{svc.price_max ? ` – ${fmtCurrency(svc.price_max)}` : ""}
+                {fmtCurrency(svc.price_min)}{svc.price_max ? `, ${fmtCurrency(svc.price_max)}` : ""}
                 {svc.price_unit === "per_flight" ? "/flight" : svc.price_unit === "per_stop" ? "/stop" : ""}
               </span>
             </label>
@@ -1585,7 +1585,7 @@ export default function PartnerScheduleModal({
         </div>
         {b2bPreview && vname ? (
           <p className="text-[12px] font-medium text-[#1a1f1b]">
-            {vname} — partner rate
+            {vname} - partner rate
           </p>
         ) : null}
         {b2bPreview && b2bPreview.breakdown.length > 0 ? (

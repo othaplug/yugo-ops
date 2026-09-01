@@ -117,7 +117,7 @@ export function adminNotificationLayout(
         <!-- Footer band inside card -->
         <tr>
           <td class="ya-footer-band" style="padding:14px 28px 18px;background-color:${SHELL_BG};border-top:1px solid ${SECTION_RULE};">
-            <p style="margin:0;font-size:11px;color:${TEXT_MUTED};line-height:1.55;font-family:${BTN_FONT};">Internal notification — do not forward outside authorized channels.</p>
+            <p style="margin:0;font-size:11px;color:${TEXT_MUTED};line-height:1.55;font-family:${BTN_FONT};">Internal notification, do not forward outside authorized channels.</p>
           </td>
         </tr>
 
@@ -240,7 +240,7 @@ export function newLeadAdminEmailHtml(params: {
       ? `<tr><td style="${ADMIN_LABEL_TD}">Contact</td><td style="color:${TEXT};padding:4px 0;">${
         [params.contactEmail ? escapeHtml(params.contactEmail) : "", params.contactPhone ? escapeHtml(params.contactPhone) : ""]
           .filter(Boolean)
-          .join(" · ") || "—"
+          .join(" · ") || "-"
       }</td></tr>`
       : "";
   const inner = `
@@ -338,7 +338,7 @@ export function quoteComparisonSignalAdminEmailHtml(params: {
   adminQuoteUrl: string;
 }): string {
   const fmtMoney = (n: number) =>
-    Number.isFinite(n) && n > 0 ? `$${Math.round(n).toLocaleString()}` : "—";
+    Number.isFinite(n) && n > 0 ? `$${Math.round(n).toLocaleString()}` : "-";
 
   const seconds = Math.max(0, Math.floor(params.maxSessionSeconds));
   let timeLabel: string;
@@ -359,16 +359,16 @@ export function quoteComparisonSignalAdminEmailHtml(params: {
   const topTierEntry = Object.entries(clicksMap).sort((a, b) => b[1] - a[1])[0];
   const topTierLabel = topTierEntry?.[0]
     ? topTierEntry[0].charAt(0).toUpperCase() + topTierEntry[0].slice(1).toLowerCase()
-    : "—";
+    : "-";
 
   const urgency: "high" | "medium" | "low" =
     params.viewCount >= 4 ? "high" : params.uniqueDays >= 2 ? "medium" : "low";
   const urgencyLabel =
     urgency === "high"
-      ? "High — call soon"
+      ? "High, call soon"
       : urgency === "medium"
-        ? "Medium — follow up today"
-        : "Low — monitor";
+        ? "Medium, follow up today"
+        : "Low, monitor";
 
   const urgencyBg =
     urgency === "high" ? EMAIL_WINE : urgency === "medium" ? EMAIL_ROSE : EMAIL_FOREST;
@@ -417,7 +417,7 @@ export function quoteComparisonSignalAdminEmailHtml(params: {
     urgency === "high"
       ? `${escapeHtml(params.clientFirstName)} has opened this quote several times across multiple days and is spending time on tier details. <strong>Call within the next few hours</strong> to answer questions and help them decide.`
       : urgency === "medium"
-        ? `${escapeHtml(params.clientFirstName)} is returning to the quote and exploring tiers. A follow-up today could move this forward. Their strongest click pattern is <strong>${escapeHtml(topTierLabel)}</strong> — lean into that value story.`
+        ? `${escapeHtml(params.clientFirstName)} is returning to the quote and exploring tiers. A follow-up today could move this forward. Their strongest click pattern is <strong>${escapeHtml(topTierLabel)}</strong>, lean into that value story.`
         : `${escapeHtml(params.clientFirstName)} is engaging with the quote. Monitor for another beat; if activity ramps up, reach out proactively.`;
 
   const inner = `
@@ -465,13 +465,13 @@ export function quoteComparisonSignalAdminEmailHtml(params: {
           <td style="vertical-align:top;width:50%;padding-right:12px;">
             <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:${EMAIL_WINE};letter-spacing:0.08em;text-transform:uppercase;">Client</p>
             <p style="margin:0;color:${TEXT};font-weight:600;">${escapeHtml(params.clientFullName)}</p>
-            <p style="margin:6px 0 0;color:${TEXT_MUTED};font-size:12px;">${escapeHtml(params.clientPhone || "—")}</p>
-            <p style="margin:4px 0 0;color:${TEXT_MUTED};font-size:12px;">${escapeHtml(params.clientEmail || "—")}</p>
+            <p style="margin:6px 0 0;color:${TEXT_MUTED};font-size:12px;">${escapeHtml(params.clientPhone || "-")}</p>
+            <p style="margin:4px 0 0;color:${TEXT_MUTED};font-size:12px;">${escapeHtml(params.clientEmail || "-")}</p>
           </td>
           <td style="vertical-align:top;width:50%;padding-left:12px;">
             <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:${EMAIL_WINE};letter-spacing:0.08em;text-transform:uppercase;">Move</p>
-            <p style="margin:0;color:${TEXT};font-size:12px;line-height:1.5;">${escapeHtml(params.fromAddress || "—")}</p>
-            <p style="margin:8px 0 0;color:${TEXT};font-size:12px;line-height:1.5;">${escapeHtml(params.toAddress || "—")}</p>
+            <p style="margin:0;color:${TEXT};font-size:12px;line-height:1.5;">${escapeHtml(params.fromAddress || "-")}</p>
+            <p style="margin:8px 0 0;color:${TEXT};font-size:12px;line-height:1.5;">${escapeHtml(params.toAddress || "-")}</p>
           </td>
         </tr>
       </table>
@@ -485,7 +485,7 @@ export function quoteComparisonSignalAdminEmailHtml(params: {
     <a class="yugo-admin-cta" href="${params.adminQuoteUrl}" style="${emailPrimaryCtaStyle(BTN_FONT, "inline-block")}">VIEW QUOTE IN OPS</a>
 
     <p style="margin:20px 0 0;font-size:11px;color:${TEXT_MUTED};line-height:1.5;font-family:${BTN_FONT};">
-      Last activity: ${escapeHtml(params.lastEngagementLabel)} · Internal only — do not forward to the client.
+      Last activity: ${escapeHtml(params.lastEngagementLabel)} · Internal only, do not forward to the client.
     </p>
   `;
 
@@ -629,7 +629,7 @@ export function buildingProfileCrewReportAdminEmailHtml(params: {
   const moveBlock =
     params.moveCode || params.clientName
       ? `<tr><td style="${ADMIN_LABEL_TD};vertical-align:top;">Related move</td><td style="color:${TEXT};font-weight:600;padding:4px 0;">${
-        params.moveCode ? escapeHtml(params.moveCode) : "—"
+        params.moveCode ? escapeHtml(params.moveCode) : "-"
       }${
         params.clientName
           ? `<span style="display:block;font-weight:500;margin-top:4px;font-size:13px;color:${TEXT_MUTED};">Client: ${escapeHtml(params.clientName)}</span>`

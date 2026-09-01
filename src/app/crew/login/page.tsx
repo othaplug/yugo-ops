@@ -852,7 +852,7 @@ export default function CrewLoginPage() {
                       margin: "0 0 16px",
                     }}
                   >
-                    This tablet shows the crew dispatch assigned to this truck today. If your team took over the truck, ask dispatch to update today&apos;s assignment—or use phone & PIN below.
+                    This tablet shows the crew dispatch assigned to this truck today. If your team took over the truck, ask dispatch to update today&apos;s assignment-or use phone & PIN below.
                   </p>
                   <div style={{ textAlign: "center", marginBottom: 22 }}>
                     <button

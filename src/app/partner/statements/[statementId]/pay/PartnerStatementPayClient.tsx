@@ -98,7 +98,7 @@ export default function PartnerStatementPayClient({
   );
   const alreadyPaid = statement.status === "paid" || balanceOwing < 0.01;
 
-  const periodLabel = `${fmtShortDate(statement.period_start)} – ${fmtShortDate(statement.period_end)}`;
+  const periodLabel = `${fmtShortDate(statement.period_start)}, ${fmtShortDate(statement.period_end)}`;
   const deliveries: StatementDelivery[] = Array.isArray(statement.deliveries)
     ? (statement.deliveries as StatementDelivery[])
     : [];

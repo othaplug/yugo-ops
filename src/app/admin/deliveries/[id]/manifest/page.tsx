@@ -139,7 +139,7 @@ export default async function DeliveryManifestPage({ params }: { params: Promise
                       </span>
                     ) : null}
                   </div>
-                  <p className="text-sm text-zinc-800">{stop.address || "—"}</p>
+                  <p className="text-sm text-zinc-800">{stop.address || "-"}</p>
                   {(stop.contact_name || stop.contact_phone) && (
                     <p className="text-sm mt-1">
                       Contact: {[stop.contact_name, stop.contact_phone].filter(Boolean).join(" · ")}

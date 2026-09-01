@@ -77,7 +77,7 @@ export async function GET() {
         license_plate: t.license_plate as string,
       }),
       status,
-      itemsLabel: s.total ? `${s.ok}/${s.total}` : "—",
+      itemsLabel: s.total ? `${s.ok}/${s.total}` : "-",
       shortCount: s.short,
       lastChecked: s.last,
     };

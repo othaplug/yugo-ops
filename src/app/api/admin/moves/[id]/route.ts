@@ -429,7 +429,7 @@ export async function PATCH(
       try {
         await sendEmail({
           to: clientEmail,
-          subject: `Balance payment for ${moveCode} — ${balanceStr}`,
+          subject: `Balance payment for ${moveCode}, ${balanceStr}`,
           html,
         });
       } catch (e) {

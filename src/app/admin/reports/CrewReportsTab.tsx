@@ -326,7 +326,7 @@ export default function CrewReportsTab({
   const dateLabel =
     from === to
       ? formatDateShort(date)
-      : `${formatDateShort(from)} – ${formatDateShort(to)}`;
+      : `${formatDateShort(from)}, ${formatDateShort(to)}`;
   const hasActiveFilters = filterJobType !== "all" || filterTeamId !== "all";
 
   const applyPreset = (preset: "day" | "week" | "month" | "year") => {
@@ -776,7 +776,7 @@ export default function CrewReportsTab({
                           onChange={(e) => setFrom(e.target.value)}
                           className="flex-1 px-2 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)]"
                         />
-                        <span className="text-[10px] text-[var(--tx3)]">–</span>
+                        <span className="text-[10px] text-[var(--tx3)]">-</span>
                         <input
                           type="date"
                           value={to}

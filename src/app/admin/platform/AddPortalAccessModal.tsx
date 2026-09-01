@@ -143,7 +143,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
       const data = await r.json().catch(() => ({}));
       if (r.status === 409 && data?.code === "DUPLICATE_PHONE" && data?.existingMember?.id) {
         setStaleDuplicate({ id: data.existingMember.id, name: data.existingMember.name });
-        toast("This phone already has portal access — confirm update below.", "x");
+        toast("This phone already has portal access, confirm update below.", "x");
         return;
       }
       if (!r.ok) {
@@ -258,7 +258,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
               {phoneOwner ? (
                 <>
                   This number is already linked to <span className="font-semibold text-[var(--tx)]">{phoneOwner.name}</span> for the crew portal.
-                  Submitting will update their PIN, team, and role with what you entered above — not create a second login.
+                  Submitting will update their PIN, team, and role with what you entered above, not create a second login.
                 </>
               ) : (
                 <>

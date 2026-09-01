@@ -386,16 +386,16 @@ const STANDARD_OVERHEAD_FIELDS: {
 }[] = [
   { key: "monthly_software_cost", label: "Software & Tools", defaultVal: 250, help: "OPS+, HubSpot, Square, Mapbox, hosting" },
   { key: "monthly_auto_insurance", label: "Auto Insurance", defaultVal: 1000, help: "Fleet vehicle insurance" },
-  { key: "monthly_gl_insurance", label: "GL Insurance", defaultVal: 300, help: "General liability — slips/falls, premises" },
+  { key: "monthly_gl_insurance", label: "GL Insurance", defaultVal: 300, help: "General liability, slips/falls, premises" },
   // Added 2026-06-10 — luxury OH expansion. All default 0 so existing data
   // isn't affected until operator fills in real numbers.
   { key: "monthly_wsib", label: "WSIB / Workers' Comp", defaultVal: 0, help: "Premium for crew injury coverage (Ontario WSIB)" },
-  { key: "monthly_movers_liability", label: "Movers' Liability", defaultVal: 0, help: "Cargo / in-transit damage coverage — separate from GL" },
+  { key: "monthly_movers_liability", label: "Movers' Liability", defaultVal: 0, help: "Cargo / in-transit damage coverage, separate from GL" },
   { key: "monthly_marketing_budget", label: "Marketing", defaultVal: 1000, help: "Ads, SEO, referral fees, branding" },
   { key: "monthly_office_admin", label: "Office / Admin", defaultVal: 350, help: "Rent, utilities, office supplies" },
   { key: "monthly_bookkeeping", label: "Bookkeeping / Accounting", defaultVal: 0, help: "Outsourced bookkeeping, year-end accounting, legal" },
   { key: "monthly_phone_internet", label: "Phone / Internet", defaultVal: 0, help: "Mobile lines, office internet, crew hotspots" },
-  { key: "monthly_vehicle_maintenance", label: "Vehicle Maintenance", defaultVal: 0, help: "Oil, tires, brakes, washes (NOT lease — that's in Fleet)" },
+  { key: "monthly_vehicle_maintenance", label: "Vehicle Maintenance", defaultVal: 0, help: "Oil, tires, brakes, washes (NOT lease, that's in Fleet)" },
   { key: "monthly_owner_draw", label: "Owner Draw", defaultVal: 0, help: "Owner compensation drawn from the business" },
 ];
 
@@ -594,7 +594,7 @@ function CrewLoadedRateEditor({
           Payroll Burden (Ontario 2026)
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          {burdenInput("CPP (employer)", cppPct, setCppPct, "CRA 2026 employer rate: 5.95% on pensionable $3,500–$73,200 YMPE")}
+          {burdenInput("CPP (employer)", cppPct, setCppPct, "CRA 2026 employer rate: 5.95% on pensionable $3,500-$73,200 YMPE")}
           {burdenInput("EI (employer)", eiPct, setEiPct, "CRA 2026: 1.4× employee rate 1.64% = 2.296% on insurable to $65,700")}
           {burdenInput("WSIB", wsibPct, setWsibPct, "Ontario 2026 average $1.23/$100 = 1.23%. Moving industry (NAICS 484) is typically 3-5%; check your actual class-G rate.")}
           {burdenInput("Vacation", vacationPct, setVacationPct, "Ontario ESA minimum 4% (bumps to 6% after 5 years service)")}
@@ -838,10 +838,10 @@ function OverheadEditor({
           </div>
         </div>
         <p className="text-[10px] text-[var(--tx3)] mb-2 leading-snug">
-          Trucks with a monthly lease set are <strong>owned</strong> — that
+          Trucks with a monthly lease set are <strong>owned</strong> - that
           monthly cost flows into the Overhead total (paid whether or not the
           truck runs). Per-job cost on owned trucks is $0. Trucks with $0
-          monthly are <strong>rented</strong> — they cost nothing when idle
+          monthly are <strong>rented</strong> - they cost nothing when idle
           and bill the day rate per use.
         </p>
         <div className="space-y-2">
@@ -1912,7 +1912,7 @@ export default function ProfitabilityClient() {
                     </span>
                   </div>
                   <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mt-0.5">
-                    Yellow · 25–34%
+                    Yellow · 25 to 34%
                   </div>
                 </div>
               </button>
@@ -2512,7 +2512,7 @@ export default function ProfitabilityClient() {
                       </th>,
                       <th
                         key="mg"
-                        title="Gross margin — revenue minus direct costs only."
+                        title="Gross margin, revenue minus direct costs only."
                         className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none"
                         onClick={() => toggleSort("grossMargin")}
                       >
@@ -2524,7 +2524,7 @@ export default function ProfitabilityClient() {
                       </th>,
                       <th
                         key="tm"
-                        title="True margin — after OH allocation and claims reserve. The number that matters."
+                        title="True margin, after OH allocation and claims reserve. The number that matters."
                         className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none"
                         onClick={() => toggleSort("netMargin")}
                       >
@@ -2739,11 +2739,11 @@ export default function ProfitabilityClient() {
                     on the profitability table, the same daily burn is split across actual same-day jobs.
                   </p>
                   <p>
-                    <strong className="text-[var(--tx2)]">Mixed fleet model — owned in OH, rentals per-job.</strong>{" "}
+                    <strong className="text-[var(--tx2)]">Mixed fleet model, owned in OH, rentals per-job.</strong>{" "}
                     Per-job profit table subtracts labour (crew × hours × loaded rate),
                     fuel (km × rate), and supplies (by move size).
                     For trucks: <strong>owned vehicles</strong> (Fleet panel below with a
-                    monthly lease set) flow their <strong>monthly cost into this overhead total</strong> —
+                    monthly lease set) flow their <strong>monthly cost into this overhead total</strong> -
                     you pay the lease whether the truck runs or not. Per-job truck cost
                     on owned vehicles is $0. <strong>Rented vehicles</strong> (Fleet
                     panel monthly $0) bill the day rate per use only.

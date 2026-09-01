@@ -128,7 +128,7 @@ function LocationForm({
     <div className="space-y-3.5">
       <div className="rounded-lg bg-[#2B0416]/5 px-3 py-2">
         <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#2B0416]/60 mb-0.5">{label}</p>
-        <p className="text-[12px] font-semibold text-[var(--tx)] leading-snug truncate">{address || "—"}</p>
+        <p className="text-[12px] font-semibold text-[var(--tx)] leading-snug truncate">{address || "-"}</p>
       </div>
 
       <Field label="What kind of building is this?">
@@ -198,7 +198,7 @@ function LocationForm({
         <>
           {a === "two_stage" && (
             <div className="flex items-center gap-2 rounded-lg bg-[#6B1F3A]/8 px-3 py-2 text-[12px] text-[#6B1F3A]">
-              <Warning size={16} weight="fill" aria-hidden /> Two-stage building — extra handling expected
+              <Warning size={16} weight="fill" aria-hidden /> Two-stage building, extra handling expected
             </div>
           )}
           <Field label="Elevator for the move">
@@ -207,7 +207,7 @@ function LocationForm({
           </Field>
           <Field label="Booking required?">
             <Seg value={report.elevator_booking_required} onChange={(v) => set({ elevator_booking_required: v })}
-              options={[{ v: false, label: "No" }, { v: true, label: "Yes — reserve a window" }]} />
+              options={[{ v: false, label: "No" }, { v: true, label: "Yes, reserve a window" }]} />
           </Field>
           {report.elevator_booking_required && (
             <Field label="Reserved window">
@@ -235,7 +235,7 @@ function LocationForm({
             <>
               <Field label="Shared elevator with stores below?">
                 <Seg value={report.shared_with_commercial} onChange={(v) => set({ shared_with_commercial: v })}
-                  options={[{ v: false, label: "No" }, { v: true, label: "Yes — retail / grocery" }]} />
+                  options={[{ v: false, label: "No" }, { v: true, label: "Yes, retail / grocery" }]} />
               </Field>
               <Field label="Two-stage transfer">
                 <Seg value={report.two_stage_transfer} onChange={(v) => set({ two_stage_transfer: v })}
@@ -354,7 +354,7 @@ export default function CrewBuildingReportCard({
         </div>
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)]">
-            Building report — {hasBothLocations ? (step === "pickup" ? "1 of 2: Pickup" : "2 of 2: Drop-off") : "optional"}
+            Building report, {hasBothLocations ? (step === "pickup" ? "1 of 2: Pickup" : "2 of 2: Drop-off") : "optional"}
           </p>
           <p className="text-[11px] text-[var(--tx2)] mt-1 leading-snug">
             Pick the building type, then a few quick taps. Helps the next crew and our quotes.

@@ -411,11 +411,11 @@ export default function MoveProjectPlannerSection({
             value={p.project_type}
             onChange={(e) => onChange({ ...p, project_type: e.target.value })}
           >
-            <option value="residential_standard">Residential standard (1–2 days)</option>
-            <option value="residential_estate">Residential estate (2–3 days)</option>
+            <option value="residential_standard">Residential standard (1 to 2 days)</option>
+            <option value="residential_estate">Residential estate (2 to 3 days)</option>
             <option value="residential_large">Residential large (4+ days)</option>
             <option value="residential_multi_home">Residential multi-home</option>
-            <option value="office_standard">Office standard (1–3 days)</option>
+            <option value="office_standard">Office standard (1 to 3 days)</option>
             <option value="office_large">Office large (4+ days)</option>
             <option value="office_phased">Office phased</option>
             <option value="commercial">Commercial / specialty</option>
@@ -834,7 +834,7 @@ export default function MoveProjectPlannerSection({
                       >
                         {TRUCK_OPTS.map((t) => (
                           <option key={t || "none"} value={t}>
-                            {t || "—"}
+                            {t || "-"}
                           </option>
                         ))}
                       </select>

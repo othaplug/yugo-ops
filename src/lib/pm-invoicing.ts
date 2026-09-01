@@ -300,7 +300,7 @@ export async function generateAndSendPmInvoice(
     return {
       ok: false,
       code: 422,
-      error: "All linked moves resolved to $0 — refusing to invoice",
+      error: "All linked moves resolved to $0, refusing to invoice",
     };
   }
   const orgCode = partnerId.slice(0, 4).toUpperCase();
@@ -317,7 +317,7 @@ export async function generateAndSendPmInvoice(
       period_end: periodEnd,
       total_amount: totalAmount,
       due_date: dueDate,
-      notes: `${moves.length} PM move${moves.length === 1 ? "" : "s"} — billing cycle through ${dueDate}`,
+      notes: `${moves.length} PM move${moves.length === 1 ? "" : "s"}, billing cycle through ${dueDate}`,
     })
     .select()
     .single();
@@ -355,11 +355,11 @@ export async function generateAndSendPmInvoice(
   /** Publish (or re-publish) the current draft to Square and mark it sent. */
   async function finishViaSquare(): Promise<PmInvoiceResult> {
     if (!(process.env.SQUARE_ACCESS_TOKEN || "").trim()) {
-      return drafted("Square not configured — invoice saved locally only");
+      return drafted("Square not configured, invoice saved locally only");
     }
     const { locationId } = await getSquarePaymentConfig();
     if (!locationId) {
-      return drafted("Square location not configured — invoice saved locally only");
+      return drafted("Square location not configured, invoice saved locally only");
     }
 
     const currency = "CAD" as Currency;
@@ -431,7 +431,7 @@ export async function generateAndSendPmInvoice(
           deliveryMethod: recipientEmail ? "EMAIL" : "SHARE_MANUALLY",
           invoiceNumber,
           title: `Residential Relocation | ${pmPeriodDateLabel(periodStart)} to ${pmPeriodDateLabel(periodEnd)} | ${displayCompany}`,
-          description: `Billing cycle ${periodStart} – ${periodEnd}. ${moves.length} move${moves.length === 1 ? "" : "s"}.`,
+          description: `Billing cycle ${periodStart}, ${periodEnd}. ${moves.length} move${moves.length === 1 ? "" : "s"}.`,
           acceptedPaymentMethods: { card: true, bankAccount: false, squareGiftCard: false },
         },
         idempotencyKey: idem("invoice"),

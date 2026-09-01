@@ -163,7 +163,7 @@ export const InvoicesClient = ({ initialInvoices, moves = [] }: InvoicesClientPr
           row.paidAt ? (
             <DateCell value={row.paidAt} />
           ) : (
-            <span className="body-sm text-fg-subtle">–</span>
+            <span className="body-sm text-fg-subtle">-</span>
           ),
       },
     ],

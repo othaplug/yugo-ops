@@ -484,7 +484,7 @@ function TeamCrewNameField({
     <div>
       <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Crew name</div>
       <p className="text-[10px] text-[var(--tx3)] mb-2">
-        This name appears everywhere this crew is shown—calendar, dispatch, live tracking, crew app, and reports.
+        This name appears everywhere this crew is shown-calendar, dispatch, live tracking, crew app, and reports.
       </p>
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
         <input
@@ -2526,7 +2526,7 @@ export default function PlatformSettingsClient({
                 <span className="font-medium text-[var(--tx)]">{dateFormatPreview.todayStr}</span>
               </span>
               <span className="block">
-                Preview (same calendar day, prior year — smart year rules):{" "}
+                Preview (same calendar day, prior year, smart year rules):{" "}
                 <span className="font-medium text-[var(--tx)]">{dateFormatPreview.otherYearStr}</span>
               </span>
             </p>
@@ -2545,7 +2545,7 @@ export default function PlatformSettingsClient({
             </div>
             <div>
               <label className="admin-premium-label admin-premium-label--tight">
-                Quote page — Google reviews headline
+                Quote page, Google reviews headline
               </label>
               <p className="text-[11px] text-[var(--tx3)] mb-2">
                 Shown on the client quote trust bar (e.g. 400+ Reviews). Leave blank to use the default ({DEFAULT_GOOGLE_REVIEW_COUNT_LABEL}).
@@ -2642,7 +2642,7 @@ export default function PlatformSettingsClient({
           <div>
             <h2 className="admin-section-h2 flex items-center gap-2 text-[15px]">Team &amp; assignment</h2>
             <p className="text-[11px] text-[var(--tx3)] mt-1">
-              Smart assignment uses workload, specializations, recent conversion (30 days), and availability. HubSpot enterprise deals stay in HubSpot — only transactional leads auto-assign here.
+              Smart assignment uses workload, specializations, recent conversion (30 days), and availability. HubSpot enterprise deals stay in HubSpot, only transactional leads auto-assign here.
             </p>
           </div>
           <div className="space-y-2">
@@ -3257,7 +3257,7 @@ export default function PlatformSettingsClient({
                               </button>
                             </>
                           ) : !job.can_reassign ? (
-                            <p className="text-[11px] text-[var(--tx3)]">In progress — open the move to finish or wait until the crew is done before reassigning.</p>
+                            <p className="text-[11px] text-[var(--tx3)]">In progress, open the move to finish or wait until the crew is done before reassigning.</p>
                           ) : (
                             <p className="text-[11px] text-[var(--tx3)]">Create another team first, then you can reassign.</p>
                           )}
@@ -3337,7 +3337,7 @@ export default function PlatformSettingsClient({
                               </button>
                             </>
                           ) : !job.can_reassign ? (
-                            <p className="text-[11px] text-[var(--tx3)]">In progress — open the delivery to finish or wait until the crew is done before reassigning.</p>
+                            <p className="text-[11px] text-[var(--tx3)]">In progress, open the delivery to finish or wait until the crew is done before reassigning.</p>
                           ) : (
                             <p className="text-[11px] text-[var(--tx3)]">Create another team first, then you can reassign.</p>
                           )}

@@ -51,7 +51,7 @@ function serviceLabelText(raw: string | null | undefined): string {
 
 function moveSizeLabelText(raw: string | null | undefined): string {
   const m = (raw || "").trim();
-  if (!m) return "—";
+  if (!m) return "-";
   const map: Record<string, string> = {
     studio: "Studio",
     partial: "Partial move",
@@ -67,7 +67,7 @@ function moveSizeLabelText(raw: string | null | undefined): string {
 
 function preferredDateText(raw: string | null | undefined): string {
   const t = (raw || "").trim();
-  if (!t) return "—";
+  if (!t) return "-";
   if (/^\d{4}-\d{2}-\d{2}/.test(t)) {
     return t.slice(0, 10);
   }

@@ -671,7 +671,7 @@ export function deliveryNotificationEmail(delivery: {
                     label: "Delivery to",
                     valueHtml: delivery.delivery_address
                       ? emailMapLinkHtml(delivery.delivery_address)
-                      : "—",
+                      : "-",
                   })}
                   ${emailNestedKvRow({
                     borderTop: `1px solid ${PREMIUM_RULE}`,
@@ -680,7 +680,7 @@ export function deliveryNotificationEmail(delivery: {
                     label: "Pickup from",
                     valueHtml: delivery.pickup_address
                       ? emailMapLinkHtml(delivery.pickup_address)
-                      : "—",
+                      : "-",
                   })}
                   ${emailNestedKvRow({
                     borderTop: `1px solid ${PREMIUM_RULE}`,
@@ -688,7 +688,7 @@ export function deliveryNotificationEmail(delivery: {
                     valueStyle: `padding:4px 0;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`,
                     label: "Date & window",
                     valueHtml: escapeHtmlEmail(
-                      `${delivery.scheduled_date || "—"} · ${delivery.delivery_window || "—"}`,
+                      `${delivery.scheduled_date || "-"} · ${delivery.delivery_window || "-"}`,
                     ),
                   })}
                   ${emailNestedKvRow({
@@ -1674,7 +1674,7 @@ export function partnerPasswordResetEmailText(params: {
 }) {
   const { contactName, companyName, email, tempPassword, loginUrl } = params;
   const baseUrl = loginUrl.replace(/\/login.*$/, "");
-  return `PASSWORD RESET – Yugo Partner Portal
+  return `PASSWORD RESET, Yugo Partner Portal
 
 A new temporary password has been set for your ${companyName} partner portal access${contactName ? ` (${contactName})` : ""}. Sign in with the credentials below and you'll be prompted to set a new password.
 
@@ -1726,7 +1726,7 @@ export function referralReceivedEmail(params: {
     ${premiumSectionRule()}
     <div style="background:${PREMIUM_MUTED_FILL};padding:${PREMIUM_CALLOUT_PAD};margin-bottom:16px;">
       <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:6px;font-family:${PREMIUM_FONT};">Status</div>
-      <div style="font-size:13px;color:${PREMIUM_BODY};font-weight:600;">In pipeline – your team is on it</div>
+      <div style="font-size:13px;color:${PREMIUM_BODY};font-weight:600;">In pipeline, your team is on it</div>
       <div style="font-size:12px;color:${PREMIUM_BODY_MUTED};margin-top:4px;line-height:1.5;">We&apos;ll be in touch as we process the lead and coordinate the move.</div>
     </div>
     <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 24px;">Thank you for continuing to trust Yugo with your clients. We take every referral seriously and will keep you updated.</p>
@@ -2997,7 +2997,7 @@ export function officeConfirmationEmail(p: TierConfirmationParams): string {
     const d = Number(m[3]) + (dayCount - 1);
     const end = new Date(y, mo, d);
     const endIso = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
-    return `${startFmt} — ${confirmDateDisplay(endIso)}`;
+    return `${startFmt}, ${confirmDateDisplay(endIso)}`;
   })();
 
   const estateCoordLinkStyle = `color:${ESTATE_WINE_SURFACE_ROSE} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_ROSE};text-decoration:underline;font-weight:600;`;
@@ -3022,14 +3022,14 @@ export function officeConfirmationEmail(p: TierConfirmationParams): string {
   const wineWelcomeGuideCtaOffice = `display:inline-block;background-color:transparent;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};padding:12px 28px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-decoration:none;border:1px solid rgba(249,237,228,0.55);text-transform:uppercase;font-family:${PREMIUM_FONT};`;
 
   const officeIncludes = [
-    `Dedicated commercial crew of ${p.crewSize} — trained for office relocations`,
-    `${p.truckDisplayName} — reserved for your relocation`,
+    `Dedicated commercial crew of ${p.crewSize}, trained for office relocations`,
+    `${p.truckDisplayName}, reserved for your relocation`,
     "Pre-move site walkthrough at origin AND destination (photographed floor plan)",
     "Floor, elevator, doorway, and wall protection installed at both locations",
     "IT equipment photographed and labeled before disconnect",
     "Full furniture disassembly, transport, and reassembly at destination",
     "Workstation-by-workstation packing with labeled bins per employee",
-    "Placement per your floor plan — each item to the correct desk / office / room",
+    "Placement per your floor plan, each item to the correct desk / office / room",
     "Dedicated on-site project manager throughout the move",
     "$5M commercial general liability insurance",
     "COI issued directly to your building management",
@@ -3188,7 +3188,7 @@ export function officeConfirmationEmail(p: TierConfirmationParams): string {
 
     ${estateWineLabel("Track your relocation")}
     <p style="font-size:14px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 18px;line-height:1.7;">
-      Share this link with anyone on your team who needs visibility — building management, IT lead, office manager. Everyone sees the same live plan.
+      Share this link with anyone on your team who needs visibility, building management, IT lead, office manager. Everyone sees the same live plan.
     </p>
     <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 8px;background-color:${ESTATE_WINE_SURFACE_PAGE};">
       <tr><td style="background-color:${ESTATE_WINE_SURFACE_PAGE};">
@@ -3432,7 +3432,7 @@ export function internalAdminAlertEmail(params: {
               label: row.label,
               valueHtml:
                 row.valueHtml ??
-                (row.value ? escapeHtmlEmail(row.value) : "—"),
+                (row.value ? escapeHtmlEmail(row.value) : "-"),
             }),
           )
           .join("")
@@ -3560,7 +3560,7 @@ export function internalBookingAlertEmail(params: {
         label: "Phone",
         valueHtml: clientPhone
           ? escapeHtmlEmail(formatPhone(clientPhone))
-          : "—",
+          : "-",
       })}
       ${emailNestedKvRow({
         borderTop: ib,

@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     .in("status", ["sent", "viewed", "reactivated"]);
 
   if (quotesNoContact && quotesNoContact > 0) {
-    lines.push(`${quotesNoContact} quote(s) have no linked contact — review in admin.`);
+    lines.push(`${quotesNoContact} quote(s) have no linked contact, review in admin.`);
   }
 
   const { count: movesNoCrew } = await admin
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     .in("status", ["confirmed", "scheduled", "paid", "in_progress"]);
 
   if (movesPastNoCrew && movesPastNoCrew > 0) {
-    lines.push(`${movesPastNoCrew} move(s) past scheduled date still have no crew — review in admin.`);
+    lines.push(`${movesPastNoCrew} move(s) past scheduled date still have no crew, review in admin.`);
   }
 
   if (lines.length > 0) {

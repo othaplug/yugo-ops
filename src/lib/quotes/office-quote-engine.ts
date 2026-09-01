@@ -281,7 +281,7 @@ export function calcOfficeTiers(
     if (pricePerSqft > c.sqftBandHigh) {
       confidence = {
         level: "review",
-        reason: `Priority is $${pricePerSqft}/sqft, above the $${c.sqftBandHigh}/sqft benchmark — confirm the inventory and footprint.`,
+        reason: `Priority is $${pricePerSqft}/sqft, above the $${c.sqftBandHigh}/sqft benchmark, confirm the inventory and footprint.`,
         pricePerSqft,
         bandLow: c.sqftBandLow,
         bandHigh: c.sqftBandHigh,
@@ -293,7 +293,7 @@ export function calcOfficeTiers(
     ) {
       confidence = {
         level: "review",
-        reason: `Priority is $${pricePerSqft}/sqft, below the $${c.sqftBandLow}/sqft benchmark for a full move — the inventory may be light.`,
+        reason: `Priority is $${pricePerSqft}/sqft, below the $${c.sqftBandLow}/sqft benchmark for a full move, the inventory may be light.`,
         pricePerSqft,
         bandLow: c.sqftBandLow,
         bandHigh: c.sqftBandHigh,
@@ -302,7 +302,7 @@ export function calcOfficeTiers(
       confidence = {
         level: "high",
         reason: ctx.partialMove
-          ? `Partial move — $${pricePerSqft}/sqft is expected to run below the full-move benchmark.`
+          ? `Partial move, $${pricePerSqft}/sqft is expected to run below the full-move benchmark.`
           : `$${pricePerSqft}/sqft is within the expected band.`,
         pricePerSqft,
         bandLow: c.sqftBandLow,

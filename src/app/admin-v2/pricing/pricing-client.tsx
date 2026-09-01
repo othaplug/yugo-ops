@@ -35,7 +35,7 @@ const STATIC_RATES: RateRow[] = [
   { id: "r9", label: "3-mover crew", category: "Labour", value: 200, unit: "/ hr" },
   { id: "r10", label: "4-mover crew", category: "Labour", value: 260, unit: "/ hr" },
   { id: "r11", label: "Weekend", category: "Modifier", value: 15, unit: "%" },
-  { id: "r12", label: "Peak (Jun–Sep)", category: "Modifier", value: 12, unit: "%" },
+  { id: "r12", label: "Peak (Jun-Sep)", category: "Modifier", value: 12, unit: "%" },
   { id: "r13", label: "Long-carry > 150 ft", category: "Modifier", value: 8, unit: "%" },
 ]
 

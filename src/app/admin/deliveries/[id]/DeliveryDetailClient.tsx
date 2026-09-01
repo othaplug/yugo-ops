@@ -1198,7 +1198,7 @@ export default function DeliveryDetailClient({
               ) : null}
               <p className="text-[10px] text-[var(--tx3)]">
                 When you create the partner, choose default vertical rates or
-                customize them in onboarding — their portal and quotes will then
+                customize them in onboarding, their portal and quotes will then
                 use those negotiated rates automatically.
               </p>
               <Link
@@ -1286,7 +1286,7 @@ export default function DeliveryDetailClient({
                     End client:{" "}
                     {delivery.end_client_name
                       ? String(delivery.end_client_name)
-                      : "—"}
+                      : "-"}
                     {delivery.end_client_phone
                       ? ` · ${formatPhone(String(delivery.end_client_phone))}`
                       : ""}
@@ -1699,7 +1699,7 @@ export default function DeliveryDetailClient({
                               )}
                             </div>
                             <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">
-                              {stop.address || "—"}
+                              {stop.address || "-"}
                             </div>
                             {(stop.contact_name || stop.contact_phone) && (
                               <div className="text-[11px] text-[var(--tx3)] mt-0.5">

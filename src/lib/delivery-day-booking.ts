@@ -40,9 +40,9 @@ export const VEHICLE_OPTIONS: { value: VehicleType; label: string; short: string
 ];
 
 export const TIME_WINDOW_CHOICES: { value: TimeWindow; label: string; range: string }[] = [
-  { value: "morning", label: "Morning", range: "8 AM – 12 PM" },
-  { value: "afternoon", label: "Afternoon", range: "12 PM – 5 PM" },
-  { value: "full_day", label: "Full Day", range: "8 AM – 5 PM" },
+  { value: "morning", label: "Morning", range: "8 AM, 12 PM" },
+  { value: "afternoon", label: "Afternoon", range: "12 PM, 5 PM" },
+  { value: "full_day", label: "Full Day", range: "8 AM, 5 PM" },
 ];
 
 /* ─── Stop types ─── */

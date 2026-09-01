@@ -165,7 +165,7 @@ export default function MoveProjectsV3Client({
               {formatCurrency(Number(r.total_price))}
             </span>
           ) : (
-            <span className="text-[var(--yu3-ink-faint)]">—</span>
+            <span className="text-[var(--yu3-ink-faint)]">-</span>
           ),
       },
       {
@@ -237,7 +237,7 @@ function TimelineBar({
   status: string;
 }) {
   if (!startISO || !endISO || !days || days <= 0) {
-    return <span className="text-[var(--yu3-ink-faint)] text-[12px]">—</span>;
+    return <span className="text-[var(--yu3-ink-faint)] text-[12px]">-</span>;
   }
   const start = new Date(startISO).getTime();
   const end = new Date(endISO).getTime();

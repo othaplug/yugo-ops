@@ -34,7 +34,7 @@ export default function ResendBookingEmailsButton({
     }
     if (
       !window.confirm(
-        `Resend booking confirmation + pre-move survey to ${toEmail}?\n\nUse only after fixing a wrong-recipient email — the originals stay logged but the new copies will land at the corrected address.`,
+        `Resend booking confirmation + pre-move survey to ${toEmail}?\n\nUse only after fixing a wrong-recipient email, the originals stay logged but the new copies will land at the corrected address.`,
       )
     ) {
       return;
@@ -63,7 +63,7 @@ export default function ResendBookingEmailsButton({
       ).filter((r) => !r.ok);
       if (failed.length > 0) {
         toast(
-          `Partial: ${failed.map((f) => f.name).join(", ")} failed — check logs`,
+          `Partial: ${failed.map((f) => f.name).join(", ")} failed, check logs`,
           "alertTriangle",
         );
       } else {

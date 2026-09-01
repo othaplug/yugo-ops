@@ -53,7 +53,7 @@ export async function POST(
   if (Number.isFinite(existingClientRating) && existingClientRating <= 3) {
     return NextResponse.json(
       {
-        error: `Client rated ${existingClientRating}/5 in the walkthrough. Google review request is suppressed. Reach out personally instead — see the service-recovery panel on the move detail page.`,
+        error: `Client rated ${existingClientRating}/5 in the walkthrough. Google review request is suppressed. Reach out personally instead, see the service-recovery panel on the move detail page.`,
       },
       { status: 400 }
     );

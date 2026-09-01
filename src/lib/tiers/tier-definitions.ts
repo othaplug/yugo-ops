@@ -100,7 +100,7 @@ export const TIER_DEFINITIONS: Record<TierKey, TierDefinition> = {
     name: "Signature",
     tagline: "Everything protected. Nothing exposed.",
     clientDescription:
-      "The move done properly — every item wrapped, every detail handled, nothing left to manage.",
+      "The move done properly, every item wrapped, every detail handled, nothing left to manage.",
     bestFor: "Full-home moves where protection, flow, and peace of mind matter.",
 
     ops: {
@@ -138,7 +138,7 @@ export const TIER_DEFINITIONS: Record<TierKey, TierDefinition> = {
     clientDescription:
       "Every detail handled before you arrive. Your move director owns this from first call to final placement.",
     bestFor:
-      "Clients who expect every detail handled — high-value homes, art, antiques, complete transitions.",
+      "Clients who expect every detail handled, high-value homes, art, antiques, complete transitions.",
 
     ops: {
       includesAssembly: true,

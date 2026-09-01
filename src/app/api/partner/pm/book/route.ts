@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   const toAddress = String(body.to_address || "").trim();
   const scheduledDate = String(body.scheduled_date || "").slice(0, 10);
   const returnScheduledDate = String(body.return_scheduled_date || "").slice(0, 10);
-  const scheduledTime = String(body.scheduled_time || "").trim() || "8 AM – 10 AM";
+  const scheduledTime = String(body.scheduled_time || "").trim() || "8 AM, 10 AM";
   const instructions = String(body.special_instructions || "").trim();
   const unitFloor = String(body.unit_floor || "").trim();
   const pmProjectId = String(body.pm_project_id || "").trim() || null;
@@ -326,7 +326,7 @@ export async function POST(req: NextRequest) {
   }
 
   await notifyAdmins("partner_pm_booking", {
-    subject: `New PM booking — ${partnerName}`,
+    subject: `New PM booking, ${partnerName}`,
     body: `Unit ${unitNumber} · ${(prop as { building_name?: string }).building_name || "Building"} · ${scheduledDate}. Awaiting approval.`,
     moveId,
     sourceId: moveId,
@@ -368,10 +368,10 @@ export async function POST(req: NextRequest) {
       try {
         await sendEmail({
           to: pmEmail,
-          subject: `Yugo move booked — ${moveCode} (forward to tenant if needed)`,
+          subject: `Yugo move booked, ${moveCode} (forward to tenant if needed)`,
           html: adminNotificationLayout(
             `<p style="font-size:14px;color:#6B635C;line-height:1.6;margin:0 0 16px;">Your booking for unit <strong style="color:#1C1917;">${unitNumber}</strong> on <strong style="color:#1C1917;">${scheduledDate}</strong> (${scheduledTime}) is pending Yugo confirmation.</p><p style="margin:0;"><a href="${trackUrl}" style="color:#2C3E2D;font-weight:700;font-size:13px;">Open tracking link</a> &mdash; share with the tenant when you are ready.</p>`,
-            `Move booked — ${moveCode}`
+            `Move booked, ${moveCode}`
           ),
         });
       } catch {

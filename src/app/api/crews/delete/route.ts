@@ -18,7 +18,7 @@ function formatDate(isoDate: string | null): string | null {
 }
 
 function humanStatus(status: string | null): string {
-  if (!status) return "—";
+  if (!status) return "-";
   const k = status.toLowerCase().replace(/-/g, "_");
   const map: Record<string, string> = {
     pending: "Pending",

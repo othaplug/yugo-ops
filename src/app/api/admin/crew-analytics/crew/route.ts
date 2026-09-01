@@ -677,8 +677,8 @@ export async function GET(req: NextRequest) {
         jobId: jid,
         jobType: declaredMove ? ("move" as const) : ("delivery" as const),
         date: dateStrOr || null,
-        clientName: "—",
-        route: "—",
+        clientName: "-",
+        route: "-",
         totalDuration,
         quotedMinutes: null,
         onTime: null,
@@ -724,10 +724,10 @@ export async function GET(req: NextRequest) {
       }
 
       const contactName = m.quote_id ? mapGet(contactNameByQuoteId, m.quote_id) : undefined;
-      const clientName = String(m.client_name || "").trim() || contactName || "—";
+      const clientName = String(m.client_name || "").trim() || contactName || "-";
       const fromA = String(m.from_address || "").trim();
       const toA = String(m.to_address || "").trim();
-      const route = fromA || toA ? `${fromA || "?"} → ${toA || "?"}` : "—";
+      const route = fromA || toA ? `${fromA || "?"} → ${toA || "?"}` : "-";
 
       return {
         sessionId: s.id,
@@ -783,10 +783,10 @@ export async function GET(req: NextRequest) {
       String(d.customer_name || "").trim() ||
       String(d.client_name || "").trim() ||
       String(d.business_name || "").trim();
-    const clientName = baseName || contactName || "—";
+    const clientName = baseName || contactName || "-";
     const fromA = String(d.pickup_address || "").trim();
     const toA = String(d.delivery_address || "").trim();
-    const route = fromA || toA ? `${fromA || "?"} → ${toA || "?"}` : "—";
+    const route = fromA || toA ? `${fromA || "?"} → ${toA || "?"}` : "-";
 
     return {
       sessionId: s.id,
@@ -806,7 +806,7 @@ export async function GET(req: NextRequest) {
   });
 
   /** Job history rows with no resolved move/delivery (client/route placeholders only) add noise; omit from UI and aggregates. */
-  const PLACEHOLDER_EMDASH = "—";
+  const PLACEHOLDER_EMDASH = "-";
   const jobsForUi = jobs.filter(
     (j) => !(j.clientName === PLACEHOLDER_EMDASH && j.route === PLACEHOLDER_EMDASH),
   );

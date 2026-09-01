@@ -450,7 +450,7 @@ export default function DispatchMapView() {
                                       <li key={alt.index}>
                                         {alt.distanceLabel} · {alt.etaLabel} · {alt.fuelCostLabel} · Score{" "}
                                         {alt.score}
-                                        {alt.congestionNote ? ` — ${alt.congestionNote}` : ""}
+                                        {alt.congestionNote ? `, ${alt.congestionNote}` : ""}
                                       </li>
                                     ))}
                                   </ul>

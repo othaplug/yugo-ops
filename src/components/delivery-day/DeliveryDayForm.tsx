@@ -547,7 +547,7 @@ export default function DeliveryDayForm({
                         </div>
                         <span className="text-[11px] font-semibold text-[var(--accent-text)] shrink-0">
                           {fmt(svc.price_min)}
-                          {svc.price_max ? `–${fmt(svc.price_max)}` : ""}
+                          {svc.price_max ? `-${fmt(svc.price_max)}` : ""}
                           {svc.price_unit === "per_flight" ? "/flight" : ""}
                         </span>
                       </label>

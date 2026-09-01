@@ -35,7 +35,7 @@ export default function RealtimeListener() {
         if (payload.eventType === "INSERT") {
           const row = payload.new as { move_code?: string; client_name?: string };
           createNotification(addNotification, {
-            title: `New move created: ${row.move_code || "\u2014"}`,
+            title: `New move created: ${row.move_code || "-"}`,
             icon: "party",
             link: "/admin/deliveries",
             source_type: "move",
@@ -47,7 +47,7 @@ export default function RealtimeListener() {
             const s = (row.status || "").toLowerCase();
             if (s === "completed" || s === "delivered" || s === "done") {
               createNotification(addNotification, {
-                title: `Move ${row.move_code || "\u2014"} completed`,
+                title: `Move ${row.move_code || "-"} completed`,
                 icon: "check",
                 link: "/admin/deliveries",
                 source_type: "move",
@@ -58,7 +58,7 @@ export default function RealtimeListener() {
           const currPaid = (payload.new as { payment_marked_paid?: boolean })?.payment_marked_paid;
           if (!prevPaid && currPaid) {
             createNotification(addNotification, {
-              title: `Move ${(payload.new as { move_code?: string }).move_code || "\u2014"} marked paid`,
+              title: `Move ${(payload.new as { move_code?: string }).move_code || "-"} marked paid`,
               icon: "dollar",
               link: "/admin/invoices",
               source_type: "payment",
@@ -84,7 +84,7 @@ export default function RealtimeListener() {
             });
           } else {
             createNotification(addNotification, {
-              title: `New delivery created: ${row.delivery_number || "\u2014"}`,
+              title: `New delivery created: ${row.delivery_number || "-"}`,
               icon: "party",
               link: "/admin/deliveries",
               source_type: "delivery",
@@ -95,7 +95,7 @@ export default function RealtimeListener() {
           const prev = payload.old as { stage?: string };
           if (row.stage && prev?.stage !== row.stage && (row.stage || "").toLowerCase() === "completed") {
             createNotification(addNotification, {
-              title: `Delivery ${row.delivery_number || "\u2014"} completed`,
+              title: `Delivery ${row.delivery_number || "-"} completed`,
               icon: "check",
               link: "/admin/deliveries",
               source_type: "delivery",
@@ -125,7 +125,7 @@ export default function RealtimeListener() {
           const prev = payload.old as { status?: string };
           if (row.status === "paid" && prev?.status !== "paid") {
             createNotification(addNotification, {
-              title: `Invoice ${row.invoice_number || "\u2014"} paid`,
+              title: `Invoice ${row.invoice_number || "-"} paid`,
               icon: "dollar",
               link: "/admin/invoices",
               source_type: "payment",

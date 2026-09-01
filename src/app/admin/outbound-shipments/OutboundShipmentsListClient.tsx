@@ -141,16 +141,16 @@ export default function OutboundShipmentsListClient() {
                     </Link>
                   </td>
                   <td className="py-2 pr-3">
-                    <span className="font-semibold text-[var(--tx)]">{r.partner_name ?? "—"}</span>
+                    <span className="font-semibold text-[var(--tx)]">{r.partner_name ?? "-"}</span>
                     {r.business_name ? <span className="ml-2 text-[var(--tx3)]">{r.business_name}</span> : null}
                   </td>
                   <td className="py-2 pr-3">
-                    <div className="text-[var(--tx)]">{r.consignor_name ?? "—"}</div>
+                    <div className="text-[var(--tx)]">{r.consignor_name ?? "-"}</div>
                     <div className="text-[10px] text-[var(--tx3)] truncate max-w-[280px]">
                       {r.consignor_address ?? ""}
                     </div>
                   </td>
-                  <td className="py-2 pr-3 text-[var(--tx)]">{r.scheduled_pickup_date ?? "—"}</td>
+                  <td className="py-2 pr-3 text-[var(--tx)]">{r.scheduled_pickup_date ?? "-"}</td>
                   <td className="py-2 pr-3">
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-[var(--bg)] border border-[var(--brd)]">
                       {OUTBOUND_STAGING_STATUS_LABELS[r.status]}
@@ -165,11 +165,11 @@ export default function OutboundShipmentsListClient() {
                         )}
                       </div>
                     ) : (
-                      "—"
+                      "-"
                     )}
                   </td>
                   <td className="py-2 pr-3 text-right font-semibold text-[var(--tx)]">
-                    {r.total_price ? `$${Number(r.total_price).toFixed(2)}` : "—"}
+                    {r.total_price ? `$${Number(r.total_price).toFixed(2)}` : "-"}
                   </td>
                 </tr>
               ))}

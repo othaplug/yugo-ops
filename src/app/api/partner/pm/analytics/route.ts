@@ -255,7 +255,7 @@ export async function GET(req: NextRequest) {
     const prop = m.partner_property_id
       ? propById.get(m.partner_property_id as string)
       : null;
-    const region = (prop?.service_region as string)?.trim() || "—";
+    const region = (prop?.service_region as string)?.trim() || "-";
     return {
       date: m.scheduled_date
         ? new Date(String(m.scheduled_date) + "T00:00:00").toLocaleDateString("en-US", {

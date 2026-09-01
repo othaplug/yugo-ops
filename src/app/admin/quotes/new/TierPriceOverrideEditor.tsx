@@ -294,7 +294,7 @@ export default function TierPriceOverrideEditor({
                     <div className="sm:col-span-2 text-[10px] text-red-600">
                       Price must be a positive number and reason must be at
                       least 3 characters. Empty entries are dropped on
-                      submit — click Reset to clear cleanly.
+                      submit, click Reset to clear cleanly.
                     </div>
                   )}
                 </div>

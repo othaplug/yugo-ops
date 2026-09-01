@@ -2368,7 +2368,7 @@ export default function B2BJobsDeliveryForm({
       {!embed && (
         <div className="px-3 py-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/30 text-[11px] text-[var(--accent-text)]">
           {partnerOrgId.trim() && applyPartnerRates
-            ? "Partner organization linked — dimensional preview uses partner vertical rates when configured."
+            ? "Partner organization linked, dimensional preview uses partner vertical rates when configured."
             : "True one-off: no partner org. Full payment at booking unless you send a quote with invoice terms."}
         </div>
       )}
@@ -2396,7 +2396,7 @@ export default function B2BJobsDeliveryForm({
               onChange={(e) => setPartnerOrgId(e.target.value)}
               className={fieldInput}
             >
-              <option value="">None — one-off</option>
+              <option value="">None, one-off</option>
               {organizations.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.name}
@@ -3041,7 +3041,7 @@ export default function B2BJobsDeliveryForm({
           return (
             <div className="space-y-2 pt-1">
               <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
-                Quick add{itemConfig?.label ? ` — ${itemConfig.label}` : ""}
+                Quick add{itemConfig?.label ? `, ${itemConfig.label}` : ""}
               </p>
               <div className="space-y-2">
                 {groups.map((group) => (
@@ -3300,7 +3300,7 @@ export default function B2BJobsDeliveryForm({
                 <CaretDown
                   className={`w-3 h-3 transition-transform ${boxCountOpen ? "" : "-rotate-90"}`}
                 />
-                Skip line items — enter total box count
+                Skip line items, enter total box count
               </button>
               {boxCountOpen && (
                 <div className="mt-3 max-w-[260px]">
@@ -3576,7 +3576,7 @@ export default function B2BJobsDeliveryForm({
                   <div className="text-[12px] font-semibold text-[var(--tx)]">
                     {loading
                       ? "…"
-                      : truckOverride || calc?.truck || "—"}
+                      : truckOverride || calc?.truck || "-"}
                     {truckOverride && (
                       <span className="ml-1 text-[9px] font-bold uppercase text-[var(--gold)]">
                         override
@@ -3592,7 +3592,7 @@ export default function B2BJobsDeliveryForm({
                     {loading
                       ? "…"
                       : crewOverride.trim() ||
-                        (calc != null ? String(calc.crew) : "—")}
+                        (calc != null ? String(calc.crew) : "-")}
                     {crewOverride.trim() && (
                       <span className="ml-1 text-[9px] font-bold uppercase text-[var(--gold)]">
                         override
@@ -3611,7 +3611,7 @@ export default function B2BJobsDeliveryForm({
                         ? `${hoursOverride} hrs`
                         : calc != null
                           ? `${calc.estimated_hours} hrs`
-                          : "—"}
+                          : "-"}
                     {hoursOverride.trim() && (
                       <span className="ml-1 text-[9px] font-bold uppercase text-[var(--gold)]">
                         override
@@ -3679,7 +3679,7 @@ export default function B2BJobsDeliveryForm({
                       onChange={(e) => setCrewId(e.target.value)}
                       className={fieldInput}
                     >
-                      <option value="">Unassigned — auto-route</option>
+                      <option value="">Unassigned, auto-route</option>
                       {crews.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.name}

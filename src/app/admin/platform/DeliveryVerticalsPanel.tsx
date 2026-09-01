@@ -447,7 +447,7 @@ function VerticalEditForm({
               label="Target margin % (default)"
               value={dimForm.targetMarginPercentDefault}
               onChange={(v) => patchDim({ targetMarginPercentDefault: v })}
-              hint="Cost-plus specialty quotes (1–100)."
+              hint="Cost-plus specialty quotes (1 to 100)."
             />
             <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)]">
               <input
@@ -638,7 +638,7 @@ function VerticalEditForm({
             <p className="text-[10px] text-[var(--tx3)] -mt-1">Percent off when partner hits minimum deliveries per month. Leave empty for none.</p>
             <div className="space-y-2">
               {dimForm.volumeDiscountTiers.length === 0 ? (
-                <p className="text-[10px] text-[var(--tx3)]">No tiers — model uses list price only.</p>
+                <p className="text-[10px] text-[var(--tx3)]">No tiers, model uses list price only.</p>
               ) : (
                 dimForm.volumeDiscountTiers.map((t, i) => (
                   <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
@@ -722,7 +722,7 @@ function VerticalEditForm({
                 label="Target margin % (default)"
                 value={dimForm.targetMarginPercentDefault}
                 onChange={(v) => patchDim({ targetMarginPercentDefault: v })}
-                hint="1–100; used where vertical references margin."
+                hint="1 to 100; used where vertical references margin."
               />
             </div>
             <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)]">

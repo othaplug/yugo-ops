@@ -500,8 +500,8 @@ export default function EditDeliveryModal({
                 className={selectCls}
               >
                 <option value="standard">Standard (under 100 lbs)</option>
-                <option value="heavy">Heavy (100–250 lbs)</option>
-                <option value="very_heavy">Very Heavy (250–500 lbs)</option>
+                <option value="heavy">Heavy (100 to 250 lbs)</option>
+                <option value="very_heavy">Very Heavy (250 to 500 lbs)</option>
                 <option value="oversized_fragile">Oversized / Fragile</option>
               </select>
             </div>

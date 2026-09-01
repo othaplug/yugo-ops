@@ -1408,7 +1408,7 @@ export default function CrewJobPage({
             ) : null}
             {isOfficeJob ? (
               <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-2 leading-snug [font-family:var(--font-body)]">
-                Advance the day using the live status tracker below — it keeps
+                Advance the day using the live status tracker below, it keeps
                 the client and dispatch updated at each step.
               </p>
             ) : null}

@@ -62,7 +62,7 @@ function hasTimePortion(options: Intl.DateTimeFormatOptions): boolean {
 export function formatPlatformDisplay(
   value: string | Date | null | undefined,
   options: Intl.DateTimeFormatOptions,
-  empty: string = "—",
+  empty: string = "-",
 ): string {
   if (value == null || value === "") return empty;
   const d = typeof value === "string" ? new Date(value) : value;
@@ -93,9 +93,9 @@ export function formatMoveDate(value: string | Date | null | undefined): string 
 
 /** Admin tables: created/modified timestamps in app timezone (date + time). */
 export function formatAdminCreatedAt(value: string | null | undefined): string {
-  if (value == null || value === "") return "—";
+  if (value == null || value === "") return "-";
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return formatPlatformDisplay(d, {
     month: "short",
     day: "numeric",

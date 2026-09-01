@@ -92,7 +92,7 @@ export async function POST(
     await notifyAdmins("quote_declined", {
       quoteId,
       sourceId: (quote as { id: string }).id,
-      description: `${quoteId}: ${reasonLabel}${comment ? ` — ${comment}` : ""}`,
+      description: `${quoteId}: ${reasonLabel}${comment ? `, ${comment}` : ""}`,
       clientName: contactName ?? undefined,
       excludeRecipientEmails: contactEmail ? [contactEmail.toLowerCase()] : [],
     }).catch(() => {});

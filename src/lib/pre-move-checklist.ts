@@ -60,7 +60,7 @@ export const PRE_MOVE_OFFICE_CHECKLIST: ChecklistItem[] = [
     id: "building_access",
     label: "Freight elevator and loading dock reserved",
     detail:
-      "Both origin and destination buildings, for the full move window. Most buildings need 5–10 business days notice.",
+      "Both origin and destination buildings, for the full move window. Most buildings need 5 to 10 business days notice.",
   },
   {
     id: "it_shutdown",
@@ -78,7 +78,7 @@ export const PRE_MOVE_OFFICE_CHECKLIST: ChecklistItem[] = [
     id: "employee_personal",
     label: "Employees notified to pack personal items",
     detail:
-      "Laptops, headphones, framed photos — anything they want with them. Our crew handles the rest.",
+      "Laptops, headphones, framed photos, anything they want with them. Our crew handles the rest.",
   },
   {
     id: "pm_intro",

@@ -95,14 +95,14 @@ export async function GET() {
       }),
     },
     {
-      label: "5–15 min",
+      label: "5 to 15 min",
       subset: leads.filter((l) => {
         const r = Number(l.response_time_seconds);
         return !Number.isNaN(r) && inBucket(r, 301, 900);
       }),
     },
     {
-      label: "15–60 min",
+      label: "15 to 60 min",
       subset: leads.filter((l) => {
         const r = Number(l.response_time_seconds);
         return !Number.isNaN(r) && inBucket(r, 901, 3600);
@@ -130,7 +130,7 @@ export async function GET() {
       ? []
       : recentActivityRows.map((row) => {
           const lead = row.leads as { lead_number?: string; first_name?: string; last_name?: string } | null;
-          const name = [lead?.first_name, lead?.last_name].filter(Boolean).join(" ") || "—";
+          const name = [lead?.first_name, lead?.last_name].filter(Boolean).join(" ") || "-";
           return {
             id: row.id,
             activity_type: row.activity_type,

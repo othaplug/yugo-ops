@@ -97,7 +97,7 @@ export default function ActivityPageClient({
         </div>
       </div>
       <p className="text-[var(--text-md)] text-[var(--tx3)] mb-4 leading-snug font-medium">
-        Live stream of operations across admin and crew — jobs, billing, crews, and
+        Live stream of operations across admin and crew, jobs, billing, crews, and
         client touchpoints.
       </p>
 

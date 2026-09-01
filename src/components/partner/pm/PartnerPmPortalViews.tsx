@@ -137,7 +137,7 @@ function formatPhoneDisplay(raw: string | null | undefined): string {
   const d = String(raw || "").replace(/\D/g, "");
   if (d.length === 10) return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
   if (d.length === 11 && d.startsWith("1")) return `(${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7)}`;
-  return raw || "—";
+  return raw || "-";
 }
 
 function PmStatusBadge({ status }: { status: string | null | undefined }) {
@@ -600,7 +600,7 @@ export function PartnerPmBuildingsTab({ setTab }: { setTab: (t: PmTabId) => void
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div>
                       <p className={pmLabelCaps}>Units</p>
-                      <p className={pmStatGridValue}>{b.total_units ?? "—"}</p>
+                      <p className={pmStatGridValue}>{b.total_units ?? "-"}</p>
                     </div>
                     <div>
                       <p className={pmLabelCaps}>This month</p>
@@ -631,7 +631,7 @@ export function PartnerPmBuildingsTab({ setTab }: { setTab: (t: PmTabId) => void
                       </div>
                       <div className="flex justify-between gap-2">
                         <span className="text-[#5A6B5E]">Move hours</span>
-                        <span className="text-[#1a1f1b]">{formatMoveHoursLabel(b.move_hours) || "—"}</span>
+                        <span className="text-[#1a1f1b]">{formatMoveHoursLabel(b.move_hours) || "-"}</span>
                       </div>
                       <div className="flex justify-between gap-2">
                         <span className="text-[#5A6B5E]">Parking</span>
@@ -721,11 +721,11 @@ export function PartnerPmBuildingsTab({ setTab }: { setTab: (t: PmTabId) => void
                           {b.recent_moves.map((m) => (
                             <tr key={m.id} className={PM_ROW}>
                               <td className="p-2 whitespace-nowrap">
-                                {m.date ? formatDate(m.date, { month: "short", day: "numeric" }) : "—"}
+                                {m.date ? formatDate(m.date, { month: "short", day: "numeric" }) : "-"}
                               </td>
-                              <td className="p-2">{m.unit || "—"}</td>
+                              <td className="p-2">{m.unit || "-"}</td>
                               <td className="p-2">{m.move_type}</td>
-                              <td className="p-2 truncate max-w-[80px]">{m.tenant_name || "—"}</td>
+                              <td className="p-2 truncate max-w-[80px]">{m.tenant_name || "-"}</td>
                               <td className="p-2">
                                 <PmStatusBadge status={m.status} />
                               </td>
@@ -931,14 +931,14 @@ export function PartnerPmMoveHistoryTab({
               moves.map((m) => (
                 <tr key={m.id} className={`${PM_ROW} hover:bg-[#FAF7F2]/80`}>
                   <td className="p-2 whitespace-nowrap">
-                    {m.date ? formatDate(m.date, { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                    {m.date ? formatDate(m.date, { month: "short", day: "numeric", year: "numeric" }) : "-"}
                   </td>
                   <td className="p-2 truncate max-w-[100px]" title={m.building_name}>
                     {m.building_name}
                   </td>
-                  <td className="p-2">{m.unit || "—"}</td>
+                  <td className="p-2">{m.unit || "-"}</td>
                   <td className="p-2 truncate max-w-[100px]">{m.move_type}</td>
-                  <td className="p-2 truncate max-w-[90px]">{m.tenant_name || "—"}</td>
+                  <td className="p-2 truncate max-w-[90px]">{m.tenant_name || "-"}</td>
                   <td className="p-2">
                     <PmStatusBadge status={m.status} />
                   </td>
@@ -953,7 +953,7 @@ export function PartnerPmMoveHistoryTab({
                         Track
                       </a>
                     ) : (
-                      "—"
+                      "-"
                     )}
                   </td>
                 </tr>
@@ -979,7 +979,7 @@ export function PartnerPmMoveHistoryTab({
         <div>
           <p className={pmLabelCaps}>On-time rate</p>
           <p className={pmSummaryStatValue}>
-            {summary.onTimeRate != null ? `${summary.onTimeRate}%` : "—"}
+            {summary.onTimeRate != null ? `${summary.onTimeRate}%` : "-"}
           </p>
         </div>
       </div>
@@ -1049,7 +1049,7 @@ export function PartnerPmAccountTab() {
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Failed");
-      toast("Invite sent — they will receive email with sign-in instructions.", "check");
+      toast("Invite sent, they will receive email with sign-in instructions.", "check");
       setInviteOpen(false);
       setInviteName("");
       setInviteEmail("");
@@ -1074,15 +1074,15 @@ export function PartnerPmAccountTab() {
         <div className={`${PM_CARD} p-4 space-y-3 text-[13px] [font-family:var(--font-body)]`}>
           <div className="flex justify-between gap-2">
             <span className="text-[#5A6B5E]">Company</span>
-            <span className="text-[#1a1f1b] text-right">{company.name || "—"}</span>
+            <span className="text-[#1a1f1b] text-right">{company.name || "-"}</span>
           </div>
           <div className="flex justify-between gap-2">
             <span className="text-[#5A6B5E]">Primary contact</span>
-            <span className="text-[#1a1f1b] text-right">{company.contactName || "—"}</span>
+            <span className="text-[#1a1f1b] text-right">{company.contactName || "-"}</span>
           </div>
           <div className="flex justify-between gap-2">
             <span className="text-[#5A6B5E]">Email</span>
-            <span className="text-[#1a1f1b] text-right break-all">{company.email || "—"}</span>
+            <span className="text-[#1a1f1b] text-right break-all">{company.email || "-"}</span>
           </div>
           <div className="flex justify-between gap-2">
             <span className="text-[#5A6B5E]">Phone</span>
@@ -1090,7 +1090,7 @@ export function PartnerPmAccountTab() {
           </div>
           <div className="flex justify-between gap-2">
             <span className="text-[#5A6B5E]">Address</span>
-            <span className="text-[#1a1f1b] text-right">{company.address || "—"}</span>
+            <span className="text-[#1a1f1b] text-right">{company.address || "-"}</span>
           </div>
         </div>
       </section>
@@ -1101,16 +1101,16 @@ export function PartnerPmAccountTab() {
           <div className={`${PM_CARD} p-4 space-y-3 text-[13px] [font-family:var(--font-body)]`}>
             <div className="flex justify-between gap-2">
               <span className="text-[#5A6B5E]">Contract ID</span>
-              <span className="text-[#1a1f1b]">{String(contract.contract_number || "—")}</span>
+              <span className="text-[#1a1f1b]">{String(contract.contract_number || "-")}</span>
             </div>
             <div className="flex justify-between gap-2">
               <span className="text-[#5A6B5E]">Type</span>
-              <span className="text-[#1a1f1b]">{String(data.contractTypeLabel || contract.contract_type || "—")}</span>
+              <span className="text-[#1a1f1b]">{String(data.contractTypeLabel || contract.contract_type || "-")}</span>
             </div>
             <div className="flex justify-between gap-2">
               <span className="text-[#5A6B5E]">Term</span>
               <span className="text-[#1a1f1b] text-right">
-                {formatDate(String(contract.start_date), { month: "short", day: "numeric", year: "numeric" })} —{" "}
+                {formatDate(String(contract.start_date), { month: "short", day: "numeric", year: "numeric" })} -{" "}
                 {formatDate(String(contract.end_date), { month: "short", day: "numeric", year: "numeric" })}
               </span>
             </div>
@@ -1440,7 +1440,7 @@ export function PartnerPmProjectsTab({ setTab }: { setTab: (t: PmTabId) => void 
         <form onSubmit={submitProject} className="mb-8 pb-2">
           <header className="mb-8">
             <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5A6B5E]/80 mb-1.5">
-              New project — details
+              New project, details
             </p>
             <h2 className={pmUiTitleCaps}>Create project</h2>
             <p className={`text-[11px] text-[#5A6B5E] mt-1 ${pmFontBody}`}>
@@ -1601,8 +1601,8 @@ export function PartnerPmProjectsTab({ setTab }: { setTab: (t: PmTabId) => void 
               <ul className={`${pmMeta} space-y-1`}>
                 {unitRows.map((u, i) => (
                   <li key={i}>
-                    Unit {u.unit_number} — {moveSizeDisplayLabel(u.unit_type)} · Out {u.outbound_date || "—"} · Return{" "}
-                    {u.return_date || "—"}
+                    Unit {u.unit_number} - {moveSizeDisplayLabel(u.unit_type)} · Out {u.outbound_date || "-"} · Return{" "}
+                    {u.return_date || "-"}
                   </li>
                 ))}
               </ul>
@@ -1657,9 +1657,9 @@ export function PartnerPmProjectsTab({ setTab }: { setTab: (t: PmTabId) => void 
                     <h3 className={pmCardTitle}>{p.project_name}</h3>
                     <p className={pmMeta}>
                       {projectTypeLabel(p.project_type)} · {p.building_name || "Building"} ·{" "}
-                      {(p.total_units ?? units.length) || "—"} units ·{" "}
+                      {(p.total_units ?? units.length) || "-"} units ·{" "}
                       {p.start_date && p.end_date
-                        ? `${formatDate(String(p.start_date), { month: "short", day: "numeric" })} — ${formatDate(String(p.end_date), { month: "short", day: "numeric", year: "numeric" })}`
+                        ? `${formatDate(String(p.start_date), { month: "short", day: "numeric" })}, ${formatDate(String(p.end_date), { month: "short", day: "numeric", year: "numeric" })}`
                         : "Timeline TBD"}
                     </p>
                   </div>
@@ -1702,8 +1702,8 @@ export function PartnerPmProjectsTab({ setTab }: { setTab: (t: PmTabId) => void 
                 )}
                 {p.next_move && (p.next_move.unit || p.next_move.date) && (
                   <p className={`${pmMeta} mb-3`}>
-                    Next: Unit {p.next_move.unit || "—"} —{" "}
-                    {p.next_move.date ? formatDate(p.next_move.date, { month: "short", day: "numeric" }) : "—"}
+                    Next: Unit {p.next_move.unit || "-"} -{" "}
+                    {p.next_move.date ? formatDate(p.next_move.date, { month: "short", day: "numeric" }) : "-"}
                   </p>
                 )}
                 <div className="flex flex-wrap gap-3">

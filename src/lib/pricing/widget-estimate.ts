@@ -46,7 +46,7 @@ const ITEM_SCORES: Record<string, number> = {
   Armchair: 2.5,
   "Coffee Table": 2,
   "TV Stand": 2.5,
-  'TV (32–50")': 1.5,
+  'TV (32-50")': 1.5,
   'TV (55"+)': 2.5,
   Bookshelf: 3,
   "Floor Lamp": 1,

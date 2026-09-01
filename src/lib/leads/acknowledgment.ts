@@ -35,7 +35,7 @@ export async function sendLeadAcknowledgment(lead: {
           day: "numeric",
           year: "numeric",
         })
-      : "—"
+      : "-"
     const { subject, html } = buildLeadAcknowledgmentEmail({
       firstName: first,
       baseUrl: base,

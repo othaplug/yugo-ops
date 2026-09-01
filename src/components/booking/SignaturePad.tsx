@@ -150,8 +150,8 @@ export default function SignaturePad({
         role="img"
         aria-label={
           hasSignature
-            ? "Signed — signature captured"
-            : "Signature canvas — draw to sign"
+            ? "Signed, signature captured"
+            : "Signature canvas, draw to sign"
         }
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

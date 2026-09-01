@@ -176,7 +176,7 @@ export default function ClientsV3Client({
         cell: (r) => {
           const b = Number(r.outstanding_balance || 0);
           if (b <= 0)
-            return <span className="text-[var(--yu3-ink-faint)]">—</span>;
+            return <span className="text-[var(--yu3-ink-faint)]">-</span>;
           return (
             <span className="yu3-num text-[13px] font-semibold text-[var(--yu3-danger)]">
               {formatCurrency(b)}

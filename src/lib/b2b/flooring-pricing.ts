@@ -58,7 +58,7 @@ export function calcFlooringPrice(
   });
 
   if (input.zone === "custom") {
-    return fail("Zone beyond 160 km — custom quote required");
+    return fail("Zone beyond 160 km, custom quote required");
   }
 
   const band = getFlooringBand(input.boxCount);
@@ -66,7 +66,7 @@ export function calcFlooringPrice(
     return fail("Enter a box count to calculate flooring price");
   }
   if (band > 100) {
-    return fail("Over 100 boxes — custom quote required", band);
+    return fail("Over 100 boxes, custom quote required", band);
   }
 
   const rateKey = input.isPartner

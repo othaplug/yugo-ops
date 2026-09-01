@@ -35,7 +35,7 @@ export function buildLeadAcknowledgmentEmail(params: {
       `<tr><td style="color:#6B635C;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;padding:0 0 4px;vertical-align:top;">Service</td><td style="color:#1a1a1a;padding:0 0 8px;">${escapeHtmlEmail(params.serviceType.replace(/_/g, " "))}</td></tr>`,
     )
   }
-  if (params.preferredDateLabel && params.preferredDateLabel !== "—") {
+  if (params.preferredDateLabel && params.preferredDateLabel !== "-") {
     rows.push(
       `<tr><td style="color:#6B635C;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;padding:0 0 4px;vertical-align:top;">Preferred date</td><td style="color:#1a1a1a;padding:0 0 8px;">${escapeHtmlEmail(params.preferredDateLabel)}</td></tr>`,
     )

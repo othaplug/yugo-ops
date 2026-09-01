@@ -278,8 +278,8 @@ export function priceCabinetryFlatBand(
         {
           label:
             zone === "custom"
-              ? "Delivery beyond 160 km — custom quote required"
-              : `${weightedUnits} cabinet-units exceeds standard band — custom quote required`,
+              ? "Delivery beyond 160 km, custom quote required"
+              : `${weightedUnits} cabinet-units exceeds standard band, custom quote required`,
           amount: 0,
         },
       ],
@@ -294,7 +294,7 @@ export function priceCabinetryFlatBand(
   const perUnitTotal = extraUnits * rc.per_unit_rate;
   let base = rc.base_rate + perUnitTotal;
   breakdown.push({
-    label: `Cabinetry delivery — ${weightedUnits} cabinet-unit${weightedUnits !== 1 ? "s" : ""} (${rc.units_included_in_base} included)`,
+    label: `Cabinetry delivery, ${weightedUnits} cabinet-unit${weightedUnits !== 1 ? "s" : ""} (${rc.units_included_in_base} included)`,
     amount: rc.base_rate,
   });
   if (perUnitTotal > 0) {

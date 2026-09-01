@@ -225,7 +225,7 @@ function ProjectDayScheduleForm({
             <input
               value={arrival}
               onChange={(e) => setArrival(e.target.value)}
-              placeholder="e.g. 8–10 a.m."
+              placeholder="e.g. 8 to 10 a.m."
               className="mt-1 w-full rounded-md border border-[var(--brd)] bg-[var(--card)] px-2 py-1.5 text-[11px] text-[var(--tx)] placeholder:text-[var(--tx3)]"
             />
           </label>
@@ -372,7 +372,7 @@ export default function MoveProjectDetailClient({
                   {origins.map((o, i) => (
                     <li key={`o-${i}`} className="text-[12px] border border-[var(--brd)]/70 rounded-lg p-2.5">
                       <p className="font-medium text-[var(--tx)]">{o.label?.trim() || `Origin ${i + 1}`}</p>
-                      <p className="text-[11px] text-[var(--tx3)] mt-0.5">{o.address || "—"}</p>
+                      <p className="text-[11px] text-[var(--tx3)] mt-0.5">{o.address || "-"}</p>
                       <div className="flex flex-wrap gap-2 mt-1 text-[10px] text-[var(--tx3)]">
                         {o.is_partial ? <span>Partial</span> : null}
                         {o.move_size ? <span>{moveSizeDisplayLabel(o.move_size)}</span> : null}
@@ -390,7 +390,7 @@ export default function MoveProjectDetailClient({
                   {destinations.map((o, i) => (
                     <li key={`d-${i}`} className="text-[12px] border border-[var(--brd)]/70 rounded-lg p-2.5">
                       <p className="font-medium text-[var(--tx)]">{o.label?.trim() || `Destination ${i + 1}`}</p>
-                      <p className="text-[11px] text-[var(--tx3)] mt-0.5">{o.address || "—"}</p>
+                      <p className="text-[11px] text-[var(--tx3)] mt-0.5">{o.address || "-"}</p>
                     </li>
                   ))}
                 </ul>
@@ -476,7 +476,7 @@ export default function MoveProjectDetailClient({
                           <p className="text-[11px] text-[var(--tx3)]">
                             {d.date ? formatMoveDate(String(d.date)) : ""}
                             {timeForInput(d.start_time) || timeForInput(d.end_time)
-                              ? ` · ${timeForInput(d.start_time) || "—"}–${timeForInput(d.end_time) || "—"}`
+                              ? ` · ${timeForInput(d.start_time) || "-"}-${timeForInput(d.end_time) || "-"}`
                               : ""}
                           </p>
                           {assigned ? (

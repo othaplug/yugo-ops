@@ -40,7 +40,7 @@ export function getEmailResponsiveCss(): string {
     padding-right: 15px !important;
   }
 }
-/* iOS Mail often wraps addresses/phones in blue links — inherit surrounding ink. */
+/* iOS Mail often wraps addresses/phones in blue links, inherit surrounding ink. */
 a[x-apple-data-detectors] {
   color: inherit !important;
   -webkit-text-fill-color: inherit !important;

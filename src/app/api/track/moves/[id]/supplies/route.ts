@@ -185,7 +185,7 @@ export async function POST(
       customerId: customerId ?? undefined,
       buyerEmailAddress: move.client_email || undefined,
       referenceId: orderNumber,
-      note: `Yugo supplies ${orderNumber} — ${move.client_name || moveId}`,
+      note: `Yugo supplies ${orderNumber}, ${move.client_name || moveId}`,
       idempotencyKey: `supplies-${orderNumber}`,
       locationId,
     });
@@ -294,13 +294,13 @@ export async function POST(
       subject: `Supplies order ${orderNumber}, ${move.client_name || "client"}`,
       html: internalAdminAlertEmail({
         kicker: "New supplies order",
-        title: `${move.client_name || "Client"} — ${orderNumber}`,
+        title: `${move.client_name || "Client"}, ${orderNumber}`,
         summary: `A client purchased moving supplies from their track page. Load these onto the truck for move day.`,
         keyValues: [
           { label: "Order", value: orderNumber, accent: "forest" },
           { label: "Move", value: move.move_code || move.id },
           { label: "Items", value: itemsLine },
-          { label: "Deliver to", value: move.to_address || "—" },
+          { label: "Deliver to", value: move.to_address || "-" },
           { label: "Total", value: `$${total.toFixed(2)}`, accent: "forest" },
         ],
         primaryCta: { label: "Open the move", url: `${base}/admin/moves/${move.id}` },

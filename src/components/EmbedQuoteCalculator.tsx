@@ -322,7 +322,7 @@ export default function EmbedQuoteCalculator({
             <p
               style={{ fontSize: 26, fontWeight: 700, color: WINE, margin: 0 }}
             >
-              ${estimate.low.toLocaleString()} – $
+              ${estimate.low.toLocaleString()} - $
               {estimate.high.toLocaleString()}
             </p>
             {isPeakSeason && (
@@ -336,7 +336,7 @@ export default function EmbedQuoteCalculator({
                 }}
               >
                 You&apos;re booking in peak season. Moving a few weeks earlier
-                could save $100–$150.
+                could save $100-$150.
               </p>
             )}
           </div>

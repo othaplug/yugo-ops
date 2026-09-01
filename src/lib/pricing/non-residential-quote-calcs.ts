@@ -78,14 +78,14 @@ export function singleItemPricingCategory(
   if (cat === "small_light" || cat.includes("small_light")) return "small_light";
   if (cat.includes("fragile") || cat.includes("specialty")) return "fragile";
   if (cat.includes("oversized") || w.includes("over 500")) return "extra_heavy";
-  if (cat.includes("appliance") || w.includes("300-500") || w.includes("300–500")) return "heavy";
+  if (cat.includes("appliance") || w.includes("300-500")) return "heavy";
   if (cat.includes("large") || cat.includes("heavy")) return "large";
   if (cat.includes("multiple")) return "medium";
   if (cat.includes("standard")) return "medium";
   if (w.includes("over 500")) return "extra_heavy";
   if (w.includes("300")) return "heavy";
-  if (w.includes("150-300") || w.includes("150–300")) return "large";
-  if (w.includes("50-150") || w.includes("50–150")) return "medium";
+  if (w.includes("150-300")) return "large";
+  if (w.includes("50-150")) return "medium";
   if (w.includes("under 50")) return "small_light";
   return "medium";
 }

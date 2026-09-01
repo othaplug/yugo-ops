@@ -23,7 +23,7 @@ export function moveProjectMorningClientEmailHtml(opts: {
     <div style="font-size:9px;font-weight:700;color:${isEstate ? "#F9EDE4" : "#2C3E2D"};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;opacity:0.85">Your project day</div>
     <h1 style="font-size:20px;font-weight:700;margin:0 0 16px;color:${bodyInk}">Hi ${escapeHtml(opts.clientName || "there")}</h1>
     <p style="font-size:14px;color:#6B635C;line-height:1.6;margin:0 0 16px">
-      <strong style="color:#2C3E2D">${escapeHtml(opts.projectName)}</strong> — today is <strong>${escapeHtml(opts.dayLabel)}</strong>
+      <strong style="color:#2C3E2D">${escapeHtml(opts.projectName)}</strong>, today is <strong>${escapeHtml(opts.dayLabel)}</strong>
       (${escapeHtml(opts.dayDate)}).
     </p>
     ${opts.description.trim() ? `<p style="font-size:14px;color:#6B635C;line-height:1.6;margin:0 0 20px">${escapeHtml(opts.description)}</p>` : ""}
@@ -58,7 +58,7 @@ export function moveProjectPhaseReminderEmailHtml(opts: {
     <div style="font-size:9px;font-weight:700;color:${isEstate ? "#F9EDE4" : "#2C3E2D"};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;opacity:0.85">Upcoming phase</div>
     <h1 style="font-size:20px;font-weight:700;margin:0 0 16px;color:${bodyInk}">Hi ${escapeHtml(opts.clientName || "there")}</h1>
     <p style="font-size:14px;color:#6B635C;line-height:1.6;margin:0 0 16px">
-      <strong style="color:#2C3E2D">${escapeHtml(opts.projectName)}</strong> — <strong>${escapeHtml(opts.phaseName)}</strong> starts in two days
+      <strong style="color:#2C3E2D">${escapeHtml(opts.projectName)}</strong>, <strong>${escapeHtml(opts.phaseName)}</strong> starts in two days
       (${escapeHtml(opts.phaseStartDate)}).
     </p>
     <div style="background:${bandBg};color:${bandInk};padding:16px 20px;margin:0 0 24px;border-radius:0">
@@ -92,11 +92,11 @@ export function moveProjectPaymentReminderEmailHtml(opts: {
     <h1 style="font-size:20px;font-weight:700;margin:0 0 16px;color:${bodyInk}">Hi ${escapeHtml(opts.clientName || "there")}</h1>
     <p style="font-size:14px;color:#6B635C;line-height:1.6;margin:0 0 16px">
       A payment milestone for <strong style="color:#2C3E2D">${escapeHtml(opts.projectName)}</strong> is coming up:
-      <strong>$${amt}</strong> — ${escapeHtml(opts.milestoneLabel)} (due ${escapeHtml(opts.dueDate)}).
+      <strong>$${amt}</strong>, ${escapeHtml(opts.milestoneLabel)} (due ${escapeHtml(opts.dueDate)}).
     </p>
     <div style="background:${bandBg};color:${bandInk};padding:16px 20px;margin:0 0 24px;border-radius:0">
       <p style="font-size:13px;margin:0;line-height:1.5;opacity:0.95">
-        If you have already paid, thank you — you can disregard this note.
+        If you have already paid, thank you, you can disregard this note.
       </p>
     </div>
   `,

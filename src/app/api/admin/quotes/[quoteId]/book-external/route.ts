@@ -152,7 +152,7 @@ export async function POST(
   const ext = await recordExternalSquarePayment({
     amountInclusive: deposit_amount,
     referenceId: humanQuoteId,
-    note: `Deposit for ${humanQuoteId} — ${deposit_method} via ${booked_via} (recorded by Yugo)`,
+    note: `Deposit for ${humanQuoteId}, ${deposit_method} via ${booked_via} (recorded by Yugo)`,
     method: deposit_method,
     buyerEmail: clientEmail,
     idempotencySuffix: `external-${quoteId}`,

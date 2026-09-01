@@ -236,13 +236,13 @@ async function sendExtendedExpiryNurtureEmail(
       </p>
       <p style="font-size: 14px; line-height: 1.7; margin: 0 0 24px;">
         If you have questions or want to talk through the packages, reply to
-        this email or give me a call — happy to help.
+        this email or give me a call, happy to help.
       </p>
       <p style="margin: 0 0 24px;">
         <a href="${url}" style="background: #4a1f1f; color: #ffffff; padding: 12px 22px; text-decoration: none; border-radius: 4px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">View your quote</a>
       </p>
       <p style="font-size: 12px; color: #7a6767; line-height: 1.6; margin: 24px 0 0;">
-        Not the right time? Simply reply and let us know — we'll pause
+        Not the right time? Simply reply and let us know, we'll pause
         follow-ups.
       </p>
     </div>`;

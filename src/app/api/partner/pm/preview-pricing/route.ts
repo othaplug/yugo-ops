@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
 
   const addr = String(prop.address || "").trim();
   if ((!fromAddress || !toAddress) && addr) {
-    const line = `${addr} (Unit ${unitNumber || "—"})`;
+    const line = `${addr} (Unit ${unitNumber || "-"})`;
     if (!fromAddress) fromAddress = line;
     if (!toAddress) toAddress = line;
   }

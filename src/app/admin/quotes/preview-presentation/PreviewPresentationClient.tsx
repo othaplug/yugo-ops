@@ -48,7 +48,7 @@ const MOCK_TIERS: Record<string, TierData> = {
       "Floor & entryway protection",
       "All standard equipment included",
       "Entry point placement",
-      "Released value coverage — $0.60/lb per item",
+      "Released value coverage, $0.60/lb per item",
       "Real-time GPS move tracking",
       "Guaranteed flat price",
     ],
@@ -61,11 +61,11 @@ const MOCK_TIERS: Record<string, TierData> = {
     includes: [
       "Dedicated 24ft moving truck",
       "Professional crew of 4",
-      "Enhanced declared value — full declared value up to $50,000",
+      "Enhanced declared value, full declared value up to $50,000",
       "Mattress and television protection bags",
-      "Furniture disassembly and reassembly — beds, desks, standard furniture",
+      "Furniture disassembly and reassembly, beds, desks, standard furniture",
       "Room-of-choice placement throughout your home",
-      "Wardrobe box for hanging clothes — returned after your move",
+      "Wardrobe box for hanging clothes, returned after your move",
       "Debris and all packaging removed at completion",
       "Dedicated coordinator for scheduling and day-of communication",
     ],
@@ -78,16 +78,16 @@ const MOCK_TIERS: Record<string, TierData> = {
     includes: [
       "Dedicated 24ft moving truck",
       "Professional crew of 4",
-      "Dedicated Estate Move Director — named, direct contact from booking to completion",
+      "Dedicated Estate Move Director, named, direct contact from booking to completion",
       "In-home walkthrough and room-by-room transition planning",
-      "Full inventory documentation — every item photographed before loading",
-      "Specialist white glove crew — four-point blanket wrap, no dragging, no stacking",
+      "Full inventory documentation, every item photographed before loading",
+      "Specialist white glove crew, four-point blanket wrap, no dragging, no stacking",
       "Fine art, antique, and fragile item handling under specialist protocol",
-      "Complete professional packing — every room, every item",
-      "Complete unpacking and room setup — shelves, closets, placement per your plan",
-      "Full replacement value — up to $10,000 per item · $100,000 per move · zero deductible",
-      "30-day post-move concierge — direct line to your Director",
-      "Exclusive Yugo Circle access — partner benefits and priority scheduling",
+      "Complete professional packing, every room, every item",
+      "Complete unpacking and room setup, shelves, closets, placement per your plan",
+      "Full replacement value, up to $10,000 per item · $100,000 per move · zero deductible",
+      "30-day post-move concierge, direct line to your Director",
+      "Exclusive Yugo Circle access, partner benefits and priority scheduling",
     ],
   },
 };
@@ -112,7 +112,7 @@ const MOCK_TIER_META: ResidentialQuoteTierMetaMap = {
     label: "Estate",
     tagline: "A fully managed home transition.",
     footer:
-      "Best for: clients who expect every detail handled — high-value homes, art, antiques, complete transitions.",
+      "Best for: clients who expect every detail handled, high-value homes, art, antiques, complete transitions.",
     inclusionsIntro: "Everything in Signature, plus:",
     bg: "#5C1A33",
   },
@@ -166,7 +166,7 @@ export default function PreviewPresentationClient() {
                 Quote presentation preview
               </h1>
               <p className="text-[12px] text-[var(--tx2)] mt-0.5">
-                Mock 3BR Estate quote — switch modes to see how the client
+                Mock 3BR Estate quote, switch modes to see how the client
                 quote page renders.
               </p>
             </div>

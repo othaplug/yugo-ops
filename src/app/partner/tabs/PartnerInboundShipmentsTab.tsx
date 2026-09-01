@@ -24,9 +24,9 @@ type Row = {
 function itemTitle(items: unknown): string {
   try {
     const arr = Array.isArray(items) ? items : [];
-    return (arr[0] as { name?: string })?.name?.trim() || "—";
+    return (arr[0] as { name?: string })?.name?.trim() || "-";
   } catch {
-    return "—";
+    return "-";
   }
 }
 
@@ -136,7 +136,7 @@ export default function PartnerInboundShipmentsTab() {
                   <td className="px-3 py-2 text-[var(--tx3)]">
                     {r.received_at
                       ? new Date(r.received_at).toLocaleDateString("en-CA", { month: "short", day: "numeric" })
-                      : "—"}
+                      : "-"}
                   </td>
                   <td className="px-3 py-2 text-[var(--tx3)]">
                     {r.delivery_scheduled_date

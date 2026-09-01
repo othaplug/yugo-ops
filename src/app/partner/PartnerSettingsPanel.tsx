@@ -930,9 +930,9 @@ export default function PartnerSettingsPanel({
                   className="w-full px-4 py-3 rounded-2xl border-2 text-[15px] bg-white focus:outline-none transition-colors cursor-pointer"
                   style={{ borderColor: `${FOREST}30`, color: WINE }}
                 >
-                  <option value="morning">Morning (8 AM – 12 PM)</option>
-                  <option value="afternoon">Afternoon (12 PM – 5 PM)</option>
-                  <option value="evening">Evening (5 PM – 9 PM)</option>
+                  <option value="morning">Morning (8 AM, 12 PM)</option>
+                  <option value="afternoon">Afternoon (12 PM, 5 PM)</option>
+                  <option value="evening">Evening (5 PM, 9 PM)</option>
                   <option value="flexible">Flexible / Any time</option>
                 </select>
               </div>

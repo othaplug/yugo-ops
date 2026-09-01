@@ -63,7 +63,7 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
   const org = statement.organizations;
   const statusCfg = STATUS_CONFIG[status] || STATUS_CONFIG.draft!;
 
-  const periodLabel = `${formatPlatformDisplay(new Date(statement.period_start + "T12:00:00"), { month: "short", day: "numeric" })}–${formatPlatformDisplay(new Date(statement.period_end + "T12:00:00"), { month: "short", day: "numeric" })}`;
+  const periodLabel = `${formatPlatformDisplay(new Date(statement.period_start + "T12:00:00"), { month: "short", day: "numeric" })}-${formatPlatformDisplay(new Date(statement.period_end + "T12:00:00"), { month: "short", day: "numeric" })}`;
   const dueDateLabel = formatPlatformDisplay(new Date(statement.due_date + "T12:00:00"), {
     month: "long",
     day: "numeric",

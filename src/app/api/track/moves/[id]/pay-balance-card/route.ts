@@ -105,7 +105,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const structured = squareThrownErrorStructured(e);
     console.error(
       `[Square] track balance card-on-file failed: status=${structured.statusCode ?? "?"} ` +
-        `code=${structured.code ?? "—"} detail=${(structured.detail ?? "").slice(0, 200)}`,
+        `code=${structured.code ?? "-"} detail=${(structured.detail ?? "").slice(0, 200)}`,
     );
     return NextResponse.json({ error: structured.message }, { status: 500 });
   }

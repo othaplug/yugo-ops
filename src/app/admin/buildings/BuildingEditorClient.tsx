@@ -308,7 +308,7 @@ export default function BuildingEditorClient({ initial }: { initial: BuildingPro
                 )}
                 {isElevator && (
                   <>
-                    {archetype === "two_stage" && <div className="text-[12px] text-[#6B1F3A] bg-[#6B1F3A]/8 rounded-lg px-3 py-2">Two-stage building — double-handling expected.</div>}
+                    {archetype === "two_stage" && <div className="text-[12px] text-[#6B1F3A] bg-[#6B1F3A]/8 rounded-lg px-3 py-2">Two-stage building, double-handling expected.</div>}
                     <Row label="Elevator for the move"><Seg value={form.elevator_type} onChange={(v) => set("elevator_type", v)} options={[{ v: "freight", label: "Freight" }, { v: "passenger", label: "Passenger only" }, { v: "both", label: "Both" }, { v: "none", label: "None" }]} /></Row>
                     <div className="grid grid-cols-2 gap-3">
                       <div><span className="admin-input-label">Unit floor</span><input type="number" min={1} value={form.unit_floor} onChange={handleText("unit_floor")} placeholder="e.g. 18" className="admin-input" /></div>
@@ -340,7 +340,7 @@ export default function BuildingEditorClient({ initial }: { initial: BuildingPro
                   <div className="grid grid-cols-3 gap-3">
                     {form.elevator_booking_required && <div><span className="admin-input-label">Window (min)</span><input type="number" min={0} value={form.elevator_window_minutes} onChange={handleText("elevator_window_minutes")} placeholder="120" className="admin-input" /></div>}
                     {form.coi_required && <div><span className="admin-input-label">Deposit ($)</span><input type="number" min={0} value={form.coi_deposit} onChange={handleText("coi_deposit")} placeholder="300" className="admin-input" /></div>}
-                    <div><span className="admin-input-label">Move hours</span><input value={form.move_hours} onChange={handleText("move_hours")} placeholder="9–4 wkdy" className="admin-input" /></div>
+                    <div><span className="admin-input-label">Move hours</span><input value={form.move_hours} onChange={handleText("move_hours")} placeholder="9 to 4 wkdy" className="admin-input" /></div>
                   </div>
                   <label className="flex items-center gap-2 text-[13px] text-[var(--tx)] cursor-pointer"><input type="checkbox" checked={form.loading_dock} onChange={handleCheck("loading_dock")} /> Has loading dock</label>
                   {form.loading_dock && (
@@ -376,7 +376,7 @@ export default function BuildingEditorClient({ initial }: { initial: BuildingPro
           <aside className="lg:w-[300px] shrink-0">
             <div className="rounded-xl border border-[#CDDAC6] bg-[#EFF3EC] p-4 lg:sticky lg:top-4">
               <p className="text-[12px] font-semibold text-[#2C3E2D] mb-1">Access time model</p>
-              <p className="text-[11px] text-[#5A6B5E] mb-3">Computed from the fields — updates as you edit.</p>
+              <p className="text-[11px] text-[#5A6B5E] mb-3">Computed from the fields, updates as you edit.</p>
               {model.drivers.length === 0 ? (
                 <p className="text-[12px] text-[#5A6B5E]">No access penalty captured yet.</p>
               ) : (

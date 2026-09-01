@@ -103,9 +103,9 @@ export const ACCESS_TYPE_SPECS: AccessTypeSpec[] = [
     label: "Condo / apartment",
     archetype: "elevator",
     fields: [
-      { key: "unit_floor", label: "Unit floor", numeric: true, default: "10", options: [["3", "1–6"], ["10", "7–15"], ["22", "16–30"], ["34", "30+"]] },
+      { key: "unit_floor", label: "Unit floor", numeric: true, default: "10", options: [["3", "1 to 6"], ["10", "7 to 15"], ["22", "16 to 30"], ["34", "30+"]] },
       { key: "elevator_type", label: "Elevator", default: "passenger", options: [["passenger", "Passenger"], ["freight", "Service/freight"], ["both", "Both"], ["none", "Out of service"]] },
-      { key: "reserved_window", label: "Reserved elevator window?", boolean: true, default: "0", options: [["0", "Not needed"], ["1", "Yes — booked"]] },
+      { key: "reserved_window", label: "Reserved elevator window?", boolean: true, default: "0", options: [["0", "Not needed"], ["1", "Yes, booked"]] },
       { key: "carry_band", label: "Lobby-to-truck carry", default: "medium", options: [["short", "Short"], ["medium", "Medium"], ["long", "Long"], ["very_long", "Very long"]] },
       { key: "coi_required", label: "COI required?", boolean: true, default: "0", options: [["0", "No"], ["1", "Yes"]] },
     ],

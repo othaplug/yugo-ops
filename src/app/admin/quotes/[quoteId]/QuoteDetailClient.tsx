@@ -425,7 +425,7 @@ function engagementSignal(events: EngagementEvent[]): {
 
 function tierInterestLine(metrics: QuoteEngagementMetrics): string {
   const entries = Object.entries(metrics.tierClickCounts);
-  if (entries.length === 0) return "—";
+  if (entries.length === 0) return "-";
   return entries.map(([k, v]) => `${toTitleCase(k)} ${v}×`).join(", ");
 }
 
@@ -628,7 +628,7 @@ export default function QuoteDetailClient({
         setTimeout(() => window.location.reload(), 700);
       }
     } catch {
-      setExtendExpiryMsg("Network error — try again.");
+      setExtendExpiryMsg("Network error, try again.");
     }
     setExtendingExpiry(false);
   };
@@ -778,7 +778,7 @@ export default function QuoteDetailClient({
         router.refresh();
       }
     } catch {
-      setHubspotRetryError("Request failed — check network connection");
+      setHubspotRetryError("Request failed, check network connection");
     } finally {
       setHubspotRetryBusy(false);
     }
@@ -812,7 +812,7 @@ export default function QuoteDetailClient({
         router.refresh();
       }
     } catch {
-      setHubspotRetryError("Request failed — check network connection");
+      setHubspotRetryError("Request failed, check network connection");
     } finally {
       setHubspotResolveBusy(false);
     }
@@ -1182,8 +1182,8 @@ export default function QuoteDetailClient({
             }
             const label =
               mode === "estate_only"
-                ? "Estate only — single-tier render"
-                : "Estate featured — Estate first, others collapsed";
+                ? "Estate only, single-tier render"
+                : "Estate featured, Estate first, others collapsed";
             return (
               <div className="pt-2">
                 <a
@@ -1748,7 +1748,7 @@ export default function QuoteDetailClient({
               Tier not confirmed
             </p>
             <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5 leading-snug">
-              This quote has a price range — no tier was selected before it was sent.
+              This quote has a price range, no tier was selected before it was sent.
               Use &ldquo;Record external booking&rdquo; below to confirm which tier the client chose.
             </p>
           </div>
@@ -2173,8 +2173,8 @@ export default function QuoteDetailClient({
                     }`}
                   >
                     {isExpired
-                      ? `Expired ${Math.abs(daysUntilExpiry)} day${Math.abs(daysUntilExpiry) === 1 ? "" : "s"} ago — client still engaged`
-                      : `Expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? "" : "s"} — client is actively engaged`}
+                      ? `Expired ${Math.abs(daysUntilExpiry)} day${Math.abs(daysUntilExpiry) === 1 ? "" : "s"} ago, client still engaged`
+                      : `Expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? "" : "s"}, client is actively engaged`}
                   </p>
                   <p className="text-[11px] text-[var(--tx2)] leading-snug">
                     {firstName} viewed this quote{" "}
@@ -2257,7 +2257,7 @@ export default function QuoteDetailClient({
                             displayLabel(
                               String(factors.b2b_vertical_code || ""),
                             ) ||
-                            "—"}
+                            "-"}
                         </span>
                       </div>
                       <div>
@@ -2265,7 +2265,7 @@ export default function QuoteDetailClient({
                         <span className="font-medium">
                           {displayLabel(
                             String(factors.b2b_handling_type || ""),
-                          ) || "—"}
+                          ) || "-"}
                         </span>
                       </div>
                       {factors.b2b_delivery_window ? (
@@ -2596,10 +2596,10 @@ export default function QuoteDetailClient({
                       return (
                         <>
                           <p className="text-[22px] font-bold text-[var(--gold)] font-heading leading-tight">
-                            {fmtCurrency(lo)}–{fmtCurrency(hi)}
+                            {fmtCurrency(lo)}-{fmtCurrency(hi)}
                           </p>
                           <p className="text-[10px] text-[var(--tx3)]/82 mt-0.5">
-                            +{fmtCurrency(Math.round(lo * HST))}–
+                            +{fmtCurrency(Math.round(lo * HST))}-
                             {fmtCurrency(Math.round(hi * HST))} HST (13%)
                           </p>
                           {overridePreTax != null ? (
@@ -2611,7 +2611,7 @@ export default function QuoteDetailClient({
                                 <span className="font-medium text-[var(--tx)]">
                                   {systemPreTax != null
                                     ? fmtCurrency(systemPreTax)
-                                    : "—"}
+                                    : "-"}
                                 </span>
                               </div>
                               <div className="flex items-center justify-between text-[11px]">
@@ -2651,7 +2651,7 @@ export default function QuoteDetailClient({
                               <span className="font-medium text-[var(--tx)]">
                                 {systemPreTax != null
                                   ? fmtCurrency(systemPreTax)
-                                  : "—"}
+                                  : "-"}
                               </span>
                             </div>
                             <div className="flex items-center justify-between text-[11px]">
@@ -3264,7 +3264,7 @@ export default function QuoteDetailClient({
                       <span className="text-[var(--tx)] font-medium text-right">
                         {engagementMetrics.lastEngagementAt
                           ? timeAgo(engagementMetrics.lastEngagementAt)
-                          : "—"}
+                          : "-"}
                       </span>
                     </div>
                     {showTieredEngagement && (
@@ -3293,7 +3293,7 @@ export default function QuoteDetailClient({
                           // quote for 12 hours."
                           const SESSION_CAP_SECONDS = 30 * 60;
                           const raw = engagementMetrics.maxSessionSeconds;
-                          if (raw <= 0) return "—";
+                          if (raw <= 0) return "-";
                           const tabLeftOpen = raw > SESSION_CAP_SECONDS;
                           const display = tabLeftOpen
                             ? SESSION_CAP_SECONDS

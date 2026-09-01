@@ -232,7 +232,7 @@ export default function NewOutboundShipmentClient() {
           <Card title="Pickup schedule">
             <div className="grid grid-cols-2 gap-3">
               <Field label="Pickup date" value={pickupDate} onChange={setPickupDate} type="date" />
-              <Field label="Window" value={pickupWindow} onChange={setPickupWindow} placeholder="10:00 AM – 12:00 PM" />
+              <Field label="Window" value={pickupWindow} onChange={setPickupWindow} placeholder="10:00 AM, 12:00 PM" />
             </div>
           </Card>
 

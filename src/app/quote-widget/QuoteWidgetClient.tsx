@@ -59,7 +59,7 @@ const HOME_SIZES = [
 
 const OFFICE_SIZES = [
   { key: "small", label: "Small (< 1,500 sqft)" },
-  { key: "medium", label: "Medium (1,500 – 5,000 sqft)" },
+  { key: "medium", label: "Medium (1,500 to 5,000 sqft)" },
   { key: "large", label: "Large (5,000+ sqft)" },
 ];
 
@@ -107,7 +107,7 @@ const FURNITURE_CATALOG: Record<string, CatalogItem[]> = {
     { id: "armchair", name: "Armchair", fragile: false },
     { id: "coffee_table", name: "Coffee Table", fragile: true },
     { id: "tv_stand", name: "TV Stand", fragile: false },
-    { id: "tv_small", name: 'TV (32–50")', fragile: true },
+    { id: "tv_small", name: 'TV (32 to 50")', fragile: true },
     { id: "tv_large", name: 'TV (55"+)', fragile: true },
     { id: "bookshelf", name: "Bookshelf", fragile: false },
     { id: "floor_lamp", name: "Floor Lamp", fragile: true },
@@ -186,7 +186,7 @@ const OFFICE_FURNITURE_CATALOG: Record<string, CatalogItem[]> = {
   "Meeting & Common Areas": [
     {
       id: "conference_table_small",
-      name: "Conference Table (4–6 seat)",
+      name: "Conference Table (4 to 6 seat)",
       fragile: true,
     },
     {
@@ -1759,7 +1759,7 @@ export default function QuoteWidgetClient() {
                             <p>Basic disassembly and reassembly</p>
                             <p>Floor and entryway protection</p>
                             <p>All standard equipment</p>
-                            <p>Released value coverage — $0.60/lb per item</p>
+                            <p>Released value coverage, $0.60/lb per item</p>
                             <p>Real-time GPS move tracking</p>
                           </div>
                         </details>

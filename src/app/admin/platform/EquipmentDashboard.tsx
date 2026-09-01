@@ -132,7 +132,7 @@ export default function EquipmentDashboard({ refreshKey = 0 }: EquipmentDashboar
               restock.map((r) => (
                 <li key={r.name}>
                   <span className="font-medium">{r.name}</span>
-                  <span className="text-[var(--tx3)]"> — {r.shortAcross} below target</span>
+                  <span className="text-[var(--tx3)]"> - {r.shortAcross} below target</span>
                 </li>
               ))
             )}

@@ -686,7 +686,7 @@ export function calculateB2BDimensionalPrice(args: {
     let loadLabel = "";
     if (loadLbs > hm) {
       loadFee = num(fl.extra_fee, 80);
-      loadLabel = `Extra heavy load (~${Math.round(loadLbs).toLocaleString()} lbs${estSuffix}) — 3-person crew`;
+      loadLabel = `Extra heavy load (~${Math.round(loadLbs).toLocaleString()} lbs${estSuffix}), 3-person crew`;
       if (fl.extra_three_crew === true) {
         const hr = num(vc.crew_hourly_rate, 75);
         const extraLabour = Math.round(1 * hr * num(vc.min_hours, 2) * 100) / 100;
@@ -1027,7 +1027,7 @@ export function calculateB2BDimensionalPrice(args: {
     includes.push(`${args.input.handling_type.replace(/_/g, " ")} handling`);
   }
   if (vc.auto_quote_disabled === true) {
-    includes.push("Custom scope — coordinator finalizes price (specialty quote builder)");
+    includes.push("Custom scope, coordinator finalizes price (specialty quote builder)");
   }
   const vd = vc.volume_discount_tiers;
   if (Array.isArray(vd) && vd.length > 0) {

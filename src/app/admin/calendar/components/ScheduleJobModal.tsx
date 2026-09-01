@@ -84,7 +84,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
       const data = await res.json();
       if (data.hasConflict) {
         const labels = data.conflicts?.map((c: { start: string; end: string; reference_label: string }) =>
-          `${c.start}–${c.end} (${c.reference_label})`
+          `${c.start}-${c.end} (${c.reference_label})`
         ).join(", ");
         setConflict({
           checking: false,
@@ -297,7 +297,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
                           onClick={() => { setStartTime(s.start); setEndTime(s.end > "20:00" ? "20:00" : s.end); }}
                           className="ml-2 underline underline-offset-2 hover:text-[var(--accent-text)] transition-colors"
                         >
-                          {formatTime12(s.start)}–{formatTime12(s.end)}
+                          {formatTime12(s.start)}-{formatTime12(s.end)}
                         </button>
                       ))}
                     </div>
@@ -322,7 +322,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-[var(--grn)] shrink-0" />
                   <span className="font-semibold">{crewName} is available</span>
-                  <span className="opacity-60 ml-1">{formatTime12(startTime)} – {formatTime12(endTime)}</span>
+                  <span className="opacity-60 ml-1">{formatTime12(startTime)} - {formatTime12(endTime)}</span>
                 </div>
               )}
             </div>
