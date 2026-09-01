@@ -28,6 +28,15 @@ const toDateInputValue = (d: string | null | undefined): string => {
   return s.length >= 10 ? s.slice(0, 10) : "";
 };
 
+/** Add N days to a yyyy-mm-dd date-input value, returning the same format. */
+const addDaysToDateInput = (d: string, n: number): string => {
+  const [y, m, day] = d.slice(0, 10).split("-").map(Number);
+  if (!y || !m || !day) return "";
+  const dt = new Date(Date.UTC(y, m - 1, day));
+  dt.setUTCDate(dt.getUTCDate() + n);
+  return dt.toISOString().slice(0, 10);
+};
+
 const SECTION_RULE =
   "pb-3 mb-4 border-b border-[color-mix(in_srgb,var(--yugo-primary-text)_16%,transparent)]";
 const FIELD_WASH =
@@ -516,12 +525,17 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
                 id="sched-drop"
                 type="date"
                 value={scheduleDraft.drop_off_date}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const drop = e.target.value;
+                  // Standard rental window: pickup auto-fills to 7 days after the
+                  // drop-off the admin picks. Still editable below if it differs.
+                  const pickup = drop ? addDaysToDateInput(drop, 7) : "";
                   setScheduleDraft((s) => ({
                     ...s,
-                    drop_off_date: e.target.value,
-                  }))
-                }
+                    drop_off_date: drop,
+                    pickup_date: pickup || s.pickup_date,
+                  }));
+                }}
                 disabled={saving}
                 className={`${FIELD_WASH} disabled:opacity-50`}
               />

@@ -4,6 +4,7 @@ import { cleanItemName } from "@/lib/text/dedash";
 import { formatAccessForDisplay } from "@/lib/format-text";
 import { formatAddressWithUnit } from "@/lib/address-format";
 import { createBinOrderFromBinRentalQuote } from "@/lib/automations/create-bin-order-from-quote";
+import { createBinOrderFromMoveAddon } from "@/lib/automations/create-bin-order-from-addon";
 import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
 import { generateWelcomePackageToken } from "@/lib/welcome-package-token";
 import { estimateMoveDurationFromQuoteRow } from "@/lib/jobs/duration-estimate";
@@ -1049,6 +1050,33 @@ export async function createMoveFromQuote(
       squareCardId: input.squareCardId ?? null,
       depositAmount: input.depositAmount,
     });
+  } else {
+    // A residential move can carry a plastic_bin_rental ADD-ON. Those bins still
+    // need delivery + pickup, so mint the linked bin order (idempotent) or they
+    // never reach the bin rentals fulfillment page (see MV-30378).
+    try {
+      await createBinOrderFromMoveAddon({
+        supabase,
+        moveId: primary.id,
+        moveCode: (primary as { move_number?: string }).move_number ?? primary.id,
+        serviceType: quote.service_type,
+        scheduledDate:
+          (primary as { scheduled_date?: string | null }).scheduled_date ??
+          quote.move_date ??
+          null,
+        fromAddress: quote.from_address,
+        fromAccess: quote.from_access,
+        addons: selectedAddonsForPricing,
+        clientName,
+        clientEmail,
+        clientPhone,
+        squarePaymentId: input.squarePaymentId ?? null,
+        squareCustomerId: input.squareCustomerId ?? null,
+        squareCardId: input.squareCardId ?? null,
+      });
+    } catch (err) {
+      console.error("[create-move-from-quote] bin add-on order creation failed", err);
+    }
   }
 
   const svcForProject = String(quote.service_type ?? "");
