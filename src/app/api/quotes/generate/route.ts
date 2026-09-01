@@ -7273,7 +7273,17 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
           ? { ...it, name: cleanItemName((it as { name: string }).name) }
           : it,
       ),
-      client_box_count: input.client_box_count ?? null,
+      // Box count is sticky: never dropped by a regeneration, edit, or any
+      // caller that omits it. Only an explicit value in the request changes it
+      // (the form always sends the current value, so the admin can still edit it
+      // to anything, including 0). When the request does NOT provide a count and
+      // this is an update, keep whatever the quote already had.
+      client_box_count:
+        input.client_box_count != null
+          ? input.client_box_count
+          : isUpdate
+            ? ((existingQuoteSnapshot?.client_box_count as number | null | undefined) ?? null)
+            : null,
       inventory_warnings: inventoryWarnings.length > 0 ? inventoryWarnings : [],
       // Assembly auto-detection (residential)
       assembly_required:
