@@ -695,6 +695,7 @@ export default function TrackMoveClient({
   const params = useParams();
   const urlSlug = typeof params?.id === "string" ? params.id : "";
   const [activeTab, setActiveTab] = useState<TabKey>("dash");
+  const [addonsOpen, setAddonsOpen] = useState(true);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(paymentSuccess);
   const [changeModalOpen, setChangeModalOpen] = useState(false);
   const [changeType, setChangeType] = useState(CHANGE_TYPES[0]);
@@ -1972,7 +1973,7 @@ export default function TrackMoveClient({
               EventTrackDashboard, so the residential greeting hero is
               suppressed for them too. */}
           {serviceType !== "office_move" && !isEvent && (
-          <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center justify-between gap-3 mb-[72px] md:mb-[140px]">
             <div className="min-w-0">
               <h1
                 className="font-hero text-[26px] sm:text-[28px] leading-tight font-semibold tracking-tight truncate"
@@ -2173,64 +2174,66 @@ export default function TrackMoveClient({
               surprise on move day (bins count, TV size/mount, quantities). */}
           {resolvedMoveAddons.length > 0 && (
             <div
-              className="mb-4 rounded-2xl border overflow-hidden"
+              className="mb-[72px] md:mb-[140px] rounded-2xl border overflow-hidden"
               style={{ borderColor: `${FOREST}22` }}
             >
-              <div
-                className="flex items-center gap-2 px-4 py-2.5"
+              <button
+                type="button"
+                onClick={() => setAddonsOpen((v) => !v)}
+                aria-expanded={addonsOpen}
+                className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left"
                 style={{ backgroundColor: `${FOREST}0D` }}
               >
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke={FOREST}
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                  <path d="m3.3 7 8.7 5 8.7-5" />
-                  <path d="M12 22V12" />
-                </svg>
-                <p
+                <span
                   className="text-[11px] uppercase tracking-wider font-semibold"
                   style={{ color: FOREST }}
                 >
                   Your add-ons
-                </p>
-              </div>
-              <div className="px-4 py-3 space-y-2">
-                {resolvedMoveAddons.map((a, i) => (
-                  <div key={i} className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p
-                        className="text-[13px] font-semibold leading-snug"
+                </span>
+                <span
+                  aria-hidden
+                  className="shrink-0 transition-transform duration-200"
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRight: `1.5px solid ${FOREST}`,
+                    borderBottom: `1.5px solid ${FOREST}`,
+                    transform: addonsOpen ? "rotate(45deg)" : "rotate(-45deg)",
+                    opacity: 0.7,
+                  }}
+                />
+              </button>
+              {addonsOpen && (
+                <div className="px-4 py-3 space-y-2">
+                  {resolvedMoveAddons.map((a, i) => (
+                    <div key={i} className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p
+                          className="text-[13px] font-semibold leading-snug"
+                          style={{ color: FOREST }}
+                        >
+                          {a.name}
+                          {a.qty && a.qty > 1 ? ` ×${a.qty}` : ""}
+                        </p>
+                        {a.detail ? (
+                          <p
+                            className="text-[11px] mt-0.5 leading-snug"
+                            style={{ color: FOREST, opacity: 0.65 }}
+                          >
+                            {a.detail}
+                          </p>
+                        ) : null}
+                      </div>
+                      <span
+                        className="text-[13px] font-semibold tabular-nums shrink-0"
                         style={{ color: FOREST }}
                       >
-                        {a.name}
-                        {a.qty && a.qty > 1 ? ` ×${a.qty}` : ""}
-                      </p>
-                      {a.detail ? (
-                        <p
-                          className="text-[11px] mt-0.5 leading-snug"
-                          style={{ color: FOREST, opacity: 0.65 }}
-                        >
-                          {a.detail}
-                        </p>
-                      ) : null}
+                        ${a.price.toFixed(2)}
+                      </span>
                     </div>
-                    <span
-                      className="text-[13px] font-semibold tabular-nums shrink-0"
-                      style={{ color: FOREST }}
-                    >
-                      ${a.price.toFixed(2)}
-                    </span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -2248,7 +2251,7 @@ export default function TrackMoveClient({
 
             return (
               <div
-                className="mb-4 rounded-2xl px-4 py-3 border"
+                className="mb-[72px] md:mb-[140px] rounded-2xl px-4 py-3 border"
                 style={{ backgroundColor: `${WINE}06`, borderColor: `${WINE}18` }}
               >
                 <p
@@ -2375,7 +2378,7 @@ export default function TrackMoveClient({
             if ((est == null || est < 3) && hints.length === 0) return null;
             return (
               <div
-                className="mb-4 rounded-2xl px-4 py-3 border"
+                className="mb-[72px] md:mb-[140px] rounded-2xl px-4 py-3 border"
                 style={{
                   backgroundColor: `${FOREST}08`,
                   borderColor: `${FOREST}20`,
@@ -2415,7 +2418,7 @@ export default function TrackMoveClient({
               EventTrackDashboard, so the "days until move day" counter (wrong
               framing for an event) is suppressed for them too. */}
           {!isCompleted && serviceType !== "office_move" && !isEvent && (
-            <div className="py-3 sm:py-5 mb-2">
+            <div className="py-3 sm:py-5 mb-[72px] md:mb-[140px]">
               {isCompleted ? (
                 <div className="text-center">
                   <div
