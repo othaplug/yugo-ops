@@ -375,7 +375,16 @@ export default async function MoveDetailPage({
 
   // Resolve add-on details for display on the move page
   const rawMoveAddons = (move as { addons?: unknown }).addons;
-  let resolvedAddons: { name: string; slug: string; qty?: number; price: number }[] = [];
+  let resolvedAddons: {
+    name: string;
+    slug: string;
+    qty?: number;
+    price: number;
+    /** Human detail so the admin knows WHAT was selected: the TV mount variant,
+     *  or the bin bundle + count. Without this the admin saw "$0.00" / "$189"
+     *  with no idea which mount or how many bins. */
+    detail?: string;
+  }[] = [];
   if (Array.isArray(rawMoveAddons) && rawMoveAddons.length > 0) {
     const addonIds = (rawMoveAddons as { addon_id?: string }[])
       .map((a) => a.addon_id)
@@ -383,35 +392,135 @@ export default async function MoveDetailPage({
     if (addonIds.length > 0) {
       const { data: addonRows } = await db
         .from("addons")
-        .select("id, name, slug, price, price_type, tiers, percent_value")
+        .select("id, name, slug, price, price_type, tiers, percent_value, variant_config")
         .in("id", addonIds);
 
       const movePrice = Number((move as { custom_price?: unknown; total_price?: unknown }).custom_price ?? 0) || 0;
 
-      for (const sel of rawMoveAddons as { addon_id?: string; slug?: string; quantity?: number; tier_index?: number }[]) {
+      type VariantCell = { price?: number; mount_model?: string };
+      type VariantCfg = { sizes?: Record<string, { label?: string; types?: Record<string, VariantCell> }> };
+      type SelRow = {
+        addon_id?: string; slug?: string; quantity?: number; tier_index?: number;
+        variant?: { size?: string; type?: string };
+        variants?: { size?: string; type?: string; quantity?: number }[];
+      };
+
+      for (const sel of rawMoveAddons as SelRow[]) {
         const rec = (addonRows ?? []).find((r) => r.id === sel.addon_id) as {
           id: string; name: string; slug: string;
           price: number; price_type: string;
-          tiers: { price: number }[] | null;
+          tiers: { price: number; label?: string; bins?: number }[] | null;
           percent_value: number | null;
+          variant_config: VariantCfg | null;
         } | null;
         if (!rec) continue;
         let linePrice = 0;
+        let detail: string | undefined;
         switch (rec.price_type) {
-          case "flat": linePrice = rec.price; break;
-          case "per_unit": linePrice = rec.price * (sel.quantity || 1); break;
-          case "tiered": linePrice = rec.tiers?.[sel.tier_index ?? 0]?.price ?? 0; break;
-          case "percent": linePrice = Math.round(movePrice * (rec.percent_value ?? 0)); break;
+          case "flat":
+            linePrice = rec.price;
+            break;
+          case "per_unit":
+            linePrice = rec.price * (sel.quantity || 1);
+            break;
+          case "tiered": {
+            const t = rec.tiers?.[sel.tier_index ?? 0];
+            linePrice = t?.price ?? 0;
+            // Bin count / bundle so the crew and admin know the quantity.
+            detail = t?.label ?? (t?.bins != null ? `${t.bins} bins` : undefined);
+            break;
+          }
+          case "percent":
+            linePrice = Math.round(movePrice * (rec.percent_value ?? 0));
+            break;
+          case "variant_matrix": {
+            const cfg = rec.variant_config;
+            const rows =
+              Array.isArray(sel.variants) && sel.variants.length > 0
+                ? sel.variants
+                : sel.variant
+                  ? [sel.variant]
+                  : [];
+            const parts: string[] = [];
+            for (const v of rows) {
+              const cell =
+                v?.size && v?.type ? cfg?.sizes?.[v.size]?.types?.[v.type] : null;
+              if (cell && typeof cell.price === "number" && v.size && v.type) {
+                const vq = Math.max(
+                  1,
+                  Math.round(Number((v as { quantity?: number }).quantity ?? 1)) || 1,
+                );
+                linePrice += cell.price * vq;
+                // Normalize the range dash (`56" – 65"`) to a hyphen; brand rule
+                // forbids en/em dashes and a size range reads as a hyphen.
+                const sizeLabel = (cfg?.sizes?.[v.size]?.label ?? v.size).replace(
+                  /\s*[—–]\s*/g,
+                  "-",
+                );
+                parts.push(
+                  `${sizeLabel} ${String(v.type).replace(/_/g, " ")}` +
+                    (cell.mount_model ? ` (${cell.mount_model})` : "") +
+                    (vq > 1 ? ` x${vq}` : ""),
+                );
+              }
+            }
+            detail = parts.length > 0 ? parts.join(", ") : undefined;
+            break;
+          }
         }
         resolvedAddons.push({
           name: rec.name,
           slug: rec.slug,
           qty: rec.price_type === "per_unit" ? (sel.quantity ?? 1) : undefined,
           price: linePrice,
+          detail,
         });
       }
     }
   }
+
+  // Active add-on catalog for the post-booking "Add add-on" module. Passed to
+  // the client so an admin can add TV mounting / bins / assembly etc. after the
+  // move is booked; pricing is done server-side by the add-addon route.
+  const { data: catalogRows } = await db
+    .from("addons")
+    .select(
+      "id, name, slug, description, price, price_type, unit_label, tiers, variant_config, applicable_service_types, excluded_tiers, display_order",
+    )
+    .eq("active", true)
+    .order("display_order", { ascending: true });
+  const moveServiceType = String(
+    (move as { service_type?: string | null }).service_type ?? "",
+  );
+  const addonCatalog = (catalogRows ?? [])
+    .filter((a) => {
+      const applicable = a.applicable_service_types as string[] | null;
+      // No list = available to all; otherwise gate to this move's service type.
+      return (
+        !Array.isArray(applicable) ||
+        applicable.length === 0 ||
+        !moveServiceType ||
+        applicable.includes(moveServiceType)
+      );
+    })
+    .map((a) => ({
+      id: a.id as string,
+      name: a.name as string,
+      slug: a.slug as string,
+      description: (a.description as string) ?? null,
+      price: Number(a.price) || 0,
+      price_type: a.price_type as string,
+      unit_label: (a.unit_label as string) ?? null,
+      tiers: (a.tiers as { label?: string; price: number; bins?: number }[] | null) ?? null,
+      variant_config:
+        (a.variant_config as {
+          sizes?: Record<
+            string,
+            { label?: string; types?: Record<string, { price?: number; mount_model?: string }> }
+          >;
+        } | null) ?? null,
+      excluded_tiers: (a.excluded_tiers as string[] | null) ?? null,
+    }));
 
   const mpResidentialId = (move as { move_project_id?: string | null }).move_project_id;
   let residentialMoveProject: {
@@ -467,6 +576,12 @@ export default async function MoveDetailPage({
       userRole={userRole}
       isSuperAdmin={isSuperAdmin}
       resolvedAddons={resolvedAddons}
+      addonCatalog={addonCatalog}
+      moveTier={(move as { tier_selected?: string | null }).tier_selected ?? null}
+      hasCardOnFile={Boolean(
+        (move as { square_card_id?: string | null; square_customer_id?: string | null }).square_card_id ||
+          (move as { square_customer_id?: string | null }).square_customer_id,
+      )}
       additionalOrigins={linkedAdditionalOrigins ?? []}
       additionalDestinations={linkedAdditionalDestinations ?? []}
       additionalFeesCents={additionalFeesCents}

@@ -21,6 +21,11 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatMoveDate } from "@/lib/date-format";
 import { getCompanyDisplayName, getAdminNotificationEmail } from "@/lib/config";
+import {
+  calculateAddons,
+  addonAmountForTier,
+  type AddonSelection,
+} from "@/lib/quotes/price-addons";
 import { autoScheduleMove } from "@/lib/scheduling/auto-schedule";
 import { generateWelcomePackageToken } from "@/lib/welcome-package-token";
 import {
@@ -252,73 +257,46 @@ export async function runPostPaymentActions(
     basePrice = Number(quote.custom_price) || 0;
   }
 
-  /* ── Compute addon analytics ── */
-  const selectedAddons = (quote.selected_addons || []) as Array<{
-    addon_id?: string;
-    slug?: string;
-    quantity?: number;
-    tier_index?: number;
-  }>;
+  /* ── Compute addon analytics ──
+     Priced through the shared engine (calculateAddons) so variant_matrix add-ons
+     like TV wall mounting are never $0 (the MV-30378 bug lived in this file's
+     old hand-rolled switch, which had no variant_matrix case) and the line
+     specifics (bin count, TV size/mount) come through for the confirmation email
+     and the admin alert. addonRevenue is tier-adjusted to match what the move
+     actually charges. */
+  const selectedAddons = (quote.selected_addons || []) as AddonSelection[];
   const addonCount = selectedAddons.length;
   const addonSlugs = selectedAddons
     .map((a) => a.slug)
     .filter(Boolean) as string[];
 
   let addonRevenue = 0;
-  // Resolved add-on lines for the confirmation email
-  const resolvedAddonLines: { name: string; qty?: number; price: number }[] = [];
+  // Resolved add-on lines for the confirmation email + admin booking alert.
+  const resolvedAddonLines: {
+    name: string;
+    qty?: number;
+    price: number;
+    detail?: string;
+  }[] = [];
 
   if (addonCount > 0) {
-    const addonIds = selectedAddons
-      .map((a) => a.addon_id)
-      .filter(Boolean) as string[];
-
-    if (addonIds.length > 0) {
-      const { data: addonRecords } = await supabase
-        .from("addons")
-        .select("id, name, price, price_type, tiers, percent_value")
-        .in("id", addonIds);
-
-      for (const sel of selectedAddons) {
-        const record = (addonRecords ?? []).find(
-          (r) => r.id === sel.addon_id,
-        ) as {
-          name: string;
-          price: number;
-          price_type: string;
-          tiers: { price: number }[] | null;
-          percent_value: number | null;
-        } | null;
-        if (!record) continue;
-
-        let linePrice = 0;
-        switch (record.price_type) {
-          case "flat":
-            linePrice = record.price;
-            addonRevenue += linePrice;
-            break;
-          case "per_unit":
-            linePrice = record.price * (sel.quantity || 1);
-            addonRevenue += linePrice;
-            break;
-          case "tiered":
-            linePrice = record.tiers?.[sel.tier_index ?? 0]?.price ?? 0;
-            addonRevenue += linePrice;
-            break;
-          case "percent":
-            linePrice = Math.round(basePrice * (record.percent_value ?? 0));
-            addonRevenue += linePrice;
-            break;
-        }
-
-        resolvedAddonLines.push({
-          name: record.name,
-          qty: record.price_type === "per_unit" && (sel.quantity ?? 1) > 1
-            ? sel.quantity
-            : undefined,
-          price: linePrice,
-        });
-      }
+    const addonResult = await calculateAddons(
+      supabase,
+      selectedAddons,
+      basePrice,
+      quote.move_size,
+      quote.service_type,
+    );
+    addonRevenue = selectedTier
+      ? addonAmountForTier(addonResult, selectedTier)
+      : addonResult.total;
+    for (const b of addonResult.breakdown) {
+      resolvedAddonLines.push({
+        name: b.name,
+        qty: b.quantity && b.quantity > 1 ? b.quantity : undefined,
+        price: b.subtotal,
+        detail: b.detail,
+      });
     }
   }
 
@@ -1092,15 +1070,49 @@ export async function runPostPaymentActions(
           toAddress: quote.to_address,
           moveDate: quote.move_date,
           paymentId: input.paymentId,
+          addonLines:
+            resolvedAddonLines.length > 0 ? resolvedAddonLines : undefined,
         });
 
+        const addonSubjectTag =
+          resolvedAddonLines.length > 0
+            ? ` + ${resolvedAddonLines.length} add-on${resolvedAddonLines.length > 1 ? "s" : ""}`
+            : "";
         const subjectPrefix = isEstate ? "[Estate] New booking" : "New booking";
         const emailFrom2 = await getEmailFrom();
         await resend.emails.send({
           from: emailFrom2,
           to: adminEmail,
-          subject: `${subjectPrefix}: ${clientName} ${tierLabel || serviceLabel} $${totalWithTax}`,
+          subject: `${subjectPrefix}: ${clientName} ${tierLabel || serviceLabel} $${totalWithTax}${addonSubjectTag}`,
           html,
+        });
+      },
+    },
+
+    /* ── 4a. In-app alert when the client selected add-ons ──
+       Separate, always-on in-app notification (not just email) so no add-on
+       booking is ever missed. "We almost got in trouble for not knowing what
+       add-ons were added" (MV-30378) — this is the safety net. */
+    {
+      name: "addon_in_app_alert",
+      critical: false,
+      fn: async () => {
+        if (resolvedAddonLines.length === 0) return;
+        const { notifyAllAdmins } = await import("@/lib/notifications");
+        const lines = resolvedAddonLines
+          .map(
+            (a) =>
+              `${a.name}${a.qty && a.qty > 1 ? ` x${a.qty}` : ""}${a.detail ? ` (${a.detail})` : ""}`,
+          )
+          .join("; ");
+        await notifyAllAdmins({
+          title: `${clientName} booked with ${resolvedAddonLines.length} add-on${resolvedAddonLines.length > 1 ? "s" : ""}`,
+          body: `${input.moveCode}: ${lines}. Confirm the crew brings these.`,
+          icon: "package",
+          link: `/admin/moves/${input.moveId}`,
+          eventSlug: "client_addons_selected",
+          sourceType: "move",
+          sourceId: input.moveId,
         });
       },
     },

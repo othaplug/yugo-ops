@@ -544,6 +544,7 @@ function CoordinatorRow({
 
 export default function TrackMoveClient({
   move,
+  resolvedMoveAddons = [],
   crew,
   token,
   fromNotify = false,
@@ -584,6 +585,7 @@ export default function TrackMoveClient({
   suppliesUseSandbox = false,
 }: {
   move: any;
+  resolvedMoveAddons?: { name: string; detail?: string; qty?: number; price: number }[];
   crew: { id: string; name: string; members?: string[] } | null;
   token: string;
   fromNotify?: boolean;
@@ -2167,6 +2169,71 @@ export default function TrackMoveClient({
               to office / white-glove / delivery / event / specialty /
               labour flows. Allowlist to residential; every other service
               type gets its scope from its own dedicated surface. */}
+          {/* Add-ons the client selected — shown prominently so nothing is a
+              surprise on move day (bins count, TV size/mount, quantities). */}
+          {resolvedMoveAddons.length > 0 && (
+            <div
+              className="mb-4 rounded-2xl border overflow-hidden"
+              style={{ borderColor: `${FOREST}22` }}
+            >
+              <div
+                className="flex items-center gap-2 px-4 py-2.5"
+                style={{ backgroundColor: `${FOREST}0D` }}
+              >
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={FOREST}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+                  <path d="m3.3 7 8.7 5 8.7-5" />
+                  <path d="M12 22V12" />
+                </svg>
+                <p
+                  className="text-[11px] uppercase tracking-wider font-semibold"
+                  style={{ color: FOREST }}
+                >
+                  Your add-ons
+                </p>
+              </div>
+              <div className="px-4 py-3 space-y-2">
+                {resolvedMoveAddons.map((a, i) => (
+                  <div key={i} className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p
+                        className="text-[13px] font-semibold leading-snug"
+                        style={{ color: FOREST }}
+                      >
+                        {a.name}
+                        {a.qty && a.qty > 1 ? ` ×${a.qty}` : ""}
+                      </p>
+                      {a.detail ? (
+                        <p
+                          className="text-[11px] mt-0.5 leading-snug"
+                          style={{ color: FOREST, opacity: 0.65 }}
+                        >
+                          {a.detail}
+                        </p>
+                      ) : null}
+                    </div>
+                    <span
+                      className="text-[13px] font-semibold tabular-nums shrink-0"
+                      style={{ color: FOREST }}
+                    >
+                      ${a.price.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {(serviceType === "local_move" || serviceType === "long_distance") && (() => {
             const rawTier = move.tier_selected || move.tier || move.service_tier || "";
             const tierKey = normalizeTierKey(rawTier);

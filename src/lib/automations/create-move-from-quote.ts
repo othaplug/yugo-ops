@@ -11,6 +11,11 @@ import { convertedRecordCodeFromQuoteId } from "@/lib/quotes/quote-id";
 import { serviceTypeHasTiers } from "@/lib/quote-service-types";
 import { ontarioHstBreakdownFromPreTax } from "@/lib/format-currency";
 import { inferRoomFromItem, isDeliveryServiceType, DELIVERY_ROOM_LABEL } from "@/lib/inventory-room-inference";
+import {
+  calculateAddons,
+  addonAmountForTier,
+  type AddonSelection,
+} from "@/lib/quotes/price-addons";
 
 /* ═══════════════════════════════════════════════════════════
    createMoveFromQuote
@@ -238,6 +243,57 @@ export async function createMoveFromQuote(
   } else {
     basePrice = quote.custom_price ?? 0;
     totalWithTax = ontarioHstBreakdownFromPreTax(basePrice).inclusive;
+  }
+
+  // ── Client-selected add-ons ────────────────────────────────────────────────
+  // A client can add add-ons (TV mounting, bin rental, assembly, ...) on the
+  // quote page AFTER the quote was generated; they persist to
+  // quotes.selected_addons and reach us via input.selectedAddons. Those never
+  // went through the pricing engine, so without this block the move is created
+  // at the bare tier / custom price and every client-added add-on is billed as
+  // $0 (MV-30378: the client picked $912 of add-ons — TV mount, bins, assembly —
+  // and was charged $1,688 base only). Re-price the CURRENT selection and add
+  // only the portion NOT already baked into basePrice at generation
+  // (factors_applied.addon_baked_total), so an operator-baked add-on is never
+  // charged twice. Skip for multi-scenario, whose accepted price already stands.
+  const selectedAddonsForPricing = (input.selectedAddons ??
+    quote.selected_addons ??
+    []) as AddonSelection[];
+  if (
+    scenarioPreTaxPrice == null &&
+    Array.isArray(selectedAddonsForPricing) &&
+    selectedAddonsForPricing.length > 0
+  ) {
+    try {
+      const addonResult = await calculateAddons(
+        supabase,
+        selectedAddonsForPricing,
+        basePrice,
+        quote.move_size,
+        quote.service_type,
+      );
+      // Amount the current selection is worth for the locked tier (custom-price
+      // / flat services have no tier exclusions → the full total).
+      const currentForTier = selectedTier
+        ? addonAmountForTier(addonResult, selectedTier)
+        : addonResult.total;
+      // How much add-on value is already inside basePrice from generation.
+      // Cap at the current result total so we never subtract more than exists.
+      const factorsApplied = (quote.factors_applied ?? {}) as Record<string, unknown>;
+      const bakedTotal = Math.max(0, Number(factorsApplied.addon_baked_total ?? 0) || 0);
+      const bakedForTier = Math.min(bakedTotal, addonResult.total);
+      const addonDelta = Math.max(0, Math.round(currentForTier) - Math.round(bakedForTier));
+      if (addonDelta > 0) {
+        basePrice = Math.round(basePrice + addonDelta);
+        totalWithTax = ontarioHstBreakdownFromPreTax(basePrice).inclusive;
+      }
+    } catch (err) {
+      // Never block a booking on add-on math; log loudly so the leak is visible.
+      console.error(
+        `[create-move-from-quote] add-on re-pricing failed for quote ${input.quoteId}; move created at base price`,
+        err,
+      );
+    }
   }
 
   const balanceAmount = totalWithTax - input.depositAmount;

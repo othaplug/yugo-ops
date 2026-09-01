@@ -3493,6 +3493,7 @@ export function internalBookingAlertEmail(params: {
   toAddress: string;
   moveDate: string | null;
   paymentId: string;
+  addonLines?: { name: string; qty?: number; price: number; detail?: string }[];
 }): string {
   const {
     clientName,
@@ -3507,6 +3508,7 @@ export function internalBookingAlertEmail(params: {
     toAddress,
     moveDate,
     paymentId,
+    addonLines,
   } = params;
 
   const dateDisplay = moveDate
@@ -3524,6 +3526,31 @@ export function internalBookingAlertEmail(params: {
   const ivf = `${iv};color:${EMAIL_FOREST}`;
   const ivg = `${iv};color:#2D7A4F`;
   const routeHtml = `${emailMapLinkHtml(fromAddress)}<span style="color:${PREMIUM_BODY_MUTED};font-weight:600;"> &rarr; </span>${emailMapLinkHtml(toAddress)}`;
+
+  // Client-selected add-ons, surfaced prominently so crew and coordinator know
+  // exactly what was ordered (how many bins, which TV mount). Missing this is
+  // what nearly caused a service failure on MV-30378.
+  const addonBlock =
+    addonLines && addonLines.length > 0
+      ? `
+    <div style="background:${PREMIUM_MUTED_FILL};border-left:3px solid ${EMAIL_FOREST};padding:12px 14px;margin-bottom:16px;">
+      <div style="font-size:11px;color:${EMAIL_FOREST};font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Add-ons the client selected</div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;font-family:${PREMIUM_FONT};">
+        ${addonLines
+          .map(
+            (a) => `
+        <tr>
+          <td style="padding:3px 0;font-size:12px;color:${PREMIUM_BODY};font-weight:600;vertical-align:top;">
+            ${escapeHtmlEmail(a.name)}${a.qty && a.qty > 1 ? ` &times;${a.qty}` : ""}
+            ${a.detail ? `<div style="font-size:11px;color:${PREMIUM_BODY_MUTED};font-weight:500;margin-top:1px;">${escapeHtmlEmail(a.detail)}</div>` : ""}
+          </td>
+          <td style="padding:3px 0;font-size:12px;color:${PREMIUM_BODY};font-weight:600;text-align:right;vertical-align:top;white-space:nowrap;">${formatCurrencyEmail(a.price)}</td>
+        </tr>`,
+          )
+          .join("")}
+      </table>
+    </div>`
+      : "";
 
   return emailLayout(
     `
@@ -3599,9 +3626,11 @@ export function internalBookingAlertEmail(params: {
       })}
     </table>
 
+    ${addonBlock}
+
     <div style="background:${PREMIUM_MUTED_FILL};padding:${PREMIUM_CALLOUT_PAD};margin-bottom:16px;">
       <div style="font-size:11px;color:${EMAIL_FOREST};font-weight:600;line-height:1.35;">Action needed:</div>
-      <div style="font-size:12px;color:${PREMIUM_BODY};margin-top:4px;line-height:1.45;">Assign a crew and confirm timing with the client within 24 hours.</div>
+      <div style="font-size:12px;color:${PREMIUM_BODY};margin-top:4px;line-height:1.45;">Assign a crew and confirm timing with the client within 24 hours.${addonLines && addonLines.length > 0 ? " Bring the add-on items listed above." : ""}</div>
     </div>
   `,
     undefined,

@@ -9,6 +9,7 @@ import { parseDateOnly } from "@/lib/date-format";
 import TrackMoveClient from "./TrackMoveClient";
 import { fetchMoveProjectWithTree } from "@/lib/move-projects/fetch";
 import { pickupLocationsFromQuote, abbreviateLocationRows } from "@/lib/quotes/quote-address-display";
+import { calculateAddons, type AddonSelection } from "@/lib/quotes/price-addons";
 
 export const metadata: Metadata = {
   title: "Track Your Move",
@@ -257,10 +258,21 @@ export default async function TrackMovePage({
   // factors_applied (not copied to the move row); surface it so the track page
   // can tailor copy. Defaults to "delivery" for legacy/unknown.
   let whiteGloveKind: "delivery" | "service" = "delivery";
+  // Itemized add-ons the client selected, resolved to name + specifics + price so
+  // the track page can show them prominently (bins count, TV size/mount). Priced
+  // through the shared engine and tier-adjusted so it matches what was charged.
+  let resolvedMoveAddons: {
+    name: string;
+    detail?: string;
+    qty?: number;
+    price: number;
+  }[] = [];
   if (move.quote_id) {
     const { data: originQuote } = await supabase
       .from("quotes")
-      .select("factors_applied, from_address, from_access")
+      .select(
+        "factors_applied, from_address, from_access, selected_tier, tiers, custom_price, move_size, service_type, selected_addons",
+      )
       .eq("id", move.quote_id)
       .maybeSingle();
     if (originQuote) {
@@ -270,6 +282,45 @@ export default async function TrackMovePage({
         pickupLocationsFromQuote(fac, originQuote.from_address, originQuote.from_access),
       );
       if (rows.length > 1) quotePickupStops = rows;
+
+      // Prefer what is attached to the move; fall back to the quote selection.
+      const moveAddonSel = Array.isArray(move.addons) ? move.addons : [];
+      const quoteAddonSel = Array.isArray(originQuote.selected_addons)
+        ? originQuote.selected_addons
+        : [];
+      const addonSel = (moveAddonSel.length ? moveAddonSel : quoteAddonSel) as AddonSelection[];
+      if (addonSel.length > 0) {
+        const tier =
+          (move as { tier_selected?: string | null }).tier_selected ||
+          originQuote.selected_tier ||
+          null;
+        const basePrice =
+          tier && originQuote.tiers
+            ? Number(
+                (originQuote.tiers as Record<string, { price?: number }>)?.[tier]
+                  ?.price ?? move.estimate ?? 0,
+              )
+            : Number(originQuote.custom_price ?? move.estimate ?? 0);
+        try {
+          const addonResult = await calculateAddons(
+            supabase,
+            addonSel,
+            basePrice,
+            originQuote.move_size,
+            originQuote.service_type,
+          );
+          resolvedMoveAddons = addonResult.breakdown
+            .filter((b) => b.subtotal > 0)
+            .map((b) => ({
+              name: b.name,
+              detail: b.detail,
+              qty: b.quantity && b.quantity > 1 ? b.quantity : undefined,
+              price: b.subtotal,
+            }));
+        } catch {
+          resolvedMoveAddons = [];
+        }
+      }
     }
   }
 
@@ -424,6 +475,7 @@ export default async function TrackMovePage({
   return (
     <TrackMoveClient
       move={move}
+      resolvedMoveAddons={resolvedMoveAddons}
       eventSibling={eventSibling}
       companyContactEmail={companyContactEmail}
       crew={crew}

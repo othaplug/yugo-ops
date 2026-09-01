@@ -30,7 +30,11 @@ import {
   type OfficeScheduleFlags,
 } from "@/lib/pricing/non-residential-quote-calcs";
 import { resolveSingleItemLines, type SingleItemLine } from "@/lib/quotes/single-item-types";
-import { STORAGE_ADDON_SLUG, storageWeeklyRate, clampStorageWeeks } from "@/lib/quotes/storage-pricing";
+import {
+  calculateAddons,
+  type AddonSelection,
+  type AddonBreakdownItem,
+} from "@/lib/quotes/price-addons";
 import {
   formatTruckBreakdownLine,
   formatTruckResidentialUpgradeLine,
@@ -647,42 +651,12 @@ export interface EventLegInput {
   to_long_carry?: boolean;
 }
 
-interface AddonSelection {
-  addon_id: string;
-  quantity?: number;
-  tier_index?: number;
-  /**
-   * Variant-matrix selection (currently only TV wall mounting). Presence
-   * of this field routes the engine through the variant_matrix branch.
-   * Multiple selections may share addon_id — one per TV in the household.
-   */
-  variant?: {
-    size: string;
-    type: string;
-  };
-}
-
 interface TierResult {
   price: number;
   deposit: number;
   tax: number;
   total: number;
   includes: string[];
-}
-
-interface AddonBreakdownItem {
-  addon_id: string;
-  slug: string;
-  name: string;
-  price: number;
-  quantity: number;
-  subtotal: number;
-  /** Preserved on variant_matrix rows so the client display can label the line. */
-  variant?: {
-    size: string;
-    type: string;
-    mount_model?: string;
-  };
 }
 
 type SupabaseAdmin = ReturnType<typeof createAdminClient>;
@@ -748,7 +722,6 @@ import {
   type JobScope,
 } from "@/lib/pricing/b2b-job-scope-pricing";
 import { computeB2bFlatBandPrice } from "@/lib/pricing/b2b-flatband-vertical";
-import { effectiveExcludedTiers } from "@/lib/quotes/addon-visibility";
 import { priceCabinetryFlatBand } from "@/lib/pricing/b2b-flatband";
 import {
   accessProfileSurcharge,
@@ -1194,111 +1167,6 @@ function eventDeposit(
   return Math.min(inclusive, Math.max(step, dep));
 }
 
-// ═══════════════════════════════════════════════
-// Add-on calculation (Step 6.5)
-// ═══════════════════════════════════════════════
-
-async function calculateAddons(
-  sb: SupabaseAdmin,
-  selections: AddonSelection[] | undefined,
-  baseTotal: number,
-  moveSize?: string | null,
-  serviceType?: string | null,
-): Promise<{
-  total: number;
-  breakdown: AddonBreakdownItem[];
-  byTierExclusion: Map<string, number>;
-}> {
-  if (!selections || selections.length === 0) {
-    return { total: 0, breakdown: [], byTierExclusion: new Map() };
-  }
-
-  const addonIds = selections.map((s) => s.addon_id);
-  const { data: addons } = await sb.from("addons").select("*").in("id", addonIds);
-  const addonMap = new Map<string, Record<string, unknown>>();
-  for (const a of addons ?? []) addonMap.set(a.id, a);
-
-  let total = 0;
-  const breakdown: AddonBreakdownItem[] = [];
-  const byTierExclusion = new Map<string, number>();
-
-  for (const sel of selections) {
-    const addon = addonMap.get(sel.addon_id);
-    if (!addon) continue;
-
-    let cost = 0;
-    const qty = sel.quantity || 1;
-    let variantOut: AddonBreakdownItem["variant"] | undefined;
-
-    switch (addon.price_type as string) {
-      case "flat":
-        cost = (addon.price as number);
-        break;
-      case "per_unit":
-        // Secure storage is billed per week at a size-based rate; quantity is
-        // the number of weeks (clamped 1–STORAGE_MAX_WEEKS). The DB price is a
-        // placeholder — storageWeeklyRate(moveSize) is the source of truth.
-        if ((addon.slug as string) === STORAGE_ADDON_SLUG) {
-          cost = storageWeeklyRate(moveSize, serviceType) * clampStorageWeeks(qty);
-        } else {
-          cost = (addon.price as number) * qty;
-        }
-        break;
-      case "tiered": {
-        const tiers = addon.tiers as { label: string; price: number }[] | null;
-        cost = tiers?.[sel.tier_index ?? 0]?.price ?? 0;
-        break;
-      }
-      case "percent":
-        cost = Math.round(baseTotal * ((addon.percent_value as number) ?? 0));
-        break;
-      case "variant_matrix": {
-        // Look up variant_config.sizes[size].types[type].price × qty.
-        // Skip silently on a malformed selection — the picker validates
-        // before submit; anything that gets here is a stale payload.
-        const cfg = addon.variant_config as
-          | { sizes?: Record<string, { types?: Record<string, { price?: number; mount_model?: string }> }> }
-          | null;
-        const size = sel.variant?.size;
-        const type = sel.variant?.type;
-        const cell = size && type ? cfg?.sizes?.[size]?.types?.[type] : null;
-        if (cell && typeof cell.price === "number" && size && type) {
-          cost = cell.price * qty;
-          variantOut = {
-            size,
-            type,
-            mount_model: cell.mount_model,
-          };
-        }
-        break;
-      }
-    }
-
-    total += cost;
-    breakdown.push({
-      addon_id: addon.id as string,
-      slug: addon.slug as string,
-      name: addon.name as string,
-      price: cost,
-      quantity: qty,
-      subtotal: cost,
-      ...(variantOut ? { variant: variantOut } : {}),
-    });
-
-    // Per-tier exclusion via the single source of truth (DB excluded_tiers +
-    // the code-side Estate-included list), so a tier that already includes this
-    // service is never charged for it (fixes the Estate/Signature double-charge).
-    const excluded = effectiveExcludedTiers(
-      addon.slug as string,
-      addon.excluded_tiers as string[] | null,
-    );
-    for (const tier of excluded) {
-      byTierExclusion.set(tier, (byTierExclusion.get(tier) ?? 0) + cost);
-    }
-  }
-
-  return { total, breakdown, byTierExclusion };
-}
 
 // ═══════════════════════════════════════════════
 // Rounding helper
@@ -7261,7 +7129,13 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       // R2: inbound shipment link for receive-and-deliver scopes.
       inbound_shipment_id: input.inbound_shipment_id?.trim() || null,
       deposit_amount: depositAmount,
-      factors_applied: factors,
+      // addon_baked_total records exactly how much add-on value is already
+      // folded into the tier/custom price at generation, so move creation can
+      // add any add-ons the CLIENT selects afterward on the quote page without
+      // double-charging the ones the operator already baked in. Without this the
+      // move was created at the bare tier price and every client-added add-on
+      // went uncharged (see MV-30378).
+      factors_applied: { ...factors, addon_baked_total: addonResult.total },
       selected_addons: addonResult.breakdown,
       expires_at: new Date(Date.now() + expiryDays * 86_400_000).toISOString(),
       // Strip em/en dashes from item names at the write boundary so no dash can

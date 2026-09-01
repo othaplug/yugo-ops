@@ -256,7 +256,10 @@ interface MoveDetailClientProps {
       days?: Record<string, unknown>[];
     }[];
   } | null;
-  resolvedAddons?: { name: string; slug: string; qty?: number; price: number }[];
+  resolvedAddons?: { name: string; slug: string; qty?: number; price: number; detail?: string }[];
+  addonCatalog?: AddAddonCatalogItem[];
+  moveTier?: string | null;
+  hasCardOnFile?: boolean;
 }
 import {
   MOVE_STATUS_OPTIONS,
@@ -267,6 +270,7 @@ import {
   normalizeStatus,
 } from "@/lib/move-status";
 import RecommendedCrewPanel from "./RecommendedCrewPanel";
+import AddAddonModule, { type AddonCatalogItem as AddAddonCatalogItem } from "./AddAddonModule";
 
 function tierDisplayLabel(tier: string | null | undefined): string | null {
   if (!tier) return null;
@@ -542,6 +546,9 @@ export default function MoveDetailClient({
   eventSiblings = [],
   residentialMoveProject = null,
   resolvedAddons = [],
+  addonCatalog = [],
+  moveTier = null,
+  hasCardOnFile = false,
   clientPhotosUpdate = null,
 }: MoveDetailClientProps) {
   const router = useRouter();
@@ -3387,19 +3394,24 @@ export default function MoveDetailClient({
       />
       <MoveFilesSection moveId={move.id} moveStatus={move.status} />
 
-      {/* Add-ons selected by the client at booking */}
-      {resolvedAddons.length > 0 && (
+      {/* Add-ons selected by the client at booking + admin post-booking add-on module */}
+      {(resolvedAddons.length > 0 || (addonCatalog.length > 0 && !isCompleted)) && (
         <div className="border-t border-[var(--yu3-line-subtle)] py-4">
           <div className="text-[10px] font-bold tracking-widest uppercase text-[var(--yu3-ink-muted)] mb-3">
             Add-ons
           </div>
           <div className="space-y-1">
             {resolvedAddons.map((a, i) => (
-              <div key={i} className="flex items-center justify-between text-sm">
+              <div key={i} className="flex items-start justify-between text-sm gap-3">
                 <span className="text-[var(--yu3-ink-base)]">
                   {a.name}{a.qty && a.qty > 1 ? ` ×${a.qty}` : ""}
+                  {a.detail ? (
+                    <span className="block text-xs text-[var(--yu3-ink-muted)] mt-0.5">
+                      {a.detail}
+                    </span>
+                  ) : null}
                 </span>
-                <span className="text-[var(--yu3-ink-muted)] font-medium tabular-nums">
+                <span className="text-[var(--yu3-ink-muted)] font-medium tabular-nums shrink-0">
                   ${a.price.toFixed(2)}
                 </span>
               </div>
@@ -3413,6 +3425,14 @@ export default function MoveDetailClient({
               </div>
             )}
           </div>
+          {addonCatalog.length > 0 && !isCompleted && (
+            <AddAddonModule
+              moveId={move.id}
+              catalog={addonCatalog}
+              moveTier={moveTier}
+              hasCardOnFile={hasCardOnFile}
+            />
+          )}
         </div>
       )}
 
