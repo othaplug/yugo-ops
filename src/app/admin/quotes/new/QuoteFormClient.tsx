@@ -1632,6 +1632,13 @@ export default function QuoteFormClient({
   const [officeQuoteContext, setOfficeQuoteContext] = useState<OfficeQuoteContext>({});
   const [officeTruckCount, setOfficeTruckCount] = useState(1);
 
+  // Residential truck override — "" = use the score-based auto pick. Primary is
+  // floored to the move-size minimum server-side; secondary ("" = none) adds a
+  // support truck. Both flow to truck_primary/truck_secondary and are visible on
+  // the client proposal and at booking.
+  const [residentialTruckOverride, setResidentialTruckOverride] = useState("");
+  const [residentialTruckSecondary, setResidentialTruckSecondary] = useState("");
+
   // Residential assembly auto-detection — null = use auto, true/false = coordinator override
   const [assemblyOverride, setAssemblyOverride] = useState<boolean | null>(null);
   // Tracks coordinator's explicit confirmation when overriding a significant size mismatch.
@@ -2370,6 +2377,8 @@ export default function QuoteFormClient({
       officeKitchen,
       officeInventory,
       officeTruckCount,
+      residentialTruckOverride,
+      residentialTruckSecondary,
       assemblyOverride,
       sizeOverrideConfirmed,
       itemDescription,
@@ -2606,6 +2615,8 @@ export default function QuoteFormClient({
       if (s.officeKitchen !== undefined) setOfficeKitchen(s.officeKitchen as Parameters<typeof setOfficeKitchen>[0]);
       arr(s.officeInventory, (v) => setOfficeInventory(v as Parameters<typeof setOfficeInventory>[0]));
       if (s.officeTruckCount !== undefined) setOfficeTruckCount(s.officeTruckCount as Parameters<typeof setOfficeTruckCount>[0]);
+      if (s.residentialTruckOverride !== undefined) setResidentialTruckOverride(String(s.residentialTruckOverride ?? ""));
+      if (s.residentialTruckSecondary !== undefined) setResidentialTruckSecondary(String(s.residentialTruckSecondary ?? ""));
       if (s.assemblyOverride !== undefined) setAssemblyOverride(s.assemblyOverride as Parameters<typeof setAssemblyOverride>[0]);
       if (s.sizeOverrideConfirmed !== undefined) setSizeOverrideConfirmed(s.sizeOverrideConfirmed as Parameters<typeof setSizeOverrideConfirmed>[0]);
       if (s.itemDescription !== undefined) setItemDescription(s.itemDescription as Parameters<typeof setItemDescription>[0]);
@@ -5057,6 +5068,8 @@ export default function QuoteFormClient({
     setOfficeBoardroomCount(1);
     setOfficeKitchen(false);
     setOfficeTruckCount(1);
+    setResidentialTruckOverride("");
+    setResidentialTruckSecondary("");
     setItemDescription("");
     setItemCategory("standard_furniture");
     setItemWeight("");
@@ -6322,6 +6335,12 @@ export default function QuoteFormClient({
         if (sizeOverrideConfirmed) {
           base.size_override_confirmed = true;
         }
+        // Coordinator truck override — empty = use the score-based auto pick.
+        // Primary is floored to the move-size minimum server-side; a secondary
+        // adds a support truck the client sees on the proposal and at booking.
+        if (residentialTruckOverride) base.truck_type = residentialTruckOverride;
+        if (residentialTruckSecondary)
+          base.truck_secondary = residentialTruckSecondary;
         if (fromLat != null && Number.isFinite(fromLat)) base.from_lat = fromLat;
         if (fromLng != null && Number.isFinite(fromLng)) base.from_lng = fromLng;
         if (toLat != null && Number.isFinite(toLat)) base.to_lat = toLat;
@@ -6915,6 +6934,8 @@ export default function QuoteFormClient({
       officeBoardroomCount,
       officeKitchen,
       officeTruckCount,
+      residentialTruckOverride,
+      residentialTruckSecondary,
       officeCrewSize,
       officeEstHours,
       quotePreTaxOverride,
@@ -15320,6 +15341,25 @@ export default function QuoteFormClient({
                         string,
                         unknown
                       >;
+                      // Residential: show the RESOLVED truck the client actually
+                      // receives (factors.truck_recommended = floored to the
+                      // effective size + override-aware), NOT the raw labour-score
+                      // truck. This is what fixed the 24ft-vs-20ft split: the rail,
+                      // the proposal, and the booking now read one value.
+                      if (
+                        serviceType === "local_move" ||
+                        serviceType === "long_distance"
+                      ) {
+                        const primary = String(
+                          fac.truck_recommended ?? quoteResult.labour.truckSize,
+                        );
+                        const sec =
+                          residentialTruckSecondary ||
+                          String(quoteResult.truck?.secondary?.vehicle_type ?? "");
+                        return sec && sec !== "none"
+                          ? `${primary} + ${sec} (support)`
+                          : primary;
+                      }
                       const n =
                         serviceType === "event"
                           ? Math.max(1, Math.round(Number(fac.event_truck_count ?? 1)) || 1)
@@ -15365,7 +15405,13 @@ export default function QuoteFormClient({
                 a default primary (16ft) but no fleet is actually assigned.
                 Hide the block so the sidebar doesn't lie about "16ft Box
                 Truck" for a no-truck job. */}
-            {quoteResult?.truck?.primary &&
+            {/* Residential renders even when the allocator returns no truck
+                object — the card shows the RESOLVED truck (residentialFleetLabel
+                from factors.truck_recommended) plus the override picker. */}
+            {(quoteResult?.truck?.primary ||
+              ((serviceType === "local_move" ||
+                serviceType === "long_distance") &&
+                !!quoteResult)) &&
               !(
                 serviceType === "labour_only" && !labourTruckRequired
               ) && (() => {
@@ -15424,6 +15470,34 @@ export default function QuoteFormClient({
                   )}`;
                 }
               }
+              // Residential: the shared allocator keys off move_size + a modifier
+              // band and returns e.g. "16ft Box Truck" — divergent from the truck
+              // the client is actually quoted. Show the RESOLVED truck instead
+              // (factors.truck_recommended + any override secondary) so this card
+              // agrees with the estimate line, the proposal, and the booking.
+              const isResidentialFleet =
+                serviceType === "local_move" || serviceType === "long_distance";
+              const residentialFleetLabel = isResidentialFleet
+                ? (() => {
+                    const p = String(
+                      factorsObj.truck_recommended ??
+                        quoteResult.labour?.truckSize ??
+                        "",
+                    );
+                    // Never return null for residential: this label is what
+                    // keeps the card from dereferencing the (possibly absent)
+                    // allocator primary, and it must render even when the
+                    // allocator returned no truck object.
+                    if (!p) return "Dedicated Moving Truck";
+                    const s =
+                      residentialTruckSecondary ||
+                      String(quoteResult.truck?.secondary?.vehicle_type ?? "");
+                    const label = truckSizeLabel(p);
+                    return s && s !== "none"
+                      ? `${label} + ${truckSizeLabel(s)} (support)`
+                      : label;
+                  })()
+                : null;
               return (
               <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-[11px]">
                 <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
@@ -15433,17 +15507,17 @@ export default function QuoteFormClient({
                   <Truck className="w-3.5 h-3.5 text-[var(--gold)]" />
                   <div>
                     <span className="text-[var(--tx)] font-medium">
-                      {eventFleetLabel ??
-                        `${officeTruckCount > 1 ? `${officeTruckCount} × ` : ""}${quoteResult.truck.primary.display_name}`}
+                      {eventFleetLabel ?? residentialFleetLabel ??
+                        `${officeTruckCount > 1 ? `${officeTruckCount} × ` : ""}${quoteResult.truck?.primary?.display_name ?? ""}`}
                     </span>
                     {/* Null-safed 2026-06-27 (YG-30322 event quote crash):
                         event-shape truck.primary doesn't carry cargo_cubic_ft,
                         so the bare .toLocaleString() threw and unmounted the
                         whole form into the Quotes error boundary. */}
-                    {typeof quoteResult.truck.primary.cargo_cubic_ft === "number" && (
+                    {!residentialFleetLabel && typeof quoteResult.truck?.primary?.cargo_cubic_ft === "number" && (
                       <span className="text-[var(--tx3)] ml-1.5">
                         {(
-                          quoteResult.truck.primary.cargo_cubic_ft *
+                          (quoteResult.truck?.primary?.cargo_cubic_ft ?? 0) *
                           officeTruckCount
                         ).toLocaleString()}{" "}
                         cu ft
@@ -15452,21 +15526,80 @@ export default function QuoteFormClient({
                     )}
                   </div>
                 </div>
-                {quoteResult.truck.secondary && (
+                {!residentialFleetLabel && quoteResult.truck?.secondary && (
                   <div className="flex items-center gap-2">
                     <Plus className="w-3.5 h-3.5 text-[var(--gold)]" />
                     <div>
                       <span className="text-[var(--tx)] font-medium">
-                        {quoteResult.truck.secondary.display_name}
+                        {quoteResult.truck?.secondary?.display_name}
                       </span>
                       <span className="text-[var(--tx3)] ml-1"> (support)</span>
                     </div>
                   </div>
                 )}
-                {quoteResult.truck.notes && (
+                {quoteResult.truck?.notes && (
                   <p className="text-[10px] text-[var(--tx3)] italic">
                     {quoteResult.truck.notes}
                   </p>
+                )}
+                {isResidentialFleet && (
+                  <div className="pt-2.5 mt-1 border-t border-[var(--brd)]/50 space-y-2">
+                    <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+                      Override truck
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="block">
+                        <span className="text-[10px] text-[var(--tx3)]">
+                          Primary
+                        </span>
+                        <select
+                          value={residentialTruckOverride}
+                          onChange={(e) =>
+                            setResidentialTruckOverride(e.target.value)
+                          }
+                          className="mt-0.5 w-full text-[11px] rounded-lg border border-[var(--brd)] bg-[var(--card)] px-2 py-1.5 text-[var(--tx)]"
+                        >
+                          <option value="">
+                            Auto
+                            {factorsObj.truck_recommended
+                              ? ` (${String(factorsObj.truck_recommended)})`
+                              : ""}
+                          </option>
+                          <option value="sprinter">Extended Sprinter van</option>
+                          <option value="16ft">16ft</option>
+                          <option value="20ft">20ft</option>
+                          <option value="24ft">24ft</option>
+                          <option value="26ft">26ft</option>
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="text-[10px] text-[var(--tx3)]">
+                          Add support truck
+                        </span>
+                        <select
+                          value={residentialTruckSecondary}
+                          onChange={(e) =>
+                            setResidentialTruckSecondary(e.target.value)
+                          }
+                          className="mt-0.5 w-full text-[11px] rounded-lg border border-[var(--brd)] bg-[var(--card)] px-2 py-1.5 text-[var(--tx)]"
+                        >
+                          <option value="">None</option>
+                          <option value="sprinter">Extended Sprinter van</option>
+                          <option value="16ft">16ft</option>
+                          <option value="20ft">20ft</option>
+                          <option value="24ft">24ft</option>
+                          <option value="26ft">26ft</option>
+                        </select>
+                      </label>
+                    </div>
+                    {(residentialTruckOverride || residentialTruckSecondary) && (
+                      <p className="text-[10px] text-[var(--gold)]">
+                        Regenerate to apply. A truck below the move-size minimum is
+                        floored up automatically. The client sees this on the
+                        proposal and at booking.
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
               );

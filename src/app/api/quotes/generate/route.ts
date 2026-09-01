@@ -523,7 +523,13 @@ interface QuoteInput {
   to_parking?: "dedicated" | "street" | "no_dedicated";
   from_long_carry?: boolean;
   to_long_carry?: boolean;
+  /** Coordinator override for the PRIMARY truck (residential). Floored to the
+   *  move-size minimum; empty/undefined = use the score-based auto pick. */
   truck_type?: string;
+  /** Coordinator override for a SECOND (support) truck on a residential move,
+   *  when the load needs more than one vehicle. Empty/"none"/undefined = let the
+   *  allocator decide (usually no secondary). */
+  truck_secondary?: string;
   /** Extra pickup stops after primary `from_address` (local / long distance / white glove). */
   additional_pickup_addresses?: { address?: string; access_profile?: unknown }[];
   /** Extra drop-off stops after primary `to_address`. */
@@ -1875,14 +1881,24 @@ async function calcResidential(
       ? (invResult.itemScore ?? 0) + (invResult.boxCount ?? 0) * 0.3
       : invResult.inventoryScore;
   // Coordinator override (input.truck_type) wins — but ONLY after flooring
-  // by move size. Without the floor, a coordinator setting truck_type to
-  // "sprinter" on a 3BR Estate would silently undersize the truck and
-  // mis-price the job. Floor protects against operator mistakes as well
-  // as the score-based recommender.
+  // by the EFFECTIVE (priced) size. Two reasons for effectiveSize, not the raw
+  // move_size:
+  //   1. An inventory-escalated job (e.g. detected 2BR but priced/staffed as
+  //      3BR because the load exceeds the 2BR band) must get at least the 3BR
+  //      truck floor (24ft), so the physical truck matches the price and crew.
+  //      Flooring by move_size left it at the 2BR floor (sprinter) and the
+  //      score cliff then handed back a 20ft — a 3BR-priced job on a 2BR truck.
+  //   2. Without the floor, a coordinator setting truck_type to "sprinter" on a
+  //      3BR would silently undersize the truck and mis-price the job.
+  // The score-based recommender still upsizes ABOVE the floor for heavy loads.
+  const truckFloorSize = effectiveSize;
   const recTruck = input.truck_type
-    ? floorTruckByMoveSize(normalizeTruckType(input.truck_type), input.move_size)
-    : recommendedTruckFromInventoryScore(truckSizingScore, input.move_size);
-  const truckSur = residentialTruckFeeUpgrade(config, input.move_size, recTruck);
+    ? floorTruckByMoveSize(normalizeTruckType(input.truck_type), truckFloorSize)
+    : recommendedTruckFromInventoryScore(truckSizingScore, truckFloorSize);
+  // Upgrade fee measured against the effective size's base truck, so the fee is
+  // the delta over the (escalated) base the client is already paying for — not
+  // double-counted against the smaller detected size's base.
+  const truckSur = residentialTruckFeeUpgrade(config, truckFloorSize, recTruck);
 
   const estateDayPlan = calculateEstateDays(effectiveSize, invResult.inventoryScore);
   const loadedRateForEstateSchedule = crewLoadedHourlyRate(config);
@@ -6240,39 +6256,48 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       ? (factors.truck_recommended as string)
       : null;
 
-  if (truckResult.primary && tiers) {
-    // The truck label that gets stored on quote.truck_primary (and
-    // shown in MOVE DETAILS) is residentialPricedTruck — derived from
-    // factors.truck_recommended in calcResidential. allocateTruck()
-    // and recTruck can disagree (e.g. 3BR with light inventory: pricing
-    // truck = 24ft, allocator = 20ft). The previous code used the
-    // allocator value here, so MOVE DETAILS read 24ft while the tier
-    // bullet said "20ft dedicated moving truck" — clients saw the
-    // contradiction. Always prefer the priced truck when it's set;
-    // fall back to the allocator only when the priced truck is missing.
-    const preferredTruckKey =
+  // Tier "what's included" truck bullet: ALWAYS prefer the priced/stored truck
+  // (residentialPricedTruck = recTruck = quote.truck_primary), so the client-
+  // facing bullet matches MOVE DETAILS, the booking email, and the tracking
+  // page — even when the allocator returned no primary (common for residential:
+  // truckResult.primary is often null) or the coordinator overrode the truck /
+  // added a support truck. Previously the null-allocator path fell through to
+  // the labour-estimate line, so the bullet could read "20ft" while
+  // quote.truck_primary was 24ft/26ft — the exact contradiction a client caught.
+  // Falls back to the allocator, then the labour line, only with no priced truck.
+  if (tiers) {
+    const secondaryOverrideKey =
+      (svcType === "local_move" || svcType === "long_distance") &&
+      typeof input.truck_secondary === "string" &&
+      normalizeTruckType(input.truck_secondary) !== "none"
+        ? normalizeTruckType(input.truck_secondary)
+        : null;
+    const primaryTruckKey =
       residentialPricedTruck && residentialPricedTruck !== "none"
         ? residentialPricedTruck
-        : truckResult.primary.vehicle_type;
-    const primaryDisplay =
-      TRUCK_DISPLAY[preferredTruckKey] ||
-      TRUCK_DISPLAY[truckResult.primary.vehicle_type] ||
-      truckResult.primary.display_name;
-    const truckLine = truckResult.isMultiVehicle && truckResult.secondary
-      ? `${primaryDisplay} + support van`
-      : primaryDisplay;
-    for (const tierName of Object.keys(tiers)) {
-      const t = tiers[tierName];
-      const idx = t.includes.findIndex((s: string) => s.toLowerCase().includes("truck") || s.toLowerCase().includes("sprinter"));
-      if (idx >= 0) t.includes[idx] = truckLine;
-      else t.includes.unshift(truckLine);
-    }
-  } else if (tiers && fallbackTruckLine) {
-    for (const tierName of Object.keys(tiers)) {
-      const t = tiers[tierName];
-      const idx = t.includes.findIndex((s: string) => s.toLowerCase().includes("truck") || s.toLowerCase().includes("sprinter"));
-      if (idx >= 0) t.includes[idx] = fallbackTruckLine;
-      else t.includes.unshift(fallbackTruckLine);
+        : (truckResult.primary?.vehicle_type ?? labourTruckKey ?? null);
+    const primaryTruckDisplay = primaryTruckKey
+      ? (TRUCK_DISPLAY[primaryTruckKey] ?? primaryTruckKey)
+      : fallbackTruckLine;
+    const supportKey =
+      secondaryOverrideKey ?? truckResult.secondary?.vehicle_type ?? null;
+    const supportSuffix = supportKey
+      ? ` + ${TRUCK_DISPLAY[supportKey] ?? supportKey} (support)`
+      : truckResult.isMultiVehicle && truckResult.secondary
+        ? " + support van"
+        : "";
+    const truckLine = `${primaryTruckDisplay}${supportSuffix}`.trim();
+    if (truckLine) {
+      for (const tierName of Object.keys(tiers)) {
+        const t = tiers[tierName];
+        const idx = t.includes.findIndex(
+          (s: string) =>
+            s.toLowerCase().includes("truck") ||
+            s.toLowerCase().includes("sprinter"),
+        );
+        if (idx >= 0) t.includes[idx] = truckLine;
+        else t.includes.unshift(truckLine);
+      }
     }
   }
 
@@ -7229,7 +7254,15 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
                 (factors as Record<string, unknown>).event_truck_type !== "none"
               ? String((factors as Record<string, unknown>).event_truck_type)
               : truckResult.primary?.vehicle_type ?? (labourTruckKey && TRUCK_DISPLAY[labourTruckKey] ? labourTruckKey : null),
-      truck_secondary: truckResult.secondary?.vehicle_type ?? null,
+      // Secondary truck: a coordinator override wins for residential moves
+      // (admin explicitly added a support truck on the quote form); otherwise
+      // the allocator's auto secondary is used.
+      truck_secondary:
+        (svcType === "local_move" || svcType === "long_distance") &&
+        input.truck_secondary &&
+        normalizeTruckType(input.truck_secondary) !== "none"
+          ? normalizeTruckType(input.truck_secondary)
+          : (truckResult.secondary?.vehicle_type ?? null),
       // Single-item is non-tiered — never stamp a residential tier on it (was
       // defaulting to 'signature', which then leaked into confirmation emails).
       recommended_tier:
