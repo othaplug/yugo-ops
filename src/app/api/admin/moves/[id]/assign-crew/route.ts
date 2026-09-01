@@ -5,7 +5,6 @@ import {
   fetchCrewAssignmentSnapshot,
   resolveAssignedMembers,
 } from "@/lib/crew-job-snapshot";
-import { logMoveTimelineEvent } from "@/lib/moves/timeline-events";
 
 export async function POST(
   req: NextRequest,
@@ -50,17 +49,6 @@ export async function POST(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  // Record a client-facing event when the crew actually changes (not on a
-  // member-subset re-save), so the Updates feed shows it with a real timestamp.
-  if (existing?.crew_id !== body.crew_id && snap.assigned_crew_name) {
-    await logMoveTimelineEvent(admin, moveId, {
-      event_type: "crew_assigned",
-      label: `Crew assigned: ${snap.assigned_crew_name}`,
-      icon: "Users",
-      metadata: { category: "crew", crew_name: snap.assigned_crew_name },
-    });
   }
 
   return NextResponse.json({ ok: true });

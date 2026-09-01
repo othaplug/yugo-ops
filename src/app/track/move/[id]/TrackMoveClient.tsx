@@ -74,7 +74,6 @@ import {
 import PreMoveChecklist from "@/components/tracking/PreMoveChecklist";
 import EstateServiceChecklist from "@/components/tracking/EstateServiceChecklist";
 import LiveMoveTimeline from "@/components/tracking/LiveMoveTimeline";
-import MoveUpdatesFeed from "./MoveUpdatesFeed";
 import TrackYourCrewSection from "@/components/tracking/TrackYourCrewSection";
 import {
   isCrewAssignedOnMove,
@@ -2170,10 +2169,6 @@ export default function TrackMoveClient({
               to office / white-glove / delivery / event / specialty /
               labour flows. Allowlist to residential; every other service
               type gets its scope from its own dedicated surface. */}
-          {/* Activity / notifications feed: booking, crew, add-ons, changes,
-              progress, with an unread indicator when something is new. */}
-          <MoveUpdatesFeed moveId={move.id} token={token} />
-
           {/* Add-ons the client selected — shown prominently so nothing is a
               surprise on move day (bins count, TV size/mount, quantities). */}
           {resolvedMoveAddons.length > 0 && (
