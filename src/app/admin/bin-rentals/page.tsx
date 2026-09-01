@@ -31,12 +31,17 @@ export default async function BinRentalsPage() {
     db.from("bin_orders").select("id", { count: "exact", head: true })
       .gte("pickup_date", today).lte("pickup_date", weekEndStr)
       .neq("status", "cancelled"),
-    db.from("bin_orders").select("total")
+    db.from("bin_orders").select("total, source")
       .gte("created_at", thirtyDaysAgo.toISOString())
       .eq("payment_status", "paid"),
   ]);
 
-  const revenue30d = (revenueRows || []).reduce((sum, r) => sum + Number(r.total || 0), 0);
+  // Exclude bin orders that came from a move add-on: their total is already
+  // billed and counted on the move, so summing them here would double-count.
+  // Filter in JS (not .neq) so legacy null-source orders still count.
+  const revenue30d = (revenueRows || [])
+    .filter((r) => (r as { source?: string | null }).source !== "move_addon")
+    .reduce((sum, r) => sum + Number(r.total || 0), 0);
 
   return (
     <BinRentalsClient
