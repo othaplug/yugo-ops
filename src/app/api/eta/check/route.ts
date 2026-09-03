@@ -9,6 +9,7 @@ import {
   buildSmsTrackUrl,
 } from "@/lib/notifications/public-track-url";
 import { notifyAllAdmins, createPartnerNotification } from "@/lib/notifications";
+import { utcMsForWallClockInTz } from "@/lib/business-timezone";
 
 const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 const GPS_STALE_MS = 5 * 60 * 1000;
@@ -32,8 +33,12 @@ function getScheduledEndMs(scheduledDate: string | null, scheduledEnd: string | 
       endTime = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
     }
   }
-  const d = new Date(`${scheduledDate}T${endTime}:00`);
-  return isNaN(d.getTime()) ? null : d.getTime();
+  // Interpret the schedule end as a wall-clock time in the app timezone
+  // (America/Toronto), NOT the server's UTC. `new Date("...T17:00:00")` with no
+  // offset parsed as 17:00 UTC on Vercel = 13:00 EDT, so crew_running_late
+  // fired ~4h early.
+  const ms = utcMsForWallClockInTz(scheduledDate, endTime);
+  return Number.isNaN(ms) ? null : ms;
 }
 
 function calculateDistance(

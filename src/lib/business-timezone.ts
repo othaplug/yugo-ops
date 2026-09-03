@@ -89,6 +89,45 @@ export function utcInstantForCalendarDateInTz(ymd: string, timeZone: string): Da
   return new Date(t);
 }
 
+/**
+ * The UTC epoch-ms for a WALL-CLOCK date + time in `timeZone`. E.g. 2026-09-04
+ * "17:00" in America/Toronto → the ms for 21:00 UTC (EDT, UTC-4). DST-safe: the
+ * offset is derived at the target instant. Returns NaN on bad input.
+ *
+ * Crons run on Vercel in UTC, so `new Date("2026-09-04T17:00:00")` (no offset)
+ * is parsed as 17:00 UTC = 13:00 EDT — ~4h early. Use this for any move/delivery
+ * schedule time that is stored as a bare wall-clock string.
+ */
+export function utcMsForWallClockInTz(ymd: string, hhmm: string, timeZone?: string): number {
+  const tz = timeZone ?? getAppTimezone();
+  const dm = ymd.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const tm = hhmm.trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!dm || !tm) return NaN;
+  const y = Number(dm[1]);
+  const mo = Number(dm[2]);
+  const d = Number(dm[3]);
+  const h = Number(tm[1]);
+  const mi = Number(tm[2]);
+  // Treat the wall-clock as if it were UTC, then correct by the tz's offset at
+  // that instant (how the guess instant renders in tz vs UTC).
+  const guess = Date.UTC(y, mo - 1, d, h, mi, 0);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(new Date(guess));
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+  let hh = get("hour");
+  if (hh === 24) hh = 0; // some engines emit "24" for midnight
+  const asIfUtc = Date.UTC(get("year"), get("month") - 1, get("day"), hh, get("minute"), 0);
+  const offset = asIfUtc - guess;
+  return guess - offset;
+}
+
 /** Add calendar days to a YYYY-MM-DD string in the app timezone (Gregorian date math). */
 export function addCalendarDaysYmd(ymd: string, days: number, timeZone?: string): string {
   const tz = timeZone ?? getAppTimezone();
