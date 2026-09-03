@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAuth } from "@/lib/api-auth";
+import { requireStaff } from "@/lib/api-auth";
 
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string; photoId: string }> }
 ) {
-  const { error: authError } = await requireAuth();
+  // Deleting a move's photos (+ storage objects) is a staff action. requireAuth
+  // (login only) let any client/partner session delete any move's photos. The
+  // only caller is the admin MovePhotosSection; the crew app uses the separate
+  // /api/crew/photos/* endpoints.
+  const { error: authError } = await requireStaff();
   if (authError) return authError;
 
   try {
