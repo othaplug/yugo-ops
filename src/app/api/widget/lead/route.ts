@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { rateLimit } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/email/send";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
 import { equinoxPromoLayout, equinoxPromoCta, equinoxPromoFinePrint } from "@/lib/email-templates";
@@ -78,6 +79,19 @@ function confirmationEmailHtml(data: {
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate-limit by IP. This is an unauthenticated public widget that creates a
+    // contact, emails the submitter, and notifies admins — uncapped it allowed
+    // CRM bloat, admin-notification spam, and Yugo-branded email to arbitrary
+    // addresses. reCAPTCHA is optional and can't be relied on, so throttle here.
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const rl = rateLimit(`widget-lead:${ip}`, 5, 60_000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please wait a moment and try again." },
+        { status: 429 },
+      );
+    }
+
     const body = await req.json();
     const {
       name, email, phone,
