@@ -32,12 +32,22 @@ export async function POST(
   const { quoteId } = await params;
   if (!quoteId) return NextResponse.json({ error: "Quote id required" }, { status: 400 });
 
-  // Optional crew to assign at confirm time so the delivery is never created
-  // crew-less (a crew-less delivery is invisible to the crew until assigned).
+  // Optional crew + on-site contact captured at confirm time.
+  //  - crew so the delivery is never created crew-less (invisible to the crew).
+  //  - an on-site contact (distinct from the business contact) so the tracking
+  //    confirmation reaches BOTH the business and the person receiving on site.
   let crewId: string | null = null;
+  let onsiteName: string | null = null;
+  let onsitePhone: string | null = null;
   try {
-    const body = (await req.json().catch(() => ({}))) as { crew_id?: string | null };
+    const body = (await req.json().catch(() => ({}))) as {
+      crew_id?: string | null;
+      onsite_name?: string | null;
+      onsite_phone?: string | null;
+    };
     crewId = typeof body.crew_id === "string" && body.crew_id.trim() ? body.crew_id.trim() : null;
+    onsiteName = typeof body.onsite_name === "string" && body.onsite_name.trim() ? body.onsite_name.trim() : null;
+    onsitePhone = typeof body.onsite_phone === "string" && body.onsite_phone.trim() ? body.onsite_phone.trim() : null;
   } catch {
     crewId = null;
   }
@@ -139,6 +149,26 @@ export async function POST(
   } catch (e) {
     console.error("[confirm-b2b-booking] delivery creation failed", e);
     return NextResponse.json({ error: "Could not create the delivery." }, { status: 500 });
+  }
+
+  // On-site recipient (if given): store it as the delivery's customer_* so it is
+  // DISTINCT from the business contact (contact_*). That distinctness is what
+  // makes issueDeliveryTrackingTokens mint a recipient token and
+  // sendB2BTrackingNotifications reach the on-site person as well as the business.
+  if (onsitePhone || onsiteName) {
+    try {
+      await admin
+        .from("deliveries")
+        .update({
+          customer_name: onsiteName || clientName,
+          customer_phone: onsitePhone || null,
+          customer_email: null,
+          recipient_mode: "separate",
+        })
+        .eq("id", delivery.deliveryId);
+    } catch (e) {
+      console.error("[confirm-b2b-booking] on-site recipient update failed", e);
+    }
   }
 
   // Assign the crew now (if picked) so the job reaches them on the schedule: set

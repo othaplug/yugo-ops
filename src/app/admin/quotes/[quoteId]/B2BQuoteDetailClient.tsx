@@ -102,6 +102,8 @@ export default function B2BQuoteDetailClient({
   const [confirmBusy, setConfirmBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [crewId, setCrewId] = useState("");
+  const [onsiteName, setOnsiteName] = useState("");
+  const [onsitePhone, setOnsitePhone] = useState("");
 
   const business = typeof factors.b2b_business_name === "string" ? factors.b2b_business_name : null;
   const vertical =
@@ -167,7 +169,11 @@ export default function B2BQuoteDetailClient({
           method: "POST",
           credentials: "same-origin",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ crew_id: crewId || null }),
+          body: JSON.stringify({
+            crew_id: crewId || null,
+            onsite_name: onsiteName || null,
+            onsite_phone: onsitePhone || null,
+          }),
         },
       );
       const data = await res.json().catch(() => ({}));
@@ -309,6 +315,22 @@ export default function B2BQuoteDetailClient({
                     ))}
                   </select>
                 )}
+                <input
+                  type="text"
+                  value={onsiteName}
+                  onChange={(e) => setOnsiteName(e.target.value)}
+                  placeholder="On-site contact (optional)"
+                  aria-label="On-site contact name"
+                  className="rounded-lg border border-[var(--brd)]/60 bg-[var(--card)] text-[13px] text-[var(--tx)] px-3 py-2 w-[10rem]"
+                />
+                <input
+                  type="tel"
+                  value={onsitePhone}
+                  onChange={(e) => setOnsitePhone(e.target.value)}
+                  placeholder="On-site phone"
+                  aria-label="On-site contact phone"
+                  className="rounded-lg border border-[var(--brd)]/60 bg-[var(--card)] text-[13px] text-[var(--tx)] px-3 py-2 w-[9rem]"
+                />
                 {status === "draft" && (
                   <button type="button" onClick={handleSend} disabled={sendBusy} className={btnGhost}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></svg>
