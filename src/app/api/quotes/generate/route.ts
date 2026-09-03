@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TIER_DEFINITIONS } from "@/lib/tiers/tier-definitions";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAuth } from "@/lib/api-auth";
+import { requireStaff } from "@/lib/api-auth";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import { logAudit } from "@/lib/audit";
 import { logActivity } from "@/lib/activity";
@@ -5110,7 +5110,11 @@ export async function POST(req: NextRequest) {
 }
 
 async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
-  const { user: authUser, error: authErr } = await requireAuth();
+  // Quote generation runs the pricing engine and (non-preview) writes quote
+  // records — a staff action. requireAuth (login only) let any client/partner
+  // session drive the engine and create quotes. All real callers are admin
+  // surfaces (QuoteFormClient, B2BJobsDeliveryForm), so requireStaff.
+  const { user: authUser, error: authErr } = await requireStaff();
   if (authErr) return authErr;
 
   // ?preview=true → run all pricing logic but skip the DB insert
