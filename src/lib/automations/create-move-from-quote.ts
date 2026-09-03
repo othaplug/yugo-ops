@@ -51,6 +51,14 @@ export interface CreateMoveResult {
   trackingUrl: string;
   eventGroupId?: string;
   relatedMoveCount?: number;
+  /**
+   * True when this call RETURNED an already-existing move for the quote instead
+   * of creating a new one (a double-submit / lost-response retry / concurrent
+   * race). Callers MUST NOT re-run post-payment side effects (confirmation
+   * email + SMS, won-revenue analytics) when this is true, or a double-submit
+   * double-notifies the client and double-counts revenue.
+   */
+  reused?: boolean;
 }
 
 /** DB-level allowed tier slugs — must match moves_tier_selected_check constraint.
@@ -155,6 +163,33 @@ export async function createMoveFromQuote(
   if (quoteErr || !quote) {
     throw new Error(`Quote not found: ${input.quoteId}`);
   }
+
+  // Idempotency: return the move(s) that already exist for this quote instead of
+  // creating duplicates. The B2B delivery path has done this since DLV-30379;
+  // the residential path never did, so a double-submit / lost-response retry
+  // spawned a second move + duplicate confirmation email/SMS + double-counted
+  // won revenue. `reused: true` tells the caller to skip post-payment side
+  // effects. (Event quotes create their two legs in a single call, so a prior
+  // call's legs correctly count as "already exists".)
+  const buildReusedResult = async (): Promise<CreateMoveResult | null> => {
+    const { data: existing } = await supabase
+      .from("moves")
+      .select("id, move_code, event_group_id")
+      .eq("quote_id", quote.id)
+      .order("created_at", { ascending: true });
+    if (!existing || existing.length === 0) return null;
+    const p = existing[0];
+    return {
+      moveId: p.id,
+      moveCode: p.move_code ?? `MV${p.id.slice(-4)}`,
+      trackingUrl: `/track/move/${p.move_code ?? p.id}`,
+      eventGroupId: (p.event_group_id as string | null) ?? undefined,
+      relatedMoveCount: existing.length,
+      reused: true,
+    };
+  };
+  const preExisting = await buildReusedResult();
+  if (preExisting) return preExisting;
 
   // Multi-scenario: if an accepted scenario exists, use its date and price
   const acceptedScenarioId = (quote as { accepted_scenario_id?: string | null }).accepted_scenario_id ?? null;
@@ -960,6 +995,14 @@ export async function createMoveFromQuote(
     .single();
 
   if (primaryErr || !primary) {
+    // A concurrent submit won the race and inserted the move first. move_number
+    // (= move_code, deterministic from the quote id) is uniquely constrained, so
+    // this insert is rejected with 23505. Return the winner's move as reused
+    // instead of erroring the payment (which previously forced a /recover-move).
+    if (primaryErr?.code === "23505") {
+      const reused = await buildReusedResult();
+      if (reused) return reused;
+    }
     throw new Error(
       `Failed to create move from quote ${input.quoteId}: ${primaryErr?.message ?? "unknown error"}`,
     );

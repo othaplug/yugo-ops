@@ -619,6 +619,7 @@ export async function POST(req: Request) {
 
     let moveId: string | null = null;
     let moveCode: string | null = null;
+    let moveWasReused = false;
     let deliveryId: string | null = null;
     let deliveryNumber: string | null = null;
     let trackingUrl: string | null = null;
@@ -658,6 +659,10 @@ export async function POST(req: Request) {
         });
         moveId = moveResult.moveId;
         moveCode = moveResult.moveCode;
+        // When the move already existed (double-submit / retry / concurrent
+        // race), post-payment side effects (confirmation email + SMS, won
+        // analytics) already ran on the first pass — don't re-run them.
+        moveWasReused = moveResult.reused === true;
 
         // Record the deposit in the payment ledger so its Square receipt shows
         // in the Files section alongside the later balance/adjustment receipts.
@@ -820,7 +825,7 @@ export async function POST(req: Request) {
           console.error("[postPayment B2B delivery] error:", err);
         }
       });
-    } else if (moveId && moveCode && squarePaymentId) {
+    } else if (moveId && moveCode && squarePaymentId && !moveWasReused) {
       const capturedMoveId = moveId;
       const capturedMoveCode = moveCode;
       const capturedPaymentId = squarePaymentId;
