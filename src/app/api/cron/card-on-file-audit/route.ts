@@ -59,6 +59,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, ...results, message: "No moves to audit" });
   }
 
+  // Sentinel via status_events (no schema change): a move we've already alerted
+  // about carries a `card_audit_flag` event. Without this the "no card" / "no
+  // customer" paths re-emailed the super admin and created a NEW HubSpot task
+  // on every daily run until the move's date passed. Load the already-flagged
+  // ids once so we alert each move only the first time.
+  const { data: priorFlags } = await supabase
+    .from("status_events")
+    .select("entity_id")
+    .eq("entity_type", "move")
+    .eq("event_type", "card_audit_flag")
+    .in(
+      "entity_id",
+      moves.map((m) => m.id),
+    );
+  const alreadyFlaggedIds = new Set((priorFlags ?? []).map((f) => String(f.entity_id)));
+
   for (const move of moves) {
     results.scanned++;
     if (!move.client_email) continue;
@@ -73,7 +89,7 @@ export async function GET(req: NextRequest) {
       const cardId = cards[0]?.id;
 
       if (customerId && cardId) {
-        // Recover both — auto-charge will work on next run
+        // Recover both — auto-charge will work on next run.
         await supabase
           .from("moves")
           .update({
@@ -92,6 +108,19 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
+      // Alert once per move (not every daily run). The move keeps being scanned
+      // so a card added later is still recovered above.
+      const alreadyFlagged = alreadyFlaggedIds.has(String(move.id));
+      const recordFlag = async () => {
+        await supabase.from("status_events").insert({
+          entity_type: "move",
+          entity_id: move.id,
+          event_type: "card_audit_flag",
+          description: "Flagged: deposit paid but no Square card on file (admin alerted).",
+          icon: "alert",
+        });
+      };
+
       if (customerId && !cardId) {
         // Customer exists, no card stored — track customer for future and alert admin
         await supabase
@@ -99,13 +128,19 @@ export async function GET(req: NextRequest) {
           .update({ square_customer_id: customerId })
           .eq("id", move.id);
         results.flagged_no_card++;
-        await alertNoCard(move, "Square customer found but no card on file. Client will receive e-transfer instructions in their balance reminder.");
+        if (!alreadyFlagged) {
+          await alertNoCard(move, "Square customer found but no card on file. Client will receive e-transfer instructions in their balance reminder.");
+          await recordFlag();
+        }
         continue;
       }
 
       // No Square customer at all — most unusual; admin alert
       results.flagged_no_customer++;
-      await alertNoCard(move, "No Square customer found by email. Client will receive e-transfer instructions in their balance reminder.");
+      if (!alreadyFlagged) {
+        await alertNoCard(move, "No Square customer found by email. Client will receive e-transfer instructions in their balance reminder.");
+        await recordFlag();
+      }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       results.errors.push(`${move.move_code}:${errorMsg}`);
