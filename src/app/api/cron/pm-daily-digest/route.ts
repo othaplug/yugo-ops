@@ -152,10 +152,12 @@ export async function GET(req: NextRequest) {
       sent++;
     } catch (e) {
       const msg = e instanceof Error ? e.message : "send failed";
-      await admin
-        .from("notification_log")
-        .update({ status: "failed", error: msg })
-        .eq("id", reserved.id);
+      // DELETE the reservation (not mark it 'failed') so its unique
+      // notification_key is released. Keeping the row meant the next run's
+      // reservation hit 23505 → skippedDupe, and the org never got that day's
+      // digest even though the send had failed. Deleting lets a later run
+      // re-reserve and retry.
+      await admin.from("notification_log").delete().eq("id", reserved.id);
       failures.push({ orgId: org.id, error: msg });
     }
   }
