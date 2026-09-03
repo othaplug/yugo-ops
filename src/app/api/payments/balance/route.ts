@@ -45,6 +45,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Move not found" }, { status: 404 });
     }
 
+    // A cancelled move owes nothing — never collect its residual balance.
+    if (String(move.status ?? "").toLowerCase() === "cancelled") {
+      return NextResponse.json({ error: "This move has been cancelled." }, { status: 409 });
+    }
+
     const balanceAmount = Number(move.balance_amount || 0);
     if (balanceAmount <= 0) {
       return NextResponse.json({ error: "No balance to charge" }, { status: 400 });

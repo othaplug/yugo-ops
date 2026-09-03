@@ -51,7 +51,12 @@ export async function GET(req: NextRequest) {
     .in("scheduled_date", [chargeDateStr, chargeDatePlusOneStr])
     .gt("balance_amount", 0)
     .not("square_card_id", "is", null)
-    .not("deposit_paid_at", "is", null);
+    .not("deposit_paid_at", "is", null)
+    // Never auto-charge a cancelled move. The cancel flow leaves balance_amount
+    // and the card on file intact, so without this a deposit-paid move cancelled
+    // more than 2 days out would have its balance charged when the T-2 window
+    // arrived — billing a customer whose move was cancelled.
+    .neq("status", "cancelled");
 
   // ── Defense-in-depth: full-payment services with ANY outstanding balance ──
   // WG / single_item / specialty / event / b2b / bin_rental should have paid
@@ -81,7 +86,8 @@ export async function GET(req: NextRequest) {
     .not("square_card_id", "is", null)
     .not("deposit_paid_at", "is", null)
     .is("balance_paid_at", null)
-    .neq("payment_marked_paid", true);
+    .neq("payment_marked_paid", true)
+    .neq("status", "cancelled");
 
   // Merge, dedupe by id (a full-pay move 2 days out would appear in both).
   const seen = new Set<string>();
@@ -99,6 +105,12 @@ export async function GET(req: NextRequest) {
   }
 
   for (const move of moves) {
+    // Belt-and-suspenders: never charge a terminal / non-collectible move even
+    // if a future select forgets the status filter above.
+    if (["cancelled", "refunded", "declined"].includes(String(move.status ?? "").toLowerCase())) {
+      results.skipped++;
+      continue;
+    }
     // Skip the T-2 window check for full-payment services — they should
     // have paid at booking, we're catching a leak, not honoring a schedule.
     const isLeakedFullPay = isFullPaymentAtBookingService(move.service_type);
