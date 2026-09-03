@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAuth } from "@/lib/api-auth";
+import { requireStaff } from "@/lib/api-auth";
 
 const CONDITION_VALUES = ["excellent", "good", "fair", "poor", "damaged"] as const;
 
@@ -8,7 +8,7 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { error: authErr } = await requireAuth();
+  const { error: authErr } = await requireStaff();
   if (authErr) return authErr;
 
   const { id: projectId } = await params;
@@ -29,7 +29,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { error: authErr } = await requireAuth();
+  const { error: authErr } = await requireStaff();
   if (authErr) return authErr;
 
   const { id: projectId } = await params;
@@ -85,7 +85,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { error: authErr } = await requireAuth();
+  const { error: authErr } = await requireStaff();
   if (authErr) return authErr;
 
   const { id: projectId } = await params;
@@ -129,7 +129,7 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { error: authErr } = await requireAuth();
+  const { error: authErr } = await requireStaff();
   if (authErr) return authErr;
 
   const { id: projectId } = await params;

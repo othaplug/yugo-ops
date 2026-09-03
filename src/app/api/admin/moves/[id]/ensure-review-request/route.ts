@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
-import { requireAuth } from "@/lib/api-auth";
+import { requireStaff } from "@/lib/api-auth";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { user, error: authError } = await requireAuth();
+  const { error: authError } = await requireStaff();
   if (authError) return authError;
 
   const { id: moveId } = await params;
