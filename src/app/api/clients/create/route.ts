@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
 import { invitePartnerEmail, invitePartnerEmailText } from "@/lib/email-templates";
-import { requireAuth } from "@/lib/api-auth";
+import { requireStaff } from "@/lib/api-auth";
 import {
   VERTICAL_LABELS,
   augmentOrganizationsTypeCheckError,
@@ -32,7 +32,13 @@ async function resolveTemplateId(admin: ReturnType<typeof createAdminClient>, te
 }
 
 export async function POST(req: NextRequest) {
-  const { error: authError } = await requireAuth();
+  // Provisioning client/partner orgs, creating Supabase auth users, and sending
+  // branded invite emails to arbitrary addresses is a staff action — must be
+  // role-gated, not merely logged-in. requireAuth let clients/partners (who
+  // hold real Supabase sessions with no platform_users row) do all of this.
+  // requireStaff matches the caller (an admin-page realtor-partner modal used
+  // by any staff role) while blocking every non-staff session.
+  const { error: authError } = await requireStaff();
   if (authError) return authError;
   try {
     const body = await req.json();
