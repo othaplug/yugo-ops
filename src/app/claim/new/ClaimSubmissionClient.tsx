@@ -55,8 +55,8 @@ function newItem(): ClaimedItem {
 
 export default function ClaimSubmissionClient() {
   const [step, setStep] = useState(0);
-  const [lookupValue, setLookupValue] = useState("");
-  const [lookupType, setLookupType] = useState<"code" | "email">("code");
+  const [lookupCode, setLookupCode] = useState("");
+  const [lookupEmail, setLookupEmail] = useState("");
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState("");
   const [moveInfo, setMoveInfo] = useState<MoveInfo | null>(null);
@@ -72,13 +72,22 @@ export default function ClaimSubmissionClient() {
   const [confirmed, setConfirmed] = useState(false);
 
   const handleLookup = useCallback(async () => {
-    if (!lookupValue.trim()) return;
+    const codeQ = lookupCode.trim();
+    const emailQ = lookupEmail.trim();
+    if (!codeQ) {
+      setLookupError("Enter your move code");
+      return;
+    }
+    if (!emailQ || !emailQ.includes("@")) {
+      setLookupError("Enter the email on your booking");
+      return;
+    }
     setLookupLoading(true);
     setLookupError("");
     try {
       const params = new URLSearchParams();
-      if (lookupType === "code") params.set("code", lookupValue.trim().toUpperCase());
-      else params.set("email", lookupValue.trim().toLowerCase());
+      params.set("code", codeQ.toUpperCase());
+      params.set("email", emailQ.toLowerCase());
 
       const res = await fetch(`/api/claims/lookup?${params}`);
       const data = await res.json();
@@ -96,7 +105,7 @@ export default function ClaimSubmissionClient() {
     } finally {
       setLookupLoading(false);
     }
-  }, [lookupValue, lookupType]);
+  }, [lookupCode, lookupEmail]);
 
   const updateItem = useCallback((id: string, field: keyof ClaimedItem, value: string | number | string[]) => {
     setItems((prev) =>
@@ -213,36 +222,25 @@ export default function ClaimSubmissionClient() {
       {/* Step 0: Identify Move */}
       {step === 0 && (
         <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h2 className="text-[18px] font-bold text-[#1a1a1a] mb-4">Identify Your Move</h2>
-          <div className="flex gap-3 mb-4">
-            <button
-              onClick={() => setLookupType("code")}
-              className="px-4 py-2 rounded-lg text-[13px] font-semibold border-2 transition-all"
-              style={{
-                borderColor: lookupType === "code" ? "#722F37" : "#e8e0d8",
-                backgroundColor: lookupType === "code" ? "#722F3710" : "transparent",
-                color: lookupType === "code" ? "#722F37" : "#555",
-              }}
-            >
-              Move ID / Reference
-            </button>
-            <button
-              onClick={() => setLookupType("email")}
-              className="px-4 py-2 rounded-lg text-[13px] font-semibold border-2 transition-all"
-              style={{
-                borderColor: lookupType === "email" ? "#722F37" : "#e8e0d8",
-                backgroundColor: lookupType === "email" ? "#722F3710" : "transparent",
-                color: lookupType === "email" ? "#722F37" : "#555",
-              }}
-            >
-              Email Address
-            </button>
-          </div>
+          <h2 className="text-[18px] font-bold text-[#1a1a1a] mb-1">Identify Your Move</h2>
+          <p className="text-[13px] text-[#4F4B47] mb-4">Enter your move code and the email on your booking.</p>
           <input
-            type={lookupType === "email" ? "email" : "text"}
-            value={lookupValue}
-            onChange={(e) => setLookupValue(e.target.value)}
-            placeholder={lookupType === "code" ? "MV-0034 or MV0034" : "your@email.com"}
+            type="text"
+            value={lookupCode}
+            onChange={(e) => setLookupCode(e.target.value)}
+            placeholder="Move code, e.g. MV-0034 or MV0034"
+            className="w-full px-4 py-3 rounded-xl border-2 text-[15px] outline-none mb-3 bg-white"
+            style={{ borderColor: "#e8e0d8", color: "#1a1a1a" }}
+            onFocus={(e) => (e.target.style.borderColor = "#722F37")}
+            onBlur={(e) => (e.target.style.borderColor = "#e8e0d8")}
+            onKeyDown={(e) => e.key === "Enter" && handleLookup()}
+          />
+          <input
+            type="email"
+            value={lookupEmail}
+            onChange={(e) => setLookupEmail(e.target.value)}
+            placeholder="Email on your booking"
+            autoComplete="email"
             className="w-full px-4 py-3 rounded-xl border-2 text-[15px] outline-none mb-4 bg-white"
             style={{ borderColor: "#e8e0d8", color: "#1a1a1a" }}
             onFocus={(e) => (e.target.style.borderColor = "#722F37")}
@@ -254,7 +252,7 @@ export default function ClaimSubmissionClient() {
           )}
           <button
             onClick={handleLookup}
-            disabled={lookupLoading || !lookupValue.trim()}
+            disabled={lookupLoading || !lookupCode.trim() || !lookupEmail.trim()}
             className="w-full py-3 rounded-xl text-[var(--text-base)] font-bold text-white transition-all disabled:opacity-40"
             style={{ backgroundColor: "#722F37" }}
           >
