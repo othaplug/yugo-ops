@@ -20,11 +20,12 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const variant = url.searchParams.get("variant") ?? "urgency";
 
+  // Fake sample identity (never a real client — demo/preview data rule).
   const baseSample = {
-    clientName: "Vasu Beachoo",
-    quoteUrl: "https://www.yugoplus.co/quote/YG-30226",
+    clientName: "Riley Chen",
+    quoteUrl: "https://www.yugoplus.co/quote/YG-00042",
     serviceLabel: "Residential Move",
-    declineUrl: "https://www.yugoplus.co/quote/YG-30226?action=decline&token=demo",
+    declineUrl: "https://www.yugoplus.co/quote/YG-00042?action=decline&token=demo",
     openPixelSrc: null,
   };
 

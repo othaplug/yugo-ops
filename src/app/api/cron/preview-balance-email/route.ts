@@ -17,13 +17,14 @@ export async function GET(req: NextRequest) {
   const variant = url.searchParams.get("variant") ?? "72hr";
   const hasCard = url.searchParams.get("card") === "yes";
 
+  // Fake sample identity (never a real client — demo/preview data rule).
   const sample = {
-    clientName: "Samantha Lance",
-    moveCode: "MV-30211",
+    clientName: "Jamie Rivera",
+    moveCode: "MV-00042",
     moveDate: "2026-05-14",
     balanceAmount: 2047,
-    trackingUrl: "https://www.yugoplus.co/track/move/MV-30211?token=demo",
-    paymentPageUrl: "https://www.yugoplus.co/pay/037da65d-a3f8-429a-abb5-5e861a5864ad",
+    trackingUrl: "https://www.yugoplus.co/track/move/MV-00042?token=demo",
+    paymentPageUrl: "https://www.yugoplus.co/pay/00000000-0000-0000-0000-000000000042",
     hasCardOnFile: hasCard,
   };
 

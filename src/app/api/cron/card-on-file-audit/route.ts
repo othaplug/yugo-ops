@@ -11,7 +11,7 @@ import { internalAdminAlertEmail } from "@/lib/email-templates";
  * the customer profile, otherwise flags the move so the 72h/48h emails route
  * the client to the e-transfer fallback and admins get a heads-up.
  *
- * Closes the gap that caused MV-30209 (Vasu Beachoo): Square stored the card
+ * Closes the gap that caused the MV-30209 incident: Square stored the card
  * but the response ID was lost at checkout, so auto-charge silently skipped
  * the move and the client received a misleading "card on file" reminder.
  */
