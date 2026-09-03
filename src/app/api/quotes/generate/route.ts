@@ -6997,7 +6997,17 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         (estimatedDaysForQuoteRow > 1 || multiLocQuote));
 
     const quotePayload = {
-      hubspot_deal_id: input.hubspot_deal_id || null,
+      // NEVER null an existing deal link on regenerate. A regenerate/edit that
+      // does not carry the deal id (the normal admin edit — the id only rides
+      // the URL for HubSpot deep-links) used to reset this to null, orphaning
+      // the deal; the next Send then saw no deal and created a SECOND one
+      // (this is what spawned the duplicate 30421 Essential + Signature deals).
+      // On update, fall back to the row's own deal id so the same deal is
+      // always PATCHed, never re-created.
+      hubspot_deal_id:
+        input.hubspot_deal_id ||
+        (existingQuoteSnapshot?.hubspot_deal_id as string | null | undefined) ||
+        null,
       quote_source: input.quote_source?.trim() || null,
       source_request_id: input.source_request_id?.trim() || null,
       contact_id: contactId,

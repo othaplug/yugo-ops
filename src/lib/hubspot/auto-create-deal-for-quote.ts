@@ -173,13 +173,13 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
 
   const svcType = String(quote.service_type ?? "").trim();
   const svcCat = serviceCategory(svcType, false);
+  const quotePk = String(quote.id ?? "").trim();
 
   if (!skipDuplicateCheck) {
     const existing = await findExistingOpenDealForContactEmail(sb, token, clientEmail, {
       serviceTypeCat: svcCat,
     });
     if (existing) {
-      const quotePk = String(quote.id ?? "").trim();
       if (quotePk) {
         await sb
           .from("quotes")
@@ -305,6 +305,71 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
     ];
   }
 
+  // ── Atomic create claim (strong consistency) ──────────────────────────────
+  // findExistingOpenDealForContactEmail above is a HubSpot SEARCH, which is
+  // EVENTUALLY consistent: two sends of the same quote within a few seconds (a
+  // double-click, a send racing a retry/regenerate) both miss it and both POST
+  // a deal — one of the ways duplicate deals like 30421 (Essential + Signature)
+  // were spawned. The quote row is strongly consistent, so claim it: only the
+  // request that flips hubspot_deal_id null → sentinel may create. A loser waits
+  // for the winner's real id and returns THAT (the caller PATCHes it, never
+  // re-creates). The sentinel is always resolved to a real id or released to
+  // null before this function returns, so no other code sees it persist.
+  const HS_PENDING = "__hs_pending__";
+  let claimedForCreate = false;
+  if (quotePk) {
+    const tryClaim = async () => {
+      const { data } = await sb
+        .from("quotes")
+        .update({ hubspot_deal_id: HS_PENDING })
+        .eq("id", quotePk)
+        .is("hubspot_deal_id", null)
+        .select("id");
+      return !!(data && data.length > 0);
+    };
+    const readDeal = async () => {
+      const { data } = await sb
+        .from("quotes")
+        .select("hubspot_deal_id")
+        .eq("id", quotePk)
+        .single();
+      return (data?.hubspot_deal_id as string | null) ?? null;
+    };
+    claimedForCreate = await tryClaim();
+    if (!claimedForCreate) {
+      // Lost the claim, or the row already carries a real deal. Poll briefly:
+      //  - a real id  → return it (caller PATCHes, never re-creates)
+      //  - null       → the winner released without creating; try to claim
+      //  - sentinel   → winner still in flight; wait and re-check
+      for (let i = 0; i < 12 && !claimedForCreate; i++) {
+        const cur = await readDeal();
+        if (cur && cur !== HS_PENDING) return { status: "created", dealId: cur };
+        if (cur === null) {
+          claimedForCreate = await tryClaim();
+          if (claimedForCreate) break;
+        }
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      if (!claimedForCreate) {
+        const cur = await readDeal();
+        if (cur && cur !== HS_PENDING) return { status: "created", dealId: cur };
+        // Winner still in flight after the wait window — step aside quietly so we
+        // never create a second deal. A later send / cron re-syncs the deal.
+        return null;
+      }
+    }
+  }
+
+  const releaseClaim = async () => {
+    if (claimedForCreate && quotePk) {
+      await sb
+        .from("quotes")
+        .update({ hubspot_deal_id: null })
+        .eq("id", quotePk)
+        .eq("hubspot_deal_id", HS_PENDING);
+    }
+  };
+
   let dealRes = await safeCreateDeal(token, body as { properties: Record<string, unknown>; associations?: unknown });
 
   if (!dealRes.ok) {
@@ -339,19 +404,27 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
         dealRes.status,
         t.slice(0, 2000),
       );
+      await releaseClaim();
       return null;
     }
   }
 
   const dealData = (await dealRes.json()) as { id?: string };
   const dealId = dealData.id;
-  if (!dealId) return null;
+  if (!dealId) {
+    await releaseClaim();
+    return null;
+  }
 
-  const quotePk = String(quote.id ?? "").trim();
   if (quotePk) {
+    // Replace the sentinel with the real deal id in the same write that clears
+    // the duplicate flags, so the claim resolves atomically and no other code
+    // ever sees "__hs_pending__" persist. (The send route also sets
+    // hubspot_deal_id on "created", but persisting it here closes the window.)
     await sb
       .from("quotes")
       .update({
+        hubspot_deal_id: dealId,
         hubspot_duplicate_detected: false,
         hubspot_existing_deal_id: null,
         hubspot_existing_deal_name: null,

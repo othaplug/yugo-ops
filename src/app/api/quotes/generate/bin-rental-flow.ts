@@ -351,7 +351,13 @@ export async function buildBinRentalQuoteResponse(opts: {
     };
 
     if (isUpdate) {
-      const { error: updateErr } = await sb.from("quotes").update(quotePayload).eq("quote_id", quoteId);
+      // Never null an existing deal link on regenerate. If this edit did not
+      // carry a deal id, drop the field entirely so the update leaves the
+      // row's current hubspot_deal_id untouched (a null would orphan the deal
+      // and let the next Send create a duplicate).
+      const updatePayload: Record<string, unknown> = { ...quotePayload };
+      if (!input.hubspot_deal_id) delete updatePayload.hubspot_deal_id;
+      const { error: updateErr } = await sb.from("quotes").update(updatePayload).eq("quote_id", quoteId);
       if (updateErr) {
         return { status: 500, body: { error: updateErr.message } };
       }
