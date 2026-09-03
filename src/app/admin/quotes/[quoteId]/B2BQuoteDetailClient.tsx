@@ -111,6 +111,16 @@ export default function B2BQuoteDetailClient({
     displayLabel(String(factors.b2b_vertical_code || "")) ||
     null;
   const handling = displayLabel(String(factors.b2b_handling_type || "")) || null;
+  // Invoice terms as the operator chose them at quote-create (net_15 / net_30 /
+  // on_completion). This badge was hardcoded to "Net-30" and ignored the
+  // selection, so a net-15 quote read as Net-30.
+  const invoiceTermsRaw = String(factors.b2b_invoice_terms || "").trim();
+  const invoiceTermsLabel =
+    invoiceTermsRaw === "net_15"
+      ? "Net-15"
+      : invoiceTermsRaw === "net_30"
+        ? "Net-30"
+        : "On completion";
   const windowLabel = factors.b2b_delivery_window ? String(factors.b2b_delivery_window) : null;
   const lineItems = Array.isArray(factors.b2b_line_items)
     ? (factors.b2b_line_items as { description?: string; quantity?: number }[])
@@ -246,7 +256,7 @@ export default function B2BQuoteDetailClient({
           <h2 className="admin-section-h2 !mb-0">Approval &amp; Booking</h2>
           <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 dark:text-green-400">
             <span className="w-1.5 h-1.5 rounded-full bg-current" />
-            Invoice after completion &middot; Net-30
+            Invoice after completion &middot; {invoiceTermsLabel}
           </span>
         </div>
 
@@ -402,7 +412,7 @@ export default function B2BQuoteDetailClient({
                 <div className="text-[12px] text-[var(--tx3)] mt-0.5 tabular-nums">+ {money(hst)} HST (13%) &middot; total {money(total)} invoiced</div>
               </div>
               <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 dark:text-green-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-current" />Net-30
+                <span className="w-1.5 h-1.5 rounded-full bg-current" />{invoiceTermsLabel}
               </span>
             </div>
           </div>

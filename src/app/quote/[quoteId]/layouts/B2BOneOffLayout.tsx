@@ -63,7 +63,16 @@ export default function B2BOneOffLayout({
     typeof f?.[k] === "string" ? (f[k] as string).trim() : "";
   const bool = (k: string): boolean => f?.[k] === true;
 
-  const payInvoice = f?.b2b_payment_method === "invoice"; // Net-30 partner account only
+  const payInvoice = f?.b2b_payment_method === "invoice"; // partner account, terms below
+  // Reflect the invoice terms the client was actually quoted, not a hardcoded
+  // "Net 30" (a net-15 quote used to read as Net 30 on the client view).
+  const invoiceTermsRaw = str("b2b_invoice_terms");
+  const invoiceTermsPhrase =
+    invoiceTermsRaw === "net_15"
+      ? "Net 15"
+      : invoiceTermsRaw === "net_30"
+        ? "Net 30"
+        : "Due on completion";
   const businessName = str("b2b_business_name");
   const deliverToName = (quote as { deliver_to_name?: string | null })
     .deliver_to_name;
@@ -378,7 +387,7 @@ export default function B2BOneOffLayout({
           style={{ color: `${FOREST}C4` }}
         >
           {payInvoice
-            ? "Net 30 on your approved partner account. No card required at booking."
+            ? `${invoiceTermsPhrase} on your approved partner account. No card required at booking.`
             : "Full payment at booking confirms your delivery."}
         </p>
       </div>

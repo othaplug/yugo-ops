@@ -2038,6 +2038,13 @@ export default function QuotePageClient({
     () => isB2BInvoiceQuote(factorsApplied, quote.service_type),
     [quote.service_type, factorsApplied],
   );
+  // Invoice terms as chosen at quote-create (net_15 / net_30 / on_completion).
+  // Copy below used to hardcode "Net 30", so a net-15 quote told the client the
+  // wrong terms.
+  const b2bInvoiceTermsRaw = String(factorsApplied?.b2b_invoice_terms || "").trim();
+  const b2bInvoiceTermsDays =
+    b2bInvoiceTermsRaw === "net_15" ? 15 : b2bInvoiceTermsRaw === "net_30" ? 30 : null;
+  const b2bInvoiceTermsLabel = b2bInvoiceTermsDays ? `Net ${b2bInvoiceTermsDays}` : "Due on completion";
 
   const binRentalBooking = quote.service_type === "bin_rental";
 
@@ -3308,14 +3315,16 @@ export default function QuotePageClient({
                   className="text-2xl font-serif mb-2 text-center"
                   style={{ color: shellInk.primary }}
                 >
-                  {b2bInvoiceBooking ? "Invoice (Net 30)" : "Payment"}
+                  {b2bInvoiceBooking ? `Invoice (${b2bInvoiceTermsLabel})` : "Payment"}
                 </h2>
                 <p
                   className="text-[12px] leading-relaxed max-w-xl mx-auto text-center"
                   style={{ color: shellInk.body }}
                 >
                   {b2bInvoiceBooking
-                    ? "No card required. We will email an invoice; payment is due within 30 days of the invoice date."
+                    ? b2bInvoiceTermsDays
+                      ? `No card required. We will email an invoice; payment is due within ${b2bInvoiceTermsDays} days of the invoice date.`
+                      : "No card required. We will email an invoice; payment is due on completion of the job."
                     : binRentalBooking
                       ? "Full payment confirms your rental. Your card stays on file for any late or missing-item fees."
                       : isB2BDeliveryQuoteServiceType(quote.service_type)
@@ -3338,7 +3347,9 @@ export default function QuotePageClient({
                       </p>
                       <ul className="list-disc pl-4 space-y-1">
                         <li>
-                          Net 30, balance due within 30 days of invoice date.
+                          {b2bInvoiceTermsDays
+                            ? `${b2bInvoiceTermsLabel}, balance due within ${b2bInvoiceTermsDays} days of invoice date.`
+                            : "Balance due on completion of the job."}
                         </li>
                         <li>
                           Your delivery is confirmed; our coordinator may reach
@@ -3503,7 +3514,7 @@ export default function QuotePageClient({
             >
               {b2bInvoiceBooking ? (
                 <>
-                  Your B2B delivery is confirmed on invoice terms (Net 30).
+                  Your B2B delivery is confirmed on invoice terms ({b2bInvoiceTermsLabel}).
                   We&apos;ll follow up with invoice and scheduling details by
                   email.
                 </>
