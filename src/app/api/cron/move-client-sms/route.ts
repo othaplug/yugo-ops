@@ -158,24 +158,42 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
+    // Atomic claim BEFORE sending: flip pending→sent only if still pending.
+    // This cron runs every 3 min with up to 40 rows; if one run's latency pushes
+    // it past the interval, the next run would select the same still-pending rows
+    // and re-text the client. Only the run that wins this conditional update owns
+    // the row and sends. (The row is marked 'sent' even on a soft send failure,
+    // matching the prior behavior — a delivery gap, not a duplicate.)
+    const { data: claimed } = await admin
+      .from("scheduled_move_client_sms")
+      .update({ status: "sent", sent_at: new Date().toISOString() })
+      .eq("id", row.id)
+      .eq("status", "pending")
+      .select("id");
+    if (!claimed || claimed.length === 0) {
+      results.skipped++;
+      continue; // another concurrent run already claimed this row
+    }
+
     try {
       const sms = await sendSMS(move.client_phone.replace(/\s/g, ""), body);
-      await admin
-        .from("scheduled_move_client_sms")
-        .update({
-          status: "sent",
-          sent_at: new Date().toISOString(),
-          last_error: sms.success ? null : (sms.error ?? "send_failed"),
-        })
-        .eq("id", row.id);
-      if (sms.success) results.sent++;
-      else results.errors.push(`${row.id}: ${sms.error}`);
+      if (sms.success) {
+        results.sent++;
+      } else {
+        await admin
+          .from("scheduled_move_client_sms")
+          .update({ last_error: sms.error ?? "send_failed" })
+          .eq("id", row.id);
+        results.errors.push(`${row.id}: ${sms.error}`);
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "send_error";
       results.errors.push(`${row.id}: ${msg}`);
+      // Row is already claimed as 'sent' (above), so just record the error —
+      // leaving it 'sent' prevents a re-send, matching the soft-fail path.
       await admin
         .from("scheduled_move_client_sms")
-        .update({ status: "skipped", last_error: msg.slice(0, 500) })
+        .update({ last_error: msg.slice(0, 500) })
         .eq("id", row.id);
     }
   }

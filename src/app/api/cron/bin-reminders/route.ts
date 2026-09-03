@@ -27,7 +27,21 @@ export async function GET(req: NextRequest) {
     .in("status", ["confirmed", "drop_off_scheduled"])
     .not("client_phone", "is", null);
 
+  // Sentinel (status_events) so a double cron invocation the same day doesn't
+  // double-text: each reminder is recorded and skipped if already sent.
+  const dropoffIds = (dropoffs ?? []).map((o) => o.id);
+  const { data: sentDropoff } = dropoffIds.length
+    ? await supabase
+        .from("status_events")
+        .select("entity_id")
+        .eq("entity_type", "bin_order")
+        .eq("event_type", "bin_dropoff_reminder")
+        .in("entity_id", dropoffIds)
+    : { data: [] as { entity_id: string }[] };
+  const dropoffSent = new Set((sentDropoff ?? []).map((e) => String(e.entity_id)));
+
   for (const order of dropoffs || []) {
+    if (dropoffSent.has(String(order.id))) continue;
     try {
       const pickupDate = new Date(order.pickup_date + "T12:00:00")
         .toLocaleDateString("en-CA", { month: "short", day: "numeric" });
@@ -43,6 +57,13 @@ export async function GET(req: NextRequest) {
           `Questions? (647) 370-4525`,
         ].join("\n\n"),
       );
+      await supabase.from("status_events").insert({
+        entity_type: "bin_order",
+        entity_id: order.id,
+        event_type: "bin_dropoff_reminder",
+        description: "Bin drop-off reminder SMS sent.",
+        icon: "sms",
+      });
       results.dropoffReminders++;
     } catch (e) {
       results.errors.push(`dropoff-${order.order_number}: ${e instanceof Error ? e.message : String(e)}`);
@@ -57,7 +78,19 @@ export async function GET(req: NextRequest) {
     .in("status", ["bins_delivered", "in_use", "pickup_scheduled"])
     .not("client_phone", "is", null);
 
+  const pickupIds = (pickups ?? []).map((o) => o.id);
+  const { data: sentPickup } = pickupIds.length
+    ? await supabase
+        .from("status_events")
+        .select("entity_id")
+        .eq("entity_type", "bin_order")
+        .eq("event_type", "bin_pickup_reminder")
+        .in("entity_id", pickupIds)
+    : { data: [] as { entity_id: string }[] };
+  const pickupSent = new Set((sentPickup ?? []).map((e) => String(e.entity_id)));
+
   for (const order of pickups || []) {
+    if (pickupSent.has(String(order.id))) continue;
     try {
       const fn2 = order.client_name?.split(" ")[0] || "there";
       await sendSMS(
@@ -69,6 +102,13 @@ export async function GET(req: NextRequest) {
           `Questions? (647) 370-4525`,
         ].join("\n\n"),
       );
+      await supabase.from("status_events").insert({
+        entity_type: "bin_order",
+        entity_id: order.id,
+        event_type: "bin_pickup_reminder",
+        description: "Bin pickup reminder SMS sent.",
+        icon: "sms",
+      });
       results.pickupReminders++;
     } catch (e) {
       results.errors.push(`pickup-${order.order_number}: ${e instanceof Error ? e.message : String(e)}`);

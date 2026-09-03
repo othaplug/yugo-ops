@@ -58,6 +58,18 @@ export async function GET(req: NextRequest) {
       .maybeSingle();
     if (!proj?.quote_id) continue;
 
+    // Dedup (mirrors the phase/payment sections): skip if this day's morning
+    // email was already logged, so a double cron invocation doesn't re-email.
+    const { data: priorMorning } = await supabase
+      .from("move_project_communications")
+      .select("id, metadata")
+      .eq("project_id", proj.id)
+      .eq("comm_type", "daily_morning_client");
+    const morningAlready = (priorMorning ?? []).some(
+      (row) => (row.metadata as { move_project_day_id?: string } | null)?.move_project_day_id === day.id,
+    );
+    if (morningAlready) continue;
+
     const { data: quote } = await supabase
       .from("quotes")
       .select("id, contact_id")
