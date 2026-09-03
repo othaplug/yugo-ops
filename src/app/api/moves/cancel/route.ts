@@ -67,27 +67,81 @@ export async function POST(req: Request) {
     let squareRefundId: string | null = null;
     let actualRefundAmount = 0;
 
-    if (refundType !== "none" && move.square_payment_id) {
-      if (refundType === "full") {
-        actualRefundAmount = Number(move.deposit_amount) || 0;
-      } else {
-        actualRefundAmount = refundAmount ?? 0;
+    const refundReason = `${REASON_LABELS[reason] || reason}${reasonDetail ? ` ${reasonDetail}` : ""}`;
+
+    // Every collected Square payment on the move, grouped by payment id, summed
+    // to the captured amount. Previously a "full" refund refunded ONLY
+    // deposit_amount against the deposit payment, so a move whose balance had
+    // been collected as a separate Square payment (T-2 auto-charge or a portal
+    // balance payment) was under-refunded by the entire balance. The ledger is
+    // the source of truth for what was actually charged; any row with a
+    // square_payment_id is a real, refundable card collection.
+    const { data: ledgerPayments } = await supabase
+      .from("move_payment_ledger")
+      .select("square_payment_id, pre_tax_amount, hst_amount")
+      .eq("move_id", moveId)
+      .in("entry_type", ["deposit", "balance"])
+      .not("square_payment_id", "is", null);
+    const capturedByPayment = new Map<string, number>();
+    for (const row of ledgerPayments ?? []) {
+      const pid = String(row.square_payment_id);
+      const cents = Math.round(
+        (Number(row.pre_tax_amount || 0) + Number(row.hst_amount || 0)) * 100,
+      );
+      if (cents > 0) capturedByPayment.set(pid, (capturedByPayment.get(pid) ?? 0) + cents);
+    }
+    const totalCapturedCents = Array.from(capturedByPayment.values()).reduce((a, b) => a + b, 0);
+
+    if (refundType === "full") {
+      // Refund every collected payment in full. Fall back to the legacy
+      // single deposit payment when the ledger has no rows (older moves).
+      const targets: [string, number][] =
+        capturedByPayment.size > 0
+          ? Array.from(capturedByPayment.entries())
+          : move.square_payment_id && Number(move.deposit_amount) > 0
+            ? [[move.square_payment_id as string, Math.round(Number(move.deposit_amount) * 100)]]
+            : [];
+      for (const [paymentId, cents] of targets) {
+        if (cents <= 0) continue;
+        try {
+          const refundRes = await squareClient.refunds.refundPayment({
+            paymentId,
+            amountMoney: { amount: BigInt(cents), currency: "CAD" },
+            reason: refundReason,
+            idempotencyKey: squareIdem("refund", moveId, paymentId),
+          });
+          if (refundRes.refund?.id) squareRefundId = refundRes.refund.id;
+          actualRefundAmount += cents / 100;
+        } catch (e) {
+          console.error("[Square] full refund failed for payment", paymentId, e);
+          return NextResponse.json(
+            {
+              error: "Refund failed. Some payments may have been refunded. Please review in the Square Dashboard.",
+              detail: e instanceof Error ? e.message : String(e),
+              refunded_so_far: Math.round(actualRefundAmount * 100) / 100,
+            },
+            { status: 500 },
+          );
+        }
       }
-
-      if (actualRefundAmount > 0) {
-        const refundCents = Math.round(actualRefundAmount * 100);
-
+    } else if (refundType === "partial" && move.square_payment_id) {
+      // Refund the admin-specified amount against the deposit payment, capped at
+      // the total actually collected so a typo can't request an over-refund.
+      const requestedCents = Math.round((refundAmount ?? 0) * 100);
+      const capCents = totalCapturedCents > 0 ? totalCapturedCents : requestedCents;
+      const refundCents = Math.min(requestedCents, capCents);
+      if (refundCents > 0) {
         try {
           const refundRes = await squareClient.refunds.refundPayment({
             paymentId: move.square_payment_id,
             amountMoney: { amount: BigInt(refundCents), currency: "CAD" },
-            reason: `${REASON_LABELS[reason] || reason}${reasonDetail ? ` ${reasonDetail}` : ""}`,
-            idempotencyKey: squareIdem("refund", moveId),
+            reason: refundReason,
+            idempotencyKey: squareIdem("refund", moveId, `partial-${refundCents}`),
           });
-
           squareRefundId = refundRes.refund?.id ?? null;
+          actualRefundAmount = refundCents / 100;
         } catch (e) {
-          console.error("[Square] refund failed:", e);
+          console.error("[Square] partial refund failed:", e);
           return NextResponse.json(
             { error: "Refund failed. Please process manually in Square Dashboard.", detail: e instanceof Error ? e.message : String(e) },
             { status: 500 },
