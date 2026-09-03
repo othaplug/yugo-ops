@@ -37,8 +37,14 @@ function round2(n: number): number {
 }
 
 export async function GET(req: NextRequest) {
-  // Vercel cron passes a signature header; for now we accept all GETs but
-  // log who's calling.
+  // Require the shared cron secret — this job recomputes and UPDATEs partner
+  // billing (hold_days, hold_price_total, subtotal, tax_amount, total_price) on
+  // every warehouse shipment, so it must not be publicly invokable. Fail closed
+  // when the secret is unset so a missing env var never silently opens it.
+  const secret = process.env.CRON_SECRET;
+  if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const ua = req.headers.get("user-agent") ?? "unknown";
 
   const admin = createAdminClient();
