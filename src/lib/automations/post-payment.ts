@@ -1443,6 +1443,10 @@ export async function runPostPaymentActionsB2BDelivery(
   }
   const totalWithTax = Math.round(basePrice * 1.13);
   const depositAmount = input.amount;
+  // Net-terms invoice booking: delivery confirmed, no money taken yet. Keep the
+  // downstream HubSpot + alerts from implying a payment.
+  const isInvoiceBooking =
+    input.paymentId === "invoice-booking" || (input.amount ?? 0) <= 0;
   const tierLabel = TIER_LABELS[selectedTier ?? ""] ?? selectedTier ?? "";
   const serviceLabel =
     SERVICE_LABELS[quote.service_type as string] ?? quote.service_type;
@@ -1483,8 +1487,13 @@ export async function runPostPaymentActionsB2BDelivery(
         const deliveryDealPayload: Record<string, string> = {
           dealname: rebuiltDeliveryDealName,
           amount: String(totalWithTax),
-          deposit_received_at: new Date().toISOString(),
-          square_invoice_id: input.paymentId,
+          // Only stamp payment fields when money was actually taken. An invoice
+          // booking is confirmed on net terms with no payment, so leaving
+          // deposit_received_at / square_invoice_id off prevents a HubSpot
+          // "payment received" workflow from firing a false "paid" notice.
+          ...(isInvoiceBooking
+            ? {}
+            : { deposit_received_at: new Date().toISOString(), square_invoice_id: input.paymentId }),
           opsplus_move_id: input.deliveryId,
           contract_signed: "true",
           package_type: tierLabel || serviceLabel,
@@ -1558,11 +1567,19 @@ export async function runPostPaymentActionsB2BDelivery(
         const resend = getResend();
         const emailFrom2 = await getEmailFrom();
         const base = getEmailBaseUrl().replace(/\/$/, "");
+        // An invoice booking (net terms, no card) is a delivery confirmation,
+        // NOT a payment. Only say "Paid" when money was actually taken
+        // (isInvoiceBooking is computed once at the top of this function).
+        const link = `<p><a href="${base}/admin/deliveries/${encodeURIComponent(input.deliveryNumber)}">Open in admin</a></p>`;
         await resend.emails.send({
           from: emailFrom2,
           to: adminEmail,
-          subject: `[B2B Delivery] Paid: ${input.deliveryNumber}, ${clientName || "Client"}`,
-          html: `<p>B2B quote <strong>${input.quoteId}</strong> paid. Delivery <strong>${input.deliveryNumber}</strong>.</p><p><a href="${base}/admin/deliveries/${encodeURIComponent(input.deliveryNumber)}">Open in admin</a></p>`,
+          subject: isInvoiceBooking
+            ? `[B2B Delivery] Confirmed: ${input.deliveryNumber}, ${clientName || "Client"}`
+            : `[B2B Delivery] Paid: ${input.deliveryNumber}, ${clientName || "Client"}`,
+          html: isInvoiceBooking
+            ? `<p>B2B quote <strong>${input.quoteId}</strong> confirmed. Delivery <strong>${input.deliveryNumber}</strong> created and the confirmation was sent to the client. The invoice is raised after the job is completed (Net terms, no payment yet).</p>${link}`
+            : `<p>B2B quote <strong>${input.quoteId}</strong> paid. Delivery <strong>${input.deliveryNumber}</strong>.</p>${link}`,
         });
       },
     },
