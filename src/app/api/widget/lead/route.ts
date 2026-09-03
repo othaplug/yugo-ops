@@ -127,7 +127,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Phone must be 30 characters or fewer" }, { status: 400 });
     }
 
-    if (recaptchaToken) {
+    // reCAPTCHA is MANDATORY wherever it is configured. If RECAPTCHA_SECRET_KEY
+    // is set, a valid token is required — a bot that omits the token (the old
+    // bypass: the check only ran `if (recaptchaToken)`) is now rejected. Where
+    // the secret is NOT set (a environment without reCAPTCHA), we stay
+    // permissive so we don't hard-block legitimate leads; the per-IP rate limit
+    // above is the backstop there.
+    // Require BOTH keys: the secret (server verifies) AND the public site key
+    // (without it the widget's getRecaptchaToken returns null, so requiring a
+    // token would block every legit lead). Only enforce when reCAPTCHA is fully
+    // configured end to end.
+    const recaptchaConfigured =
+      !!process.env.RECAPTCHA_SECRET_KEY && !!process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    if (recaptchaConfigured) {
+      if (!recaptchaToken || typeof recaptchaToken !== "string") {
+        return NextResponse.json({ error: "reCAPTCHA verification required" }, { status: 403 });
+      }
       const valid = await verifyRecaptcha(recaptchaToken);
       if (!valid) {
         return NextResponse.json({ error: "reCAPTCHA verification failed" }, { status: 403 });
