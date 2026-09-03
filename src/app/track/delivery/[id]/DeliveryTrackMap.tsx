@@ -112,21 +112,63 @@ function useAnimatedCrewPos(target: CrewPos, ms = 2000): CrewPos {
   return pos;
 }
 
+/**
+ * Follow-truck controller. Uber / Google-Maps-style default: keep the
+ * crew centred at street zoom, glide the camera to each new position.
+ * When the user manually pans, follow mode drops out — parent surfaces
+ * a "Recenter on truck" pill.
+ *
+ * Leaflet does not rotate the basemap, so there is no bearing here
+ * (the marker itself carries direction). The change vs the old
+ * controller is the zoom level: 16 instead of 14, and no fit-to-all
+ * during active tracking.
+ */
 function MapController({
   center,
   pickup,
   dropoff,
   crew,
   routePlan,
+  followMode,
+  onUserInteract,
 }: {
   center: Coord;
   pickup: Coord | null;
   dropoff: Coord | null;
   crew: CrewPos;
   routePlan: TrackRoutePlanPoint[] | null;
+  followMode: boolean;
+  onUserInteract: () => void;
 }) {
   const map = useMap();
+  const programmaticRef = useRef(false);
+
   useEffect(() => {
+    const onDragStart = () => {
+      if (!programmaticRef.current) onUserInteract();
+    };
+    const onZoomStart = () => {
+      if (!programmaticRef.current) onUserInteract();
+    };
+    map.on("dragstart", onDragStart);
+    map.on("zoomstart", onZoomStart);
+    return () => {
+      map.off("dragstart", onDragStart);
+      map.off("zoomstart", onZoomStart);
+    };
+  }, [map, onUserInteract]);
+
+  useEffect(() => {
+    // Follow-truck mode: keep the truck centred at street zoom.
+    if (followMode && crew) {
+      programmaticRef.current = true;
+      map.setView([crew.current_lat, crew.current_lng], 16, { animate: true });
+      const id = window.setTimeout(() => {
+        programmaticRef.current = false;
+      }, 400);
+      return () => window.clearTimeout(id);
+    }
+    // Context view — no live crew, or user asked for the fit-all view.
     const pts: Coord[] = [];
     if (crew) pts.push({ lat: crew.current_lat, lng: crew.current_lng });
     if (routePlan?.length) {
@@ -135,6 +177,7 @@ function MapController({
       if (pickup) pts.push(pickup);
       if (dropoff) pts.push(dropoff);
     }
+    programmaticRef.current = true;
     if (pts.length >= 2) {
       const bounds = L.latLngBounds(pts.map((p) => [p.lat, p.lng]));
       map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
@@ -143,7 +186,23 @@ function MapController({
     } else {
       map.setView([center.lat, center.lng], 10);
     }
-  }, [map, center, pickup, dropoff, crew, routePlan]);
+    const id = window.setTimeout(() => {
+      programmaticRef.current = false;
+    }, 400);
+    return () => window.clearTimeout(id);
+  }, [
+    map,
+    center.lat,
+    center.lng,
+    pickup?.lat,
+    pickup?.lng,
+    dropoff?.lat,
+    dropoff?.lng,
+    crew?.current_lat,
+    crew?.current_lng,
+    routePlan,
+    followMode,
+  ]);
   return null;
 }
 
@@ -293,10 +352,18 @@ export default function DeliveryTrackMap({
           ? trackingLineStraight
           : [];
 
+  // Follow-truck default. Drops out when the user pans; the Recenter
+  // pill re-arms. Only active while the job is still in flight — a
+  // completed delivery reverts to the fit-all context view.
+  const [followMode, setFollowMode] = useState(true);
+  const isLiveStageActive =
+    liveStage !== "completed" && liveStage !== "delivered";
+  const shouldFollow = followMode && !!crew && isLiveStageActive;
+
   return (
     <MapContainer
       center={[center.lat, center.lng]}
-      zoom={crew ? 14 : 10}
+      zoom={crew ? 16 : 10}
       style={{ height: "100%", width: "100%" }}
       scrollWheelZoom
       className="track-live-map"
@@ -307,7 +374,32 @@ export default function DeliveryTrackMap({
         dropoff={dropoff ?? null}
         crew={crew}
         routePlan={routePlan ?? null}
+        followMode={shouldFollow}
+        onUserInteract={() => setFollowMode(false)}
       />
+      {!followMode && crew && isLiveStageActive && (
+        <button
+          type="button"
+          onClick={() => setFollowMode(true)}
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            zIndex: 1000,
+            border: "1px solid #E8E4DF",
+            background: "#FFFBF7",
+            color: "#1A1816",
+            fontSize: 12,
+            fontWeight: 600,
+            padding: "8px 14px",
+            borderRadius: 999,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            cursor: "pointer",
+          }}
+        >
+          Recenter on truck
+        </button>
+      )}
       {USE_MAPBOX ? (
         <TileLayer
           url={`https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/512/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`}

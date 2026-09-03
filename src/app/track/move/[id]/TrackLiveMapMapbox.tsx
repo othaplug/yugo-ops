@@ -126,6 +126,120 @@ function MapResizeOnSignal({ signal }: { signal: number }) {
   return null;
 }
 
+/**
+ * Follow-truck camera controller. Uber / Google-Maps-navigation
+ * behaviour: keep the truck in the middle of the viewport at street
+ * zoom, rotate the map so the truck always points up, subtle 3D pitch
+ * for depth. On every animated-position update, ease the camera to
+ * match. When the user manually pans / pinch-zooms, stop following
+ * and let the parent surface a "Recenter" control.
+ *
+ * Previously this component fit ALL points (crew + pickup + dropoff),
+ * which zoomed the map out to city level and made the truck a dot on
+ * the horizon. That "context view" is still available via the expand
+ * toggle on the client tracking card; the DEFAULT is now follow-mode.
+ */
+function FollowTruckController({
+  crew,
+  bearing,
+  followMode,
+  center,
+  fallbackPickup,
+  fallbackDropoff,
+  onUserInteract,
+}: {
+  crew: CenterLatLng | null;
+  bearing: number | null;
+  followMode: boolean;
+  center: Center;
+  fallbackPickup: CenterLatLng | null;
+  fallbackDropoff: CenterLatLng | null;
+  onUserInteract: () => void;
+}) {
+  const { current: mapRef } = useMap();
+  const isCameraAnim = useRef(false);
+
+  // Wire user-interaction detection once so a manual pan / pinch
+  // suspends follow-mode until they tap Recenter.
+  useEffect(() => {
+    const map = mapRef?.getMap?.();
+    if (!map) return;
+    const onDragStart = () => {
+      if (!isCameraAnim.current) onUserInteract();
+    };
+    const onZoomStart = () => {
+      // easeTo bookends set isCameraAnim.current true → the programmatic
+      // zoomstart it fires is filtered here. A wheel / pinch zoom
+      // arrives while the flag is false and drops out of follow mode.
+      if (!isCameraAnim.current) onUserInteract();
+    };
+    map.on("dragstart", onDragStart);
+    map.on("zoomstart", onZoomStart);
+    return () => {
+      map.off("dragstart", onDragStart);
+      map.off("zoomstart", onZoomStart);
+    };
+  }, [mapRef, onUserInteract]);
+
+  // No crew yet — pre-departure. Fit pickup + dropoff so the client
+  // sees the route context before the truck starts moving.
+  useEffect(() => {
+    const map = mapRef?.getMap?.();
+    if (!map) return;
+    if (crew) return;
+    const points: [number, number][] = [];
+    if (fallbackPickup) points.push([fallbackPickup.lng, fallbackPickup.lat]);
+    if (fallbackDropoff) points.push([fallbackDropoff.lng, fallbackDropoff.lat]);
+    if (points.length === 0) {
+      isCameraAnim.current = true;
+      map.flyTo({ center: [center.longitude, center.latitude], zoom: 11, duration: 0 });
+      requestAnimationFrame(() => { isCameraAnim.current = false; });
+      return;
+    }
+    const lngs = points.map((p) => p[0]);
+    const lats = points.map((p) => p[1]);
+    const sw: [number, number] = [Math.min(...lngs), Math.min(...lats)];
+    const ne: [number, number] = [Math.max(...lngs), Math.max(...lats)];
+    isCameraAnim.current = true;
+    map.fitBounds([sw, ne], { padding: 80, maxZoom: 15, duration: 500 });
+    requestAnimationFrame(() => { isCameraAnim.current = false; });
+  }, [
+    mapRef,
+    crew,
+    fallbackPickup?.lat,
+    fallbackPickup?.lng,
+    fallbackDropoff?.lat,
+    fallbackDropoff?.lng,
+    center.latitude,
+    center.longitude,
+  ]);
+
+  // Follow the truck. Fires on every animated-position tick so the
+  // camera glides in step with the marker; bearing rotates the whole
+  // basemap so the truck always points "up".
+  useEffect(() => {
+    const map = mapRef?.getMap?.();
+    if (!map || !crew || !followMode) return;
+    isCameraAnim.current = true;
+    map.easeTo({
+      center: [crew.lng, crew.lat],
+      zoom: 16.2,
+      pitch: 48,
+      bearing: bearing ?? 0,
+      duration: 900,
+    });
+    const id = window.setTimeout(() => { isCameraAnim.current = false; }, 950);
+    return () => window.clearTimeout(id);
+  }, [mapRef, crew?.lat, crew?.lng, bearing, followMode]);
+
+  return null;
+}
+
+/**
+ * Fit-all controller for the expanded "context" view — one-shot fit
+ * to whichever landmarks are present. Only mounts when followMode is
+ * off so it does not fight the follow controller.
+ */
 function FitBoundsController({
   crew,
   pickup,
@@ -138,33 +252,28 @@ function FitBoundsController({
   center: Center;
 }) {
   const { current: mapRef } = useMap();
-  const hasCrew = crew != null;
-  const hasDropoff = dropoff != null;
-  const hasPickup = pickup != null;
-
   useEffect(() => {
     const map = mapRef?.getMap?.();
     if (!map) return;
-
     const points: [number, number][] = [];
-    if (hasCrew && crew) points.push([crew.current_lng, crew.current_lat]);
-    if (hasDropoff && dropoff) points.push([dropoff.lng, dropoff.lat]);
-    if (hasPickup && pickup) points.push([pickup.lng, pickup.lat]);
-
+    if (crew) points.push([crew.current_lng, crew.current_lat]);
+    if (dropoff) points.push([dropoff.lng, dropoff.lat]);
+    if (pickup) points.push([pickup.lng, pickup.lat]);
     if (points.length === 0) {
-      map.flyTo({
-        center: [center.longitude, center.latitude],
-        zoom: 10,
-        duration: 0,
-      });
+      map.flyTo({ center: [center.longitude, center.latitude], zoom: 10, duration: 0 });
       return;
     }
-
     const lngs = points.map((p) => p[0]);
     const lats = points.map((p) => p[1]);
     const sw: [number, number] = [Math.min(...lngs), Math.min(...lats)];
     const ne: [number, number] = [Math.max(...lngs), Math.max(...lats)];
-    map.fitBounds([sw, ne], { padding: 80, maxZoom: 15, duration: 500 });
+    map.fitBounds([sw, ne], {
+      padding: 80,
+      maxZoom: 15,
+      pitch: 0,
+      bearing: 0,
+      duration: 600,
+    });
   }, [
     mapRef,
     crew?.current_lat,
@@ -173,13 +282,9 @@ function FitBoundsController({
     dropoff?.lng,
     pickup?.lat,
     pickup?.lng,
-    hasCrew,
-    hasDropoff,
-    hasPickup,
     center.latitude,
     center.longitude,
   ]);
-
   return null;
 }
 
@@ -234,6 +339,14 @@ export function TrackLiveMapMapbox({
     crew ? { lat: crew.current_lat, lng: crew.current_lng } : null,
   );
   const bearing = useBearing(crew?.current_lat, crew?.current_lng);
+  // Follow-truck mode is the default whenever there's a live crew
+  // position. User pan/pinch drops out of follow mode; the Recenter
+  // pill puts them back. Ships Uber-style tight-zoom-and-follow instead
+  // of the old city-wide fit-all default that made the truck look like
+  // a dot on the horizon.
+  const [followMode, setFollowMode] = useState(true);
+  const isLiveStageActive = liveStage !== "completed" && liveStage !== "delivered";
+  const shouldFollow = followMode && hasPosition && isLiveStageActive;
 
   // Last known location freshness
   const isLocationStale = lastLocationAt
@@ -369,16 +482,32 @@ export function TrackLiveMapMapbox({
     <Map
       mapboxAccessToken={mapboxAccessToken}
       reuseMaps
-      initialViewState={{ ...center, zoom: hasPosition ? 14 : 10 }}
+      initialViewState={{
+        ...center,
+        zoom: hasPosition ? 16 : 11,
+        pitch: hasPosition ? 48 : 0,
+      }}
       style={{ width: "100%", height: "100%" }}
       mapStyle={mapBasemapStyle}
     >
-      <FitBoundsController
-        crew={crew}
-        pickup={pickup ?? null}
-        dropoff={dropoff ?? null}
-        center={center}
-      />
+      {shouldFollow ? (
+        <FollowTruckController
+          crew={animatedCrew}
+          bearing={bearing}
+          followMode
+          center={center}
+          fallbackPickup={pickup ?? null}
+          fallbackDropoff={dropoff ?? null}
+          onUserInteract={() => setFollowMode(false)}
+        />
+      ) : (
+        <FitBoundsController
+          crew={crew}
+          pickup={pickup ?? null}
+          dropoff={dropoff ?? null}
+          center={center}
+        />
+      )}
       <MapResizeOnSignal signal={resizeSignal} />
 
       {/* Completed route: solid gold */}
@@ -560,6 +689,33 @@ export function TrackLiveMapMapbox({
             Last known location · {lastSeenLabel}
           </div>
         </div>
+      )}
+
+      {/* Recenter pill — visible only when the user has manually panned
+          out of follow mode while the truck is still moving. One tap
+          re-centers on the crew and re-arms auto-follow. */}
+      {hasPosition && isLiveStageActive && !followMode && (
+        <button
+          type="button"
+          onClick={() => setFollowMode(true)}
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            zIndex: 10,
+            border: "1px solid #E8E4DF",
+            background: "#FFFBF7",
+            color: "#1A1816",
+            fontSize: 12,
+            fontWeight: 600,
+            padding: "8px 14px",
+            borderRadius: 999,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            cursor: "pointer",
+          }}
+        >
+          Recenter on truck
+        </button>
       )}
 
       {hasPosition && etaOverlayMinutes != null && (
