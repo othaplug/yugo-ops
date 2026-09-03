@@ -20,13 +20,27 @@ async function handleAttach(
 ) {
   try {
     const { quoteId } = await params;
-    const { referral_id } = await req.json();
+    const { referral_id, token } = await req.json();
 
     if (!quoteId || !referral_id) {
       return NextResponse.json({ error: "quoteId and referral_id are required" }, { status: 400 });
     }
 
     const db = createAdminClient();
+
+    // Ownership proof (like the sibling decline / select-scenario routes):
+    // require the quote's public_action_token. Without it, anyone with a
+    // guessable quoteId + a referral_id could attach a referral and rewrite the
+    // client_referrals credit/discount.
+    const { data: ownerQuote } = await db
+      .from("quotes")
+      .select("public_action_token")
+      .eq("quote_id", quoteId)
+      .maybeSingle();
+    const stored = (ownerQuote?.public_action_token as string | null)?.trim();
+    if (!stored || stored !== String(token ?? "").trim()) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const { data: ref } = await db
       .from("client_referrals")

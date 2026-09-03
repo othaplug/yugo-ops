@@ -826,7 +826,7 @@ export default function QuotePageClient({
         await fetch(`/api/quotes/${quote.quote_id}/referral`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ referral_id: data.referral_id }),
+          body: JSON.stringify({ referral_id: data.referral_id, token: publicActionToken }),
         }).catch(() => {});
       } else {
         setReferralVerified(false);
