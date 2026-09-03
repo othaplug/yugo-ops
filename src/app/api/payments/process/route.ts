@@ -176,6 +176,27 @@ export async function POST(req: Request) {
             { status: 400 },
           );
         }
+      } else {
+        // Deposit booking (>48h out, not a full-payment service): the client
+        // still must pay at least the server-quoted deposit. Without this floor,
+        // amount was charged verbatim, so a crafted payload could book a
+        // confirmed move for $1. 2% tolerance for client/server rounding drift.
+        const minDeposit = Math.floor(depositOnQuote * 0.98);
+        if (minDeposit > 0 && Number(amount) < minDeposit) {
+          console.warn("[payments/process] deposit below quoted minimum", {
+            quoteId,
+            submittedAmount: amount,
+            requiredDeposit: depositOnQuote,
+          });
+          return NextResponse.json(
+            {
+              error: "Payment is below the deposit required to confirm this booking. Refresh the page and try again.",
+              code: "DEPOSIT_BELOW_MINIMUM",
+              required_deposit: depositOnQuote,
+            },
+            { status: 400 },
+          );
+        }
       }
     }
 
