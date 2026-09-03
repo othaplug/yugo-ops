@@ -407,6 +407,11 @@ export async function POST(req: NextRequest) {
         pickupLocations,
         dropoffLocations,
         moveDate: quote.move_date,
+        arrivalWindow:
+          (typeof quote.arrival_window === "string" && quote.arrival_window.trim()) ||
+          (typeof quote.preferred_time === "string" && quote.preferred_time.trim())
+            ? String(quote.arrival_window || quote.preferred_time).trim()
+            : null,
         moveSize,
         companyName: (factors.company_name as string) ?? platformCompanyName,
         itemDescription: (factors.item_description as string) ?? null,
@@ -474,6 +479,14 @@ export async function POST(req: NextRequest) {
         b2bPaymentMethod:
           typeof factors.b2b_payment_method === "string"
             ? factors.b2b_payment_method
+            : null,
+        b2bInvoiceTerms:
+          typeof factors.b2b_invoice_terms === "string"
+            ? factors.b2b_invoice_terms
+            : null,
+        b2bDeliveryWindow:
+          typeof factors.b2b_delivery_window === "string" && factors.b2b_delivery_window.trim()
+            ? factors.b2b_delivery_window
             : null,
         binBundleLabel: (factors.bin_bundle_label as string) ?? null,
         binDropOffDate: (factors.bin_drop_off_date as string) ?? null,

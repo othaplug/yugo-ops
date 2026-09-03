@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { formatPhone } from "@/lib/phone";
 import { displayLabel, serviceTypeDisplayLabel } from "@/lib/displayLabels";
 import { formatPlatformDisplay } from "@/lib/date-format";
+import {
+  pickupLocationsFromQuote,
+  dropoffLocationsFromQuote,
+  accessLabel,
+} from "@/lib/quotes/quote-address-display";
 import QuoteEngagementFeed, {
   type EngagementEvent,
   type LegacyEvent,
@@ -122,6 +127,9 @@ export default function B2BQuoteDetailClient({
         ? "Net-30"
         : "On completion";
   const windowLabel = factors.b2b_delivery_window ? String(factors.b2b_delivery_window) : null;
+  // All route stops (B2B quotes can have multiple pickups via factors.b2b_stops).
+  const pickups = pickupLocationsFromQuote(factors, quote.from_address as string | null, quote.from_access as string | null);
+  const dropoffs = dropoffLocationsFromQuote(factors, quote.to_address as string | null, quote.to_access as string | null);
   const lineItems = Array.isArray(factors.b2b_line_items)
     ? (factors.b2b_line_items as { description?: string; quantity?: number }[])
     : null;
@@ -393,15 +401,25 @@ export default function B2BQuoteDetailClient({
                 <span className="w-2.5 h-2.5 rounded-full border-2" style={{ borderColor: "var(--admin-primary-fill)", background: "var(--card)" }} />
               </div>
               <div className="flex flex-col gap-3.5">
-                <div>
-                  <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Pickup</div>
-                  <div className="text-[13px] font-medium text-[var(--tx)] mt-0.5">{quote.from_address ?? "-"}</div>
-                </div>
-                <div>
-                  <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Dropoff</div>
-                  <div className="text-[13px] font-medium text-[var(--tx)] mt-0.5">{quote.to_address ?? "-"}</div>
-                  {quote.distance_km ? <div className="text-[11px] text-[var(--tx3)] mt-1 tabular-nums">{Number(quote.distance_km).toFixed(1)} km &middot; single leg</div> : null}
-                </div>
+                {pickups.map((p, i) => (
+                  <div key={`pk-${i}`}>
+                    <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">
+                      {pickups.length > 1 ? `Pickup ${i + 1}` : "Pickup"}
+                    </div>
+                    <div className="text-[13px] font-medium text-[var(--tx)] mt-0.5">{p.address}</div>
+                    {accessLabel(p.access) ? <div className="text-[11px] text-[var(--tx3)] mt-0.5">{accessLabel(p.access)}</div> : null}
+                  </div>
+                ))}
+                {dropoffs.map((p, i) => (
+                  <div key={`dp-${i}`}>
+                    <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">
+                      {dropoffs.length > 1 ? `Delivery ${i + 1}` : "Delivery"}
+                    </div>
+                    <div className="text-[13px] font-medium text-[var(--tx)] mt-0.5">{p.address}</div>
+                    {accessLabel(p.access) ? <div className="text-[11px] text-[var(--tx3)] mt-0.5">{accessLabel(p.access)}</div> : null}
+                    {i === dropoffs.length - 1 && quote.distance_km ? <div className="text-[11px] text-[var(--tx3)] mt-1 tabular-nums">{Number(quote.distance_km).toFixed(1)} km &middot; {pickups.length + dropoffs.length > 2 ? `${pickups.length + dropoffs.length} stops` : "single leg"}</div> : null}
+                  </div>
+                ))}
               </div>
             </div>
 

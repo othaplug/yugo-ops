@@ -41,6 +41,30 @@ function normAddrKey(s: string): string {
   return s.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
+/**
+ * B2B one-off / commercial quotes store their route as `factors.b2b_stops`:
+ * `[{ type: "pickup" | "delivery", address, access }]`. This is a DIFFERENT
+ * schema from `pickup_locations` / `additional_pickup_addresses`, so a
+ * multi-pickup B2B quote (e.g. 30422 with 2 pickups) was silently collapsed to
+ * a single from/to everywhere the display helpers were used. Fold those rows in
+ * so every surface shows all stops.
+ */
+function b2bStopRows(
+  factors: Record<string, unknown> | null | undefined,
+  kind: "pickup" | "delivery",
+): QuoteStopLocation[] {
+  const stops = coalesceJsonArray(factors?.b2b_stops);
+  const out: QuoteStopLocation[] = [];
+  for (const s of stops) {
+    if (!s || typeof s !== "object") continue;
+    const o = s as Record<string, unknown>;
+    if (String(o.type ?? "").trim().toLowerCase() !== kind) continue;
+    const row = normalizeLocationRow(o);
+    if (row) out.push(row);
+  }
+  return out;
+}
+
 function dedupeStopRows(rows: QuoteStopLocation[]): QuoteStopLocation[] {
   const seen = new Set<string>();
   const out: QuoteStopLocation[] = [];
@@ -83,6 +107,9 @@ export function pickupLocationsFromQuote(
     if (addr) rows.push({ address: addr, access: null });
   }
 
+  // B2B commercial route stops (separate schema; primary already seeded above).
+  rows.push(...b2bStopRows(fac, "pickup"));
+
   rows = rows.filter((r) => r.address.trim().length > 0);
   return dedupeStopRows(rows);
 }
@@ -116,6 +143,9 @@ export function dropoffLocationsFromQuote(
     const addr = addressFromExtraItem(ex);
     if (addr) rows.push({ address: addr, access: null });
   }
+
+  // B2B commercial route stops (type "delivery"; primary already seeded above).
+  rows.push(...b2bStopRows(fac, "delivery"));
 
   rows = rows.filter((r) => r.address.trim().length > 0);
   return dedupeStopRows(rows);

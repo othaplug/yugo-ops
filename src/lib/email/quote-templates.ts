@@ -256,6 +256,9 @@ export interface QuoteTemplateData {
   pickupLocations?: { address: string; access?: string | null }[];
   dropoffLocations?: { address: string; access?: string | null }[];
   moveDate?: string | null;
+  /** Client-facing arrival time frame (quote.arrival_window, else preferred_time).
+   *  Shown under the date on move proposals when set. */
+  arrivalWindow?: string | null;
   moveSize?: string | null;
   companyName?: string | null;
   itemDescription?: string | null;
@@ -323,9 +326,14 @@ export interface QuoteTemplateData {
   b2bVerticalCode?: string | null;
   /** Matches `factors_applied.b2b_handling_type` for commercial quote emails. */
   b2bHandlingType?: string | null;
-  /** `factors_applied.b2b_payment_method`. "invoice" = approved partner on Net-30;
+  /** `factors_applied.b2b_payment_method`. "invoice" = approved partner on invoice terms;
    *  every other value (or null) is a one-off that pays in full at booking. */
   b2bPaymentMethod?: string | null;
+  /** `factors_applied.b2b_invoice_terms` — net_15 | net_30 | on_completion. Drives
+   *  the invoice-terms line so the email reflects the chosen term, not hardcoded Net 30. */
+  b2bInvoiceTerms?: string | null;
+  /** `factors_applied.b2b_delivery_window` — the delivery time frame (e.g. "Morning (9:00 AM, 11:00 AM)"). */
+  b2bDeliveryWindow?: string | null;
   // Bin rental
   binBundleLabel?: string | null;
   binDropOffDate?: string | null;
@@ -777,6 +785,7 @@ function residentialTemplate(d: QuoteTemplateData): string {
     );
   }
   rows.push(["Date", dateDisplay(d.moveDate)]);
+  if (d.arrivalWindow?.trim()) rows.push(["Arrival Window", d.arrivalWindow.trim()]);
   if (d.distance) rows.push(["Distance", d.distance]);
   if (d.estCrewSize != null && d.estCrewSize > 0)
     rows.push(["Crew", `${d.estCrewSize} professional movers`]);
@@ -882,6 +891,7 @@ function longDistanceTemplate(d: QuoteTemplateData): string {
   if (d.distance) rows.push(["Distance", d.distance]);
   if (d.moveSize) rows.push(["Move Size", formatMoveSize(d.moveSize)]);
   rows.push(["Date", dateDisplay(d.moveDate)]);
+  if (d.arrivalWindow?.trim()) rows.push(["Arrival Window", d.arrivalWindow.trim()]);
   if (d.estCrewSize != null && d.estCrewSize > 0)
     rows.push(["Crew", `${d.estCrewSize} professional movers`]);
   // Est. duration deliberately omitted from every client email.
@@ -1250,6 +1260,7 @@ function labourOnlyTemplate(d: QuoteTemplateData): string {
     if (locAccess) rows.push(["Access", locAccess]);
   }
   rows.push(["Date", dateDisplay(d.moveDate)]);
+  if (d.arrivalWindow?.trim()) rows.push(["Arrival Window", d.arrivalWindow.trim()]);
   if (d.labourCrewSize != null) {
     rows.push(["Crew", `${d.labourCrewSize}-person crew`]);
   }
@@ -1403,17 +1414,39 @@ function binRentalTemplate(d: QuoteTemplateData): string {
 function b2bOneOffTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.b2bItems) rows.push(["Items", d.b2bItems]);
-  rows.push(
-    ...addressRowsWithAccess(
-      "Pickup",
-      d.fromAddress,
-      d.fromAccess,
-      "Delivery",
-      d.toAddress,
-      d.toAccess,
-    ),
-  );
+  // Render every stop. B2B commercial quotes can have multiple pickups
+  // (factors.b2b_stops); the old single from/to dropped extra pickups.
+  const b2bPickups = Array.isArray(d.pickupLocations)
+    ? d.pickupLocations.filter((p) => p.address?.trim())
+    : [];
+  const b2bDropoffs = Array.isArray(d.dropoffLocations)
+    ? d.dropoffLocations.filter((p) => p.address?.trim())
+    : [];
+  if (b2bPickups.length > 1 || b2bDropoffs.length > 1) {
+    b2bPickups.forEach((p, i) => {
+      rows.push([b2bPickups.length > 1 ? `Pickup ${i + 1}` : "Pickup", emailMapLinkHtml(p.address)]);
+      const pa = formatAccessForDisplay(p.access ?? null);
+      if (pa) rows.push(["Access", pa]);
+    });
+    b2bDropoffs.forEach((p, i) => {
+      rows.push([b2bDropoffs.length > 1 ? `Delivery ${i + 1}` : "Delivery", emailMapLinkHtml(p.address)]);
+      const pa = formatAccessForDisplay(p.access ?? null);
+      if (pa) rows.push(["Access", pa]);
+    });
+  } else {
+    rows.push(
+      ...addressRowsWithAccess(
+        "Pickup",
+        d.fromAddress,
+        d.fromAccess,
+        "Delivery",
+        d.toAddress,
+        d.toAccess,
+      ),
+    );
+  }
   rows.push(["Delivery Date", dateDisplay(d.moveDate)]);
+  if (d.b2bDeliveryWindow?.trim()) rows.push(["Delivery Window", d.b2bDeliveryWindow.trim()]);
 
   const total = d.customPrice ?? 0;
   const tax = Math.round(total * 0.13);
@@ -1428,8 +1461,15 @@ function b2bOneOffTemplate(d: QuoteTemplateData): string {
   // === "invoice"). Every other one-off pays in full at booking. Never show
   // "or Net 30" unconditionally \u2014 it misrepresents the terms for one-offs.
   const payInvoice = d.b2bPaymentMethod === "invoice";
+  const invoiceTermsRaw = String(d.b2bInvoiceTerms ?? "").trim();
+  const invoiceTermsPhrase =
+    invoiceTermsRaw === "net_15"
+      ? "Net 15"
+      : invoiceTermsRaw === "net_30"
+        ? "Net 30"
+        : "Due on completion";
   const paymentLine = payInvoice
-    ? "Net 30 on your approved partner account"
+    ? `${invoiceTermsPhrase} on your approved partner account`
     : "Full payment at booking";
 
   // Clean header: the recipient leads in serif, the service is a light one-line

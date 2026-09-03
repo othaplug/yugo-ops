@@ -11,6 +11,10 @@ import {
 import { toTitleCase } from "@/lib/format-text";
 import { getB2BDeliveryFeatureList } from "@/lib/quotes/b2b-quote-copy";
 import { B2B_TERMS_SHORT } from "@/lib/quotes/b2b-coverage-and-terms";
+import {
+  pickupLocationsFromQuote,
+  dropoffLocationsFromQuote,
+} from "@/lib/quotes/quote-address-display";
 
 function friendlyFleetLine(raw: string): string {
   let s = raw.trim();
@@ -73,6 +77,12 @@ export default function B2BOneOffLayout({
       : invoiceTermsRaw === "net_30"
         ? "Net 30"
         : "Due on completion";
+  // All route stops (a B2B quote can have multiple pickups via b2b_stops) and
+  // the delivery time frame, both previously dropped from the client view.
+  const pickupStops = pickupLocationsFromQuote(f, quote.from_address, quote.from_access);
+  const dropoffStops = dropoffLocationsFromQuote(f, quote.to_address, quote.to_access);
+  const multiStop = pickupStops.length + dropoffStops.length > 2;
+  const deliveryWindow = str("b2b_delivery_window");
   const businessName = str("b2b_business_name");
   const deliverToName = (quote as { deliver_to_name?: string | null })
     .deliver_to_name;
@@ -314,27 +324,48 @@ export default function B2BOneOffLayout({
           className="mt-4 pt-4 border-t"
           style={{ borderColor: `${FOREST}12` }}
         >
-          <div className="flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <p className={eyebrow()} style={{ color: FOREST_MUTED }}>
-                Pickup
-              </p>
-              <p className="text-[12px] font-medium" style={{ color: FOREST }}>
-                {quote.from_address}
-              </p>
+          {multiStop ? (
+            <div className="flex flex-col gap-3">
+              {pickupStops.map((p, i) => (
+                <div key={`pk-${i}`}>
+                  <p className={eyebrow()} style={{ color: FOREST_MUTED }}>
+                    {pickupStops.length > 1 ? `Pickup ${i + 1}` : "Pickup"}
+                  </p>
+                  <p className="text-[12px] font-medium" style={{ color: FOREST }}>{p.address}</p>
+                </div>
+              ))}
+              {dropoffStops.map((p, i) => (
+                <div key={`dp-${i}`}>
+                  <p className={eyebrow()} style={{ color: FOREST_MUTED }}>
+                    {dropoffStops.length > 1 ? `Delivery ${i + 1}` : "Delivery"}
+                  </p>
+                  <p className="text-[12px] font-medium" style={{ color: FOREST }}>{p.address}</p>
+                </div>
+              ))}
             </div>
-            <span className="shrink-0 text-[14px]" style={{ color: FOREST_MUTED }} aria-hidden>
-              &rarr;
-            </span>
-            <div className="flex-1 min-w-0 text-right">
-              <p className={eyebrow()} style={{ color: FOREST_MUTED }}>
-                Delivery
-              </p>
-              <p className="text-[12px] font-medium" style={{ color: FOREST }}>
-                {quote.to_address}
-              </p>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className={eyebrow()} style={{ color: FOREST_MUTED }}>
+                  Pickup
+                </p>
+                <p className="text-[12px] font-medium" style={{ color: FOREST }}>
+                  {quote.from_address}
+                </p>
+              </div>
+              <span className="shrink-0 text-[14px]" style={{ color: FOREST_MUTED }} aria-hidden>
+                &rarr;
+              </span>
+              <div className="flex-1 min-w-0 text-right">
+                <p className={eyebrow()} style={{ color: FOREST_MUTED }}>
+                  Delivery
+                </p>
+                <p className="text-[12px] font-medium" style={{ color: FOREST }}>
+                  {quote.to_address}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
           <div className="mt-2 flex items-center justify-center gap-2 text-[11px] font-medium" style={{ color: `${FOREST}B0` }}>
             {quote.distance_km != null ? (
               <span>
@@ -349,6 +380,12 @@ export default function B2BOneOffLayout({
               </span>
             ) : null}
           </div>
+          {deliveryWindow ? (
+            <div className="mt-3 pt-3 border-t flex items-center justify-between gap-3" style={{ borderColor: `${FOREST}12` }}>
+              <p className={eyebrow()} style={{ color: FOREST_MUTED }}>Delivery window</p>
+              <p className="text-[12px] font-medium" style={{ color: FOREST }}>{deliveryWindow}</p>
+            </div>
+          ) : null}
         </div>
       </div>
 

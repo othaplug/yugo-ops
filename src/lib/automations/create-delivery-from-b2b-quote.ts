@@ -165,7 +165,12 @@ export async function createDeliveryFromB2BQuote(
     pickup_address: (quote.from_address || "").trim() || null,
     delivery_address: (quote.to_address || "").trim(),
     scheduled_date: scheduledDate,
-    delivery_window: null,
+    // Carry the delivery time frame the client was quoted onto the delivery so
+    // the crew, calendar, and tracking pages keep it (was dropped as null).
+    delivery_window:
+      typeof factors.b2b_delivery_window === "string" && factors.b2b_delivery_window.trim()
+        ? factors.b2b_delivery_window.trim()
+        : null,
     items: itemsFinal,
     instructions: (factors.b2b_special_instructions as string)?.trim() || null,
     status: "scheduled",

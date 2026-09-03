@@ -4,6 +4,7 @@ import { createAndPublishSquareInvoice } from "@/lib/square-invoice";
 import { resolveB2BInvoiceCustomerName } from "@/lib/b2b-invoice-customer-name";
 import { opsInvoiceNumberForSquareJob } from "@/lib/invoice-display-number";
 import { serverDebug } from "@/lib/server-log";
+import { resolveQuoteInvoiceDueDays } from "@/lib/b2b-invoice-terms";
 
 /**
  * Internal endpoint — called fire-and-forget by the crew signoff route
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
   const { data: delivery, error: delErr } = await admin
     .from("deliveries")
     .select(
-      "id, delivery_number, business_name, customer_name, client_name, organization_id, delivery_address, pickup_address, vertical_code, b2b_line_items, scheduled_date, created_at, admin_adjusted_price, total_price, quoted_price, items"
+      "id, delivery_number, business_name, customer_name, client_name, organization_id, delivery_address, pickup_address, vertical_code, b2b_line_items, scheduled_date, created_at, admin_adjusted_price, total_price, quoted_price, items, source_quote_id"
     )
     .eq("id", deliveryId)
     .single();
@@ -88,6 +89,11 @@ export async function POST(req: NextRequest) {
           ? Math.round((Number(delivery.total_price) / 1.13) * 100) / 100
           : 0;
   const amount = Number.isFinite(rawAmount) ? rawAmount : 0;
+
+  // The term the operator sold on THIS quote wins over the org default, so a
+  // job quoted Net 15 is not invoiced Net 30 (or on the org's monthly anchor).
+  // Drives both the Square invoice and the local invoices row below.
+  const jobDueDays = await resolveQuoteInvoiceDueDays(admin, delivery.source_quote_id);
 
   const orgEmail = org.email ?? null;
   const orgName = org.name || delivery.client_name || "Partner";
@@ -139,8 +145,13 @@ export async function POST(req: NextRequest) {
       orgEmail,
       orgName: clientName,
       contactName,
-      invoiceDueDays: org.invoice_due_days === 15 ? 15 : 30,
-      invoiceDueDayOfMonth: org.invoice_due_day_of_month === 15 || org.invoice_due_day_of_month === 30 ? org.invoice_due_day_of_month : null,
+      invoiceDueDays: jobDueDays != null ? jobDueDays : org.invoice_due_days === 15 ? 15 : 30,
+      invoiceDueDayOfMonth:
+        jobDueDays != null
+          ? null
+          : org.invoice_due_day_of_month === 15 || org.invoice_due_day_of_month === 30
+            ? org.invoice_due_day_of_month
+            : null,
       jobType: "delivery",
       partnerVertical: vertical,
       billingPeriodStart: deliveryDate,
@@ -162,6 +173,11 @@ export async function POST(req: NextRequest) {
 
   const dueDate = (() => {
     const now = new Date();
+    if (jobDueDays != null) {
+      return new Date(now.getTime() + jobDueDays * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
+    }
     const dayOfMonth = org.invoice_due_day_of_month;
     if (dayOfMonth === 15 || dayOfMonth === 30) {
       let due = new Date(now.getFullYear(), now.getMonth(), dayOfMonth);

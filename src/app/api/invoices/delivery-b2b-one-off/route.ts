@@ -5,6 +5,7 @@ import { createAndPublishSquareInvoice } from "@/lib/square-invoice";
 import { resolveDeliveryUuidFromApiPathSegment } from "@/lib/delivery-resolve-id";
 import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
 import { opsInvoiceNumberForSquareJob } from "@/lib/invoice-display-number";
+import { resolveQuoteInvoiceDueDays } from "@/lib/b2b-invoice-terms";
 
 /**
  * Creates a Square invoice for a B2B one-off delivery (no partner org), emails the business
@@ -93,10 +94,18 @@ export async function POST(req: NextRequest) {
     referenceCode: delivery.delivery_number,
   });
 
-  // B2B one-off delivery invoices are due immediately on receipt.
-  // Partner-org deliveries follow Net 15 / Net 30 via auto-delivery; this route handles the no-account case.
-  const dueDays = 0;
-  const dueDate = new Date().toISOString().slice(0, 10);
+  // Honor the invoice term the operator sold on the quote (net_15 / net_30 /
+  // on_completion). A one-off can still be quoted Net 15/30 even without a
+  // standing partner account; only fall back to due-on-receipt when the quote
+  // set no explicit term.
+  const jobDueDays = await resolveQuoteInvoiceDueDays(
+    admin,
+    (delivery as { source_quote_id?: string | null }).source_quote_id,
+  );
+  const dueDays = jobDueDays != null ? jobDueDays : 0;
+  const dueDate = new Date(Date.now() + dueDays * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
 
   const deliveryDateRaw =
     (delivery as { scheduled_date?: string | null; created_at?: string | null })

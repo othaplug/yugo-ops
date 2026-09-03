@@ -101,7 +101,7 @@ export const B2B_TERMS_SHORT: { title: string; body: string }[] = [
   },
   {
     title: "Pricing and payment",
-    body: "Prices are in Canadian dollars and exclude HST, shown separately on your invoice. Net-30 terms are available to approved Yugo partner accounts only. All other bookings are payable in full at confirmation.",
+    body: "Prices are in Canadian dollars and exclude HST, shown separately on your invoice. Invoice terms are available to approved Yugo partner accounts only. All other bookings are payable in full at confirmation.",
   },
   {
     title: "Coverage and declared value",
@@ -145,7 +145,7 @@ export const B2B_TERMS_FULL: { heading: string; body: string[] }[] = [
     heading: "3. Pricing, taxes, and payment",
     body: [
       "All prices are in Canadian dollars and exclusive of taxes. Harmonized Sales Tax at the prevailing Ontario rate is added and separately stated, and Yugo's HST registration number appears on each invoice.",
-      "Net-30 payment terms are extended solely to Clients with a Yugo-approved partner account in good standing, subject to credit approval, and may be revoked at Yugo's discretion. All other Clients pay 100 percent of the quote at booking. Projects exceeding $2,500 require a 50 percent deposit on booking.",
+      "Invoice (net) payment terms are extended solely to Clients with a Yugo-approved partner account in good standing, subject to credit approval, and may be revoked at Yugo's discretion. All other Clients pay 100 percent of the quote at booking. Projects exceeding $2,500 require a 50 percent deposit on booking.",
       "Overdue amounts bear interest at 1.5 percent per month. The Client must notify Yugo in writing of any disputed invoice line within ten business days of the invoice date; undisputed amounts remain payable on the original due date.",
     ],
   },
