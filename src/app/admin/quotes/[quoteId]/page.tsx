@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import { redirect } from "next/navigation";
 import QuoteDetailClient from "./QuoteDetailClient";
+import B2BQuoteDetailClient from "./B2BQuoteDetailClient";
+import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
 import { computeQuoteEngagementMetrics } from "@/lib/quotes/comparison-intelligence";
 import { getQuotePaymentPipelineMode } from "@/lib/quotes/payment-pipeline-mode";
 import {
@@ -108,7 +110,7 @@ export default async function QuoteDetailPage({ params }: Props) {
 
   const { data: linkedDelRow } = await db
     .from("deliveries")
-    .select("delivery_number")
+    .select("id, delivery_number")
     .eq("source_quote_id", quote.id)
     .maybeSingle();
 
@@ -116,6 +118,24 @@ export default async function QuoteDetailPage({ params }: Props) {
     typeof (quote as { hubspot_deal_id?: string | null }).hubspot_deal_id === "string"
       ? (quote as { hubspot_deal_id: string }).hubspot_deal_id.trim() || null
       : null;
+
+  // Commercial delivery (b2b_oneoff / b2b_delivery) gets its own admin surface,
+  // framed around approval + invoice-after-completion, not a residential move.
+  if (isB2BDeliveryQuoteServiceType(String(quote.service_type ?? ""))) {
+    return (
+      <div className="w-full min-w-0 py-5 md:py-6">
+        <B2BQuoteDetailClient
+          quote={quote}
+          engagement={engagementRows ?? []}
+          legacyEvents={legacyEvents ?? []}
+          isSuperAdmin={isSuperAdmin}
+          linkedDeliveryId={linkedDelRow?.id ?? null}
+          linkedDeliveryNumber={linkedDelRow?.delivery_number ?? null}
+          hubspotDealId={hubspotDealId}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-w-0 py-5 md:py-6">

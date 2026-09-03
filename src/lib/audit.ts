@@ -23,6 +23,7 @@ type AuditAction =
   | "scope_charge_added"
   | "additional_charge_collected"
   | "move_addon_added"
+  | "b2b_booking_confirmed"
   | "crew_reassigned_in_progress"
   | "crew_members_changed_in_progress"
   // R1: inbound shipment lifecycle from quote-side actions

@@ -8247,6 +8247,17 @@ export default function QuoteFormClient({
                   <label className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
                     Service Type
                   </label>
+                  {isB2bEmbed ? (
+                    <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3.5 py-3 max-w-[22rem]">
+                      <div className="text-[11px] font-semibold text-[var(--tx)]">
+                        Commercial Delivery
+                      </div>
+                      <div className="text-[9px] text-[var(--tx3)] mt-0.5 leading-snug">
+                        This is a commercial delivery quote. The service type is
+                        fixed here; continue to edit the delivery details.
+                      </div>
+                    </div>
+                  ) : (
                   <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                     {SERVICE_TYPES.map((card) => {
                       const sel = serviceType === card.value;
@@ -8282,6 +8293,7 @@ export default function QuoteFormClient({
                       );
                     })}
                   </div>
+                  )}
                 </div>
               )}
 
