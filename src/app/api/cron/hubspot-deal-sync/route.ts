@@ -8,6 +8,7 @@ import { autoCreateHubSpotDealForNewDelivery } from "@/lib/hubspot/auto-create-d
 import { autoCreateHubSpotDealForNewMove } from "@/lib/hubspot/auto-create-deal-for-move"
 import { getEmailBaseUrl } from "@/lib/email-base-url"
 import { getDeliveryDetailPath, getMoveDetailPath } from "@/lib/move-code"
+import { HS_DEAL_PENDING } from "@/lib/hubspot/auto-create-deal-for-quote"
 
 /**
  * Hourly self-healing HubSpot deal sync.
@@ -73,7 +74,22 @@ export async function GET(req: NextRequest) {
 
   const sb = createAdminClient()
 
+  // ── Heal stale create-claims ───────────────────────────────────────
+  // A deal-create that crashed after claiming leaves quotes.hubspot_deal_id
+  // stuck on the "__hs_pending__" sentinel: future sends poll it and step
+  // aside (deal never created) and, without this, the sync below would PATCH
+  // a bogus id. Reset any sentinel older than 15 min back to null so the next
+  // send re-creates it (the 15-min window spares a fresh in-flight claim).
+  const staleClaimBefore = new Date(Date.now() - 15 * 60 * 1000).toISOString()
+  const { data: healedClaims } = await sb
+    .from("quotes")
+    .update({ hubspot_deal_id: null })
+    .eq("hubspot_deal_id", HS_DEAL_PENDING)
+    .lt("updated_at", staleClaimBefore)
+    .select("id")
+
   const results = {
+    stale_claims_healed: healedClaims?.length ?? 0,
     quotes_synced: 0,
     moves_synced: 0,
     moves_deal_created: 0,
@@ -104,7 +120,7 @@ export async function GET(req: NextRequest) {
         .eq("id", m.quote_id)
         .single()
       const dealId = (q?.hubspot_deal_id as string | null | undefined)
-      if (!dealId) continue
+      if (!dealId || dealId === HS_DEAL_PENDING) continue // never propagate the claim sentinel
 
       // Write deal ID onto the move so subsequent runs and live hooks work.
       await sb.from("moves").update({ hubspot_deal_id: dealId }).eq("id", m.id)
@@ -132,6 +148,7 @@ export async function GET(req: NextRequest) {
       "id, quote_id, status, hubspot_deal_id, from_address, to_address, from_access, to_access, service_type, move_date, move_size, custom_price, tiers, est_crew_size, est_hours, truck_primary, recommended_tier, factors_applied, contact_id, contacts:contact_id(name)",
     )
     .not("hubspot_deal_id", "is", null)
+    .neq("hubspot_deal_id", HS_DEAL_PENDING) // skip in-flight create claims
 
   if (qErr) {
     return NextResponse.json({ ok: false, error: qErr.message }, { status: 500 })

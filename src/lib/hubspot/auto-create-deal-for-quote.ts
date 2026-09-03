@@ -10,6 +10,16 @@ import { safeCreateDeal } from "@/lib/hubspot/safe-deal-write";
 import { resolveStageFromStatus } from "@/lib/hubspot/stage-mapping";
 import type { HubSpotAutoCreateDealResult } from "@/lib/hubspot/auto-create-deal-types";
 
+/**
+ * Sentinel written to quotes.hubspot_deal_id to atomically claim a quote for
+ * deal creation (mirrors the GCal __gcal_pending__ pattern). A concurrent send
+ * that sees it steps aside instead of creating a duplicate. It must always be
+ * resolved to a real id or released to null before the claiming request
+ * returns; a crash mid-create is healed by the hubspot-deal-sync cron, which
+ * skips this value and resets stale ones back to null.
+ */
+export const HS_DEAL_PENDING = "__hs_pending__";
+
 const HS_CONTACTS_SEARCH = "https://api.hubapi.com/crm/v3/objects/contacts/search";
 const HS_CONTACTS = "https://api.hubapi.com/crm/v3/objects/contacts";
 const HS_DEALS = "https://api.hubapi.com/crm/v3/objects/deals";
@@ -315,7 +325,7 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
   // for the winner's real id and returns THAT (the caller PATCHes it, never
   // re-creates). The sentinel is always resolved to a real id or released to
   // null before this function returns, so no other code sees it persist.
-  const HS_PENDING = "__hs_pending__";
+  const HS_PENDING = HS_DEAL_PENDING;
   let claimedForCreate = false;
   if (quotePk) {
     const tryClaim = async () => {
@@ -370,6 +380,7 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
     }
   };
 
+  try {
   let dealRes = await safeCreateDeal(token, body as { properties: Record<string, unknown>; associations?: unknown });
 
   if (!dealRes.ok) {
@@ -434,4 +445,14 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
   }
 
   return { status: "created", dealId };
+  } catch (e) {
+    // A throw AFTER the claim (safeCreateDeal network error, dealRes.json parse,
+    // the quote update) would otherwise strand the sentinel forever: future
+    // sends poll it and step aside, so the deal is NEVER created, and the sync
+    // cron PATCHes the bogus id hourly. Release the claim so a later send/cron
+    // retries cleanly. (Mirrors the GCal __gcal_pending__ release.)
+    await releaseClaim();
+    console.error("[hubspot] autoCreate threw after claim, released:", quoteIdText, e);
+    return null;
+  }
 }
