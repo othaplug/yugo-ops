@@ -162,7 +162,10 @@ function MapController({
     // Follow-truck mode: keep the truck centred at street zoom.
     if (followMode && crew) {
       programmaticRef.current = true;
-      map.setView([crew.current_lat, crew.current_lng], 16, { animate: true });
+      // Zoom 17 is Leaflet's tight street level (18 max, individual
+      // buildings). Uber-tight; the truck fills the viewport instead
+      // of getting lost in the city view.
+      map.setView([crew.current_lat, crew.current_lng], 17, { animate: true });
       const id = window.setTimeout(() => {
         programmaticRef.current = false;
       }, 400);
@@ -363,7 +366,7 @@ export default function DeliveryTrackMap({
   return (
     <MapContainer
       center={[center.lat, center.lng]}
-      zoom={crew ? 16 : 10}
+      zoom={crew ? 17 : 10}
       style={{ height: "100%", width: "100%" }}
       scrollWheelZoom
       className="track-live-map"

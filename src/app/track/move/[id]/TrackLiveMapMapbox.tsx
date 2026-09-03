@@ -223,10 +223,15 @@ function FollowTruckController({
     isCameraAnim.current = true;
     map.easeTo({
       center: [crew.lng, crew.lat],
-      zoom: 16.2,
-      pitch: 48,
+      zoom: 17.6,
+      pitch: 60,
       bearing: bearing ?? 0,
       duration: 900,
+      // Offset the camera slightly so the truck sits in the LOWER
+      // third of the viewport, leaving road ahead visible (Uber /
+      // Google Maps convention — you want to see where you're going,
+      // not where you've been).
+      offset: [0, 90],
     });
     const id = window.setTimeout(() => { isCameraAnim.current = false; }, 950);
     return () => window.clearTimeout(id);
@@ -484,8 +489,8 @@ export function TrackLiveMapMapbox({
       reuseMaps
       initialViewState={{
         ...center,
-        zoom: hasPosition ? 16 : 11,
-        pitch: hasPosition ? 48 : 0,
+        zoom: hasPosition ? 17.6 : 11,
+        pitch: hasPosition ? 60 : 0,
       }}
       style={{ width: "100%", height: "100%" }}
       mapStyle={mapBasemapStyle}
