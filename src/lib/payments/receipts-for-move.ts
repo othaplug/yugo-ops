@@ -23,7 +23,7 @@ export async function fetchPaymentReceiptsForMove(
   const { data, error } = await supabase
     .from("move_payment_ledger")
     .select(
-      "entry_type, label, pre_tax_amount, hst_amount, paid_at, square_receipt_url",
+      "entry_type, label, pre_tax_amount, hst_amount, paid_at, square_receipt_url, settlement_method",
     )
     .eq("move_id", moveId)
     .order("paid_at", { ascending: true });
@@ -32,7 +32,20 @@ export async function fetchPaymentReceiptsForMove(
     return { receipts: [], totalPaid: 0 };
   }
 
-  const receipts: PaymentReceipt[] = data.map((row) => {
+  // Scope charges write an 'adjustment' row with settlement_method='admin' and
+  // a paid_at, but they COLLECT no money — they just raise the balance the
+  // client owes. Counting them here overstated "total paid" on the client's
+  // receipt email. Exclude them. (adjustment+card = a real extra-item charge,
+  // deposit+admin = an admin-recognized deposit — both stay, they are collected.)
+  const collected = data.filter(
+    (row) =>
+      !(
+        String(row.entry_type) === "adjustment" &&
+        String(row.settlement_method ?? "") === "admin"
+      ),
+  );
+
+  const receipts: PaymentReceipt[] = collected.map((row) => {
     const pre = Number(row.pre_tax_amount || 0);
     const hst = Number(row.hst_amount || 0);
     return {
