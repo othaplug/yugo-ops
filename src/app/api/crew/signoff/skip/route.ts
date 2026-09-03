@@ -212,6 +212,20 @@ export async function POST(req: NextRequest) {
     });
   } catch {}
 
+  // Sticky signoff timestamp on the parent delivery — same guarantee
+  // as the signed path so the crew UI never re-opens the prompt after
+  // a decisive skip. Skips ARE completion evidence.
+  if (jobType === "delivery") {
+    try {
+      await admin
+        .from("deliveries")
+        .update({ signoff_completed_at: now })
+        .eq("id", entityId);
+    } catch (e) {
+      console.error("[signoff/skip] stamp signoff_completed_at:", e);
+    }
+  }
+
   if (!wasAlreadyComplete) {
     if (jobType === "move") {
       await runMoveCompletionFollowUp(admin, entityId, { source: "crew_signoff_skip" });

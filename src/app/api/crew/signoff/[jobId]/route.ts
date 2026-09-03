@@ -25,11 +25,35 @@ export async function GET(
 
   const admin = createAdminClient();
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId);
+  // Strict resolution: type-scoped and no silent fallback to the raw
+  // slug. Previously this route resolved `entityId = move?.id ||
+  // delivery?.id || jobId` — if the lookup missed, entityId became the
+  // raw string ("DLV-30412") and the subsequent client_sign_offs query
+  // keyed on it, always missed, and the crew UI reported "not signed"
+  // for a delivery that HAD been signed under the UUID. See DLV-30412.
   let entityId = jobId;
   if (!isUuid) {
-    const { data: move } = await admin.from("moves").select("id").ilike("move_code", jobId.replace(/^#/, "").toUpperCase()).maybeSingle();
-    const { data: delivery } = await admin.from("deliveries").select("id").ilike("delivery_number", jobId).maybeSingle();
-    entityId = move?.id || delivery?.id || jobId;
+    if (jobType === "delivery") {
+      const { data: delivery } = await admin
+        .from("deliveries")
+        .select("id")
+        .ilike("delivery_number", jobId)
+        .maybeSingle();
+      if (!delivery?.id) {
+        return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      }
+      entityId = delivery.id;
+    } else {
+      const { data: move } = await admin
+        .from("moves")
+        .select("id")
+        .ilike("move_code", jobId.replace(/^#/, "").toUpperCase())
+        .maybeSingle();
+      if (!move?.id) {
+        return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      }
+      entityId = move.id;
+    }
   }
 
   const { data } = await admin
@@ -39,12 +63,17 @@ export async function GET(
     .eq("job_type", jobType)
     .maybeSingle();
 
-  // For deliveries, resolve the partner vertical so the sign-off page can use context-aware copy
+  // For deliveries, resolve the partner vertical so the sign-off page can use context-aware copy.
+  // Also read the sticky signoff_completed_at so the UI treats the parent
+  // row as the source of truth for "already signed" — a transient miss on
+  // the client_sign_offs join (or a concurrent double-submit that leaves
+  // the row briefly readable via a different key) cannot re-open the prompt.
   let partnerVertical: string | null = null;
+  let deliverySignoffCompletedAt: string | null = null;
   if (jobType === "delivery") {
     const { data: delivery } = await admin
       .from("deliveries")
-      .select("organization_id")
+      .select("organization_id, signoff_completed_at")
       .eq("id", entityId)
       .maybeSingle();
     if (delivery?.organization_id) {
@@ -55,6 +84,8 @@ export async function GET(
         .maybeSingle();
       partnerVertical = org?.type || null;
     }
+    deliverySignoffCompletedAt =
+      (delivery as { signoff_completed_at?: string | null })?.signoff_completed_at ?? null;
   }
 
   const { data: eqRow, error: eqErr } = await admin
@@ -80,6 +111,11 @@ export async function GET(
     ...(data || {}),
     partnerVertical,
     serviceType,
+    // Sticky signoff flag — the crew UI trusts this over the
+    // client_sign_offs row lookup so a transient read miss cannot
+    // re-open the sign-out prompt on a closed job.
+    signoffCompleted: !!deliverySignoffCompletedAt || !!(data && (data as { id?: string }).id),
+    signoffCompletedAt: deliverySignoffCompletedAt,
     equipmentCheckDone: equipmentQueryFailed ? false : !!eqRow,
     equipmentCheckSkippedReason: eqRow?.skip_reason ?? null,
     equipmentTrackingUnavailable: equipmentQueryFailed,
@@ -100,6 +136,23 @@ export async function POST(
   const jobType = (body.jobType || "move") as "move" | "delivery";
   const signedBy = (body.signedBy || body.signed_by || "").toString().trim();
   const signatureDataUrl = (body.signatureDataUrl || body.signature_data_url || "").toString().trim();
+  // Idempotency: the crew UI mints a fresh UUID per signoff-screen
+  // mount and re-uses it across retries. Server dedupes by key so a
+  // flaky-network double-submit returns the original row instead of
+  // trying to INSERT a duplicate and confusing the UI with a 400.
+  const idempotencyKey =
+    (req.headers.get("x-idempotency-key") || body.idempotencyKey || body.idempotency_key || "")
+      .toString()
+      .trim() || null;
+  if (idempotencyKey) {
+    const admin = createAdminClient();
+    const { data: prior } = await admin
+      .from("client_sign_offs")
+      .select("id, signed_at")
+      .eq("idempotency_key", idempotencyKey)
+      .maybeSingle();
+    if (prior) return NextResponse.json(prior);
+  }
 
   // Original fields
   const allItemsReceived = body.allItemsReceived !== undefined ? !!body.allItemsReceived : (body.all_items_received !== undefined ? !!body.all_items_received : true);
@@ -287,6 +340,7 @@ export async function POST(
       feedback_note: feedbackNote,
       exceptions,
       item_conditions: itemConditions.length > 0 ? itemConditions : [],
+      idempotency_key: idempotencyKey,
     })
     .select("id, signed_at")
     .single();
@@ -309,6 +363,22 @@ export async function POST(
       : null;
   if (jobType === "move" && signoffRating != null) {
     await admin.from("moves").update({ satisfaction_rating: signoffRating, updated_at: new Date().toISOString() }).eq("id", entityId);
+  }
+
+  // Sticky signoff timestamp on the parent delivery row. The crew UI
+  // treats this as the source of truth for "already signed" so a
+  // transient read miss on client_sign_offs can never re-open the
+  // sign-out prompt. Parallels moves.walkthrough_completed_at from
+  // task #12.
+  if (jobType === "delivery") {
+    try {
+      await admin
+        .from("deliveries")
+        .update({ signoff_completed_at: inserted.signed_at ?? new Date().toISOString() })
+        .eq("id", entityId);
+    } catch (e) {
+      console.error("[signoff] stamp signoff_completed_at:", e);
+    }
   }
 
   // Log escalation as a status event so admin dashboard picks it up

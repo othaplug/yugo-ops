@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CaretRight, Toolbox } from "@phosphor-icons/react";
+import { CaretRight, Check, Toolbox } from "@phosphor-icons/react";
 import JobPhotos from "./JobPhotos";
 
 type SignoffMeta = {
   equipmentCheckDone?: boolean;
   equipmentTrackingUnavailable?: boolean;
+  signoffCompleted?: boolean;
+  signoffCompletedAt?: string | null;
 }
 
 interface Props {
@@ -110,13 +112,28 @@ export default function B2bMultiStopJobWrapUp({
         </Link>
       )}
 
-      <Link
-        href={`/crew/dashboard/job/${jobType}/${jobRouteId}/signoff`}
-        className="crew-premium-cta flex w-full min-h-[52px] items-center justify-center gap-2 py-3 text-[11px] font-bold uppercase leading-none tracking-[0.12em] text-[#FFFBF7] [font-family:var(--font-body)]"
-      >
-        Continue to client sign-off
-        <CaretRight size={18} weight="bold" aria-hidden />
-      </Link>
+      {meta?.signoffCompleted ? (
+        // Signoff is durable on the parent delivery
+        // (signoff_completed_at); do not re-invite the crew into the
+        // sign-off flow. Showing the CTA on a closed job is what
+        // pushed the crew back into the prompt on DLV-30412 after the
+        // signature had been captured.
+        <div
+          className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-[var(--yu3-r-xl)] border border-[var(--yu3-wine)]/30 bg-[var(--yu3-bg-surface)] px-4 py-3 text-[11px] font-bold uppercase leading-none tracking-[0.12em] text-[var(--yu3-wine)] [font-family:var(--font-body)]"
+          aria-live="polite"
+        >
+          <Check size={16} weight="bold" aria-hidden />
+          Signed
+        </div>
+      ) : (
+        <Link
+          href={`/crew/dashboard/job/${jobType}/${jobRouteId}/signoff`}
+          className="crew-premium-cta flex w-full min-h-[52px] items-center justify-center gap-2 py-3 text-[11px] font-bold uppercase leading-none tracking-[0.12em] text-[#FFFBF7] [font-family:var(--font-body)]"
+        >
+          Continue to client sign-off
+          <CaretRight size={18} weight="bold" aria-hidden />
+        </Link>
+      )}
     </div>
   );
 }

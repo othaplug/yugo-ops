@@ -88,6 +88,34 @@ export function verifyPhotoSurveyToken(token: string): string | null {
   }
 }
 
+/** Sign a delivery id for the client-facing resign link. Returns deliveryId.sig */
+export function signResignToken(deliveryId: string): string {
+  const sig = createHmac("sha256", getTrackSecret())
+    .update(`resign:${deliveryId}`)
+    .digest("base64url");
+  return `${deliveryId}.${sig}`;
+}
+
+/** Verify a resign token; returns deliveries.id or null. */
+export function verifyResignToken(token: string): string | null {
+  if (!token || typeof token !== "string") return null;
+  const lastDot = token.lastIndexOf(".");
+  if (lastDot <= 0) return null;
+  const id = token.slice(0, lastDot);
+  const sig = token.slice(lastDot + 1);
+  if (!id || !sig) return null;
+  const expected = createHmac("sha256", getTrackSecret())
+    .update(`resign:${id}`)
+    .digest("base64url");
+  if (expected.length !== sig.length) return null;
+  try {
+    if (!timingSafeEqual(Buffer.from(expected, "utf8"), Buffer.from(sig, "utf8"))) return null;
+    return id;
+  } catch {
+    return null;
+  }
+}
+
 /** Sign move id for remote walkthrough link (public). Returns moveId.sig */
 export function signWalkthroughToken(moveId: string): string {
   const sig = createHmac("sha256", getTrackSecret())

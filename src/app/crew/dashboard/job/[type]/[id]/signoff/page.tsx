@@ -322,6 +322,26 @@ export default function ClientSignOffPage({
   const [phase, setPhase] = useState(1);
   const [loading, setLoading] = useState(true);
   const [existing, setExisting] = useState<{ id: string } | null>(null);
+  // Sticky signoff flag from the parent delivery row. Trusts
+  // signoff_completed_at (see migration 20260902130000) even when the
+  // client_sign_offs join is momentarily unreadable — a transient read
+  // miss can no longer re-open the sign-out prompt on a closed job.
+  const [signoffStickyClosed, setSignoffStickyClosed] = useState(false);
+  // Idempotency key: one per signoff-screen mount, sent with every
+  // submit attempt. Server dedupes so a flaky-network double-tap
+  // returns the original row instead of erroring the second attempt.
+  const idempotencyKeyRef = useRef<string>(
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `signoff-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
+  // localStorage draft state — persists signature + form so a page
+  // reload before the POST confirms does not lose the client's
+  // signature. Keyed by job id so a different job never restores the
+  // wrong signature.
+  const draftKey = `yugo:signoff-draft:${jobType}:${id}`;
+  const [draftAvailable, setDraftAvailable] = useState(false);
+  const draftHydratedRef = useRef(false);
 
   const [geoLat, setGeoLat] = useState<number | null>(null);
   const [geoLng, setGeoLng] = useState<number | null>(null);
@@ -457,8 +477,29 @@ export default function ClientSignOffPage({
           ? await inventoryRes.json()
           : { items: [] };
         if (signoffData?.id) setExisting(signoffData);
+        // Server flag: honoured even when the row is not yet visible
+        // via the join. `signoff_completed_at` is stamped in the same
+        // request as the client_sign_offs insert (and on the skip
+        // path), so any true value here means the job is closed.
+        if (signoffData?.signoffCompleted) setSignoffStickyClosed(true);
         if (signoffData?.partnerVertical)
           setPartnerVertical(signoffData.partnerVertical);
+        // Draft detection — surface the "resume in-progress signoff?"
+        // banner only when the server has no row AND we have a local
+        // draft. Once server confirms a row exists, the draft is
+        // cleared below.
+        if (!signoffData?.signoffCompleted && !signoffData?.id) {
+          try {
+            const raw = window.localStorage.getItem(draftKey);
+            if (raw) setDraftAvailable(true);
+          } catch {
+            /* private mode / storage quota */
+          }
+        } else {
+          try {
+            window.localStorage.removeItem(draftKey);
+          } catch {}
+        }
         const photos = Array.isArray(photosData)
           ? photosData
           : photosData?.photos || [];
@@ -584,62 +625,155 @@ export default function ClientSignOffPage({
     }
     setSubmitting(true);
     setError("");
+
+    // Persist draft BEFORE the POST so a network drop mid-flight does
+    // not lose the signature. If the POST later succeeds we clear it;
+    // if it fails, the "Restore in-progress signoff?" banner on next
+    // load offers the crew a one-tap recovery.
     try {
-      const res = await fetch(`/api/crew/signoff/${id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jobType,
-          signedBy: clientName.trim(),
-          signatureDataUrl: dataUrl,
-          signedLat: geoLat,
-          signedLng: geoLng,
-          allItemsReceived,
-          conditionAccepted,
-          walkthroughConductedByClient,
-          clientPresentDuringUnloading,
-          preExistingConditionsNoted,
-          photosReviewedByClient:
-            jobPhotos.length > 0 ? photosReviewedByClient : true,
-          satisfactionRating: rating,
-          noIssuesDuringMove,
-          noDamages,
-          walkthroughCompleted,
-          crewConductedProfessionally,
-          furnitureReassembled:
-            furnitureReassembled === null ? null : furnitureReassembled,
-          itemsPlacedCorrectly,
-          propertyLeftClean,
-          noPropertyDamage,
-          feedbackNote: feedbackNote.trim() || null,
-          exceptions:
-            [
-              itemsLeftBehind.trim()
-                ? `Items not received / left behind: ${itemsLeftBehind.trim()}`
-                : null,
-              exceptions.trim() || null,
-            ]
-              .filter(Boolean)
-              .join("\n\n") || null,
-          itemConditions:
-            itemConditions.length > 0 ? itemConditions : undefined,
+      window.localStorage.setItem(
+        draftKey,
+        JSON.stringify({
+          clientName: clientName.trim(),
+          signature: dataUrl,
+          savedAt: new Date().toISOString(),
         }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(
-          data.code === "SCHEMA_UPDATE_REQUIRED"
-            ? "A system update is needed. Please contact your dispatch or try again in a few minutes."
-            : data.error || "Failed to submit",
-        );
+      );
+    } catch {
+      /* private mode / storage quota — non-fatal */
+    }
+
+    const requestBody = JSON.stringify({
+      jobType,
+      signedBy: clientName.trim(),
+      signatureDataUrl: dataUrl,
+      signedLat: geoLat,
+      signedLng: geoLng,
+      allItemsReceived,
+      conditionAccepted,
+      walkthroughConductedByClient,
+      clientPresentDuringUnloading,
+      preExistingConditionsNoted,
+      photosReviewedByClient:
+        jobPhotos.length > 0 ? photosReviewedByClient : true,
+      satisfactionRating: rating,
+      noIssuesDuringMove,
+      noDamages,
+      walkthroughCompleted,
+      crewConductedProfessionally,
+      furnitureReassembled:
+        furnitureReassembled === null ? null : furnitureReassembled,
+      itemsPlacedCorrectly,
+      propertyLeftClean,
+      noPropertyDamage,
+      feedbackNote: feedbackNote.trim() || null,
+      exceptions:
+        [
+          itemsLeftBehind.trim()
+            ? `Items not received / left behind: ${itemsLeftBehind.trim()}`
+            : null,
+          exceptions.trim() || null,
+        ]
+          .filter(Boolean)
+          .join("\n\n") || null,
+      itemConditions:
+        itemConditions.length > 0 ? itemConditions : undefined,
+      idempotencyKey: idempotencyKeyRef.current,
+    });
+
+    // Retry-with-backoff for network-class failures only. Non-2xx
+    // application errors (validation, schema) surface immediately —
+    // they will not fix themselves with another tap. The idempotency
+    // key ensures a retry after a server-side success cannot create a
+    // duplicate row.
+    const maxAttempts = 3;
+    const backoffMs = [1000, 2000, 4000];
+    let attempt = 0;
+    let lastNetworkError: unknown = null;
+    while (attempt < maxAttempts) {
+      try {
+        const res = await fetch(`/api/crew/signoff/${id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-idempotency-key": idempotencyKeyRef.current,
+          },
+          body: requestBody,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setError(
+            data.code === "SCHEMA_UPDATE_REQUIRED"
+              ? "A system update is needed. Please contact your dispatch or try again in a few minutes."
+              : data.error || "Failed to submit",
+          );
+          setSubmitting(false);
+          return;
+        }
+        // Server confirmed persistence — safe to drop the draft.
+        try {
+          window.localStorage.removeItem(draftKey);
+        } catch {}
+        setDraftAvailable(false);
+        setPhase(6);
         setSubmitting(false);
         return;
+      } catch (e) {
+        lastNetworkError = e;
+        attempt += 1;
+        if (attempt < maxAttempts) {
+          await new Promise((r) => setTimeout(r, backoffMs[attempt - 1] ?? 4000));
+        }
       }
-      setPhase(6); // client sees thank-you first; crew reports tip via button on that screen
-    } catch {
-      setError("Connection error");
     }
+    console.warn("[signoff] all retries failed:", lastNetworkError);
+    setError(
+      "Connection error. Your signature is saved on this device — reconnect and tap Submit again.",
+    );
     setSubmitting(false);
+  };
+
+  /**
+   * Restore a signoff draft from localStorage. Called from the banner
+   * on the initial screen when the server confirms no row exists but a
+   * local draft is present.
+   */
+  const restoreDraft = () => {
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        clientName?: string;
+        signature?: string;
+      };
+      if (parsed.clientName) setClientName(parsed.clientName);
+      if (parsed.signature) {
+        setSignature(parsed.signature);
+        // Repaint the canvas from the persisted PNG so the crew can
+        // review the client's actual signature before re-submitting.
+        const canvas = canvasRef.current;
+        if (canvas && parsed.signature) {
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            const img = new Image();
+            img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            img.src = parsed.signature;
+          }
+        }
+      }
+      draftHydratedRef.current = true;
+      setDraftAvailable(false);
+      setPhase(4); // straight to signature review
+    } catch {
+      setDraftAvailable(false);
+    }
+  };
+
+  const dismissDraft = () => {
+    try {
+      window.localStorage.removeItem(draftKey);
+    } catch {}
+    setDraftAvailable(false);
   };
 
   const handleSkipSubmit = async () => {
@@ -778,7 +912,7 @@ export default function ClientSignOffPage({
     );
   }
 
-  if (existing) {
+  if (existing || signoffStickyClosed) {
     return (
       <PageContent className="mx-auto w-full min-w-0 max-w-lg">
         <div className="flex min-h-[50vh] flex-col items-center justify-center pt-4 text-center">
@@ -925,6 +1059,37 @@ export default function ClientSignOffPage({
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Draft-restore banner — server has no signoff yet, but this
+            device has a persisted draft (signature + name) from a prior
+            in-progress submit. Offer a one-tap resume so a network drop
+            mid-flight does not force the client to re-sign. */}
+        {draftAvailable && phase === 1 && (
+          <div className="mb-4 rounded-xl border border-[var(--yu3-wine)]/25 bg-[var(--yu3-wine-tint)] p-4 phase-enter">
+            <p className="text-[13px] font-semibold text-[var(--yu3-wine)] leading-tight mb-1">
+              Resume in-progress sign-off?
+            </p>
+            <p className="text-[12px] text-[var(--yu3-ink-muted)] mb-3 leading-relaxed">
+              A signature was captured on this device but the last submit did not complete. Restore it and re-submit without asking the client to sign again.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={restoreDraft}
+                className="rounded-lg bg-[var(--yu3-wine)] px-3 py-2 text-[12px] font-semibold text-white active:opacity-80"
+              >
+                Restore signature
+              </button>
+              <button
+                type="button"
+                onClick={dismissDraft}
+                className="rounded-lg border border-[var(--yu3-wine)]/30 px-3 py-2 text-[12px] font-medium text-[var(--yu3-wine)] active:opacity-70"
+              >
+                Start fresh
+              </button>
+            </div>
           </div>
         )}
 
