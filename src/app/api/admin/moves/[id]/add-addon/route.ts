@@ -172,6 +172,22 @@ export async function POST(
         { status: 402 },
       );
     }
+    // Idempotent retry: this payment was already charged + ledgered before, so
+    // the addon was already appended and the totals already bumped. Re-appending
+    // the addon and re-bumping would double-count. Return the existing charge.
+    if (result.alreadyRecorded) {
+      return NextResponse.json({
+        ok: true,
+        mode: "charged",
+        already_recorded: true,
+        addon: line.name,
+        detail: line.detail ?? null,
+        pre_tax: deltaPreTax,
+        inclusive: deltaInclusive,
+        receipt_url: result.receiptUrl,
+        square_payment_id: result.squarePaymentId,
+      });
+    }
     // Bump recognised totals (tax-inclusive fields) so the contract reflects it.
     const totalsPatch: Record<string, unknown> = { addons: [...existingAddons, newAddon] };
     const oldEstimate = Number(move.estimate) || 0;

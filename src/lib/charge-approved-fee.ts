@@ -12,7 +12,19 @@ import {
 type AdminClient = ReturnType<typeof createAdminClient>;
 
 export type ChargeApprovedFeeResult =
-  | { charged: true; squarePaymentId: string; receiptUrl: string | null }
+  | {
+      charged: true;
+      squarePaymentId: string;
+      receiptUrl: string | null;
+      /**
+       * True when this exact payment was ALREADY recorded on a prior attempt
+       * (Square deduped the card charge via the idempotency key, and a ledger
+       * row for this square_payment_id already exists). Callers MUST NOT re-run
+       * money-affecting side effects (bumping move totals, marking items paid)
+       * when this is true, or a lost-response retry double-counts the books.
+       */
+      alreadyRecorded: boolean;
+    }
   | { charged: false; reason: string };
 
 /**
@@ -83,10 +95,26 @@ export async function chargeApprovedFeeOnCard(opts: {
   }
   if (!paymentId) return { charged: false, reason: "Payment was not completed" };
 
+  // Idempotency: Square deduped the card charge (same idempotencyKey → same
+  // paymentId), but on a lost-response retry we'd otherwise insert a SECOND
+  // ledger row for the same payment and the caller would bump totals again.
+  // If a ledger row for this square_payment_id already exists, this is a retry
+  // of an already-recorded charge — skip the insert and tell the caller not to
+  // re-apply side effects.
+  const { data: existingLedger } = await admin
+    .from("move_payment_ledger")
+    .select("id")
+    .eq("square_payment_id", paymentId)
+    .limit(1)
+    .maybeSingle();
+  if (existingLedger) {
+    return { charged: true, squarePaymentId: paymentId, receiptUrl, alreadyRecorded: true };
+  }
+
   // 'adjustment' = outside the contract; shows in transactions, excluded from
   // the contract collected bar (see MoveDetailClient ledger filter).
   const { preTax, hst } = splitOntarioTaxInclusive(inclusive);
-  await admin.from("move_payment_ledger").insert({
+  const { error: ledgerErr } = await admin.from("move_payment_ledger").insert({
     move_id: moveId,
     entry_type: "adjustment",
     label: label.slice(0, 200),
@@ -98,5 +126,20 @@ export async function chargeApprovedFeeOnCard(opts: {
     paid_at: new Date().toISOString(),
   });
 
-  return { charged: true, squarePaymentId: paymentId, receiptUrl };
+  // A concurrent attempt (two truly-simultaneous submits that both passed the
+  // existence check above) races to insert the same square_payment_id. The
+  // partial unique index on move_payment_ledger(square_payment_id) makes the
+  // loser fail with 23505 — treat that as "already recorded" so the caller
+  // skips its side effects, exactly like the sequential-retry path.
+  if (ledgerErr) {
+    if (ledgerErr.code === "23505") {
+      return { charged: true, squarePaymentId: paymentId, receiptUrl, alreadyRecorded: true };
+    }
+    // Any other insert failure: the money was captured but not recorded. Surface
+    // it so it can be reconciled rather than silently double-charging later.
+    console.error("[charge-approved-fee] ledger insert failed:", ledgerErr.message, paymentId);
+    return { charged: false, reason: "Charge captured but not recorded — check Square/ledger." };
+  }
+
+  return { charged: true, squarePaymentId: paymentId, receiptUrl, alreadyRecorded: false };
 }

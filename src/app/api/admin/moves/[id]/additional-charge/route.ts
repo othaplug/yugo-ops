@@ -119,6 +119,23 @@ export async function POST(
     );
   }
 
+  // Idempotent retry: this exact payment was already charged AND ledgered on a
+  // prior attempt (a lost response / double-submit). The move totals were bumped
+  // then — bumping them again here would double-count recorded revenue and
+  // total_paid. Return the existing charge without re-applying any side effect.
+  if (result.alreadyRecorded) {
+    return NextResponse.json({
+      ok: true,
+      charged: true,
+      already_recorded: true,
+      pre_tax: preTax,
+      hst,
+      inclusive,
+      receipt_url: result.receiptUrl,
+      square_payment_id: result.squarePaymentId,
+    });
+  }
+
   // Roll the collected extra into the move's recognised total so every surface
   // reflects it. `estimate` is the one reliable PRE-TAX base — the moves list
   // (final_amount ?? total_price ?? estimate), the profitability revenue, and
