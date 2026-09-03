@@ -34,7 +34,7 @@ export async function POST(
   const { data: quote, error: qErr } = await admin
     .from("quotes")
     .select(
-      "id, quote_id, status, service_type, selected_tier, selected_addons, factors_applied, contacts:contact_id(name, email, phone)",
+      "id, quote_id, status, service_type, selected_tier, selected_addons, factors_applied, move_date, contacts:contact_id(name, email, phone)",
     )
     .eq("quote_id", quoteId)
     .single();
@@ -60,6 +60,33 @@ export async function POST(
       delivery_id: existingDel.id,
       delivery_number: existingDel.delivery_number,
     });
+  }
+
+  // The delivery inherits the quote's move_date. The crew app only lists jobs
+  // scheduled for TODAY and the calendar shows the scheduled day, so confirming
+  // onto a missing or past date creates a delivery the crew never sees (this is
+  // exactly what stranded DLV-30406). Refuse and make the operator set a real
+  // date first, rather than silently booking into a dead date.
+  const moveDate = String(quote.move_date ?? "").slice(0, 10);
+  const todayStr = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Toronto",
+    year: "numeric",
+    month: "2-digit",
+    day: "numeric",
+  });
+  if (!moveDate) {
+    return NextResponse.json(
+      { error: "This quote has no delivery date. Set a delivery date on the quote before confirming." },
+      { status: 400 },
+    );
+  }
+  if (moveDate < todayStr) {
+    return NextResponse.json(
+      {
+        error: `The delivery date (${moveDate}) has already passed. Update the quote's delivery date to today or later, then confirm.`,
+      },
+      { status: 400 },
+    );
   }
 
   const contact = quote.contacts as { name?: string; email?: string } | null;
