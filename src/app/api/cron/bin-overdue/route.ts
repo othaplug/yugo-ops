@@ -229,15 +229,26 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      // Day 30+: charge full replacement cost and close order
+      // Day 30+: charge full replacement cost and close order.
       if (daysOverdue >= WRITE_OFF_DAYS && order.square_card_id) {
         const replacementCost = order.bin_count * replacementFeePerBin;
         const replacementCents = Math.round(replacementCost * 100);
 
+        // Only close the order and tell the client they were charged if the
+        // charge ACTUALLY succeeded. This used to swallow the error and then
+        // unconditionally close + SMS "has been charged to the card on file",
+        // so a declined/failed charge told the customer they paid when they had
+        // not, and closed the order (terminal, no retry). The idempotency key is
+        // stable, so leaving it open lets the next run retry without
+        // double-charging.
+        let chargeSucceeded = false;
+        let chargeError = "unknown error";
         try {
           const { locationId } = await getSquarePaymentConfig();
-          if (locationId) {
-            await squareClient.payments.create({
+          if (!locationId) {
+            chargeError = "Square location not configured";
+          } else {
+            const res = await squareClient.payments.create({
               sourceId: order.square_card_id,
               amountMoney: { amount: BigInt(replacementCents), currency: "CAD" },
               customerId: order.square_customer_id || undefined,
@@ -246,8 +257,27 @@ export async function GET(req: NextRequest) {
               idempotencyKey: squareIdem("bin-replace", order.id),
               locationId,
             });
+            if (res.errors && res.errors.length > 0) {
+              chargeError = res.errors.map((e) => e.detail || e.code).join("; ");
+            } else if (res.payment?.id) {
+              chargeSucceeded = true;
+            } else {
+              chargeError = "no payment returned";
+            }
           }
-        } catch { /* non-critical */ }
+        } catch (e) {
+          chargeError = e instanceof Error ? e.message : String(e);
+        }
+
+        if (!chargeSucceeded) {
+          // Do NOT close or claim payment. Surface it; a later run retries
+          // (stable idempotency key), and the failure shows in the cron result.
+          console.error(
+            `[bin-overdue] day-30 replacement charge FAILED for ${order.order_number}: ${chargeError}`,
+          );
+          results.errors.push(`${order.order_number}: replacement charge failed: ${chargeError}`);
+          continue;
+        }
 
         await supabase
           .from("bin_orders")
