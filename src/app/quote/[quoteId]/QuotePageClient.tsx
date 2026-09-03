@@ -3614,6 +3614,7 @@ export default function QuotePageClient({
             {paymentMoveId && !deliveryTrackingUrl && (
               <SchedulingAlternativesCard
                 moveId={paymentMoveId}
+                token={publicActionToken}
                 accentColor={FOREST}
                 forestColor={FOREST}
               />

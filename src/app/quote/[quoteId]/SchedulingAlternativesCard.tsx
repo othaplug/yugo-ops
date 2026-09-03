@@ -18,6 +18,8 @@ interface SchedulingAlternative {
 
 interface SchedulingAlternativesCardProps {
   moveId: string;
+  /** The quote's public_action_token — proves the caller owns this booking. */
+  token?: string;
   accentColor?: string;
   forestColor?: string;
 }
@@ -32,6 +34,7 @@ function fmtDate(d: string) {
 
 export default function SchedulingAlternativesCard({
   moveId,
+  token = "",
   accentColor = "#2C3E2D",
   forestColor = "#2C3E2D",
 }: SchedulingAlternativesCardProps) {
@@ -44,7 +47,7 @@ export default function SchedulingAlternativesCard({
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/client/scheduling-status?moveId=${moveId}`, {
+    fetch(`/api/client/scheduling-status?moveId=${encodeURIComponent(moveId)}&token=${encodeURIComponent(token)}`, {
       credentials: "same-origin",
     })
       .then((r) => r.json())
@@ -71,7 +74,7 @@ export default function SchedulingAlternativesCard({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ moveId, alternativeId: selected }),
+        body: JSON.stringify({ moveId, alternativeId: selected, token }),
       });
       setSubmitted(true);
       setStatus("selected");

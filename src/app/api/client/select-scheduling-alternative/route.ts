@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { verifyMoveQuoteToken } from "@/lib/authz/move-quote-token";
+import { requireStaff } from "@/lib/api-auth";
 
 /**
  * POST /api/client/select-scheduling-alternative
@@ -9,12 +11,19 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * to confirmed_pending_schedule → scheduled (coordinator still assigns crew).
  */
 export async function POST(req: NextRequest) {
-  const body = (await req.json()) as { moveId?: string; alternativeId?: string };
+  const body = (await req.json()) as { moveId?: string; alternativeId?: string; token?: string };
   if (!body.moveId || !body.alternativeId) {
     return NextResponse.json({ error: "moveId and alternativeId required" }, { status: 400 });
   }
 
   const admin = createAdminClient();
+
+  // Authorize: staff OR the client presenting the booking's public_action_token.
+  // Without this, anyone with the move UUID could reschedule a victim's move.
+  const staff = await requireStaff();
+  if (staff.error && !(await verifyMoveQuoteToken(admin, body.moveId, body.token))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   // Fetch the selected alternative
   const { data: alt, error: altErr } = await admin

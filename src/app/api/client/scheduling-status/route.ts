@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { verifyMoveQuoteToken } from "@/lib/authz/move-quote-token";
+import { requireStaff } from "@/lib/api-auth";
 
 /**
  * GET /api/client/scheduling-status?moveId=...
@@ -16,6 +18,15 @@ export async function GET(req: NextRequest) {
   }
 
   const admin = createAdminClient();
+
+  // Authorize: staff (the admin scheduling widget) OR the client presenting the
+  // booking's public_action_token. Without this, anyone with the move UUID could
+  // read its scheduling options.
+  const token = req.nextUrl.searchParams.get("token");
+  const staff = await requireStaff();
+  if (staff.error && !(await verifyMoveQuoteToken(admin, moveId, token))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { data: move } = await admin
     .from("moves")
