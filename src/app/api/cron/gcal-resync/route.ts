@@ -4,6 +4,7 @@ import { isGCalConfigured } from "@/lib/google-calendar/client";
 import {
   syncDeliveryGCalNow,
   syncMoveGCalNow,
+  GCAL_PENDING,
 } from "@/lib/google-calendar/sync-utils";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +42,24 @@ export async function GET(req: NextRequest) {
   const refreshMode = (url.searchParams.get("refresh") ?? "missing").toLowerCase();
   const db = createAdminClient();
   const results: Record<string, number> = {};
+
+  // 0. Heal stale claims. A sync that crashed / was killed after atomically
+  //    claiming a delivery (gcal_event_id = "__gcal_pending__") leaves it stuck:
+  //    it is neither null (so the missing-scan below skips it) nor a real event,
+  //    and syncDeliveryGCalNow cannot re-claim the sentinel — so it never lands
+  //    on the calendar (this stranded DLV-30413). Release any sentinel older than
+  //    15 minutes back to null so the missing-scan re-creates it. The window
+  //    protects a fresh, in-flight concurrent claim (seconds old) from being
+  //    stolen. Same for moves (the move path does not use the sentinel today,
+  //    but heal defensively in case a future path does).
+  const staleClaimBefore = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+  const { data: healed } = await db
+    .from("deliveries")
+    .update({ gcal_event_id: null })
+    .eq("gcal_event_id", GCAL_PENDING)
+    .lt("updated_at", staleClaimBefore)
+    .select("id");
+  results["delivery.stale_claim_healed"] = healed?.length ?? 0;
 
   // 1. Deliveries missing a GCal event — always re-tried.
   const { data: missingDeliveries } = await db

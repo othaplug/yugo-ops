@@ -16,7 +16,7 @@ import {
  * aside instead of creating a duplicate. A crashed sync that leaves it behind
  * self-heals: the next sync treats it as "no event" and recreates.
  */
-const GCAL_PENDING = "__gcal_pending__";
+export const GCAL_PENDING = "__gcal_pending__";
 
 /**
  * Awaitable GCal sync for a move row. Reads fresh from DB, updates
@@ -207,49 +207,65 @@ export async function syncDeliveryGCalNow(deliveryId: string): Promise<GCalSyncR
     crewName = crew?.name ?? null;
   }
 
-  const [block, deliveryDurMap] = await Promise.all([
-    fetchSingleJobBlock("delivery", deliveryId),
-    fetchDeliveryDurationByType(),
-  ]);
-  const { startHHMM, durationMinutes } = resolveDeliveryJobTimes(
-    d as Record<string, unknown>,
-    block,
-    deliveryDurMap,
-  );
+  try {
+    const [block, deliveryDurMap] = await Promise.all([
+      fetchSingleJobBlock("delivery", deliveryId),
+      fetchDeliveryDurationByType(),
+    ]);
+    const { startHHMM, durationMinutes } = resolveDeliveryJobTimes(
+      d as Record<string, unknown>,
+      block,
+      deliveryDurMap,
+    );
 
-  const result = await syncJobToGCal({
-    jobType: "delivery",
-    jobId: deliveryId,
-    jobCode: String(d.delivery_number || deliveryId),
-    clientName: String(d.client_name || d.customer_name || ""),
-    serviceType: String(d.delivery_type || d.category || "b2b_delivery"),
-    status: String(d.status || "confirmed"),
-    scheduledDate: d.scheduled_date ? String(d.scheduled_date).slice(0, 10) : null,
-    startTime: startHHMM,
-    estimatedDurationMinutes:
-      durationMinutes ??
-      (d.estimated_duration_minutes != null ? Number(d.estimated_duration_minutes) : null),
-    fromAddress: String(d.pickup_address || "").trim() || null,
-    toAddress: String(d.delivery_address || "").trim() || null,
-    crewName,
-    notes: d.notes ? String(d.notes) : null,
-    existingEventId,
-  });
+    const result = await syncJobToGCal({
+      jobType: "delivery",
+      jobId: deliveryId,
+      jobCode: String(d.delivery_number || deliveryId),
+      clientName: String(d.client_name || d.customer_name || ""),
+      serviceType: String(d.delivery_type || d.category || "b2b_delivery"),
+      status: String(d.status || "confirmed"),
+      scheduledDate: d.scheduled_date ? String(d.scheduled_date).slice(0, 10) : null,
+      startTime: startHHMM,
+      estimatedDurationMinutes:
+        durationMinutes ??
+        (d.estimated_duration_minutes != null ? Number(d.estimated_duration_minutes) : null),
+      fromAddress: String(d.pickup_address || "").trim() || null,
+      toAddress: String(d.delivery_address || "").trim() || null,
+      crewName,
+      notes: d.notes ? String(d.notes) : null,
+      existingEventId,
+    });
 
-  if (result.action === "deleted") {
-    await db.from("deliveries").update({ gcal_event_id: null }).eq("id", deliveryId);
-  } else if (typeof result.eventId === "string" && result.eventId) {
-    await db.from("deliveries").update({ gcal_event_id: result.eventId }).eq("id", deliveryId);
-  } else if (claimedForCreate) {
-    // We claimed but no event was created (skipped/error) — release the claim
-    // so a later resync can retry instead of the row staying stuck on sentinel.
-    await db
-      .from("deliveries")
-      .update({ gcal_event_id: null })
-      .eq("id", deliveryId)
-      .eq("gcal_event_id", GCAL_PENDING);
+    if (result.action === "deleted") {
+      await db.from("deliveries").update({ gcal_event_id: null }).eq("id", deliveryId);
+    } else if (typeof result.eventId === "string" && result.eventId) {
+      await db.from("deliveries").update({ gcal_event_id: result.eventId }).eq("id", deliveryId);
+    } else if (claimedForCreate) {
+      // We claimed but no event was created (skipped/error) — release the claim
+      // so a later resync can retry instead of the row staying stuck on sentinel.
+      await db
+        .from("deliveries")
+        .update({ gcal_event_id: null })
+        .eq("id", deliveryId)
+        .eq("gcal_event_id", GCAL_PENDING);
+    }
+    return result.action;
+  } catch (e) {
+    // If the sync THREW after we claimed (GCal API/auth blip, timeout), release
+    // the sentinel so the row is retryable instead of stuck on __gcal_pending__
+    // forever (this is what stranded DLV-30413). Never leave a claim dangling.
+    if (claimedForCreate) {
+      await db
+        .from("deliveries")
+        .update({ gcal_event_id: null })
+        .eq("id", deliveryId)
+        .eq("gcal_event_id", GCAL_PENDING)
+        .then(() => {}, () => {});
+    }
+    console.error("[syncDeliveryGCalNow] sync failed, released claim:", deliveryId, e);
+    return "error";
   }
-  return result.action;
 }
 
 /** Fire-and-forget GCal sync for a delivery row. */
