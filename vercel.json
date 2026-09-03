@@ -119,6 +119,14 @@
     {
       "path": "/api/cron/outbound-hold-day-tick",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/stale-leads",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/fleet-maintenance",
+      "schedule": "15 12 * * *"
     }
   ]
 }
