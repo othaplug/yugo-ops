@@ -35,12 +35,16 @@ export async function GET(req: NextRequest) {
   const cutoffIso = new Date(Date.now() - maxHours * 3600_000).toISOString();
   const nowIso = new Date().toISOString();
 
-  // Active sessions whose most recent activity is older than the cutoff.
+  // Active sessions whose most recent ACTIVITY (updated_at) is older than the
+  // cutoff. This previously filtered on started_at, which force-closed a
+  // session that had merely been RUNNING >18h even while it was still actively
+  // pushing GPS. Filtering on updated_at (matching the crews-map sweeper) only
+  // closes genuinely idle/forgotten sessions and leaves live ones alone.
   const { data: stale, error } = await db
     .from("tracking_sessions")
     .select("id, job_id, job_type, started_at, updated_at")
     .eq("is_active", true)
-    .lt("started_at", cutoffIso)
+    .lt("updated_at", cutoffIso)
     .limit(500);
 
   if (error) {
