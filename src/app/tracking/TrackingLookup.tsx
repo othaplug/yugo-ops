@@ -20,6 +20,7 @@ export default function TrackingLookup({
   companyContactEmail?: string;
 } = {}) {
   const [code, setCode] = useState("");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -28,9 +29,14 @@ export default function TrackingLookup({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const q = code.trim();
+    const em = email.trim();
     if (!q) {
       setError("Please enter a tracking number");
       inputRef.current?.focus();
+      return;
+    }
+    if (!em || !em.includes("@")) {
+      setError("Please enter the email on your booking");
       return;
     }
     setError("");
@@ -40,7 +46,7 @@ export default function TrackingLookup({
       const res = await fetch("/api/tracking/lookup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: q }),
+        body: JSON.stringify({ code: q, email: em }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -80,56 +86,76 @@ export default function TrackingLookup({
             className="text-[13px] leading-relaxed opacity-65"
             style={{ color: FOREST }}
           >
-            Enter your tracking number to see real-time status, live crew
-            location, and delivery details.
+            Enter your tracking number and the email on your booking to see
+            real-time status, live crew location, and delivery details.
           </p>
         </div>
 
         {/* Search form */}
-        <form onSubmit={handleSubmit} className="w-full max-w-[400px]">
-          <div className="relative">
-            <input
-              ref={inputRef}
-              type="text"
-              value={code}
-              onChange={(e) => {
-                setCode(e.target.value.toUpperCase());
-                setError("");
-              }}
-              placeholder="e.g. MV1234 or DLV-4467"
-              autoFocus
-              className="w-full px-5 py-3.5 pr-[90px] rounded-full text-[var(--text-base)] font-semibold tracking-wide placeholder:font-normal placeholder:opacity-40 focus:outline-none transition-all"
-              style={{
-                backgroundColor: "#fff",
-                border: `1.5px solid ${FOREST}18`,
-                color: FOREST,
-                boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = GOLD;
-                e.target.style.boxShadow = `0 0 0 3px ${GOLD}25, 0 2px 16px rgba(0,0,0,0.08)`;
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = `${FOREST}18`;
-                e.target.style.boxShadow = "0 2px 16px rgba(0,0,0,0.06)";
-              }}
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 px-4 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase disabled:opacity-50 transition-all hover:opacity-90 active:scale-95"
-              style={{ backgroundColor: WINE, color: "#FAF8F4" }}
-            >
-              {loading ? (
-                <CircleNotch
-                  size={14}
-                  className="animate-spin text-[#FAF8F4]"
-                />
-              ) : (
-                "Track"
-              )}
-            </button>
-          </div>
+        <form onSubmit={handleSubmit} className="w-full max-w-[400px] flex flex-col gap-3">
+          <input
+            ref={inputRef}
+            type="text"
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value.toUpperCase());
+              setError("");
+            }}
+            placeholder="Tracking number, e.g. MV1234 or DLV-4467"
+            autoFocus
+            className="w-full px-5 py-3.5 rounded-full text-[var(--text-base)] font-semibold tracking-wide placeholder:font-normal placeholder:opacity-40 focus:outline-none transition-all"
+            style={{
+              backgroundColor: "#fff",
+              border: `1.5px solid ${FOREST}18`,
+              color: FOREST,
+              boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = GOLD;
+              e.target.style.boxShadow = `0 0 0 3px ${GOLD}25, 0 2px 16px rgba(0,0,0,0.08)`;
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = `${FOREST}18`;
+              e.target.style.boxShadow = "0 2px 16px rgba(0,0,0,0.06)";
+            }}
+          />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setError("");
+            }}
+            placeholder="Email on your booking"
+            autoComplete="email"
+            className="w-full px-5 py-3.5 rounded-full text-[var(--text-base)] font-medium placeholder:font-normal placeholder:opacity-40 focus:outline-none transition-all"
+            style={{
+              backgroundColor: "#fff",
+              border: `1.5px solid ${FOREST}18`,
+              color: FOREST,
+              boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = GOLD;
+              e.target.style.boxShadow = `0 0 0 3px ${GOLD}25, 0 2px 16px rgba(0,0,0,0.08)`;
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = `${FOREST}18`;
+              e.target.style.boxShadow = "0 2px 16px rgba(0,0,0,0.06)";
+            }}
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3.5 rounded-full text-[11px] font-bold tracking-widest uppercase disabled:opacity-50 transition-all hover:opacity-90 active:scale-[0.99] flex items-center justify-center gap-2"
+            style={{ backgroundColor: WINE, color: "#FAF8F4" }}
+          >
+            {loading ? (
+              <CircleNotch size={14} className="animate-spin text-[#FAF8F4]" />
+            ) : (
+              "Track my service"
+            )}
+          </button>
 
           {error && (
             <div className="mt-3 flex items-center gap-2 px-4 py-3 rounded-2xl bg-red-500/8 border border-red-400/20">
