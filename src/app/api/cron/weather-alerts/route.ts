@@ -51,6 +51,22 @@ export async function GET(req: NextRequest) {
 
   const results = { checked: 0, briefSet: 0, alertSet: 0, notified: 0, errors: [] as string[] };
 
+  // Sentinel (via status_events, no schema change): a move is in the T-2..T-0
+  // window for up to three daily runs, and the SMS fired every run with a
+  // precip forecast — so a persistent rain/snow forecast texted the client the
+  // same alert 3 days running. Send the weather heads-up once per move. The
+  // brief/weather_alert columns below still refresh every run for display.
+  const scannedIds = (moves ?? []).map((m) => m.id);
+  const { data: priorAlerts } = scannedIds.length
+    ? await supabase
+        .from("status_events")
+        .select("entity_id")
+        .eq("entity_type", "move")
+        .eq("event_type", "weather_alert")
+        .in("entity_id", scannedIds)
+    : { data: [] as { entity_id: string }[] };
+  const alreadyAlertedIds = new Set((priorAlerts ?? []).map((a) => String(a.entity_id)));
+
   for (const move of moves ?? []) {
     try {
       results.checked++;
@@ -79,7 +95,7 @@ export async function GET(req: NextRequest) {
       results.briefSet++;
       if (alertText) results.alertSet++;
 
-      if (alertText && move.client_phone) {
+      if (alertText && move.client_phone && !alreadyAlertedIds.has(String(move.id))) {
         const firstName = (move.client_name || "").split(" ")[0] || "there";
         const moveDateLabel = new Date(move.scheduled_date + "T12:00:00").toLocaleDateString("en-CA", {
           weekday: "long",
@@ -88,6 +104,13 @@ export async function GET(req: NextRequest) {
         });
         const msg = buildClientSMS(firstName, alertText, moveDateLabel);
         await sendSMS(move.client_phone, msg).catch(() => {});
+        await supabase.from("status_events").insert({
+          entity_type: "move",
+          entity_id: move.id,
+          event_type: "weather_alert",
+          description: `Weather heads-up SMS sent to client (${alertText}).`,
+          icon: "cloud",
+        });
         results.notified++;
       }
     } catch (err) {
