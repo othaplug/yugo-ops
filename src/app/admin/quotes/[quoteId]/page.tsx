@@ -122,6 +122,11 @@ export default async function QuoteDetailPage({ params }: Props) {
   // Commercial delivery (b2b_oneoff / b2b_delivery) gets its own admin surface,
   // framed around approval + invoice-after-completion, not a residential move.
   if (isB2BDeliveryQuoteServiceType(String(quote.service_type ?? ""))) {
+    const { data: crewRows } = await db
+      .from("crews")
+      .select("id, name")
+      .eq("is_active", true)
+      .order("name");
     return (
       <div className="w-full min-w-0 py-5 md:py-6">
         <B2BQuoteDetailClient
@@ -132,6 +137,7 @@ export default async function QuoteDetailPage({ params }: Props) {
           linkedDeliveryId={linkedDelRow?.id ?? null}
           linkedDeliveryNumber={linkedDelRow?.delivery_number ?? null}
           hubspotDealId={hubspotDealId}
+          crews={(crewRows ?? []) as { id: string; name: string }[]}
         />
       </div>
     );

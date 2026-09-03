@@ -18,10 +18,12 @@ import {
   sendB2BTrackingNotifications,
 } from "@/lib/delivery-tracking-tokens";
 import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
+import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
+import { ensureB2bDeliverySchedule } from "@/lib/calendar/ensure-b2b-delivery-schedule";
 import { logAudit } from "@/lib/audit";
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ quoteId: string }> },
 ) {
   const { user, error } = await requireAdmin();
@@ -29,6 +31,16 @@ export async function POST(
 
   const { quoteId } = await params;
   if (!quoteId) return NextResponse.json({ error: "Quote id required" }, { status: 400 });
+
+  // Optional crew to assign at confirm time so the delivery is never created
+  // crew-less (a crew-less delivery is invisible to the crew until assigned).
+  let crewId: string | null = null;
+  try {
+    const body = (await req.json().catch(() => ({}))) as { crew_id?: string | null };
+    crewId = typeof body.crew_id === "string" && body.crew_id.trim() ? body.crew_id.trim() : null;
+  } catch {
+    crewId = null;
+  }
 
   const admin = createAdminClient();
   const { data: quote, error: qErr } = await admin
@@ -127,6 +139,26 @@ export async function POST(
   } catch (e) {
     console.error("[confirm-b2b-booking] delivery creation failed", e);
     return NextResponse.json({ error: "Could not create the delivery." }, { status: 500 });
+  }
+
+  // Assign the crew now (if picked) so the job reaches them on the schedule: set
+  // crew_id + names on the delivery, then sync the crew_schedule_block that the
+  // crew app + calendar read.
+  if (crewId) {
+    try {
+      const snap = await fetchCrewAssignmentSnapshot(admin, crewId);
+      await admin
+        .from("deliveries")
+        .update({
+          crew_id: crewId,
+          assigned_crew_name: snap.assigned_crew_name,
+          assigned_members: snap.assigned_members,
+        })
+        .eq("id", delivery.deliveryId);
+      await ensureB2bDeliverySchedule(admin, delivery.deliveryId);
+    } catch (e) {
+      console.error("[confirm-b2b-booking] crew assignment failed", e);
+    }
   }
 
   try {

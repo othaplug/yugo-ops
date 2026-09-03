@@ -81,6 +81,7 @@ export default function B2BQuoteDetailClient({
   linkedDeliveryId,
   linkedDeliveryNumber,
   hubspotDealId,
+  crews = [],
 }: {
   quote: QuoteRow;
   engagement: EngagementEvent[];
@@ -89,6 +90,7 @@ export default function B2BQuoteDetailClient({
   linkedDeliveryId: string | null;
   linkedDeliveryNumber: string | null;
   hubspotDealId: string | null;
+  crews?: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const factors = (quote.factors_applied ?? {}) as Record<string, unknown>;
@@ -99,6 +101,7 @@ export default function B2BQuoteDetailClient({
   const [sendBusy, setSendBusy] = useState(false);
   const [confirmBusy, setConfirmBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [crewId, setCrewId] = useState("");
 
   const business = typeof factors.b2b_business_name === "string" ? factors.b2b_business_name : null;
   const vertical =
@@ -160,7 +163,12 @@ export default function B2BQuoteDetailClient({
     try {
       const res = await fetch(
         `/api/admin/quotes/${encodeURIComponent(quote.quote_id)}/confirm-b2b-booking`,
-        { method: "POST", credentials: "same-origin" },
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ crew_id: crewId || null }),
+        },
       );
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.success === false) throw new Error(data.error ?? "Could not confirm the booking");
@@ -288,6 +296,19 @@ export default function B2BQuoteDetailClient({
               )
             ) : (
               <>
+                {crews.length > 0 && (
+                  <select
+                    value={crewId}
+                    onChange={(e) => setCrewId(e.target.value)}
+                    aria-label="Assign crew"
+                    className="rounded-lg border border-[var(--brd)]/60 bg-[var(--card)] text-[13px] text-[var(--tx)] px-3 py-2"
+                  >
+                    <option value="">Assign crew (optional)…</option>
+                    {crews.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                )}
                 {status === "draft" && (
                   <button type="button" onClick={handleSend} disabled={sendBusy} className={btnGhost}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></svg>
