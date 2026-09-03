@@ -3163,6 +3163,10 @@ export default function QuoteFormClient({
   // Contact search for auto-fill (same as Create Move)
   const [contactSearch, setContactSearch] = useState("");
   const [showContactDropdown, setShowContactDropdown] = useState(false);
+  // Distinguishes "this person is not in HubSpot" (no matches) from "the HubSpot
+  // search itself failed" (token / API down), which used to look identical.
+  const [contactSearchError, setContactSearchError] = useState(false);
+  const [contactSearchLoading, setContactSearchLoading] = useState(false);
   const [dbContacts, setDbContacts] = useState<
     {
       hubspot_id: string;
@@ -3197,19 +3201,33 @@ export default function QuoteFormClient({
       clearTimeout(contactSearchTimerRef.current);
     if (!contactSearch || contactSearch.length < 2) {
       setDbContacts([]);
+      setContactSearchError(false);
+      setContactSearchLoading(false);
       return;
     }
     contactSearchTimerRef.current = setTimeout(async () => {
+      setContactSearchLoading(true);
+      setContactSearchError(false);
       try {
         const res = await fetch(
           `/api/contacts/search?q=${encodeURIComponent(contactSearch)}`,
         );
-        if (res.ok) {
-          const data = await res.json();
+        const data = await res.json().catch(() => ({}));
+        // A failed HubSpot call must NOT masquerade as "no matches": the route
+        // returns a non-ok status (or an `error` field) when the token/API is
+        // down, so surface that distinctly instead of an empty list.
+        if (!res.ok || data.error) {
+          setDbContacts([]);
+          setContactSearchError(true);
+        } else {
           setDbContacts(data.contacts || []);
+          setContactSearchError(false);
         }
       } catch {
-        /* ignore */
+        setDbContacts([]);
+        setContactSearchError(true);
+      } finally {
+        setContactSearchLoading(false);
       }
     }, 300);
     return () => {
@@ -8369,8 +8387,18 @@ export default function QuoteFormClient({
                       {showContactDropdown &&
                         contactSearch.length >= 2 &&
                         dbContacts.length === 0 && (
-                          <div className="absolute z-10 top-full left-0 right-0 mt-1 px-3 py-2 text-[11px] text-[var(--tx3)] bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-lg">
-                            No matches
+                          <div
+                            className={`absolute z-10 top-full left-0 right-0 mt-1 px-3 py-2 text-[11px] bg-[var(--card)] border rounded-lg shadow-lg ${
+                              contactSearchError
+                                ? "text-amber-600 dark:text-amber-400 border-amber-500/40"
+                                : "text-[var(--tx3)] border-[var(--brd)]"
+                            }`}
+                          >
+                            {contactSearchLoading
+                              ? "Searching…"
+                              : contactSearchError
+                                ? "Contact search is unavailable right now. Enter the details manually and continue."
+                                : "No matches in HubSpot. New client? Enter the details below."}
                           </div>
                         )}
                     </div>
