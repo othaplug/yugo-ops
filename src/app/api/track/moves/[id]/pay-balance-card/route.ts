@@ -80,7 +80,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         serviceType: (move as { service_type?: string | null }).service_type,
         scheduledDate: (move as { scheduled_date?: string | null }).scheduled_date,
       }),
-      idempotencyKey: squareIdem("bal-track-card", moveId),
+      // Shared per-move balance-charge key (see payments/balance + charge-balance
+      // cron) so the same balance is never charged twice across paths/days.
+      idempotencyKey: squareIdem("balance", moveId),
       locationId,
     });
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { squareClient } from "@/lib/square";
+import { squareIdem } from "@/lib/square-idempotency";
 import { sendEmail } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
@@ -155,9 +156,6 @@ export async function GET(req: NextRequest) {
       const { locationId } = await getSquarePaymentConfig();
       if (!locationId) throw new Error("Square location not configured");
 
-      // Square idempotency key max is 45 chars — keep it short
-      const shortId = move.id.replace(/-/g, "").slice(0, 20);
-      const dateStr = new Date().toISOString().split("T")[0].replace(/-/g, "");
       const paymentRes = await squareClient.payments.create({
         sourceId: move.square_card_id,
         amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
@@ -170,7 +168,13 @@ export async function GET(req: NextRequest) {
           serviceType: (move as { service_type?: string | null }).service_type,
           scheduledDate: (move as { scheduled_date?: string | null }).scheduled_date,
         }),
-        idempotencyKey: `ba-${shortId}-${dateStr}`,
+        // Per-move balance-charge key (NOT date-keyed). The old ba-<id>-<date>
+        // key meant that if a charge succeeded but finalizeBalancePaymentSettlement
+        // failed (balance_amount stays >0), the NEXT day's run used a new key and
+        // charged the card AGAIN. A stable per-move key (shared with the portal
+        // balance routes) makes Square dedupe the successful charge across days
+        // and paths; a decline releases the key so a real retry still works.
+        idempotencyKey: squareIdem("balance", move.id),
         locationId,
       });
 

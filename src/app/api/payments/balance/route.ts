@@ -106,7 +106,12 @@ export async function POST(req: Request) {
         serviceType: (move as { service_type?: string | null }).service_type,
         scheduledDate: (move as { scheduled_date?: string | null }).scheduled_date,
       }),
-      idempotencyKey: squareIdem("bal-pay", moveId),
+      // Shared, per-move balance-charge key across ALL balance-charge paths
+      // (this route, track pay-balance-card, and the T-2 cron) so Square
+      // dedupes a balance charge no matter which path fires or on which day —
+      // a declined charge releases the key (Square doesn't cache errors), so
+      // legit retries still work.
+      idempotencyKey: squareIdem("balance", moveId),
       locationId,
     });
 
