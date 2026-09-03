@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generatePoDPDF } from "@/lib/pdf";
 import { requireAuth } from "@/lib/api-auth";
+import { canAccessDeliveryPod, isStaffSession } from "@/lib/authz/pod-access";
 
 export async function GET(
   _req: NextRequest,
@@ -32,6 +33,11 @@ export async function GET(
         .select("delivery_number, delivery_address, organization_id")
         .eq("id", pod.delivery_id)
         .single();
+      // Authorize: staff always; a partner only for a delivery their org owns.
+      // Blocks the IDOR where any logged-in user could pull any POD PDF.
+      if (!(await canAccessDeliveryPod(delivery?.organization_id))) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
       if (delivery) {
         deliveryNumber = delivery.delivery_number || deliveryNumber;
         address = delivery.delivery_address || address;
@@ -45,6 +51,10 @@ export async function GET(
         }
       }
     } else if (pod.move_id) {
+      // Move PODs are staff-only (no partner owner).
+      if (!(await isStaffSession())) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
       const { data: move } = await admin
         .from("moves")
         .select("move_code, delivery_address")
@@ -53,6 +63,11 @@ export async function GET(
       if (move) {
         deliveryNumber = move.move_code || deliveryNumber;
         address = move.delivery_address || address;
+      }
+    } else {
+      // POD with neither delivery nor move linkage — staff-only.
+      if (!(await isStaffSession())) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }
 
