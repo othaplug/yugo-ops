@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/api-auth";
 import { hashCrewPin } from "@/lib/crew-token";
 import { clearLockout } from "@/lib/crew-lockout";
 
-/** POST: Reset crew member PIN (admin only) */
+/** POST: Reset crew member PIN (staff only) */
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Resetting a crew PIN + clearing the lockout is a credential operation: it
+  // must be staff-gated, not merely logged-in. requireAuth (login only) let any
+  // client/partner session — which are real Supabase users with no
+  // platform_users row — take over a crew account.
+  const { error: authError } = await requireAdmin();
+  if (authError) return authError;
 
   const { id } = await params;
   const body = await req.json();
