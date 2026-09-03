@@ -150,10 +150,16 @@ export default async function QuotePage({
       .eq("id", quote.id);
   }
 
-  // Mark as viewed + record event (server-side, fire-and-forget)
-  // Use .eq("status", "sent") as a condition so only the first view triggers the HubSpot note
-  // Skip entirely when admin is previewing via ?preview=1
-  if (!isAdminPreview && (quote.status === "draft" || quote.status === "sent")) {
+  // Mark as viewed + record event (server-side, fire-and-forget).
+  // Gated on the ?token= matching the quote's public_action_token so blind
+  // enumeration of guessable quote ids can no longer flip sent→viewed or push a
+  // HubSpot "viewed" note (CRM pollution / fake engagement). Emailed links now
+  // carry this token; a legacy tokenless link still renders the quote, it just
+  // won't re-trigger these side effects. Use .eq("status","sent") so only the
+  // first genuine view fires the note. Skipped entirely on admin ?preview=1.
+  const viewTokenMatches =
+    !!declineTokenFromUrl && declineTokenFromUrl === publicActionToken;
+  if (!isAdminPreview && viewTokenMatches && (quote.status === "draft" || quote.status === "sent")) {
     admin
       .from("quotes")
       .update({ status: "viewed", viewed_at: new Date().toISOString() })

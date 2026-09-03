@@ -152,7 +152,17 @@ export async function POST(req: NextRequest) {
     }
 
     const baseUrl = getEmailBaseUrl();
-    const quoteUrl = `${baseUrl}/quote/${quoteId}`;
+    // Embed the public_action_token in the emailed link. Quote ids (YG-…) are
+    // guessable, so a tokenless link let anyone enumerate ids to read quotes and
+    // (worse) trip the sent→viewed transition + HubSpot "viewed" note on every
+    // scrape. The token is the client's ownership proof; the view page only runs
+    // those side effects when the request carries the matching token, so
+    // enumeration no longer pollutes the CRM or fakes engagement. Reuse the
+    // existing token if the quote already has one (idempotent across re-sends).
+    const publicActionToken =
+      (quote as { public_action_token?: string | null }).public_action_token?.trim() ||
+      randomBytes(24).toString("hex");
+    const quoteUrl = `${baseUrl}/quote/${quoteId}?token=${publicActionToken}`;
 
     const factors = (quote.factors_applied ?? {}) as Record<string, unknown>;
     const pickupLocations = pickupLocationsFromQuote(factors, quote.from_address, quote.from_access);
@@ -531,9 +541,6 @@ export async function POST(req: NextRequest) {
     }
 
     const now = new Date();
-    const hasToken = Boolean(
-      (quote as { public_action_token?: string | null }).public_action_token?.trim(),
-    );
     await supabase
       .from("quotes")
       .update({
@@ -541,7 +548,8 @@ export async function POST(req: NextRequest) {
         sent_at: now.toISOString(),
         quote_url: quoteUrl,
         expires_at: new Date(now.getTime() + effectiveExpiryDays * 86_400_000).toISOString(),
-        ...(!hasToken ? { public_action_token: randomBytes(24).toString("hex") } : {}),
+        // Persist the token that was baked into quoteUrl above (idempotent).
+        public_action_token: publicActionToken,
       })
       .eq("quote_id", quoteId);
 
