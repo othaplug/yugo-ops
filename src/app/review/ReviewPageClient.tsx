@@ -111,13 +111,15 @@ export default function ReviewPageClient() {
     [token]
   );
 
-  const handleLeaveReviewClick = useCallback(async () => {
-    if (selectedRating == null || selectedRating < 4 || !state) return;
-    const ok = await saveRating(selectedRating);
-    if (ok && state.googleReviewUrl) {
-      window.location.href = state.googleReviewUrl;
-    }
-  }, [selectedRating, state, saveRating]);
+  // A 4-5 star tap registers and goes straight to Google — no second click.
+  const handleStarSelect = useCallback(
+    (value: number) => {
+      setSelectedRating(value);
+      setError(null);
+      if (value >= 4) void saveRating(value);
+    },
+    [saveRating],
+  );
 
   const handleSubmitFeedback = useCallback(async () => {
     if (selectedRating == null || selectedRating < 1 || selectedRating > 3) return;
@@ -219,8 +221,7 @@ export default function ReviewPageClient() {
                 disabled={!isInteractive || submitting}
                 onClick={() => {
                   if (!isInteractive) return;
-                  setSelectedRating(value);
-                  setError(null);
+                  handleStarSelect(value);
                 }}
                 className="p-2 rounded-full transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[var(--gold)] disabled:opacity-70 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
                 style={{
@@ -242,26 +243,11 @@ export default function ReviewPageClient() {
         {rating != null && (
           <div className="mt-4 w-full space-y-3">
             {isHighRating && (
-              <>
-                <p className="text-[13px] font-medium" style={{ color: CREAM }}>
-                  We&apos;re glad you had a great experience!
-                </p>
-                {state.reviewClicked ? (
-                  <p className="text-[11px] opacity-70" style={{ color: CREAM }}>
-                    Thanks for leaving a review!
-                  </p>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleLeaveReviewClick}
-                    disabled={submitting}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold text-[12px] py-2.5 px-4 border-2 transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
-                    style={{ borderColor: GOLD, color: GOLD, backgroundColor: "transparent" }}
-                  >
-                    {submitting ? "Saving…" : "Leave a Review on Google"}
-                  </button>
-                )}
-              </>
+              <p className="text-[13px] font-medium" style={{ color: CREAM }}>
+                {state.reviewClicked
+                  ? "Thank you, truly. Your words mean the world to us."
+                  : "Thank you, truly. Taking you to Google…"}
+              </p>
             )}
 
             {isLowRating && (

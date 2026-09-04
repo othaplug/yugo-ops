@@ -11,6 +11,14 @@ const TOUCH_1_MS = 3 * 60 * 60 * 1000; //  ~3 hours: crew gone, client settled
 const TOUCH_2_MS = 3 * 24 * 60 * 60 * 1000; //  day 3: email, new framing
 const TOUCH_3_MS = 6 * 24 * 60 * 60 * 1000; //  day 6: final email, then stop
 
+/** Short, unambiguous code (no l/1/o/0) for the /r/<code> review SMS link. */
+function genReviewShortCode(len = 7): string {
+  const alphabet = "abcdefghijkmnpqrstuvwxyz23456789";
+  let s = "";
+  for (let i = 0; i < len; i++) s += alphabet[Math.floor(Math.random() * alphabet.length)];
+  return s;
+}
+
 /**
  * Create the single review-orchestration row for a completed move. One row per
  * move drives all three touches. We ask every completed move (with or without a
@@ -113,6 +121,7 @@ export async function createReviewRequestIfEligible(
     client_phone: clientPhone,
     tier: move.tier_selected || null,
     pod_rating: podRating,
+    short_code: genReviewShortCode(),
     scheduled_send_at: new Date(t + TOUCH_1_MS).toISOString(),
     reminder_send_at: new Date(t + TOUCH_2_MS).toISOString(),
     final_send_at: new Date(t + TOUCH_3_MS).toISOString(),

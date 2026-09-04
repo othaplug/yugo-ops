@@ -48,6 +48,8 @@ function isPublic(pathname: string): boolean {
   if (pathname.startsWith("/embed/")) return true;
   if (pathname.startsWith("/claim/")) return true;
   if (pathname.startsWith("/legal/")) return true;
+  /** Short review link /r/<code> → resolves to the public star gate. */
+  if (pathname.startsWith("/r/")) return true;
   /** Public room photo survey (token in URL); uploads use /api/surveys/ which must be anonymous */
   if (pathname.startsWith("/survey/")) return true;
   if (pathname.startsWith("/api/surveys/")) return true;

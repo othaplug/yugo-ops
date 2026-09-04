@@ -10,10 +10,25 @@
  * request got dropped silently. Defaulting to www end-to-end keeps every
  * outbound link aimed at a URL that responds with 200, not 307.
  */
+/**
+ * Durable guard against the legacy `opsplus.co` domain leaking into any
+ * customer-facing link. opsplus.co is the old brand host; it 308-redirects to
+ * www.yugoplus.co, but links must never SHOW it. Any opsplus host (or a bare
+ * apex) is rewritten to the canonical www.yugoplus.co regardless of the env,
+ * so a stale env var can never leak the wrong brand again.
+ */
+export function canonicalizeAppUrl(raw: string): string {
+  let url = (raw || "").trim().replace(/\/$/, "");
+  if (!url) return "https://www.yugoplus.co";
+  url = url.replace(/^(https?:\/\/)(?:www\.)?opsplus\.co/i, "https://www.yugoplus.co");
+  url = url.replace(/^(https?:\/\/)yugoplus\.co/i, "https://www.yugoplus.co");
+  return url;
+}
+
 export function getEmailBaseUrl(): string {
   const url =
     (process.env.NEXT_PUBLIC_EMAIL_APP_URL || "").trim() ||
     (process.env.NEXT_PUBLIC_APP_URL || "").trim() ||
     "https://www.yugoplus.co";
-  return url.replace(/\/$/, "");
+  return canonicalizeAppUrl(url);
 }

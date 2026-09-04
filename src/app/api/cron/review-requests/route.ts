@@ -31,6 +31,7 @@ type ReviewRow = {
   status: string | null;
   client_rating: number | null;
   review_clicked: boolean | null;
+  short_code: string | null;
   scheduled_send_at: string | null;
   reminder_send_at: string | null;
   final_send_at: string | null;
@@ -67,7 +68,7 @@ export async function GET(req: NextRequest) {
   // Rows with a touch due now: pending→t1, sent→t2, reminded→t3. Three typed
   // queries rather than an or(and(...)) string so ISO timestamps filter cleanly.
   const cols =
-    "id, move_id, client_name, client_email, client_phone, tier, status, client_rating, review_clicked, scheduled_send_at, reminder_send_at, final_send_at";
+    "id, move_id, client_name, client_email, client_phone, tier, status, client_rating, review_clicked, short_code, scheduled_send_at, reminder_send_at, final_send_at";
   const [t1, t2, t3] = await Promise.all([
     admin.from("review_requests").select(cols).eq("status", "pending").lte("scheduled_send_at", nowIso).limit(50),
     admin.from("review_requests").select(cols).eq("status", "sent").lte("reminder_send_at", nowIso).limit(50),
@@ -157,11 +158,12 @@ export async function GET(req: NextRequest) {
             .select("id");
           if (!claimed?.length) continue;
           const { reviewUrl } = buildLinks(rr);
+          const link = rr.short_code ? `${baseUrl}/r/${rr.short_code}` : reviewUrl;
           const firstName = (rr.client_name || "there").trim().split(/\s+/)[0] || "there";
-          // Luxury restraint: one warm line, one link, no "reply STOP" clutter.
+          // Heartfelt, restrained: gratitude first, the ask second, one short link.
           const body = [
-            `${firstName}, it was our privilege to move you.`,
-            `If you have a moment, we would love to hear how it went: ${reviewUrl}`,
+            `${firstName}, thank you for trusting us with your home and the things that matter most to you. It was a privilege to move you, and it is a trust we hold with real care.`,
+            `If we looked after you well, a moment to share your experience would mean the world to our team and help another family feel this same peace of mind: ${link}`,
           ].join("\n\n");
           const sms = await sendSMS(rr.client_phone.replace(/\s/g, ""), body);
           if (sms.success) results.sms++;
