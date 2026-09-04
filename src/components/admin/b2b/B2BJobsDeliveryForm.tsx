@@ -7,6 +7,10 @@ import {
   useMemo,
   useEffect,
   useLayoutEffect,
+  useId,
+  isValidElement,
+  cloneElement,
+  type ReactElement,
 } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -177,12 +181,29 @@ function Field({
   label: string;
   children: React.ReactNode;
 }) {
+  // Associate the label with its control for screen readers. When the child is a
+  // single element (the common case: one input/select), give it an id and point
+  // htmlFor at it (preserving any existing id). Non-element / multi children fall
+  // back to a plain label.
+  const autoId = useId();
+  let control = children;
+  let forId: string | undefined;
+  if (isValidElement(children)) {
+    const existing = (children.props as { id?: string }).id;
+    forId = existing ?? autoId;
+    if (!existing) {
+      control = cloneElement(children as ReactElement, { id: forId } as { id: string });
+    }
+  }
   return (
     <div>
-      <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">
+      <label
+        htmlFor={forId}
+        className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1"
+      >
         {label}
       </label>
-      {children}
+      {control}
     </div>
   );
 }
@@ -462,6 +483,16 @@ export type B2BJobsDeliveryFormProps = {
    * computeJobScopeSurcharge). Defaults to "direct_delivery" (no surcharge).
    */
   jobScope?: JobScope;
+  /**
+   * EDIT MODE. When `quoteId` + `editMode` are set (the dedicated B2B quote edit
+   * screen), the form UPDATES that quote instead of creating a new one: the
+   * generate payload carries `quote_id` (→ isUpdate in /api/quotes/generate),
+   * the submit buttons become "Save changes" / "Send update", and the form's own
+   * draft is suppressed (the persisted quote is the source of truth). Both
+   * default off, so the create paths (full-page + embed) are unchanged.
+   */
+  quoteId?: string;
+  editMode?: boolean;
 };
 
 export default function B2BJobsDeliveryForm({
@@ -473,6 +504,8 @@ export default function B2BJobsDeliveryForm({
   initialData,
   onSubmitSuccess,
   jobScope = "direct_delivery",
+  quoteId,
+  editMode = false,
 }: B2BJobsDeliveryFormProps) {
   const router = useRouter();
   const embedCbRef = useRef(onEmbedStateChange);
@@ -1322,6 +1355,9 @@ export default function B2BJobsDeliveryForm({
     {
       applySaved: applyB2bDraftData as (data: typeof formState) => void,
       debounceMs: 30_000,
+      // In edit mode the persisted quote IS the source of truth — never autosave
+      // a competing "delivery_b2b" create-draft or warn on navigate.
+      ...(editMode ? { isDirty: () => false } : {}),
     },
   );
 
@@ -1989,7 +2025,11 @@ export default function B2BJobsDeliveryForm({
     }
   };
 
-  const sendQuote = async () => {
+  // sendEmail=true → generate + email the client the quote (create "Send quote",
+  // edit "Send update"). sendEmail=false → generate only (edit "Save changes"),
+  // no client email. In editMode the generate payload carries quote_id so the
+  // existing quote is UPDATED in place (never duplicated).
+  const sendQuote = async (sendEmail: boolean = true) => {
     const err = validateCore(true);
     if (err) {
       setError(err);
@@ -2116,6 +2156,10 @@ export default function B2BJobsDeliveryForm({
           : buildB2bStopsPayload();
       const payload: Record<string, unknown> = {
         service_type: "b2b_delivery",
+        // Edit mode: carry the quote_id so /api/quotes/generate takes the
+        // isUpdate path and PATCHes this exact quote instead of creating a new
+        // one (the create paths pass no quoteId, so they still insert).
+        ...(editMode && quoteId ? { quote_id: quoteId } : {}),
         from_address: sqPick,
         to_address: sqDel,
         from_access: sqPickAcc,
@@ -2185,6 +2229,23 @@ export default function B2BJobsDeliveryForm({
       if (!qid || qid === "PREVIEW") {
         setLoading(false);
         setError("Invalid quote response");
+        return;
+      }
+
+      // Edit "Save changes": the quote is already updated by generate above —
+      // don't email the client. Just return to the quote.
+      if (!sendEmail) {
+        setLoading(false);
+        clearDraft();
+        if (onSubmitSuccess) {
+          try {
+            await onSubmitSuccess({ kind: "quote", id: qid });
+          } catch (err) {
+            console.warn("[B2BJobsDeliveryForm] onSubmitSuccess threw", err);
+          }
+        }
+        router.push(`/admin/quotes/${encodeURIComponent(qid)}`);
+        router.refresh();
         return;
       }
 
@@ -2343,7 +2404,7 @@ export default function B2BJobsDeliveryForm({
 
   return (
     <div className={embed ? "space-y-5" : "space-y-6"}>
-      {hasDraft && (
+      {hasDraft && !editMode && (
         <DraftBanner onRestore={handleRestoreDraft} onDismiss={dismissDraft} />
       )}
 
@@ -2366,7 +2427,7 @@ export default function B2BJobsDeliveryForm({
       )}
 
       {!embed && (
-        <div className="px-3 py-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/30 text-[11px] text-[var(--accent-text)]">
+        <div className="px-3 py-2 rounded-lg bg-[var(--admin-primary-fill)]/10 border border-[var(--admin-primary-fill)]/30 text-[11px] text-[var(--accent-text)]">
           {partnerOrgId.trim() && applyPartnerRates
             ? "Partner organization linked, dimensional preview uses partner vertical rates when configured."
             : "True one-off: no partner org. Full payment at booking unless you send a quote with invoice terms."}
@@ -2386,7 +2447,7 @@ export default function B2BJobsDeliveryForm({
               type="checkbox"
               checked={applyPartnerRates}
               onChange={(e) => setApplyPartnerRates(e.target.checked)}
-              className="rounded border-[var(--brd)] accent-[var(--gold)]"
+              className="rounded border-[var(--brd)] accent-[var(--admin-primary-fill)]"
             />
             Apply partner rate card (when organization is selected)
           </label>
@@ -2747,7 +2808,7 @@ export default function B2BJobsDeliveryForm({
                 return (
                   <li
                     key={idx}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--brd)] hover:border-[var(--gold)] transition-colors"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--brd)] hover:border-[var(--admin-primary-fill)] transition-colors"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="text-[12px] font-semibold text-[var(--tx)] truncate">
@@ -2785,7 +2846,7 @@ export default function B2BJobsDeliveryForm({
               return (
                 <li
                   key={idx}
-                  className="space-y-2 px-3 py-3 rounded-lg bg-[var(--bg)] border border-[var(--gold)] text-[11px]"
+                  className="space-y-2 px-3 py-3 rounded-lg bg-[var(--bg)] border border-[var(--admin-primary-fill)] text-[11px]"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
@@ -2794,7 +2855,7 @@ export default function B2BJobsDeliveryForm({
                     <button
                       type="button"
                       onClick={() => setEditingLineIdx(null)}
-                      className="text-[10px] font-bold tracking-wider uppercase text-[var(--gold)] hover:text-[var(--tx)]"
+                      className="text-[10px] font-bold tracking-wider uppercase text-[var(--admin-primary-fill)] hover:text-[var(--tx)]"
                     >
                       Done
                     </button>
@@ -2878,7 +2939,7 @@ export default function B2BJobsDeliveryForm({
                           onChange={(e) =>
                             patchLine(idx, { fragile: e.target.checked })
                           }
-                          className="accent-[var(--gold)]"
+                          className="accent-[var(--admin-primary-fill)]"
                         />
                         Fragile
                       </label>
@@ -2952,7 +3013,7 @@ export default function B2BJobsDeliveryForm({
                             onChange={(e) =>
                               patchLine(idx, { hookup_required: e.target.checked })
                             }
-                            className="accent-[var(--gold)]"
+                            className="accent-[var(--admin-primary-fill)]"
                           />
                           Hook-up required
                         </label>
@@ -2965,7 +3026,7 @@ export default function B2BJobsDeliveryForm({
                             onChange={(e) =>
                               patchLine(idx, { haul_away_line: e.target.checked })
                             }
-                            className="accent-[var(--gold)]"
+                            className="accent-[var(--admin-primary-fill)]"
                           />
                           Haul-away old unit
                         </label>
@@ -2978,7 +3039,7 @@ export default function B2BJobsDeliveryForm({
                             onChange={(e) =>
                               patchLine(idx, { crating_required: e.target.checked })
                             }
-                            className="accent-[var(--gold)]"
+                            className="accent-[var(--admin-primary-fill)]"
                           />
                           Crating required
                         </label>
@@ -2993,7 +3054,7 @@ export default function B2BJobsDeliveryForm({
                                 line_assembly_required: e.target.checked,
                               })
                             }
-                            className="accent-[var(--gold)]"
+                            className="accent-[var(--admin-primary-fill)]"
                           />
                           Assembly required
                         </label>
@@ -3057,7 +3118,7 @@ export default function B2BJobsDeliveryForm({
                           key={p.name}
                           type="button"
                           onClick={() => addQuickPreset(p)}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--bg)] transition-colors"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--admin-primary-fill)] hover:bg-[var(--bg)] transition-colors"
                         >
                           {p.icon ? (
                             <B2bQuickAddIcon
@@ -3162,7 +3223,7 @@ export default function B2BJobsDeliveryForm({
                         type="checkbox"
                         checked={newFragile}
                         onChange={(e) => setNewFragile(e.target.checked)}
-                        className="accent-[var(--gold)]"
+                        className="accent-[var(--admin-primary-fill)]"
                       />
                       Fragile
                     </label>
@@ -3214,7 +3275,7 @@ export default function B2BJobsDeliveryForm({
                           type="checkbox"
                           checked={newHookupRequired}
                           onChange={(e) => setNewHookupRequired(e.target.checked)}
-                          className="accent-[var(--gold)]"
+                          className="accent-[var(--admin-primary-fill)]"
                         />
                         Hook-up required
                       </label>
@@ -3225,7 +3286,7 @@ export default function B2BJobsDeliveryForm({
                           type="checkbox"
                           checked={newHaulAwayLine}
                           onChange={(e) => setNewHaulAwayLine(e.target.checked)}
-                          className="accent-[var(--gold)]"
+                          className="accent-[var(--admin-primary-fill)]"
                         />
                         Haul-away old unit
                       </label>
@@ -3236,7 +3297,7 @@ export default function B2BJobsDeliveryForm({
                           type="checkbox"
                           checked={newCratingRequired}
                           onChange={(e) => setNewCratingRequired(e.target.checked)}
-                          className="accent-[var(--gold)]"
+                          className="accent-[var(--admin-primary-fill)]"
                         />
                         Crating required
                       </label>
@@ -3249,7 +3310,7 @@ export default function B2BJobsDeliveryForm({
                           onChange={(e) =>
                             setNewLineAssemblyRequired(e.target.checked)
                           }
-                          className="accent-[var(--gold)]"
+                          className="accent-[var(--admin-primary-fill)]"
                         />
                         Assembly required
                       </label>
@@ -3341,7 +3402,7 @@ export default function B2BJobsDeliveryForm({
                   value={h.value}
                   checked={handlingType === h.value}
                   onChange={() => setHandlingType(h.value)}
-                  className="accent-[var(--gold)]"
+                  className="accent-[var(--admin-primary-fill)]"
                 />
                 {h.label}
               </label>
@@ -3391,7 +3452,7 @@ export default function B2BJobsDeliveryForm({
                 type="checkbox"
                 checked={stagedDelivery}
                 onChange={(e) => setStagedDelivery(e.target.checked)}
-                className="accent-[var(--gold)]"
+                className="accent-[var(--admin-primary-fill)]"
               />
               Staged delivery (split phases when not all stops are ready)
             </label>
@@ -3537,7 +3598,7 @@ export default function B2BJobsDeliveryForm({
               type="checkbox"
               checked={sameDay}
               onChange={(e) => setSameDay(e.target.checked)}
-              className="accent-[var(--gold)]"
+              className="accent-[var(--admin-primary-fill)]"
             />
             Same-day delivery
           </label>
@@ -3548,7 +3609,7 @@ export default function B2BJobsDeliveryForm({
               type="checkbox"
               checked={timeSensitive}
               onChange={(e) => setTimeSensitive(e.target.checked)}
-              className="accent-[var(--gold)]"
+              className="accent-[var(--admin-primary-fill)]"
             />
             Time-sensitive
           </label>
@@ -3578,7 +3639,7 @@ export default function B2BJobsDeliveryForm({
                       ? "…"
                       : truckOverride || calc?.truck || "-"}
                     {truckOverride && (
-                      <span className="ml-1 text-[9px] font-bold uppercase text-[var(--gold)]">
+                      <span className="ml-1 text-[9px] font-bold uppercase text-[var(--admin-primary-fill)]">
                         override
                       </span>
                     )}
@@ -3594,7 +3655,7 @@ export default function B2BJobsDeliveryForm({
                       : crewOverride.trim() ||
                         (calc != null ? String(calc.crew) : "-")}
                     {crewOverride.trim() && (
-                      <span className="ml-1 text-[9px] font-bold uppercase text-[var(--gold)]">
+                      <span className="ml-1 text-[9px] font-bold uppercase text-[var(--admin-primary-fill)]">
                         override
                       </span>
                     )}
@@ -3613,7 +3674,7 @@ export default function B2BJobsDeliveryForm({
                           ? `${calc.estimated_hours} hrs`
                           : "-"}
                     {hoursOverride.trim() && (
-                      <span className="ml-1 text-[9px] font-bold uppercase text-[var(--gold)]">
+                      <span className="ml-1 text-[9px] font-bold uppercase text-[var(--admin-primary-fill)]">
                         override
                       </span>
                     )}
@@ -3777,15 +3838,15 @@ export default function B2BJobsDeliveryForm({
                         aria-pressed={t.checked}
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border transition-colors ${
                           t.checked
-                            ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--tx)]"
-                            : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:bg-[var(--bg)]"
+                            ? "border-[var(--admin-primary-fill)] bg-[var(--admin-primary-fill)]/10 text-[var(--tx)]"
+                            : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--admin-primary-fill)] hover:bg-[var(--bg)]"
                         }`}
                       >
                         <span
                           aria-hidden
                           className={`inline-block w-3 h-3 rounded-sm border ${
                             t.checked
-                              ? "border-[var(--gold)] bg-[var(--gold)]"
+                              ? "border-[var(--admin-primary-fill)] bg-[var(--admin-primary-fill)]"
                               : "border-[var(--brd)]"
                           }`}
                         />
@@ -3902,7 +3963,7 @@ export default function B2BJobsDeliveryForm({
               name="b2b-pay"
               checked={paymentMethod === "card"}
               onChange={() => setPaymentMethod("card")}
-              className="accent-[var(--gold)] mt-0.5"
+              className="accent-[var(--admin-primary-fill)] mt-0.5"
             />
             <div className="min-w-0">
               <div className="font-semibold">Card at booking (full payment)</div>
@@ -3917,7 +3978,7 @@ export default function B2BJobsDeliveryForm({
               name="b2b-pay"
               checked={paymentMethod === "invoice"}
               onChange={() => setPaymentMethod("invoice")}
-              className="accent-[var(--gold)] mt-0.5"
+              className="accent-[var(--admin-primary-fill)] mt-0.5"
             />
             <div className="min-w-0">
               <div className="font-semibold">Invoice</div>
@@ -4029,7 +4090,7 @@ export default function B2BJobsDeliveryForm({
             )}
             {/* Show server (authoritative) result if present; else fall back to client estimate. Avoids showing two totals. */}
             {serverPricing ? (
-              <div className="text-[11px] space-y-1 text-[var(--tx)] border border-[var(--gold)]/30 rounded-lg p-3 bg-[var(--gold)]/5">
+              <div className="text-[11px] space-y-1 text-[var(--tx)] border border-[var(--admin-primary-fill)]/30 rounded-lg p-3 bg-[var(--admin-primary-fill)]/5">
                 <p className="text-[9px] uppercase tracking-wide text-[var(--tx3)]">
                   Exact price · confirmed
                 </p>
@@ -4193,30 +4254,55 @@ export default function B2BJobsDeliveryForm({
       </div>{/* /grid */}
 
       <div className="flex flex-wrap gap-2 pt-2">
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => void postCreateDelivery("draft")}
-          className="px-4 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] disabled:opacity-50"
-        >
-          Save as draft
-        </button>
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => void sendQuote()}
-          className="px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-emerald-700 text-white hover:opacity-90 disabled:opacity-50"
-        >
-          Send quote
-        </button>
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => void postCreateDelivery("confirmed")}
-          className="admin-btn admin-btn-primary"
-        >
-          Create and schedule
-        </button>
+        {editMode ? (
+          <>
+            {/* Editing an existing quote: update it (booking stays on the
+                quote detail page's Confirm booking). */}
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => void sendQuote(false)}
+              className="admin-btn admin-btn-secondary"
+            >
+              {loading ? "Saving…" : "Save changes"}
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => void sendQuote(true)}
+              className="admin-btn admin-btn-primary"
+            >
+              {loading ? "Sending…" : "Send update"}
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => void postCreateDelivery("draft")}
+              className="admin-btn admin-btn-secondary"
+            >
+              Save as draft
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => void sendQuote(true)}
+              className="admin-btn admin-btn-primary"
+            >
+              Send quote
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => void postCreateDelivery("confirmed")}
+              className="admin-btn admin-btn-primary"
+            >
+              Create and schedule
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

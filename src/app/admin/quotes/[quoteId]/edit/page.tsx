@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import QuoteFormClient from "../../new/QuoteFormClient";
+import B2BQuoteEditClient from "./B2BQuoteEditClient";
 import { sumBinsOutOnRental, availableBinInventory } from "@/lib/pricing/bin-rental";
 import { overlayDeliveryVerticalDbColumns } from "@/lib/admin/delivery-vertical-column-sync";
 import { mergeBundleTierIntoMergedRates } from "@/lib/b2b-bundle-line-items";
@@ -21,13 +22,21 @@ export default async function EditQuotePage({ params }: Props) {
   const supabase = await createClient();
   const db = createAdminClient();
 
-  const { data: quoteExists } = await db
+  const { data: quoteRow } = await db
     .from("quotes")
-    .select("quote_id")
+    .select(
+      "quote_id, service_type, factors_applied, from_address, to_address, from_access, to_access, move_date, contacts:contact_id(name, email, phone)",
+    )
     .eq("quote_id", quoteId)
     .maybeSingle();
 
-  if (!quoteExists) redirect("/admin/quotes");
+  if (!quoteRow) redirect("/admin/quotes");
+
+  // B2B (commercial delivery) quotes get a DEDICATED full-width edit screen that
+  // opens straight to the delivery form and UPDATES the quote in place. All
+  // other service types keep the shared move-quote wizard (QuoteFormClient).
+  const isB2bQuote =
+    quoteRow.service_type === "b2b_delivery" || quoteRow.service_type === "b2b_oneoff";
 
   const [
     { data: addons },
@@ -107,6 +116,24 @@ export default async function EditQuotePage({ params }: Props) {
     out: outOnRental,
     available: availableBinInventory(totalBins, outOnRental),
   };
+
+  if (isB2bQuote) {
+    return (
+      <div className="w-full min-w-0 max-w-[min(1440px,100%)] mx-auto py-5 md:py-6 animate-fade-up">
+        <h1 className="admin-page-hero text-[var(--tx)] mb-1">Editing {quoteId}</h1>
+        <p className="text-[13px] text-[var(--tx3)] mb-4">
+          Update the commercial delivery quote. Save changes, or send the client the new version.
+        </p>
+        <B2BQuoteEditClient
+          quoteId={quoteId}
+          quote={quoteRow as Record<string, unknown>}
+          organizations={orgRows ?? []}
+          crews={crewRows ?? []}
+          verticals={deliveryVerticals}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-w-0 py-5 md:py-6">
