@@ -18,7 +18,7 @@
     },
     {
       "path": "/api/cron/review-requests",
-      "schedule": "30 14 * * *"
+      "schedule": "*/15 * * * *"
     },
     {
       "path": "/api/cron/card-on-file-audit",

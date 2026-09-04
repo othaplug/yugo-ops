@@ -686,6 +686,18 @@ export interface ReviewRequestTierData {
   referralUrl?: string | null;
   trackingUrl: string;
   coordinatorName?: string | null;
+  /** Discreet permanent unsubscribe. Omit to render no footer link. */
+  optOutUrl?: string | null;
+}
+
+/** A single, quiet unsubscribe line for the review emails. Renders nothing when
+ * no URL is supplied, so non-review mail is never affected. */
+function reviewUnsubscribeFooter(optOutUrl?: string | null): string {
+  if (!optOutUrl) return "";
+  return `
+    <p style="font-size:11px;line-height:1.6;color:rgba(73,42,29,0.45);text-align:center;margin:20px 0 0;">
+      <a href="${optOutUrl}" style="color:rgba(73,42,29,0.55);text-decoration:underline;">Prefer not to receive these notes? Unsubscribe.</a>
+    </p>`;
 }
 
 /** @deprecated Use reviewRequestCuratedEmail */
@@ -707,6 +719,7 @@ export function reviewRequestCuratedEmail(d: ReviewRequestTierData): string {
     <p style="${CREAM_REVIEW_SMALL}">
       Thank you for trusting Yugo with your home. The Yugo Team
     </p>
+    ${reviewUnsubscribeFooter(d.optOutUrl)}
   `);
 }
 
@@ -728,6 +741,7 @@ export function reviewRequestSignatureEmail(d: ReviewRequestTierData): string {
     <p style="${CREAM_REVIEW_SMALL}">
       With gratitude, The Yugo Team
     </p>
+    ${reviewUnsubscribeFooter(d.optOutUrl)}
   `);
 }
 
@@ -745,6 +759,7 @@ export function reviewRequestEstateEmail(d: ReviewRequestTierData): string {
     <p style="${CREAM_REVIEW_SMALL}">
       With gratitude,<br/>${d.coordinatorName || "The Yugo Team"}<br/>Yugo
     </p>
+    ${reviewUnsubscribeFooter(d.optOutUrl)}
   `);
 }
 
@@ -752,6 +767,7 @@ export interface ReviewRequestReminderData {
   clientName: string;
   reviewUrl: string;
   reviewRedirectUrl: string;
+  optOutUrl?: string | null;
 }
 
 export function reviewRequestReminderEmail(
@@ -767,6 +783,7 @@ export function reviewRequestReminderEmail(
     <p style="${CREAM_REVIEW_SMALL}">
       Thank you for choosing Yugo. The Yugo Team
     </p>
+    ${reviewUnsubscribeFooter(d.optOutUrl)}
   `);
 }
 

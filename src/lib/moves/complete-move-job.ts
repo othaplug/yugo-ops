@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
 import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
-import { schedulePostMoveClientSms } from "@/lib/moves/schedule-post-move-client-sms";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { createClientReferralIfNeeded } from "@/lib/client-referral";
 import { generateMovePDFs } from "@/lib/documents/generateMovePDFs";
@@ -429,19 +428,16 @@ export const runMoveCompletionFollowUp = async (
   },
 ): Promise<void> => {
   syncDealStageByMoveId(moveId, "completed").catch(() => {});
-  // Immediate thank-you text (luxury tone). The rating-gated review text is
-  // scheduled separately ~1h later by schedulePostMoveClientSms below.
+  // Immediate thank-you text (luxury tone), separate from the review ask.
   sendMoveCompleteThankYouSms(admin, moveId).catch((e) =>
     console.error("[move-complete-sms] schedule failed:", e),
   );
-  // Review-ask EMAIL (unchanged: next-day via /api/cron/review-requests).
+  // Unified review cadence: one review_requests row drives the SMS at ~3h and
+  // the two email touches (via /api/cron/review-requests), with the star tap
+  // gating who reaches Google. Replaces the old rating-gated post-move SMS
+  // scheduler, so a client is never texted the review ask twice.
   createReviewRequestIfEligible(admin, moveId).catch((e) =>
     console.error("[review] create failed:", e),
-  );
-  // Timely post-move TEXT (~1h, rating-gated, via /api/cron/move-client-sms).
-  // Runs after ensureJobCompleted so the cancellation sweep can't wipe it.
-  schedulePostMoveClientSms(admin, moveId).catch((e) =>
-    console.error("[post-move-sms] schedule failed:", e),
   );
   createClientReferralIfNeeded(admin, moveId).catch((e) =>
     console.error("[referral] create failed:", e),

@@ -9,7 +9,6 @@ import {
   postMovePerksEmail,
   moveAnniversaryEmail,
 } from "@/lib/email/lifecycle-templates";
-import { resolveGoogleReviewUrl } from "@/lib/google-review-url";
 
 /**
  * Vercel Cron: runs daily at 10 AM EST.
@@ -70,29 +69,10 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const { data: coordConfig } = await supabase
-    .from("platform_config")
-    .select("key, value")
-    .in("key", ["coordinator_name", "coordinator_phone", "coordinator_email", "google_review_url"]);
-
-  const coordinatorName = coordConfig?.find((c) => c.key === "coordinator_name")?.value || null;
-  const googleReviewUrl = resolveGoogleReviewUrl(
-    coordConfig?.find((c) => c.key === "google_review_url")?.value,
-  );
-  const coordinatorPhone = coordConfig?.find((c) => c.key === "coordinator_phone")?.value || null;
-  const coordinatorEmail = coordConfig?.find((c) => c.key === "coordinator_email")?.value || null;
-
   const results = { reviewsSent: 0, followUpsSent: 0, dealsClosed: 0, errors: [] as string[] };
 
   for (const move of moves) {
     if (!move.client_email) continue;
-
-    const trackToken = signTrackToken("move", move.id);
-    const trackingUrl = `${baseUrl}/track/move/${move.move_code ?? move.id}?token=${trackToken}`;
-    const referralUrl =
-      move.service_type === "local_move"
-        ? `${baseUrl}/referral?ref=${encodeURIComponent(move.move_code || move.id)}`
-        : null;
 
     const npsScore = move.nps_score as number | null;
     const walkthroughRating = walkthroughRatingByMove.get(String(move.id)) ?? null;
@@ -111,15 +91,13 @@ export async function GET(req: NextRequest) {
     })();
     const isLowSatisfaction = effectiveScore !== null && effectiveScore <= 3;
 
+    // Client-facing review requests and service-recovery messages now come from
+    // the unified cadence (/api/cron/review-requests) and the immediate tap /
+    // checklist admin alerts. This cron keeps only the internal low-satisfaction
+    // net (an nps-based signal that never produced a tap) plus the lifecycle
+    // jobs below — it no longer emails the client, so there are no duplicates.
     try {
       if (isLowSatisfaction) {
-        /* ── Low satisfaction: send internal alert + client follow-up.
-              DO NOT send the Google review request — the client already
-              told us they aren't happy, asking for a public review
-              would damage the brand. Instead, alert the super admin and
-              send a service-recovery follow-up so the coordinator can
-              reach out personally. ── */
-
         const adminEmail = process.env.SUPER_ADMIN_EMAIL;
         if (adminEmail) {
           const alertHtml = internalLowSatAlertEmail({
@@ -130,50 +108,16 @@ export async function GET(req: NextRequest) {
             npsScore: effectiveScore as number,
             moveDate: move.scheduled_date,
           });
-
           const ratingSourceLabel =
             walkthroughRating !== null && walkthroughRating <= 3 && npsScore !== walkthroughRating
               ? `walkthrough ${walkthroughRating}/5`
               : `${effectiveScore}/5`;
           await sendEmail({
             to: adminEmail,
-            subject: `Low satisfaction: ${move.client_name} ${move.move_code} (${ratingSourceLabel}), DO NOT send Google review`,
+            subject: `Low satisfaction: ${move.client_name} ${move.move_code} (${ratingSourceLabel})`,
             html: alertHtml,
           });
         }
-
-        await sendEmail({
-          to: move.client_email,
-          subject: `We are here for you - ${move.move_code}`,
-          template: "low-satisfaction",
-          data: {
-            clientName: move.client_name || "",
-            moveCode: move.move_code || move.id,
-            coordinatorName,
-            coordinatorPhone,
-            coordinatorEmail,
-            trackingUrl,
-          },
-        });
-
-        results.followUpsSent++;
-      } else {
-        /* ── Good score (>= 4) or no score on either signal: send review request ── */
-
-        await sendEmail({
-          to: move.client_email,
-          subject: `How was your experience? ${move.move_code}`,
-          template: "review-request",
-          data: {
-            clientName: move.client_name || "",
-            moveCode: move.move_code || move.id,
-            googleReviewUrl,
-            referralUrl,
-            trackingUrl,
-          },
-        });
-
-        results.reviewsSent++;
       }
 
       await supabase

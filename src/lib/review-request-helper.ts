@@ -1,10 +1,22 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { backfillMoveClientEmailFromQuote } from "@/lib/client-referral";
+import { isReviewOptedOut } from "@/lib/review/opt-out";
+import { sendEmail } from "@/lib/email/send";
+import { internalLowSatAlertEmail } from "@/lib/email/lifecycle-templates";
+
+// Unified cadence, measured from move completion. Touch 1 is an SMS (or email
+// when there is no phone); touches 2 and 3 are emails. The public star tap is
+// the gate, so we ask EVERY completed move regardless of the checklist rating.
+const TOUCH_1_MS = 3 * 60 * 60 * 1000; //  ~3 hours: crew gone, client settled
+const TOUCH_2_MS = 3 * 24 * 60 * 60 * 1000; //  day 3: email, new framing
+const TOUCH_3_MS = 6 * 24 * 60 * 60 * 1000; //  day 6: final email, then stop
 
 /**
- * Create a review request only when we have a client email (so the request can be sent).
- * Backfills move.client_email from quote→contact before deciding, so quote-sourced moves
- * always get a review request when the contact has an email.
+ * Create the single review-orchestration row for a completed move. One row per
+ * move drives all three touches. We ask every completed move (with or without a
+ * post-move checklist, any rating) as long as it has a way to reach the client;
+ * the star tap gates who reaches Google. Excluded only when: the feature is off,
+ * an open damage claim exists, or the client permanently opted out.
  */
 export async function createReviewRequestIfEligible(
   supabase: SupabaseClient,
@@ -19,35 +31,22 @@ export async function createReviewRequestIfEligible(
 
   const { data: move } = await supabase
     .from("moves")
-    .select("id, client_name, client_email, client_phone, tier_selected, status, completed_at")
+    .select("id, move_code, client_name, client_email, client_phone, tier_selected, status, completed_at, scheduled_date")
     .eq("id", moveId)
     .single();
   if (!move || move.status !== "completed") return false;
 
-  const completedAt = move.completed_at ? new Date(move.completed_at) : new Date();
-  const sendAt = new Date(completedAt.getTime() + 2 * 60 * 60 * 1000);
-  const reminderAt = new Date(completedAt.getTime() + 3 * 24 * 60 * 60 * 1000);
-
-  const { data: claim } = await supabase
+  // Guard: never ask a client with an OPEN damage claim to review us. A resolved
+  // claim is fine; an unresolved one reads badly and invites a public 1-star.
+  const { data: openClaims } = await supabase
     .from("claims")
-    .select("id")
-    .eq("move_id", moveId)
-    .limit(1)
-    .maybeSingle();
-  if (claim) return false;
-
-  let podRating: number | null = null;
-  const { data: pod } = await supabase
-    .from("proof_of_delivery")
-    .select("satisfaction_rating")
-    .eq("move_id", moveId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (pod?.satisfaction_rating != null) {
-    podRating = Number(pod.satisfaction_rating);
-    if (podRating >= 1 && podRating <= 3) return false;
-  }
+    .select("id, status")
+    .eq("move_id", moveId);
+  const hasOpenClaim = (openClaims ?? []).some((c) => {
+    const s = String((c as { status?: string | null }).status ?? "").toLowerCase().trim();
+    return s !== "resolved" && s !== "closed" && s !== "denied" && s !== "cancelled";
+  });
+  if (hasOpenClaim) return false;
 
   const { data: existing } = await supabase
     .from("review_requests")
@@ -56,23 +55,67 @@ export async function createReviewRequestIfEligible(
     .maybeSingle();
   if (existing) return false;
 
-  // Backfill move.client_email from quote→contact so we never create a review request without email
+  // Store the checklist rating for the record + immediate low-satisfaction
+  // handling, but do NOT gate on it — an unhappy checklist still gets the ask,
+  // and the tap re-gates them away from Google.
+  let podRating: number | null = null;
+  const { data: pod } = await supabase
+    .from("proof_of_delivery")
+    .select("satisfaction_rating")
+    .eq("move_id", moveId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (pod?.satisfaction_rating != null) podRating = Number(pod.satisfaction_rating);
+
+  // "Find something for them": a 1-3 post-move checklist rating alerts an admin
+  // immediately so a coordinator can reach out, independent of whether we go on
+  // to send the review ask. Fires once (guarded above by the existing-row check).
+  if (podRating != null && podRating >= 1 && podRating <= 3) {
+    const adminEmail = process.env.SUPER_ADMIN_EMAIL;
+    if (adminEmail) {
+      sendEmail({
+        to: adminEmail,
+        subject: `Low checklist ${podRating}★: ${move.client_name || "client"} ${move.move_code || ""} — reach out`,
+        html: internalLowSatAlertEmail({
+          clientName: move.client_name || "",
+          clientEmail: move.client_email || "",
+          clientPhone: move.client_phone || "",
+          moveCode: move.move_code || moveId,
+          npsScore: podRating,
+          moveDate: move.scheduled_date ?? null,
+        }),
+      }).catch(() => {});
+    }
+  }
+
+  // Backfill email from quote→contact so SMS-less clients still get an email touch.
   const backfilled = await backfillMoveClientEmailFromQuote(supabase, moveId);
   const clientEmail = (move.client_email || "").trim() || backfilled.email || null;
+  const clientPhone = (move.client_phone || "").trim() || null;
   const clientName = (move.client_name || "").trim() || backfilled.name || "Client";
 
-  // Only create review requests when we have an email (so we can send the request)
-  if (!clientEmail) return false;
+  // Need at least one channel to reach the client.
+  if (!clientEmail && !clientPhone) return false;
+
+  // Permanent opt-out is honoured across every future job.
+  if (await isReviewOptedOut(supabase, { email: clientEmail, phone: clientPhone })) {
+    return false;
+  }
+
+  const completedAt = move.completed_at ? new Date(move.completed_at) : new Date();
+  const t = completedAt.getTime();
 
   const { error } = await supabase.from("review_requests").insert({
     move_id: moveId,
     client_name: clientName,
     client_email: clientEmail,
-    client_phone: move.client_phone || null,
+    client_phone: clientPhone,
     tier: move.tier_selected || null,
     pod_rating: podRating,
-    scheduled_send_at: sendAt.toISOString(),
-    reminder_send_at: reminderAt.toISOString(),
+    scheduled_send_at: new Date(t + TOUCH_1_MS).toISOString(),
+    reminder_send_at: new Date(t + TOUCH_2_MS).toISOString(),
+    final_send_at: new Date(t + TOUCH_3_MS).toISOString(),
     status: "pending",
   });
 
