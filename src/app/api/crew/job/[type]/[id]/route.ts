@@ -410,6 +410,14 @@ export async function GET(
       projectName: (d as { project_name?: string | null }).project_name ?? null,
       endClientName: (d as { end_client_name?: string | null }).end_client_name ?? null,
       endClientPhone: (d as { end_client_phone?: string | null }).end_client_phone ?? null,
+      // Receiving client (recipient split): shown to crew so they know who
+      // receives the items on site and which number to call, distinct from the
+      // business contact who booked the delivery.
+      recipientMode:
+        (d as { recipient_mode?: string | null }).recipient_mode || "partner",
+      recipientName: (d as { recipient_name?: string | null }).recipient_name || null,
+      recipientPhone: (d as { recipient_phone?: string | null }).recipient_phone || null,
+      recipientEmail: (d as { recipient_email?: string | null }).recipient_email || null,
       stops: (stops || []).map((s) => ({
         ...s,
         stop_status: s.stop_status || s.status || "pending",

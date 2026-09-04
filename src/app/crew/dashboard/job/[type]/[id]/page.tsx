@@ -294,6 +294,11 @@ interface JobDetail {
   projectName?: string | null;
   endClientName?: string | null;
   endClientPhone?: string | null;
+  /** Receiving client (B2B recipient split): who receives the items on site. */
+  recipientMode?: string | null;
+  recipientName?: string | null;
+  recipientPhone?: string | null;
+  recipientEmail?: string | null;
   pmPackingRequired?: boolean;
   tenantPresent?: boolean;
   buildingContactName?: string | null;
@@ -2504,7 +2509,11 @@ export default function CrewJobPage({
           {(job.clientName || job.clientPhone) && (
             <div className="mb-5">
               <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-muted)] mb-1.5 [font-family:var(--font-body)]">
-                {jobType === "move" && job.isPmContractMove ? "Tenant" : "Client"}
+                {jobType === "move" && job.isPmContractMove
+                  ? "Tenant"
+                  : jobType === "delivery" && job.recipientMode === "separate"
+                    ? "Business contact"
+                    : "Client"}
               </p>
               {job.clientName ? (
                 <p className="text-[13px] font-semibold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
@@ -2522,6 +2531,29 @@ export default function CrewJobPage({
               ) : null}
             </div>
           )}
+          {jobType === "delivery" &&
+            job.recipientMode === "separate" &&
+            (job.recipientName || job.recipientPhone) && (
+              <div className="mb-5">
+                <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-muted)] mb-1.5 [font-family:var(--font-body)]">
+                  Receiving client
+                </p>
+                {job.recipientName ? (
+                  <p className="text-[13px] font-semibold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+                    {job.recipientName}
+                  </p>
+                ) : null}
+                {job.recipientPhone ? (
+                  <a
+                    href={`tel:${normalizePhone(job.recipientPhone)}`}
+                    className={`block w-fit text-[13px] font-medium text-[var(--yu3-ink)] [font-family:var(--font-body)] hover:underline underline-offset-2 decoration-[var(--yu3-ink)]/30 hover:decoration-[var(--yu3-wine)] ${job.recipientName ? "mt-1" : "mt-0"}`}
+                    aria-label={`Call ${formatPhone(job.recipientPhone) || job.recipientPhone}`}
+                  >
+                    {formatPhone(job.recipientPhone) || job.recipientPhone}
+                  </a>
+                ) : null}
+              </div>
+            )}
           {job.internalNotes && (
             <div className="mb-0">
               <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-muted)] mb-1.5 [font-family:var(--font-body)]">
