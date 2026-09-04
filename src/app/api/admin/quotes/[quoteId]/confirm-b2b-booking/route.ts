@@ -90,12 +90,21 @@ export async function POST(
   // exactly what stranded DLV-30406). Refuse and make the operator set a real
   // date first, rather than silently booking into a dead date.
   const moveDate = String(quote.move_date ?? "").slice(0, 10);
-  const todayStr = new Date().toLocaleDateString("en-CA", {
+  // toLocaleDateString("en-CA") in Node returns "2026-09-4" (day
+  // unpadded) even with day: "2-digit", so a plain string compare
+  // against moveDate "2026-09-05" evaluates "05" < "4" TRUE and the
+  // guard fires on a same-day/future booking. Build the YYYY-MM-DD
+  // string via formatToParts so every segment is padded to spec.
+  const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Toronto",
     year: "numeric",
     month: "2-digit",
-    day: "numeric",
-  });
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const y = parts.find((p) => p.type === "year")?.value ?? "";
+  const m = parts.find((p) => p.type === "month")?.value.padStart(2, "0") ?? "";
+  const d = parts.find((p) => p.type === "day")?.value.padStart(2, "0") ?? "";
+  const todayStr = `${y}-${m}-${d}`;
   if (!moveDate) {
     return NextResponse.json(
       { error: "This quote has no delivery date. Set a delivery date on the quote before confirming." },
