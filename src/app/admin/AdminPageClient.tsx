@@ -1007,7 +1007,7 @@ export default function AdminPageClient({
                             {job.tag}
                           </span>
                         </div>
-                        <div className="text-[var(--text-base)] font-bold text-[var(--tx)] leading-snug">
+                        <div className="text-[length:var(--text-base)] font-bold text-[var(--tx)] leading-snug">
                           {job.name}
                         </div>
                         {job.subtitle && (
@@ -1039,7 +1039,7 @@ export default function AdminPageClient({
               </div>
             ) : (
               <div className="py-12 text-center min-w-0 px-0">
-                <div className="text-[var(--text-base)] font-semibold text-[var(--tx)] mb-1">
+                <div className="text-[length:var(--text-base)] font-semibold text-[var(--tx)] mb-1">
                   No jobs scheduled
                 </div>
                 <p className="text-[12px] text-[var(--tx3)] mb-4 px-1">

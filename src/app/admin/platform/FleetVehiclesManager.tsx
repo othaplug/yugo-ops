@@ -235,7 +235,7 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
     <div id="fleet-vehicles" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
       <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
         <div>
-          <h3 className="font-heading text-[var(--text-base)] font-bold text-[var(--tx)]">Fleet Vehicles</h3>
+          <h3 className="font-heading text-[length:var(--text-base)] font-bold text-[var(--tx)]">Fleet Vehicles</h3>
           <p className="text-[11px] text-[var(--tx3)] mt-0.5">Manage trucks and vans, including the call number shown on live tracking. Vehicle data feeds into quote pricing and profitability tracking.</p>
         </div>
         <button

@@ -702,7 +702,7 @@ export default function PartnerOnboardingWizard({
         <Icon name="check" className="w-9 h-9 text-[var(--grn)]" />
       </div>
       <h3 className="font-heading text-[22px] font-bold text-[var(--tx)] mb-2">Partner onboarded</h3>
-      <p className="text-[var(--text-base)] text-[var(--tx3)] max-w-xs leading-relaxed">
+      <p className="text-[length:var(--text-base)] text-[var(--tx3)] max-w-xs leading-relaxed">
         {state.createPortalLogin && partnerHasSelfServePortal(state.type)
           ? "An invitation email has been sent with their portal login credentials."
           : !partnerHasSelfServePortal(state.type)
@@ -1163,7 +1163,7 @@ function Step1BusinessDetails({
                 className="accent-[var(--gold)]"
               />
               <span className="flex flex-col gap-0.5">
-                <span className="text-[var(--text-base)] font-medium text-[var(--tx)]">{seg.label}</span>
+                <span className="text-[length:var(--text-base)] font-medium text-[var(--tx)]">{seg.label}</span>
                 <span className="text-[10px] font-normal text-[var(--tx3)] leading-snug normal-case tracking-normal">
                   {seg.description}
                 </span>
@@ -2273,7 +2273,7 @@ function Step4PortalAccess({
                 className="accent-[var(--gold)]"
               />
               <div>
-                <p className="text-[var(--text-base)] font-medium text-[var(--tx)] uppercase">{v}</p>
+                <p className="text-[length:var(--text-base)] font-medium text-[var(--tx)] uppercase">{v}</p>
                 <p className="text-[11px] text-[var(--tx3)]">
                   {v === "yes" ? "Send invitation email" : "Add access later"}
                 </p>

@@ -175,7 +175,7 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
           )}
           {codes.length === 0 ? (
             <div className="py-10 px-4 text-center">
-              <p className="text-[var(--text-base)] font-medium text-[var(--tx)] mb-1">No setup codes yet</p>
+              <p className="text-[length:var(--text-base)] font-medium text-[var(--tx)] mb-1">No setup codes yet</p>
               <p className="text-[12px] text-[var(--tx3)] mb-5 max-w-[280px] mx-auto">
                 Create a code to register an iPad. Crew opens /crew/setup on the device and enters the code to link it to a truck and team.
               </p>
@@ -195,7 +195,7 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <code className="text-[var(--text-base)] font-bold text-[var(--accent-text)] tracking-wider">{c.code}</code>
+                      <code className="text-[length:var(--text-base)] font-bold text-[var(--accent-text)] tracking-wider">{c.code}</code>
                       <button
                         onClick={() => copyCode(c.code)}
                         className="text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--accent-text)] transition-colors"

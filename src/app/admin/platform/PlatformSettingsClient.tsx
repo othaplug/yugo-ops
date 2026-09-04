@@ -2747,7 +2747,7 @@ export default function PlatformSettingsClient({
             <div className="py-8 text-center text-[13px] text-[var(--tx3)]">Loading users…</div>
           ) : users.length === 0 ? (
             <div className="py-10 px-4 text-center">
-              <p className="text-[var(--text-base)] font-medium text-[var(--tx)] mb-1">No users yet</p>
+              <p className="text-[length:var(--text-base)] font-medium text-[var(--tx)] mb-1">No users yet</p>
               <p className="text-[12px] text-[var(--tx3)] mb-5 max-w-[260px] mx-auto">Invite team members to give them access to the platform. They&apos;ll receive an email to sign in and get started.</p>
               <button
                 onClick={() => setInviteUserOpen(true)}

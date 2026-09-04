@@ -848,7 +848,7 @@ function CrewPopup({
               {/* Title identifies the crew; the individual names read as the
                   subtitle (they used to be the title, which made every heading a
                   five-name run-on while the subtitle only said "5 movers"). */}
-              <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)]">
+              <h3 className="text-[length:var(--text-base)] font-bold text-[var(--tx)]">
                 {crewTeamLabel(crew.members, crew.name)}
               </h3>
               {crew.members && crew.members.length > 0 ? (
@@ -907,7 +907,7 @@ function CrewPopup({
             <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
               Speed
             </div>
-            <div className="text-[var(--text-base)] font-bold text-[var(--tx)] mt-0.5">
+            <div className="text-[length:var(--text-base)] font-bold text-[var(--tx)] mt-0.5">
               {speedKmh != null ? `${speedKmh}` : "-"}
             </div>
             <div className="text-[8px] text-[var(--tx3)]">km/h</div>
@@ -916,7 +916,7 @@ function CrewPopup({
             <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
               ETA
             </div>
-            <div className="text-[var(--text-base)] font-bold text-[var(--tx)] mt-0.5">
+            <div className="text-[length:var(--text-base)] font-bold text-[var(--tx)] mt-0.5">
               {etaMin != null ? `${etaMin}` : "-"}
             </div>
             <div className="text-[8px] text-[var(--tx3)]">min</div>

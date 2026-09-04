@@ -253,7 +253,7 @@ export default function DispatchBoardClient({ today }: Props) {
         <div className="w-12 h-12 rounded-full bg-[var(--red)]/10 flex items-center justify-center">
           <AlertTriangle className="w-6 h-6 text-[var(--red)]" />
         </div>
-        <p className="text-[var(--tx2)] text-[var(--text-base)] font-medium text-center">
+        <p className="text-[var(--tx2)] text-[length:var(--text-base)] font-medium text-center">
           {error}
         </p>
         <button

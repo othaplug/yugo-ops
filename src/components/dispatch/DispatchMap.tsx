@@ -250,7 +250,7 @@ export default function DispatchMap({ crews, jobs }: DispatchMapProps) {
         selectedCrewData.lng != null && (
           <div className="absolute top-4 right-4 w-[220px] max-h-[280px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 shadow-xl z-20 animate-fade-up">
             <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="font-semibold text-[var(--text-base)] text-[var(--tx)]">
+              <div className="font-semibold text-[length:var(--text-base)] text-[var(--tx)]">
                 {selectedCrewData.name}
               </div>
               <button
@@ -292,7 +292,7 @@ export default function DispatchMap({ crews, jobs }: DispatchMapProps) {
         selectedJobData.toLng != null && (
           <div className="absolute top-4 right-4 w-[220px] max-h-[280px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 shadow-xl z-20 animate-fade-up">
             <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="font-semibold text-[var(--text-base)] text-[var(--tx)]">
+              <div className="font-semibold text-[length:var(--text-base)] text-[var(--tx)]">
                 {selectedJobData.label} · {selectedJobData.client}
               </div>
               <button

@@ -1103,7 +1103,7 @@ export default function CrewJobPage({
     return (
       <PageContent className="crew-job-premium w-full min-w-0 max-w-[520px] mx-auto">
         <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
-          <p className="text-[var(--text-base)] text-[var(--red)] mb-4">
+          <p className="text-[length:var(--text-base)] text-[var(--red)] mb-4">
             {error || "Job not found"}
           </p>
           <Link

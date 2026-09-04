@@ -182,7 +182,7 @@ export default function CrewDashboardPage() {
           <div className="w-12 h-12 rounded-2xl bg-[var(--red)]/10 flex items-center justify-center mb-4">
             <X size={20} color="var(--red)" />
           </div>
-          <p className="text-[var(--text-base)] text-[var(--red)] mb-4">
+          <p className="text-[length:var(--text-base)] text-[var(--red)] mb-4">
             {error || "Unable to load"}
           </p>
           <Link

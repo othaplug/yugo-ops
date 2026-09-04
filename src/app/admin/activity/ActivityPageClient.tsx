@@ -123,7 +123,7 @@ export default function ActivityPageClient({
           ))}
         </div>
       ) : (
-        <p className="text-[var(--text-base)] text-[var(--tx3)] py-8 text-center font-medium">
+        <p className="text-[length:var(--text-base)] text-[var(--tx3)] py-8 text-center font-medium">
           No activity yet
         </p>
       )}

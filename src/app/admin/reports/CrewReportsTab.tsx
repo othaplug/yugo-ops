@@ -420,7 +420,7 @@ export default function CrewReportsTab({
                       <div className="font-heading font-semibold text-[var(--tx)] text-[17px]">
                         {detailData.job?.displayId ?? "-"}
                       </div>
-                      <div className="text-[var(--text-base)] text-[var(--tx2)] mt-0.5 font-heading">
+                      <div className="text-[length:var(--text-base)] text-[var(--tx2)] mt-0.5 font-heading">
                         {detailData.job?.clientName ?? "-"}
                       </div>
                       <p className="text-[11px] text-[var(--tx3)] mt-1">
@@ -854,7 +854,7 @@ export default function CrewReportsTab({
 
       {filteredReports.length === 0 ? (
         <div className="border-t border-[var(--brd)]/30 pt-12 pb-12 text-center">
-          <p className="text-[var(--text-base)] text-[var(--tx3)]">
+          <p className="text-[length:var(--text-base)] text-[var(--tx3)]">
             No end-of-day reports
             {from !== to ? ` for ${from} to ${to}` : ` for ${date}`}
             {filterJobType !== "all" || filterTeamId !== "all"

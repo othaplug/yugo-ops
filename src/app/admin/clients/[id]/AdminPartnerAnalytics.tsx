@@ -223,7 +223,7 @@ export default function AdminPartnerAnalytics({
   return (
     <div className="space-y-6 py-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)]">
+        <h3 className="text-[length:var(--text-base)] font-bold text-[var(--tx)]">
           {orgName}, {labels.analyticsTitle}
         </h3>
         <div className="flex gap-1 p-0.5 rounded-lg bg-[var(--bg2)] border border-[var(--brd)]/50">

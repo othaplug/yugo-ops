@@ -236,7 +236,7 @@ export default function ForecastClient() {
 
         <div className="mt-4 pt-3 border-t border-[var(--brd)]/30 flex items-center justify-between">
           <span className="text-[10px] text-[var(--tx3)]">Total pipeline value</span>
-          <span className="text-[var(--text-base)] font-heading font-bold text-[var(--tx)]">
+          <span className="text-[length:var(--text-base)] font-heading font-bold text-[var(--tx)]">
             {formatCurrency(totalPipeline)}
           </span>
         </div>
