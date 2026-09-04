@@ -103,7 +103,7 @@ export default function TrackingLookup({
             }}
             placeholder="Tracking number, e.g. MV1234 or DLV-4467"
             autoFocus
-            className="w-full px-5 py-3.5 rounded-full text-[var(--text-base)] font-semibold tracking-wide placeholder:font-normal placeholder:opacity-40 focus:outline-none transition-all"
+            className="w-full px-5 py-3.5 rounded-full text-[length:var(--text-base)] font-semibold tracking-wide placeholder:font-normal placeholder:opacity-40 focus:outline-none transition-all"
             style={{
               backgroundColor: "#fff",
               border: `1.5px solid ${FOREST}18`,
@@ -128,7 +128,7 @@ export default function TrackingLookup({
             }}
             placeholder="Email on your booking"
             autoComplete="email"
-            className="w-full px-5 py-3.5 rounded-full text-[var(--text-base)] font-medium placeholder:font-normal placeholder:opacity-40 focus:outline-none transition-all"
+            className="w-full px-5 py-3.5 rounded-full text-[length:var(--text-base)] font-medium placeholder:font-normal placeholder:opacity-40 focus:outline-none transition-all"
             style={{
               backgroundColor: "#fff",
               border: `1.5px solid ${FOREST}18`,

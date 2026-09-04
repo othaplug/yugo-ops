@@ -139,7 +139,7 @@ export function PartnerPortalWelcomeTour({
             <h2 className="font-hero text-[36px] font-semibold text-[var(--tx)] mb-2">
               Welcome to Yugo, {contactName}!
             </h2>
-            <p className="text-[var(--text-base)] text-[var(--tx3)] leading-relaxed max-w-[380px] mx-auto">
+            <p className="text-[length:var(--text-base)] text-[var(--tx3)] leading-relaxed max-w-[380px] mx-auto">
               Your dedicated partner portal is ready. Let&apos;s take a quick
               tour of what you can do here.
             </p>
@@ -177,7 +177,7 @@ export function PartnerPortalWelcomeTour({
             <h3 className="font-hero text-[26px] font-semibold text-[var(--tx)] mb-2">
               Secure your account
             </h3>
-            <p className="text-[var(--text-base)] text-[var(--tx3)] leading-relaxed max-w-[360px] mx-auto mb-4">
+            <p className="text-[length:var(--text-base)] text-[var(--tx3)] leading-relaxed max-w-[360px] mx-auto mb-4">
               For your security, we strongly recommend changing your password to
               something personal and memorable.
             </p>
@@ -212,7 +212,7 @@ export function PartnerPortalWelcomeTour({
             <h3 className="font-hero text-[26px] font-semibold text-[var(--tx)] mb-2">
               You&apos;re all set!
             </h3>
-            <p className="text-[var(--text-base)] text-[var(--tx3)] leading-relaxed max-w-[360px] mx-auto">
+            <p className="text-[length:var(--text-base)] text-[var(--tx3)] leading-relaxed max-w-[360px] mx-auto">
               Your portal is ready. If you need help at any time, reach out to
               your Yugo account manager.
             </p>
