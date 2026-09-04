@@ -167,6 +167,7 @@ export async function GET(req: NextRequest) {
             `Thank you for trusting us with your home and the things that matter most to you. It was a privilege to move you, and it is a trust we hold with real care.`,
             `If we looked after you well, a moment to share your experience would mean the world to our team and help another family feel this same peace of mind.`,
             `Please click this link to leave us a thoughtful review: ${link}`,
+            `With gratitude,\nThe Yugo Team`,
           ].join("\n\n");
           const sms = await sendSMS(rr.client_phone.replace(/\s/g, ""), body);
           if (sms.success) results.sms++;
