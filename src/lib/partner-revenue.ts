@@ -23,10 +23,39 @@ export type PartnerRevenueInvoice = {
   updated_at?: string | null;
   paid_at?: string | null;
   deliveries?:
-    | (DeliveryPriceFields & { delivery_number?: string | null })
-    | (DeliveryPriceFields & { delivery_number?: string | null })[]
+    | (DeliveryPriceFields & { delivery_number?: string | null; scheduled_date?: string | null })
+    | (DeliveryPriceFields & { delivery_number?: string | null; scheduled_date?: string | null })[]
     | null;
 };
+
+/**
+ * Month key ("YYYY-MM") for a date-only or ISO string, taken by substring so a
+ * date-only value like "2026-09-01" is never re-parsed through the server's
+ * local timezone (which would slide a 1st-of-month job into the previous month
+ * on any server behind UTC). Returns "" for empty/invalid input.
+ */
+export function ymOf(v: unknown): string {
+  const s = String(v ?? "").trim();
+  return s.length >= 7 ? s.slice(0, 7) : "";
+}
+
+/** "YYYY-MM" for a (year, 0-based month) pair, matching ymOf's format. */
+export function ymForMonth(year: number, month0: number): string {
+  return `${year}-${String(month0 + 1).padStart(2, "0")}`;
+}
+
+/**
+ * The date an invoice's revenue is recognized ON: the linked delivery's service
+ * date when embedded, else when the invoice was raised (created_at). Never
+ * paid_at — bucketing by settlement date made revenue jump months the instant a
+ * background payment cron flipped an invoice to paid, the same churn the moves
+ * total was deliberately moved off of.
+ */
+function invoiceServiceDateRaw(inv: PartnerRevenueInvoice): string {
+  const dRow = Array.isArray(inv.deliveries) ? inv.deliveries[0] : inv.deliveries;
+  const svc = (dRow as { scheduled_date?: string | null } | null)?.scheduled_date;
+  return String(svc || inv.created_at || "");
+}
 
 export function embedDeliveryNumber(inv: PartnerRevenueInvoice): string | null {
   const d = inv.deliveries;
@@ -120,7 +149,11 @@ export function isPartnerChannelInvoice(
 }
 
 export function getInvoiceRevenueDate(inv: PartnerRevenueInvoice): Date {
-  const ts = inv.paid_at || inv.created_at;
+  // Recognize by service date (or when raised) — never paid_at, see
+  // invoiceServiceDateRaw. Callers that read .getMonth() on this keep whatever
+  // timezone they already used; the monthly aggregates below compare on ymOf
+  // instead, which is timezone-stable.
+  const ts = invoiceServiceDateRaw(inv);
   return ts ? new Date(ts) : new Date(0);
 }
 
@@ -136,15 +169,34 @@ export function deliveryIdsCoveredByAnyInvoice(
   return s;
 }
 
+/**
+ * Deliveries whose revenue is already captured by a PAID invoice. Only these
+ * should suppress the delivery-row fallback: a delivered job carrying an unpaid
+ * or draft invoice was previously "covered" here yet contributed $0 through the
+ * paid-only invoice branch, so its revenue silently disappeared until the
+ * invoice settled (and reappeared after) — a load-to-load swing in the total.
+ * Covering only on paid invoices keeps every delivered job counted exactly once.
+ */
+export function deliveryIdsCoveredByPaidInvoice(
+  invoices: PartnerRevenueInvoice[],
+): Set<string> {
+  const s = new Set<string>();
+  for (const i of invoices) {
+    if ((i.status || "").toLowerCase().trim() !== "paid") continue;
+    if (i.delivery_id) s.add(i.delivery_id);
+  }
+  return s;
+}
+
 export function sumPaidPartnerInvoicesInMonth(
   paidPartnerInvoices: PartnerRevenueInvoice[],
   year: number,
   month: number,
 ): number {
+  const targetYm = ymForMonth(year, month);
   let sum = 0;
   for (const inv of paidPartnerInvoices) {
-    const d = getInvoiceRevenueDate(inv);
-    if (d.getFullYear() === year && d.getMonth() === month) {
+    if (ymOf(invoiceServiceDateRaw(inv)) === targetYm) {
       sum += invoicePreTaxForDisplay(inv);
     }
   }
@@ -166,13 +218,12 @@ export function partnerDeliveryFallbackInMonth(
   year: number,
   month: number,
 ): number {
+  const targetYm = ymForMonth(year, month);
   let sum = 0;
   for (const d of paidDeliveries) {
     if (!PAID_DLV_STATUSES.has(String(d.status || "").toLowerCase())) continue;
     if (coveredDeliveryIds.has(d.id)) continue;
-    const ts = String(d.scheduled_date || d.created_at || "");
-    const dt = ts ? new Date(ts) : new Date(0);
-    if (dt.getFullYear() === year && dt.getMonth() === month) {
+    if (ymOf(d.scheduled_date || d.created_at) === targetYm) {
       sum += deliveryPreTaxForAdminList(d);
     }
   }
@@ -188,7 +239,10 @@ export function partnerRevenueTotalForMonth(
   year: number,
   month: number,
 ): number {
-  const covered = deliveryIdsCoveredByAnyInvoice(allInvoices);
+  // Suppress the delivery fallback only for deliveries a PAID invoice already
+  // counts (see deliveryIdsCoveredByPaidInvoice) — a delivered job with an
+  // unpaid/draft invoice still counts via its delivery row, never $0.
+  const covered = deliveryIdsCoveredByPaidInvoice(allInvoices);
   const paidPartner = paidInvoices.filter((i) =>
     isPartnerChannelInvoice(i, orgIdToType, clientTypeMap),
   );

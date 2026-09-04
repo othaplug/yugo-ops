@@ -28,6 +28,8 @@ import {
   deliveryIdsCoveredByAnyInvoice,
   isPartnerChannelInvoice,
   getInvoiceRevenueDate,
+  ymOf,
+  ymForMonth,
   type PartnerRevenueInvoice,
 } from "@/lib/partner-revenue"
 
@@ -218,7 +220,7 @@ export const loadCommandCenterData = async () => {
     admin
       .from("invoices")
       .select(
-        "id, client_name, organization_id, delivery_id, move_id, amount, status, created_at, updated_at, invoice_number, deliveries!delivery_id(delivery_number, final_price, calculated_price, override_price, admin_adjusted_price, total_price, quoted_price)",
+        "id, client_name, organization_id, delivery_id, move_id, amount, status, created_at, updated_at, invoice_number, deliveries!delivery_id(delivery_number, scheduled_date, final_price, calculated_price, override_price, admin_adjusted_price, total_price, quoted_price)",
       ),
     admin.from("organizations").select("id, name, type"),
     (async () => {
@@ -699,13 +701,19 @@ export const loadCommandCenterData = async () => {
     )
     return ts ? new Date(ts) : new Date(0)
   }
-  const inMonth = (d: Date, y: number, mo: number) =>
-    d.getFullYear() === y && d.getMonth() === mo
+  // Month bucketing compares "YYYY-MM" substrings, not Date.getMonth(): a
+  // date-only scheduled_date ("2026-09-01") parsed as UTC then read with the
+  // server's local getMonth() slid 1st/last-of-month jobs into the wrong month
+  // on any non-UTC server, so the "this month" total differed by environment.
+  const moveYm = (m: Record<string, unknown>) =>
+    ymOf(m.scheduled_date || m.payment_marked_paid_at || m.created_at)
+  const moveInMonth = (m: Record<string, unknown>, y: number, mo: number) =>
+    moveYm(m) === ymForMonth(y, mo)
 
   const invRows = allInvoices as PartnerRevenueInvoice[]
 
   const curMoveRev = paidMoves
-    .filter((m) => inMonth(getMoveDate(m), thisYear, thisMonth))
+    .filter((m) => moveInMonth(m,thisYear, thisMonth))
     .reduce((s, m) => s + movRev(m), 0)
   const curPartnerRev = partnerRevenueTotalForMonth(
     invRows,
@@ -722,7 +730,7 @@ export const loadCommandCenterData = async () => {
   const pm = thisMonth === 0 ? 11 : thisMonth - 1
   const py = thisMonth === 0 ? thisYear - 1 : thisYear
   const prevMoveRev = paidMoves
-    .filter((m) => inMonth(getMoveDate(m), py, pm))
+    .filter((m) => moveInMonth(m,py, pm))
     .reduce((s, m) => s + movRev(m), 0)
   const prevPartnerRev = partnerRevenueTotalForMonth(
     invRows,
@@ -764,7 +772,7 @@ export const loadCommandCenterData = async () => {
     const yr = mo < 0 ? thisYear - 1 : thisYear
     const monthIdx = ((mo % 12) + 12) % 12
     const movSum = paidMoves
-      .filter((m) => inMonth(getMoveDate(m), yr, monthIdx))
+      .filter((m) => moveInMonth(m,yr, monthIdx))
       .reduce((s, m) => s + movRev(m), 0)
     const partnerSum = partnerRevenueTotalForMonth(
       invRows,
@@ -833,7 +841,7 @@ export const loadCommandCenterData = async () => {
     const yr = t.getFullYear()
     const monthIdx = t.getMonth()
     const mrv = paidMoves
-      .filter((m) => inMonth(getMoveDate(m), yr, monthIdx))
+      .filter((m) => moveInMonth(m,yr, monthIdx))
       .reduce((s, m) => s + movRev(m), 0)
     const prv = partnerRevenueTotalForMonth(
       invRows,
@@ -857,7 +865,7 @@ export const loadCommandCenterData = async () => {
     let pSum = 0
     for (let mon = 0; mon < 12; mon++) {
       mSum += paidMoves
-        .filter((m) => inMonth(getMoveDate(m), y, mon))
+        .filter((m) => moveInMonth(m,y, mon))
         .reduce((s, m) => s + movRev(m), 0)
       pSum += partnerRevenueTotalForMonth(
         invRows,
