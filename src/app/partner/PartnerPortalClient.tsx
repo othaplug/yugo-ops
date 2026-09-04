@@ -544,7 +544,7 @@ function PartnerPortalInner({
                   <Check size={18} color="#2D6A4F" weight="bold" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-[var(--text-base)] font-semibold text-[var(--tx)]">
+                  <span className="text-[length:var(--text-base)] font-semibold text-[var(--tx)]">
                     Welcome back, {contactName}
                   </span>
                   <span className="text-[12px] text-[#4F4B47] ml-2">
@@ -1549,7 +1549,7 @@ function MaterialsTab() {
                 <FileText size={20} color={FOREST} />
               </div>
               <div>
-                <div className="text-[var(--text-base)] font-semibold text-[var(--tx)]">
+                <div className="text-[length:var(--text-base)] font-semibold text-[var(--tx)]">
                   {m.name}
                 </div>
                 <div className="text-[12px] text-[var(--tx3)]">{m.desc}</div>

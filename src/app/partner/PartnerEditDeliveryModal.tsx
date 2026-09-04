@@ -130,7 +130,7 @@ export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved
             <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[var(--bg)] flex items-center justify-center">
               <Lock size={22} color="#6B6B6B" />
             </div>
-            <p className="text-[var(--text-base)] font-semibold text-[var(--tx)]">
+            <p className="text-[length:var(--text-base)] font-semibold text-[var(--tx)]">
               This delivery is {getDisplayLabel(d.status, "delivery")}
             </p>
             <p className="text-[12px] text-[var(--tx3)] mt-1">Completed or cancelled deliveries cannot be edited.</p>

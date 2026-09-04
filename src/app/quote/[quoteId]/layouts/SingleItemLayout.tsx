@@ -375,7 +375,7 @@ function SingleItemHeader({
           className={
             compact
               ? "text-[13px] font-semibold"
-              : "text-[var(--text-base)] font-semibold"
+              : "text-[length:var(--text-base)] font-semibold"
           }
           style={{ color: FOREST }}
         >

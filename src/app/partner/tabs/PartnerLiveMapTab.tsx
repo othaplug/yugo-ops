@@ -220,7 +220,7 @@ export default function PartnerLiveMapTab({ orgId, variant = "default" }: Partne
           <div className="w-full h-full flex items-center justify-center text-[13px] text-[#4F4B47]">Loading map...</div>
         ) : !hasAny ? (
           <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 text-[#D4D0CB]">
-            <p className="text-[var(--text-base)] text-[#4F4B47]">
+            <p className="text-[length:var(--text-base)] text-[#4F4B47]">
               {isPm
                 ? "No confirmed moves or deliveries scheduled for today."
                 : "No Confirmed Deliveries Scheduled For Today."}
@@ -248,7 +248,7 @@ export default function PartnerLiveMapTab({ orgId, variant = "default" }: Partne
                 className="absolute inset-0 bg-[#FFFBF7]/95 flex flex-col items-center justify-center z-10"
                 aria-hidden="true"
               >
-                <span className="text-[var(--text-base)] font-semibold text-[#1A1A1A]">Live signal off</span>
+                <span className="text-[length:var(--text-base)] font-semibold text-[#1A1A1A]">Live signal off</span>
                 <span className="text-[12px] text-[#454545] mt-1 text-center px-4">
                   Map and crew location appear only while the crew has started your job
                 </span>
@@ -299,7 +299,7 @@ export default function PartnerLiveMapTab({ orgId, variant = "default" }: Partne
                     {slotLabel}
                   </span>
                   <div className="min-w-0">
-                    <div className="text-[var(--text-base)] font-semibold text-[#1A1A1A] truncate">
+                    <div className="text-[length:var(--text-base)] font-semibold text-[#1A1A1A] truncate">
                       {d.job_kind === "move" ? (
                         <span>
                           {d.customer_name || d.delivery_number}

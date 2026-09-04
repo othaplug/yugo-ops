@@ -121,7 +121,7 @@ export default function PartnerShareModal({ delivery, move, onClose, onSent }: P
             <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-3">
               <Check size={24} color="#2D9F5A" weight="bold" />
             </div>
-            <p className="text-[var(--text-base)] font-semibold text-[var(--tx)]">Tracking link sent!</p>
+            <p className="text-[length:var(--text-base)] font-semibold text-[var(--tx)]">Tracking link sent!</p>
           </div>
         ) : (
           <>

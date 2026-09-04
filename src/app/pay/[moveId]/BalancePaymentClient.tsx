@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Script from "next/script";
 import { Check } from "@phosphor-icons/react";
+import YugoLogo from "@/components/YugoLogo";
 
 const SQUARE_SDK_SANDBOX = "https://sandbox.web.squarecdn.com/v1/square.js";
 const SQUARE_SDK_PRODUCTION = "https://web.squarecdn.com/v1/square.js";
@@ -171,14 +172,14 @@ export default function BalancePaymentClient({
       <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="font-hero text-[28px] font-bold tracking-wider text-[var(--tx)]">Yugo</div>
+            <YugoLogo size={30} variant="cream" className="justify-center" />
           </div>
           <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-8 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#2C3E2D]/15 flex items-center justify-center">
               <Check size={32} color="#2C3E2D" weight="bold" />
             </div>
             <h1 className="text-[22px] font-bold text-[#F5F5F3] mb-2">Payment Received</h1>
-            <p className="text-[var(--text-base)] text-[#B8B5B0] leading-relaxed mb-4">
+            <p className="text-[length:var(--text-base)] text-[#B8B5B0] leading-relaxed mb-4">
               Your balance has been paid in full. A receipt has been sent to your email.
             </p>
             <div className="bg-[#0F0F0F] rounded-xl p-4 border border-[#2A2A2A]">
@@ -206,7 +207,7 @@ export default function BalancePaymentClient({
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="font-hero text-[28px] font-bold tracking-wider text-[var(--tx)]">Yugo</div>
+          <YugoLogo size={30} variant="cream" className="justify-center" />
           <div className="text-[11px] text-[#454545] mt-1 uppercase tracking-widest">Balance Payment</div>
         </div>
 
@@ -286,7 +287,7 @@ export default function BalancePaymentClient({
           type="button"
           onClick={handlePay}
           disabled={!cardReady || processing}
-          className="w-full py-4 rounded-xl text-[var(--text-base)] font-bold tracking-wide text-[#0D0D0D] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full py-4 rounded-xl text-[length:var(--text-base)] font-bold tracking-wide text-[#0D0D0D] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ backgroundColor: cardReady && !processing ? "#2C3E2D" : "#2C3E2D60" }}
         >
           {processing ? (

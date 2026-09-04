@@ -812,7 +812,7 @@ export default function PartnerCalendarTab({
       <div className={draggingDelivery ? "select-none" : ""}>
         {dayDels.length === 0 && dayProjects.length === 0 ? (
           <div className="text-center py-16">
-            <div className="text-[var(--text-base)] text-[#4F4B47] mb-4">
+            <div className="text-[length:var(--text-base)] text-[#4F4B47] mb-4">
               {portalTerms.calendarEmptyNoDeliveries}
             </div>
             <button

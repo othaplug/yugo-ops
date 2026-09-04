@@ -576,9 +576,9 @@ export default function QuoteWidgetClient() {
   const fmtCurrency = (n: number) => `$${n.toLocaleString()}`;
 
   const inputClass =
-    "w-full px-4 py-3 rounded-xl border text-[var(--text-base)] outline-none transition-all duration-200 bg-white placeholder:text-[#8A9089]";
+    "w-full px-4 py-3 rounded-xl border text-[length:var(--text-base)] outline-none transition-all duration-200 bg-white placeholder:text-[#8A9089]";
   const selectClass =
-    "w-full px-4 py-3 rounded-xl border text-[var(--text-base)] outline-none transition-all duration-200 bg-white appearance-none cursor-pointer";
+    "w-full px-4 py-3 rounded-xl border text-[length:var(--text-base)] outline-none transition-all duration-200 bg-white appearance-none cursor-pointer";
   const labelClass = `block ${QUOTE_EYEBROW_CLASS} mb-1.5`;
 
   return (
@@ -675,7 +675,7 @@ export default function QuoteWidgetClient() {
                           />
                         )}
                         <div
-                          className="text-[var(--text-base)] font-semibold"
+                          className="text-[length:var(--text-base)] font-semibold"
                           style={{ color: active ? WINE : `${WINE}90` }}
                         >
                           {t.label}
@@ -1893,7 +1893,7 @@ export default function QuoteWidgetClient() {
                   You&rsquo;re all set!
                 </h2>
                 <p
-                  className="text-[var(--text-base)] leading-relaxed mb-4"
+                  className="text-[length:var(--text-base)] leading-relaxed mb-4"
                   style={{ color: FOREST_BODY }}
                 >
                   We&rsquo;ll send your exact guaranteed price to{" "}

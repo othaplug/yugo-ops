@@ -3509,7 +3509,7 @@ export default function QuotePageClient({
               You&apos;re All Set!
             </h2>
             <p
-              className="text-[var(--text-base)] max-w-sm mx-auto leading-relaxed"
+              className="text-[length:var(--text-base)] max-w-sm mx-auto leading-relaxed"
               style={{ color: shellInk.body }}
             >
               {b2bInvoiceBooking ? (
@@ -5756,7 +5756,7 @@ function ValuationProtectionCard({
         <div className="flex items-start justify-between gap-4 pb-5">
           <div className="flex-1 min-w-0">
             <div
-              className="text-[15px] md:text-[var(--text-base)] font-semibold tracking-tight"
+              className="text-[15px] md:text-[length:var(--text-base)] font-semibold tracking-tight"
               style={{ color: ink }}
             >
               {dispActive.shortLabel}

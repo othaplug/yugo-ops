@@ -5116,7 +5116,7 @@ export default function TrackMoveClient({
                             }}
                           >
                             <span
-                              className="font-mono text-[var(--text-base)] font-bold tracking-[0.08em]"
+                              className="font-mono text-[length:var(--text-base)] font-bold tracking-[0.08em]"
                               style={{ color: WINE }}
                             >
                               {referral.referral_code}

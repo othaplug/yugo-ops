@@ -140,7 +140,7 @@ export default function ReviewPageClient() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: "linear-gradient(180deg, #0F0F0F 0%, #1a1a1a 100%)" }}>
         <YugoLogo size={32} variant="cream" className="mb-6 opacity-90" />
-        <p className="text-[var(--text-base)]" style={{ color: CREAM }}>Loading…</p>
+        <p className="text-[length:var(--text-base)]" style={{ color: CREAM }}>Loading…</p>
       </div>
     );
   }
