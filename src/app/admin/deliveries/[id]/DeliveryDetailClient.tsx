@@ -2032,7 +2032,7 @@ export default function DeliveryDetailClient({
             <div className="border-t border-[var(--brd)]/30 py-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                  Customer
+                  Business contact
                 </span>
                 <button
                   type="button"
@@ -2058,6 +2058,38 @@ export default function DeliveryDetailClient({
                 </div>
               )}
             </div>
+
+            {/* Receiving client (only when a distinct on-site recipient is set) */}
+            {delivery.recipient_mode === "separate" &&
+              (delivery.recipient_name ||
+                delivery.recipient_phone ||
+                delivery.recipient_email) && (
+                <div className="border-t border-[var(--brd)]/30 py-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
+                  <span className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3">
+                    Receiving client
+                  </span>
+                  <div className="text-[13px] font-semibold text-[var(--tx)]">
+                    {delivery.recipient_name || "-"}
+                  </div>
+                  {delivery.recipient_email && (
+                    <div className="flex items-center gap-1.5 text-[11px] text-[var(--tx3)] mt-1">
+                      <Mail className="w-3 h-3" />
+                      <span className="truncate">{delivery.recipient_email}</span>
+                    </div>
+                  )}
+                  {delivery.recipient_phone && (
+                    <div className="flex items-center gap-1.5 text-[11px] text-[var(--tx3)] mt-0.5">
+                      <Phone className="w-3 h-3" />
+                      <span>{formatPhone(delivery.recipient_phone)}</span>
+                    </div>
+                  )}
+                  {delivery.recipient_notes && (
+                    <div className="text-[11px] text-[var(--tx3)] mt-1.5 leading-snug">
+                      {delivery.recipient_notes}
+                    </div>
+                  )}
+                </div>
+              )}
           </div>
 
           {/* Pricing, keeps card treatment (hero/actionable) */}

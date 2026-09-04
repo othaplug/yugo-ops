@@ -78,6 +78,7 @@ export async function PATCH(
     "project_id", "phase_id",
     "vertical_code", "b2b_line_items", "b2b_assembly_required", "b2b_debris_removal",
     "calculated_price", "override_price", "override_reason",
+    "recipient_mode", "recipient_name", "recipient_phone", "recipient_email", "recipient_notes",
   ];
 
   const updates: Record<string, unknown> = {};

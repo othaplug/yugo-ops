@@ -12,13 +12,12 @@ import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import {
   MapPin,
   Calendar,
-  Users,
   Money as DollarSign,
   ListBullets as LayoutList,
   FileText,
-  Clock,
   Shield,
   Buildings as Building,
+  UserCircle,
 } from "@phosphor-icons/react";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
@@ -40,11 +39,6 @@ const TIME_OPTIONS = (() => {
   return times;
 })();
 
-/* ═══════════════════════════════════════════════════
-   Styled sub-components
-   ═══════════════════════════════════════════════════ */
-
-const inputCls = "field-input-compact w-full";
 const IN_PROGRESS_STATUSES = [
   "en_route",
   "en_route_to_pickup",
@@ -65,24 +59,46 @@ function isDeliveryInProgress(
   const st = (stage || "").toLowerCase().replace(/-/g, "_");
   return IN_PROGRESS_STATUSES.includes(s) || IN_PROGRESS_STATUSES.includes(st);
 }
+
+/* ═══════════════════════════════════════════════════
+   Styled sub-components (premium admin theme)
+   ═══════════════════════════════════════════════════ */
+
+const inputCls = "field-input-compact w-full";
 const selectCls = `${inputCls} appearance-none`;
 const labelCls =
-  "block text-[9px] font-bold tracking-[0.1em] uppercase text-[var(--tx3)] mb-1.5";
+  "block text-[10px] font-semibold tracking-[0.06em] uppercase text-[var(--tx3)] mb-1.5";
 
-function SectionHeader({
+function Section({
   icon: Icon,
-  label,
+  title,
+  desc,
+  children,
 }: {
   icon: React.ElementType;
-  label: string;
+  title: string;
+  desc?: string;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2 pb-2 border-b border-[var(--brd)]/30 mb-3">
-      <Icon className="w-3.5 h-3.5 text-[var(--gold)]" />
-      <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx2)]">
-        {label}
-      </span>
-    </div>
+    <section className="rounded-2xl border border-[var(--brd)]/45 bg-[var(--bg)]/35 p-4 sm:p-5">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-[var(--gold)]/12 text-[var(--gold)] shrink-0">
+          <Icon className="w-[18px] h-[18px]" weight="duotone" />
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-[13px] font-semibold text-[var(--tx)] leading-tight">
+            {title}
+          </h3>
+          {desc && (
+            <p className="text-[11px] text-[var(--tx3)] leading-snug mt-0.5">
+              {desc}
+            </p>
+          )}
+        </div>
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -132,6 +148,27 @@ export default function EditDeliveryModal({
     delivery?.customer_phone ? formatPhone(delivery.customer_phone) : "",
   );
   const customerPhoneInput = usePhoneInput(customerPhone, setCustomerPhone);
+
+  // Receiving client (recipient split): 'partner' = the business contact above
+  // is the recipient; 'separate' = a distinct on-site recipient whose tracking
+  // texts go to their own number, while business updates stay with the contact.
+  const [recipientMode, setRecipientMode] = useState<"partner" | "separate">(
+    delivery?.recipient_mode === "separate" ? "separate" : "partner",
+  );
+  const [recipientName, setRecipientName] = useState(
+    delivery?.recipient_name ?? "",
+  );
+  const [recipientEmail, setRecipientEmail] = useState(
+    delivery?.recipient_email ?? "",
+  );
+  const [recipientPhone, setRecipientPhone] = useState(
+    delivery?.recipient_phone ? formatPhone(delivery.recipient_phone) : "",
+  );
+  const recipientPhoneInput = usePhoneInput(recipientPhone, setRecipientPhone);
+  const [recipientNotes, setRecipientNotes] = useState(
+    delivery?.recipient_notes ?? "",
+  );
+
   const router = useRouter();
   const { toast } = useToast();
 
@@ -148,6 +185,15 @@ export default function EditDeliveryModal({
       );
       setDeliveryAccess(delivery.delivery_access || "elevator");
       setItemWeightCategory(delivery.item_weight_category || "standard");
+      setRecipientMode(
+        delivery.recipient_mode === "separate" ? "separate" : "partner",
+      );
+      setRecipientName(delivery.recipient_name ?? "");
+      setRecipientEmail(delivery.recipient_email ?? "");
+      setRecipientPhone(
+        delivery.recipient_phone ? formatPhone(delivery.recipient_phone) : "",
+      );
+      setRecipientNotes(delivery.recipient_notes ?? "");
     }
   }, [open, delivery]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -170,6 +216,7 @@ export default function EditDeliveryModal({
       });
 
     const orgId = (form.get("organization_id") as string)?.trim() || null;
+    const separate = recipientMode === "separate";
 
     try {
       const parsedPrice = parseNumberInput(quotedPrice) || 0;
@@ -200,6 +247,15 @@ export default function EditDeliveryModal({
               delivery.client_name)
             : delivery.client_name,
           crew_id: crewId || null,
+          // Receiving client. Clearing the fields when mode flips back to
+          // 'partner' avoids stale recipient contacts getting tracking texts.
+          recipient_mode: recipientMode,
+          recipient_name: separate ? recipientName.trim() || null : null,
+          recipient_phone: separate
+            ? normalizePhone(recipientPhone) || null
+            : null,
+          recipient_email: separate ? recipientEmail.trim() || null : null,
+          recipient_notes: separate ? recipientNotes.trim() || null : null,
           updated_at: new Date().toISOString(),
         }),
       });
@@ -236,20 +292,30 @@ export default function EditDeliveryModal({
     );
   }
 
+  const segBtn = (active: boolean) =>
+    `flex-1 px-3 py-2 rounded-lg text-[11px] font-semibold transition-all ${
+      active
+        ? "bg-[var(--card)] text-[var(--tx)] shadow-sm"
+        : "text-[var(--tx3)] hover:text-[var(--tx2)]"
+    }`;
+
   return (
     <ModalOverlay
       open={open}
       onClose={() => setOpen(false)}
       title={`Edit ${delivery.delivery_number}`}
-      maxWidth="md"
+      maxWidth="lg"
     >
       <form
         onSubmit={handleSave}
-        className="p-5 space-y-5 max-h-[75vh] overflow-y-auto"
+        className="p-4 sm:p-5 space-y-4 max-h-[76vh] overflow-y-auto"
       >
-        {/* ── Client & Customer ── */}
-        <div>
-          <SectionHeader icon={Building} label="Client & Customer" />
+        {/* ── Business contact ── */}
+        <Section
+          icon={Building}
+          title="Business contact"
+          desc="The partner or business who booked this delivery"
+        >
           {organizations.length > 0 && (
             <div className="mb-3">
               <label className={labelCls}>Client / Partner</label>
@@ -269,7 +335,7 @@ export default function EditDeliveryModal({
           )}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className={labelCls}>Customer Name</label>
+              <label className={labelCls}>Contact Name</label>
               <input
                 name="customer_name"
                 defaultValue={delivery.customer_name}
@@ -299,11 +365,90 @@ export default function EditDeliveryModal({
               />
             </div>
           </div>
-        </div>
+        </Section>
 
-        {/* ── Addresses ── */}
-        <div>
-          <SectionHeader icon={MapPin} label="Addresses" />
+        {/* ── Receiving client ── */}
+        <Section
+          icon={UserCircle}
+          title="Receiving client"
+          desc="Who receives the delivery on site, and where tracking texts go"
+        >
+          <div className="inline-flex w-full sm:w-auto p-1 rounded-xl bg-[var(--bg)] border border-[var(--brd)]/60 mb-3">
+            <button
+              type="button"
+              onClick={() => setRecipientMode("partner")}
+              className={segBtn(recipientMode === "partner")}
+            >
+              Same as business contact
+            </button>
+            <button
+              type="button"
+              onClick={() => setRecipientMode("separate")}
+              className={segBtn(recipientMode === "separate")}
+            >
+              Different recipient
+            </button>
+          </div>
+
+          {recipientMode === "partner" ? (
+            <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
+              Tracking texts and delivery updates go to the business contact
+              above. Choose <span className="text-[var(--tx2)]">Different
+              recipient</span> when someone else receives the items on site.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className={labelCls}>Recipient Name</label>
+                  <input
+                    value={recipientName}
+                    onChange={(e) => setRecipientName(e.target.value)}
+                    className={inputCls}
+                    placeholder="On-site contact"
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Recipient Phone</label>
+                  <input
+                    ref={recipientPhoneInput.ref}
+                    type="tel"
+                    value={recipientPhone}
+                    onChange={recipientPhoneInput.onChange}
+                    placeholder={PHONE_PLACEHOLDER}
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Recipient Email</label>
+                  <input
+                    type="email"
+                    value={recipientEmail}
+                    onChange={(e) => setRecipientEmail(e.target.value)}
+                    className={inputCls}
+                    placeholder="email@example.com"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Recipient Notes</label>
+                <input
+                  value={recipientNotes}
+                  onChange={(e) => setRecipientNotes(e.target.value)}
+                  className={inputCls}
+                  placeholder="Buzzer code, floor, where to leave items…"
+                />
+              </div>
+              <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
+                Live tracking texts go to the recipient; the business contact
+                still receives booking and payment updates.
+              </p>
+            </div>
+          )}
+        </Section>
+
+        {/* ── Route ── */}
+        <Section icon={MapPin} title="Route">
           <div className="space-y-3">
             <div className="flex items-start gap-3">
               <div className="flex flex-col items-center gap-0.5 mt-7">
@@ -349,11 +494,10 @@ export default function EditDeliveryModal({
               </div>
             </div>
           </div>
-        </div>
+        </Section>
 
         {/* ── Schedule ── */}
-        <div>
-          <SectionHeader icon={Calendar} label="Schedule" />
+        <Section icon={Calendar} title="Schedule">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelCls}>Date</label>
@@ -407,21 +551,17 @@ export default function EditDeliveryModal({
               </select>
             </div>
           </div>
-        </div>
+        </Section>
 
         {/* ── Crew & Pricing ── */}
-        <div>
-          <SectionHeader icon={DollarSign} label="Crew & Pricing" />
+        <Section icon={DollarSign} title="Crew & pricing">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelCls}>Crew</label>
               <select
                 value={crewId}
                 onChange={(e) => setCrewId(e.target.value)}
-                disabled={isDeliveryInProgress(
-                  delivery?.status,
-                  delivery?.stage,
-                )}
+                disabled={isDeliveryInProgress(delivery?.status, delivery?.stage)}
                 className={`${selectCls} disabled:opacity-60 disabled:cursor-not-allowed`}
               >
                 <option value="">Unassigned</option>
@@ -454,7 +594,7 @@ export default function EditDeliveryModal({
                 />
               </div>
               {delivery?.total_price > 0 && (
-                <p className="text-[9px] text-[var(--tx3)] mt-1">
+                <p className="text-[10px] text-[var(--tx3)] mt-1">
                   Partner booked at{" "}
                   <span className="font-semibold text-[var(--gold)]">
                     ${Number(delivery.total_price).toFixed(2)}
@@ -477,9 +617,7 @@ export default function EditDeliveryModal({
                 className={selectCls}
               >
                 <option value="elevator">Elevator</option>
-                <option value="ground_floor">
-                  Ground Floor / Loading Dock
-                </option>
+                <option value="ground_floor">Ground Floor / Loading Dock</option>
                 <option value="loading_dock">Loading Dock</option>
                 <option value="basement">Basement</option>
                 <option value="basement_stairs">Basement (Stairs)</option>
@@ -530,36 +668,33 @@ export default function EditDeliveryModal({
               className="rounded border-[var(--brd)] accent-[var(--gold)]"
             />
             <div className="flex items-center gap-1.5">
-              <Shield className="w-3 h-3 text-amber-500" />
+              <Shield className="w-3.5 h-3.5 text-amber-500" />
               <span className="text-[11px] font-medium text-[var(--tx)]">
                 Requires special handling
               </span>
             </div>
           </label>
-        </div>
+        </Section>
 
         {/* ── Items ── */}
-        <div>
-          <SectionHeader icon={LayoutList} label="Items" />
-          <label className={labelCls}>
-            One item per line (e.g. Sectional Sofa x2)
-          </label>
+        <Section
+          icon={LayoutList}
+          title="Items"
+          desc="One item per line, e.g. Sectional Sofa x2"
+        >
           <textarea
             name="items"
             rows={4}
             defaultValue={normalizeDeliveryItemsForDisplay(delivery.items || [])
-              .map((row) =>
-                row.qty > 1 ? `${row.name} x${row.qty}` : row.name,
-              )
+              .map((row) => (row.qty > 1 ? `${row.name} x${row.qty}` : row.name))
               .join("\n")}
             className={`${inputCls} resize-y font-mono`}
             placeholder="Leather Sofa&#10;Glass Dining Table&#10;King Mattress x2"
           />
-        </div>
+        </Section>
 
-        {/* ── Notes ── */}
-        <div>
-          <SectionHeader icon={FileText} label="Instructions" />
+        {/* ── Instructions ── */}
+        <Section icon={FileText} title="Instructions">
           <textarea
             name="instructions"
             rows={3}
@@ -567,10 +702,10 @@ export default function EditDeliveryModal({
             className={`${inputCls} resize-y`}
             placeholder="Any special delivery instructions or notes…"
           />
-        </div>
+        </Section>
 
         {/* ── Submit ── */}
-        <div className="sticky bottom-0 pt-3 -mx-5 px-5 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] bg-gradient-to-t from-[var(--card)] via-[var(--card)] to-transparent">
+        <div className="sticky bottom-0 pt-3 -mx-4 sm:-mx-5 px-4 sm:px-5 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] bg-gradient-to-t from-[var(--card)] via-[var(--card)] to-transparent">
           <button
             type="submit"
             disabled={loading}
