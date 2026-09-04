@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { playNotificationChime } from "@/lib/notification-sound";
 
 export type Notification = {
   id: string;
@@ -72,6 +73,39 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [listLoaded, setListLoaded] = useState(false);
   const supabase = createClient();
+  // Track the highest-seen notification id set so a poll that returns
+  // an already-known row does not re-chime. Also gate the very first
+  // load so we don't fire on every mount for existing unread rows.
+  const seenIdsRef = useRef<Set<string>>(new Set());
+  const firstLoadDoneRef = useRef(false);
+  const originalTitleRef = useRef<string | null>(null);
+
+  /**
+   * Fire the "new notification" side-effects — chime + tab-title
+   * flash. Called for any row whose id we have not seen before. On
+   * the very first load, we simply seed the seen-set without firing
+   * (existing unread rows are old, not new).
+   */
+  const announceNew = useCallback((newRows: Notification[]) => {
+    // Only unread rows count as an "alert" — a read row surfaced via
+    // poll is stale even if we haven't seen the id yet.
+    const alertable = newRows.filter((n) => !n.read);
+    if (alertable.length === 0) return;
+    playNotificationChime();
+    // Tab-title flash — the operator may be in another tab. Restore
+    // the original title after a short interval.
+    if (typeof document !== "undefined") {
+      if (originalTitleRef.current == null) {
+        originalTitleRef.current = document.title;
+      }
+      const orig = originalTitleRef.current ?? document.title;
+      document.title = `(${alertable.length}) New alert · ${orig}`;
+      window.setTimeout(() => {
+        // Only restore if nobody else has changed it since.
+        if (document.title.startsWith("(")) document.title = orig;
+      }, 6000);
+    }
+  }, []);
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -79,14 +113,29 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         const rows = data.notifications || [];
-        setNotifications(rows.map(mapDbToNotification));
+        const mapped = rows.map(mapDbToNotification) as Notification[];
+        // Detect what's new since last snapshot.
+        const seen = seenIdsRef.current;
+        const fresh: Notification[] = [];
+        for (const n of mapped) {
+          if (!seen.has(n.id)) fresh.push(n);
+        }
+        // Rebuild the seen-set from what the server just returned.
+        const nextSeen = new Set<string>();
+        for (const n of mapped) nextSeen.add(n.id);
+        seenIdsRef.current = nextSeen;
+        setNotifications(mapped);
+        if (firstLoadDoneRef.current && fresh.length > 0) {
+          announceNew(fresh);
+        }
+        firstLoadDoneRef.current = true;
       }
     } catch {
       // Network error or server down: leave notifications unchanged so the app doesn't crash
     } finally {
       setListLoaded(true);
     }
-  }, []);
+  }, [announceNew]);
 
   useEffect(() => {
     loadNotifications();
@@ -129,7 +178,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               event_slug?: string | null;
               created_at?: string;
             };
-            setNotifications((prev) => [mapDbToNotification(row), ...prev.filter((n) => n.id !== row.id)]);
+            const mapped = mapDbToNotification(row);
+            // Only chime if the id is genuinely new to this session
+            // (realtime can double-fire on reconnect + a poll can
+            // race the same row through).
+            const wasKnown = seenIdsRef.current.has(mapped.id);
+            seenIdsRef.current.add(mapped.id);
+            setNotifications((prev) => [mapped, ...prev.filter((n) => n.id !== mapped.id)]);
+            if (!wasKnown && firstLoadDoneRef.current) {
+              announceNew([mapped]);
+            }
           }
         )
         .subscribe();
@@ -140,7 +198,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return () => {
       if (channel) supabase.removeChannel(channel);
     };
-  }, [supabase]);
+  }, [supabase, announceNew]);
 
   // Refresh relative times every 60s
   useEffect(() => {
@@ -192,9 +250,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               read: false,
               time: (notif as { time?: string }).time || "Just now",
             };
+      const wasKnown = seenIdsRef.current.has(n.id);
+      seenIdsRef.current.add(n.id);
       setNotifications((prev) => [n, ...prev.filter((p) => p.id !== n.id)]);
+      if (!wasKnown && firstLoadDoneRef.current) {
+        announceNew([n]);
+      }
     },
-    []
+    [announceNew]
   );
 
   return (

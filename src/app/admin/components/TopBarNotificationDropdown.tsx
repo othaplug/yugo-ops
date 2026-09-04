@@ -2,9 +2,14 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Bell } from "@phosphor-icons/react";
+import { Bell, SpeakerHigh, SpeakerSlash } from "@phosphor-icons/react";
 import { useNotifications } from "./NotificationContext";
 import type { Notification } from "./NotificationContext";
+import {
+  isNotificationSoundQuiet,
+  playNotificationChime,
+  setNotificationSoundQuiet,
+} from "@/lib/notification-sound";
 
 const SOURCE_TAGS: Record<
   string,
@@ -33,6 +38,22 @@ export default function TopBarNotificationDropdown() {
   const [open, setOpen] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const ref = useRef<HTMLDivElement>(null);
+  const [muted, setMuted] = useState(false);
+
+  // Read the persisted mute state on first mount (must run only in
+  // the browser). Kept in localStorage so it survives navigation.
+  useEffect(() => {
+    setMuted(isNotificationSoundQuiet());
+  }, []);
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    setNotificationSoundQuiet(next);
+    // If they're un-muting, fire the chime once so they know it works
+    // and to satisfy the browser's autoplay-after-gesture policy.
+    if (!next) playNotificationChime({ volume: 0.6 });
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -70,7 +91,11 @@ export default function TopBarNotificationDropdown() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="relative inline-flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full shrink-0 bg-[var(--yu3-topbar-search-bg)] text-[var(--yu3-ink)] hover:brightness-95"
+        className={`relative inline-flex items-center justify-center h-10 w-10 md:h-11 md:w-11 rounded-full shrink-0 transition-colors ${
+          unreadCount > 0
+            ? "bg-[var(--yu3-wine)] text-[var(--yu3-cream)] hover:brightness-110 animate-notif-pulse"
+            : "bg-[var(--yu3-topbar-search-bg)] text-[var(--yu3-ink)] hover:brightness-95"
+        }`}
         aria-label={
           unreadCount > 0
             ? `Notifications, ${unreadCount} unread`
@@ -79,22 +104,55 @@ export default function TopBarNotificationDropdown() {
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <Bell size={16} weight="regular" className="text-[var(--yu3-ink-muted)]" />
+        <Bell
+          size={unreadCount > 0 ? 20 : 18}
+          weight={unreadCount > 0 ? "fill" : "regular"}
+          className={
+            unreadCount > 0
+              ? "text-[var(--yu3-cream)]"
+              : "text-[var(--yu3-ink-muted)]"
+          }
+        />
         {unreadCount > 0 ? (
           <span
-            className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[var(--yu3-topbar-search-bg)] z-[1]"
-            aria-hidden
-          />
-        ) : null}
-        {unreadCount > 0 ? (
-          <span
-            className="absolute -top-0.5 -right-0.5 z-[2] min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center"
+            className="absolute -top-1 -right-1 z-[2] min-w-[22px] h-[22px] px-1.5 rounded-full bg-red-600 text-white text-[12px] font-bold flex items-center justify-center ring-2 ring-[var(--yu3-bg-surface)] shadow-md animate-notif-badge-pulse"
             aria-hidden
           >
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         ) : null}
       </button>
+      {/* Keyframes for the bell + badge pulse. Scoped via a plain
+          style tag so we don't have to plumb tailwind config for a
+          one-off animation. Ring pulse fires every 2s while there
+          is at least one unread. */}
+      <style jsx>{`
+        @keyframes notif-pulse-ring {
+          0% {
+            box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.55);
+          }
+          70% {
+            box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+          }
+        }
+        :global(.animate-notif-pulse) {
+          animation: notif-pulse-ring 2s infinite;
+        }
+        @keyframes notif-badge-pulse {
+          0%, 100% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.15);
+          }
+        }
+        :global(.animate-notif-badge-pulse) {
+          animation: notif-badge-pulse 1.6s ease-in-out infinite;
+        }
+      `}</style>
 
       {open && (
         <div
@@ -103,17 +161,32 @@ export default function TopBarNotificationDropdown() {
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--yu3-line)]">
             <div className="text-[13px] font-bold text-[var(--yu3-ink)]">Notifications</div>
-            {unreadCount > 0 ? (
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => {
-                  markAllAsRead();
-                }}
-                className="text-[10px] font-semibold text-[var(--yu3-wine)] hover:underline"
+                onClick={toggleMute}
+                aria-label={muted ? "Unmute notification sound" : "Mute notification sound"}
+                title={muted ? "Sound off — click to enable" : "Sound on — click to mute"}
+                className={`inline-flex h-6 w-6 items-center justify-center rounded-full transition-colors ${
+                  muted
+                    ? "text-[var(--yu3-ink-muted)] hover:bg-[var(--gdim,rgba(0,0,0,0.05))]"
+                    : "text-[var(--yu3-wine)] hover:bg-[var(--yu3-wine-tint,rgba(43,4,22,0.08))]"
+                }`}
               >
-                Mark all read
+                {muted ? <SpeakerSlash size={14} weight="fill" /> : <SpeakerHigh size={14} weight="fill" />}
               </button>
-            ) : null}
+              {unreadCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    markAllAsRead();
+                  }}
+                  className="text-[10px] font-semibold text-[var(--yu3-wine)] hover:underline"
+                >
+                  Mark all read
+                </button>
+              ) : null}
+            </div>
           </div>
 
           <div className="max-h-[360px] overflow-y-auto">
