@@ -8,6 +8,35 @@ import {
 } from "@/lib/email-templates";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { verifyTrackToken } from "@/lib/track-token";
+import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
+import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
+
+/** Human date for delivery emails, timezone-stable (date-only string). */
+function fmtDeliveryDate(s: unknown): string | null {
+  const raw = String(s ?? "").slice(0, 10);
+  if (!raw) return null;
+  try {
+    return new Date(`${raw}T12:00:00`).toLocaleDateString("en-CA", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    });
+  } catch {
+    return null;
+  }
+}
+
+/** Short items summary for delivery emails: first few, then a "+N more". Uses
+ * the same normalizer the admin surfaces use so B2B line items read correctly. */
+function summarizeDeliveryItems(items: unknown): string | null {
+  const rows = normalizeDeliveryItemsForDisplay(
+    (items as Parameters<typeof normalizeDeliveryItemsForDisplay>[0]) || [],
+  );
+  if (!rows.length) return null;
+  const parts = rows.map((r) => (r.qty > 1 ? `${r.name} ×${r.qty}` : r.name));
+  const shown = parts.slice(0, 3).join(", ");
+  return parts.length > 3 ? `${shown}, +${parts.length - 3} more` : shown;
+}
 
 function opaqueToken(): string {
   return randomBytes(24).toString("base64url");
@@ -150,7 +179,19 @@ export async function sendB2BTrackingNotifications(
   if (audiences.includes("business")) {
     result.business.attempted = true;
     const subj = "Your delivery is confirmed";
-    const html = b2bDeliveryConfirmedBusinessEmail(bizUrl);
+    const basePrice = effectiveDeliveryPrice(d);
+    const html = b2bDeliveryConfirmedBusinessEmail(bizUrl, {
+      deliveryNumber: d.delivery_number,
+      contactFirstName: bizContactFirst || null,
+      pickupAddress: d.pickup_address,
+      deliveryAddress: d.delivery_address,
+      scheduledDate: fmtDeliveryDate(d.scheduled_date),
+      deliveryWindow: d.delivery_window,
+      itemsSummary: summarizeDeliveryItems(d.items),
+      recipientName:
+        d.recipient_mode === "separate" ? d.recipient_name || null : null,
+      priceLabel: basePrice > 0 ? `$${basePrice.toFixed(2)} plus HST` : null,
+    });
     if (d.contact_email) {
       const r = await sendEmail({
         to: d.contact_email,

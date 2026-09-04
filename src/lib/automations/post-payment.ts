@@ -44,8 +44,10 @@ import {
   labourOnlyConfirmationEmail,
   b2bDeliveryConfirmationEmail,
   statusUpdateEmailHtml,
+  emailDetailRows,
   type TierConfirmationParams,
 } from "@/lib/email-templates";
+import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 
 /* ═══════════════════════════════════════════════════════════
    runPostPaymentActions
@@ -1570,16 +1572,80 @@ export async function runPostPaymentActionsB2BDelivery(
         // An invoice booking (net terms, no card) is a delivery confirmation,
         // NOT a payment. Only say "Paid" when money was actually taken
         // (isInvoiceBooking is computed once at the top of this function).
-        const link = `<p><a href="${base}/admin/deliveries/${encodeURIComponent(input.deliveryNumber)}">Open in admin</a></p>`;
+        // Full ops summary rather than a bare one-liner, so the team can see the
+        // whole job at a glance. Fetch the delivery for route/items/schedule.
+        const { data: dd } = await supabase
+          .from("deliveries")
+          .select(
+            "delivery_number, business_name, customer_name, contact_name, pickup_address, delivery_address, scheduled_date, delivery_window, items, recipient_mode, recipient_name, override_price, admin_adjusted_price, total_price, calculated_price",
+          )
+          .eq("id", input.deliveryId)
+          .maybeSingle();
+        const esc = (v: unknown) =>
+          String(v ?? "").replace(/[&<>"]/g, (c) =>
+            ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] || c,
+          );
+        const fmtDate = (s: unknown) => {
+          const raw = String(s ?? "").slice(0, 10);
+          if (!raw) return null;
+          try {
+            return new Date(`${raw}T12:00:00`).toLocaleDateString("en-CA", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            });
+          } catch {
+            return null;
+          }
+        };
+        const itemRows = normalizeDeliveryItemsForDisplay(
+          (dd?.items as Parameters<typeof normalizeDeliveryItemsForDisplay>[0]) || [],
+        );
+        const itemCount = itemRows.reduce((s, r) => s + (r.qty || 1), 0);
+        const amt = Number(
+          dd?.override_price ??
+            dd?.admin_adjusted_price ??
+            dd?.total_price ??
+            dd?.calculated_price ??
+            0,
+        );
+        const rows = emailDetailRows([
+          ["Delivery", input.deliveryNumber],
+          ["Quote", input.quoteId],
+          ["Business", dd?.business_name || clientName || null],
+          ["Contact", dd?.contact_name || dd?.customer_name || null],
+          ["From", dd?.pickup_address || null],
+          ["To", dd?.delivery_address || null],
+          [
+            "Receiving",
+            dd?.recipient_mode === "separate" ? dd?.recipient_name || null : null,
+          ],
+          ["Date", fmtDate(dd?.scheduled_date)],
+          ["Window", dd?.delivery_window || null],
+          ["Items", itemCount > 0 ? `${itemCount} item${itemCount === 1 ? "" : "s"}` : null],
+          ["Amount", amt > 0 ? `$${amt.toFixed(2)} plus HST` : null],
+          [
+            "Terms",
+            isInvoiceBooking
+              ? "Invoice raised after completion (net terms, no payment yet)"
+              : "Paid",
+          ],
+        ]);
+        const adminBtn = `<a href="${base}/admin/deliveries/${encodeURIComponent(input.deliveryNumber)}" style="display:inline-block;background:#2B3927;color:#F9EDE4;text-decoration:none;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:12px 22px;border-radius:6px;">Open in admin</a>`;
+        const html = `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#F9EDE4;padding:28px;">
+            <div style="font-size:18px;font-weight:800;letter-spacing:3px;color:#492A1D;margin-bottom:18px;">YUGO</div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#66143D;margin-bottom:6px;">${isInvoiceBooking ? "B2B delivery confirmed" : "B2B delivery paid"}</div>
+            <div style="font-size:18px;font-weight:700;color:#2B0416;margin:0 0 16px;">${esc(dd?.business_name || clientName || "New commercial delivery")}</div>
+            ${rows}
+            ${adminBtn}
+          </div>`;
         await resend.emails.send({
           from: emailFrom2,
           to: adminEmail,
           subject: isInvoiceBooking
             ? `[B2B Delivery] Confirmed: ${input.deliveryNumber}, ${clientName || "Client"}`
             : `[B2B Delivery] Paid: ${input.deliveryNumber}, ${clientName || "Client"}`,
-          html: isInvoiceBooking
-            ? `<p>B2B quote <strong>${input.quoteId}</strong> confirmed. Delivery <strong>${input.deliveryNumber}</strong> created and the confirmation was sent to the client. The invoice is raised after the job is completed (Net terms, no payment yet).</p>${link}`
-            : `<p>B2B quote <strong>${input.quoteId}</strong> paid. Delivery <strong>${input.deliveryNumber}</strong>.</p>${link}`,
+          html,
         });
       },
     },

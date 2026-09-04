@@ -1158,11 +1158,55 @@ function b2bOneOffCtaBlock(trackUrl: string, label: string): string {
 }
 
 /** B2B one-off: business contact, delivery confirmed with tracking. */
-export function b2bDeliveryConfirmedBusinessEmail(trackUrl: string): string {
+export interface B2BDeliveryConfirmDetails {
+  deliveryNumber?: string | null;
+  contactFirstName?: string | null;
+  pickupAddress?: string | null;
+  deliveryAddress?: string | null;
+  scheduledDate?: string | null; // pre-formatted, human-readable
+  deliveryWindow?: string | null;
+  itemsSummary?: string | null;
+  recipientName?: string | null;
+  priceLabel?: string | null;
+}
+
+/** A clean label/value table for email detail summaries. Skips empty rows. */
+export function emailDetailRows(rows: Array<[string, string | null | undefined]>): string {
+  const body = rows
+    .filter(([, v]) => v && String(v).trim())
+    .map(
+      ([label, value]) => `
+        <tr>
+          <td style="padding:9px 16px 9px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;vertical-align:top;width:92px;">${escapeHtmlEmail(label)}</td>
+          <td style="padding:9px 0;font-size:14px;color:${PREMIUM_BODY};line-height:1.5;">${escapeHtmlEmail(String(value))}</td>
+        </tr>`,
+    )
+    .join("");
+  if (!body) return "";
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-top:1px solid rgba(107,99,92,0.16);border-bottom:1px solid rgba(107,99,92,0.16);margin:4px 0 26px;">${body}</table>`;
+}
+
+export function b2bDeliveryConfirmedBusinessEmail(
+  trackUrl: string,
+  details?: B2BDeliveryConfirmDetails,
+): string {
+  const first = details?.contactFirstName?.trim();
+  const heading = first ? `You're all set, ${first}` : "Your delivery is confirmed";
+  const rows: Array<[string, string | null | undefined]> = [
+    ["Delivery", details?.deliveryNumber],
+    ["From", details?.pickupAddress],
+    ["To", details?.deliveryAddress],
+    ["Receiving", details?.recipientName],
+    ["Date", details?.scheduledDate],
+    ["Window", details?.deliveryWindow],
+    ["Items", details?.itemsSummary],
+    ["Total", details?.priceLabel],
+  ];
   const inner = `
     <div style="${PREMIUM_EYEBROW_UPPER};margin-bottom:8px;">Delivery confirmed</div>
-    <div style="font-size:20px;font-weight:700;margin:0 0 8px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};letter-spacing:0;text-transform:none;">Your delivery is confirmed</div>
-    <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 24px;">Your Yugo delivery is booked. Track progress, proof of delivery, and updates on one page.</p>
+    <div style="font-size:20px;font-weight:700;margin:0 0 10px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};letter-spacing:0;text-transform:none;">${escapeHtmlEmail(heading)}</div>
+    <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 20px;">Your Yugo delivery is booked. Here are the details, and you can follow every step, including proof of delivery, on one tracking page.</p>
+    ${emailDetailRows(rows)}
     ${b2bOneOffCtaBlock(trackUrl, PREMIUM_TRACK_DELIVERY_CTA_LABEL)}
     <p style="font-size:11px;color:${PREMIUM_BODY_MUTED};line-height:1.5;">Questions? ${escapeHtmlEmail(getClientSupportEmail())} · (647) 370-4525</p>
   `;
