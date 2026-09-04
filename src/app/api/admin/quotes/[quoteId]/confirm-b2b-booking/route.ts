@@ -21,6 +21,7 @@ import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 import { ensureB2bDeliverySchedule } from "@/lib/calendar/ensure-b2b-delivery-schedule";
 import { logAudit } from "@/lib/audit";
+import { isBeforeToday } from "@/lib/business-timezone";
 
 export async function POST(
   req: NextRequest,
@@ -90,28 +91,17 @@ export async function POST(
   // exactly what stranded DLV-30406). Refuse and make the operator set a real
   // date first, rather than silently booking into a dead date.
   const moveDate = String(quote.move_date ?? "").slice(0, 10);
-  // toLocaleDateString("en-CA") in Node returns "2026-09-4" (day
-  // unpadded) even with day: "2-digit", so a plain string compare
-  // against moveDate "2026-09-05" evaluates "05" < "4" TRUE and the
-  // guard fires on a same-day/future booking. Build the YYYY-MM-DD
-  // string via formatToParts so every segment is padded to spec.
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Toronto",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
-  const y = parts.find((p) => p.type === "year")?.value ?? "";
-  const m = parts.find((p) => p.type === "month")?.value.padStart(2, "0") ?? "";
-  const d = parts.find((p) => p.type === "day")?.value.padStart(2, "0") ?? "";
-  const todayStr = `${y}-${m}-${d}`;
   if (!moveDate) {
     return NextResponse.json(
       { error: "This quote has no delivery date. Set a delivery date on the quote before confirming." },
       { status: 400 },
     );
   }
-  if (moveDate < todayStr) {
+  // isBeforeToday() encapsulates the padded-YYYY-MM-DD compare. NEVER
+  // inline a toLocaleDateString-based compare here — see the hazard
+  // note atop business-timezone.ts (YG-30422 incident: Sep 5 rejected
+  // on Sep 4 with "already passed" because the day was unpadded).
+  if (isBeforeToday(moveDate)) {
     return NextResponse.json(
       {
         error: `The delivery date (${moveDate}) has already passed. Update the quote's delivery date to today or later, then confirm.`,

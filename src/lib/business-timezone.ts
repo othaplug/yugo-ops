@@ -4,6 +4,27 @@
  *
  * Set APP_TIMEZONE (server) and NEXT_PUBLIC_APP_TIMEZONE (browser) to the same IANA zone,
  * e.g. America/Toronto. Defaults to America/Toronto everywhere.
+ *
+ * ────────────────────────────────────────────────────────────────────
+ * DATE-COMPARE HAZARD (read before you write a new date guard)
+ * ────────────────────────────────────────────────────────────────────
+ * NEVER build a compare-context YYYY-MM-DD string via
+ *   new Date().toLocaleDateString("en-CA", { day: "2-digit", ... })
+ * Node's ICU implementation ignores the two-digit hint on en-CA and
+ * returns "2026-09-4" (day unpadded). A lexicographic compare then
+ * evaluates "2026-09-05" < "2026-09-4" as TRUE — the guard fires on
+ * genuinely-valid same/next-day bookings. See YG-30422 for the
+ * incident (Sep 5 booking rejected on Sep 4 with "already passed").
+ *
+ * FOR COMPARES, always use one of:
+ *   - `isBeforeToday(dateStr)` / `isAfterToday(dateStr)` /
+ *     `isSameDayAsToday(dateStr)`  ← preferred; no strings to touch
+ *   - `getTodayString()` + `toBusinessDayString(otherDate)` and then
+ *     compare the two padded outputs
+ *
+ * FOR DISPLAY, `toLocaleDateString` is fine — the widow-day rendering
+ * is human-readable either way.
+ * ────────────────────────────────────────────────────────────────────
  */
 
 export const DEFAULT_APP_TIMEZONE = "America/Toronto";
@@ -143,6 +164,81 @@ export function addCalendarDaysYmd(ymd: string, days: number, timeZone?: string)
 /** Today's date (YYYY-MM-DD) in the app timezone. Use for DB filters and "today" logic. */
 export function getTodayString(timeZone?: string): string {
   return getLocalDateString(new Date(), timeZone ?? getAppTimezone());
+}
+
+/**
+ * Normalise any date-like input to a padded YYYY-MM-DD in the app
+ * timezone. Accepts YYYY-MM-DD, ISO with time, or a Date. Returns null
+ * if the input cannot be resolved to a valid calendar day.
+ *
+ * Use this BEFORE any string compare so a value with an unpadded day
+ * or a trailing time part cannot silently produce a wrong ordering.
+ * See the "Never use raw toLocaleDateString for compares" note at the
+ * top of this file.
+ */
+export function toBusinessDayString(
+  input: string | Date | null | undefined,
+  timeZone?: string,
+): string | null {
+  if (input == null) return null;
+  const tz = timeZone ?? getAppTimezone();
+  if (input instanceof Date) {
+    if (Number.isNaN(input.getTime())) return null;
+    return getLocalDateString(input, tz);
+  }
+  const raw = String(input).trim();
+  if (!raw) return null;
+  // Bare YYYY-MM-DD (or with anything after) — pad the day/month and
+  // return as-is, so we never trigger downstream timezone drift on a
+  // date that already IS a date-only value.
+  const bare = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:$|[T ])/);
+  if (bare) {
+    const [, y, mo, d] = bare;
+    return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  // Anything else: parse and re-render through the timezone.
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return null;
+  return getLocalDateString(d, tz);
+}
+
+/**
+ * True if `dateStr` (any YYYY-MM-DD-shaped or Date-parseable input)
+ * refers to a calendar day BEFORE today in the app timezone. Fully
+ * encapsulates the compare so callers never have to touch raw strings
+ * and cannot reintroduce the "2026-09-05 < 2026-09-4" class of bug.
+ * Returns false on unparseable input.
+ */
+export function isBeforeToday(
+  dateStr: string | Date | null | undefined,
+  timeZone?: string,
+): boolean {
+  const tz = timeZone ?? getAppTimezone();
+  const target = toBusinessDayString(dateStr, tz);
+  if (!target) return false;
+  return target < getTodayString(tz);
+}
+
+/** True when `dateStr` refers to today in the app timezone. */
+export function isSameDayAsToday(
+  dateStr: string | Date | null | undefined,
+  timeZone?: string,
+): boolean {
+  const tz = timeZone ?? getAppTimezone();
+  const target = toBusinessDayString(dateStr, tz);
+  if (!target) return false;
+  return target === getTodayString(tz);
+}
+
+/** True when `dateStr` refers to a calendar day AFTER today in the app timezone. */
+export function isAfterToday(
+  dateStr: string | Date | null | undefined,
+  timeZone?: string,
+): boolean {
+  const tz = timeZone ?? getAppTimezone();
+  const target = toBusinessDayString(dateStr, tz);
+  if (!target) return false;
+  return target > getTodayString(tz);
 }
 
 /** First day of current month (YYYY-MM-DD) in the app timezone. */

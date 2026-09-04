@@ -20,6 +20,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { partnerPropertyManagerDailyDigestEmail } from "@/lib/email-templates";
+import { getTodayString } from "@/lib/business-timezone";
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -31,9 +32,12 @@ export async function GET(req: NextRequest) {
 
   // "Today" in Toronto — a move scheduled for 2026-08-01 shows up in
   // the digest fired between 00:00 and 23:59 ET on 2026-08-01.
-  const todayET = new Date().toLocaleDateString("en-CA", {
-    timeZone: "America/Toronto",
-  });
+  // Uses the canonical helper: raw toLocaleDateString("en-CA") in Node
+  // returns unpadded days ("2026-09-4") which then mis-match against a
+  // padded scheduled_date ("2026-09-04"), silently making the digest
+  // empty on single-digit-day days. See YG-30422 hazard note in
+  // business-timezone.ts.
+  const todayET = getTodayString();
   const dateLabel = new Date(`${todayET}T12:00:00`).toLocaleDateString(
     "en-CA",
     { weekday: "long", month: "long", day: "numeric", timeZone: "America/Toronto" },
