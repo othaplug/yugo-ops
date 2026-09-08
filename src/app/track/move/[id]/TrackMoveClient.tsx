@@ -2553,23 +2553,38 @@ export default function TrackMoveClient({
                     )}
                   </>
                 )
-              ) : daysUntil != null && daysUntil < 0 && !isInProgress ? (
+              ) : daysUntil != null && daysUntil < 0 ? (
+                // The scheduled date has passed. Never show a negative countdown.
+                // If the job is still live, frame it as underway; otherwise it is
+                // done and awaiting the completed flag.
                 <div className="text-center">
                   <div
                     className="font-hero text-[24px] sm:text-[26px] leading-tight font-semibold"
                     style={{ color: WINE }}
                   >
-                    {isLogisticsDeliveryTrack
-                      ? "Scheduled day has passed"
-                      : "Move day has passed"}
+                    {isInProgress
+                      ? isLogisticsDeliveryTrack
+                        ? "Your delivery is underway"
+                        : "Your move is underway"
+                      : isLogisticsDeliveryTrack
+                        ? "Scheduled day has passed"
+                        : "Move day has passed"}
                   </div>
                   <p
                     className="mt-1 text-[12px] font-sans opacity-60"
                     style={{ color: FOREST }}
                   >
-                    {isLogisticsDeliveryTrack
-                      ? "Your delivery will be marked complete soon."
-                      : "Your move will be marked complete soon."}
+                    {isInProgress
+                      ? liveEtaMinutes != null && liveEtaMinutes > 0
+                        ? `Your crew is ${liveEtaMinutes} minutes away`
+                        : liveStage != null
+                          ? (LIVE_TRACKING_STAGES.find(
+                              (s) => s.key === liveStage,
+                            )?.label ?? "In progress")
+                          : "Your crew is completing your move."
+                      : isLogisticsDeliveryTrack
+                        ? "Your delivery will be marked complete soon."
+                        : "Your move will be marked complete soon."}
                   </p>
                 </div>
               ) : (
@@ -2578,7 +2593,7 @@ export default function TrackMoveClient({
                     className="font-hero text-[56px] sm:text-[64px] leading-none font-semibold tracking-tight"
                     style={{ color: trackHero }}
                   >
-                    {daysUntil ?? "-"}
+                    {daysUntil != null && daysUntil > 0 ? daysUntil : "-"}
                   </div>
                   <div
                     className="mt-1 text-[12px] font-sans opacity-60"
