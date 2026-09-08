@@ -96,9 +96,16 @@ export function calcFlooringPrice(
     );
   }
 
+  const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+  const materialLabel = cap(input.material);
+  const handlingLabel = input.handling === "inside" ? "Inside carry" : "Curbside";
+  const zoneLabel = input.zone
+    .split("_")
+    .map((w) => (w.toLowerCase() === "gta" ? "GTA" : cap(w)))
+    .join(" ");
   const breakdown: { label: string; amount: number }[] = [
     {
-      label: `${input.boxCount} box${input.boxCount !== 1 ? "es" : ""} → ${band}-unit band · ${input.material} · ${input.handling} · ${input.zone.replace(/_/g, " ")}${input.isPartner ? " · partner" : ""}`,
+      label: `${input.boxCount} box${input.boxCount !== 1 ? "es" : ""} → ${band}-unit band · ${materialLabel} · ${handlingLabel} · ${zoneLabel}${input.isPartner ? " · Partner" : ""}`,
       amount: baseRate,
     },
   ];

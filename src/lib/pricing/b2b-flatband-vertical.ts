@@ -136,11 +136,18 @@ export function computeB2bFlatBandPrice(
     const material: FlooringMaterial =
       rawMat === "hardwood" || rawMat === "tile" ? rawMat : "vinyl";
     const rawHandling = input.handlingType.toLowerCase();
+    // Flooring rate card has two labor tiers: curbside (dropped at the
+    // dock/entrance) and inside (carried into the space). Any handling that
+    // means "carry each unit in" is inside — hand_bomb and carry_in were
+    // missing here and silently priced as curbside.
     const handling: FlooringHandling =
       rawHandling === "inside" ||
       rawHandling === "room_placement" ||
       rawHandling === "room_of_choice" ||
-      rawHandling === "white_glove"
+      rawHandling === "white_glove" ||
+      rawHandling === "carry_in" ||
+      rawHandling === "carry_in_per_box" ||
+      rawHandling === "hand_bomb"
         ? "inside"
         : "curbside";
     const boxCount =
