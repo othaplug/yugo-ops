@@ -3788,6 +3788,7 @@ async function calcB2bOneoff(
                 breakdown: r.breakdown,
                 truck: r.truck,
                 crew: r.crew,
+                estimatedHours: r.estimatedHours,
                 includes: r.includes,
                 requiresCustomQuote: r.requiresCustomQuote,
                 weightedUnits: r.totalUnits,
@@ -3856,7 +3857,10 @@ async function calcB2bOneoff(
           b2b_time_sensitive: !!input.b2b_time_sensitive,
           truck_recommended: truckKeyCab,
           truck_surcharge: 0,
-          b2b_estimated_hours: null,
+          b2b_estimated_hours:
+            "estimatedHours" in fb && typeof fb.estimatedHours === "number"
+              ? fb.estimatedHours
+              : null,
           b2b_crew: fb.crew,
           b2b_business_name: input.b2b_business_name || null,
       b2b_scope: input.b2b_scope?.trim() || null,

@@ -58,10 +58,47 @@ export type B2bFlatBandResult = {
   includes: string[];
   truck: string;
   crew: number;
+  estimatedHours: number;
   requiresCustomQuote: boolean;
   totalUnits: number;
   zone: string;
 };
+
+/** Flat-band handling → inside (carried in) vs curbside (dock/entrance drop). */
+function flatBandHandlingIsInside(handlingType: string): boolean {
+  const h = (handlingType || "").toLowerCase();
+  return (
+    h === "inside" ||
+    h === "room_placement" ||
+    h === "room_of_choice" ||
+    h === "white_glove" ||
+    h === "carry_in" ||
+    h === "carry_in_per_box" ||
+    h === "hand_bomb"
+  );
+}
+
+/**
+ * Estimated on-site hours for a flat-band job. Carry work is per unit, per
+ * person, so more crew finishes proportionally faster; the fixed on-site base
+ * (park, prep, sign-off, wrap) is not split. Per-unit minutes from flooring-
+ * delivery norms: inside carry ~2 min/box, curbside/dock drop ~0.75 min/box;
+ * appliance pieces are large single-carries at ~12 min/piece.
+ */
+function estimateFlatBandHours(args: {
+  vertical: string;
+  units: number;
+  inside: boolean;
+  crew: number;
+}): number {
+  const crew = Math.max(1, args.crew);
+  const BASE_MIN = 25;
+  const perUnitMin =
+    args.vertical === "flooring" ? (args.inside ? 2.0 : 0.75) : 12;
+  const totalMin = BASE_MIN + (args.units * perUnitMin) / crew;
+  // Round to the nearest quarter hour, floor of 0.5h.
+  return Math.max(0.5, Math.round((totalMin / 60) * 4) / 4);
+}
 
 /**
  * Price a flooring/appliance job off the rate card. Returns ok:false with an
@@ -87,7 +124,13 @@ export function computeB2bFlatBandPrice(
     input.boxCount > 0
       ? Math.round(input.boxCount)
       : totalUnits;
-  const recommendedTruck = recommendTruckForB2B([], truckLoad, {});
+  // Flooring boxes stack compactly, so an extended sprinter covers up to ~89
+  // boxes before a larger truck is needed. Appliances keep the default sizing.
+  const recommendedTruck = recommendTruckForB2B(
+    [],
+    truckLoad,
+    input.verticalCode === "flooring" ? { sprinter_max_units: 89 } : {},
+  );
   const recommendedCrew = recommendCrewFromWeightItems(
     input.lines.map((l) => ({
       weight_category: l.weight_category ?? null,
@@ -109,6 +152,7 @@ export function computeB2bFlatBandPrice(
     includes: [],
     truck,
     crew,
+    estimatedHours: 0,
     requiresCustomQuote: false,
     totalUnits,
     zone,
@@ -135,21 +179,12 @@ export function computeB2bFlatBandPrice(
     const rawMat = (input.flooringMaterial ?? "vinyl").toLowerCase();
     const material: FlooringMaterial =
       rawMat === "hardwood" || rawMat === "tile" ? rawMat : "vinyl";
-    const rawHandling = input.handlingType.toLowerCase();
     // Flooring rate card has two labor tiers: curbside (dropped at the
     // dock/entrance) and inside (carried into the space). Any handling that
-    // means "carry each unit in" is inside — hand_bomb and carry_in were
-    // missing here and silently priced as curbside.
-    const handling: FlooringHandling =
-      rawHandling === "inside" ||
-      rawHandling === "room_placement" ||
-      rawHandling === "room_of_choice" ||
-      rawHandling === "white_glove" ||
-      rawHandling === "carry_in" ||
-      rawHandling === "carry_in_per_box" ||
-      rawHandling === "hand_bomb"
-        ? "inside"
-        : "curbside";
+    // means "carry each unit in" is inside.
+    const handling: FlooringHandling = flatBandHandlingIsInside(input.handlingType)
+      ? "inside"
+      : "curbside";
     const boxCount =
       typeof input.boxCount === "number" && input.boxCount > 0
         ? Math.round(input.boxCount)
@@ -195,6 +230,19 @@ export function computeB2bFlatBandPrice(
   // non-residential quote path.
   const roundedPreTax = applyProcessingRecoveryAndRound(preRoundSubtotal, config, 50);
 
+  const unitsForHours =
+    input.verticalCode === "flooring" &&
+    typeof input.boxCount === "number" &&
+    input.boxCount > 0
+      ? Math.round(input.boxCount)
+      : totalUnits;
+  const estimatedHours = estimateFlatBandHours({
+    vertical: input.verticalCode,
+    units: unitsForHours,
+    inside: flatBandHandlingIsInside(input.handlingType),
+    crew,
+  });
+
   return {
     ok: true,
     subtotalPreRound: preRoundSubtotal,
@@ -207,6 +255,7 @@ export function computeB2bFlatBandPrice(
     ],
     truck,
     crew,
+    estimatedHours,
     requiresCustomQuote: result.requiresCustomQuote,
     totalUnits,
     zone,

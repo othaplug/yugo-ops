@@ -276,7 +276,7 @@ export async function POST(req: NextRequest) {
         includes: fb.includes,
         truck: fb.truck,
         crew: fb.crew,
-        estimated_hours: null,
+        estimated_hours: fb.estimatedHours,
         total_distance_km: distKm,
         stop_count: 2,
         requires_custom_quote: fb.requiresCustomQuote,
