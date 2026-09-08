@@ -4076,10 +4076,16 @@ export default function B2BJobsDeliveryForm({
                   <span className="font-semibold text-[var(--tx)]">
                     {selectedVertical.name}
                   </span>
-                  <span className="text-[var(--tx3)]"> · Base rate </span>
-                  <span className="tabular-nums text-[var(--tx)]">
-                    {formatCurrency(selectedVertical.base_rate)}
-                  </span>
+                  {/* Flooring/appliance are flat-band priced, so the vertical
+                      base rate is not part of the price — showing it misleads. */}
+                  {verticalCode !== "flooring" && verticalCode !== "appliance" && (
+                    <>
+                      <span className="text-[var(--tx3)]"> · Base rate </span>
+                      <span className="tabular-nums text-[var(--tx)]">
+                        {formatCurrency(selectedVertical.base_rate)}
+                      </span>
+                    </>
+                  )}
                 </p>
                 {estimatedDistanceKm != null ? (
                   <p className="text-[10px] text-[var(--tx3)]">
@@ -4116,6 +4122,30 @@ export default function B2BJobsDeliveryForm({
                       </span>
                     </div>
                   ))}
+                  {/* Reconcile the itemized lines to the pre-tax total. The gap
+                      is card-processing recovery plus $50 rounding, which is
+                      otherwise invisible. Admin preview only. */}
+                  {(() => {
+                    const sum = serverPricing.breakdown.reduce(
+                      (s, b) => s + (b.amount || 0),
+                      0,
+                    );
+                    const gap =
+                      Math.round(
+                        (serverPricing.rounded_pre_tax -
+                          sum -
+                          (serverPricing.access_surcharge || 0)) *
+                          100,
+                      ) / 100;
+                    return gap >= 1 ? (
+                      <div className="flex justify-between gap-2 text-[10px]">
+                        <span className="text-[var(--tx3)]">
+                          Processing &amp; rounding
+                        </span>
+                        <span className="tabular-nums">{formatCurrency(gap)}</span>
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               </div>
             ) : (verticalCode === "flooring" || verticalCode === "appliance") &&
