@@ -17,6 +17,11 @@ import {
 import { StatusPill } from "@/design-system/admin/primitives"
 import { useToast } from "../components/Toast"
 import { deliveryEligibleForAdminPrepaidMark } from "@/lib/delivery-prepaid-eligibility"
+import {
+  deliveryBulkInvoiceIneligibleReason,
+  INVOICE_INELIGIBLE_LABEL,
+  type InvoiceIneligibleReason,
+} from "@/lib/delivery-invoice-eligibility"
 
 export type DeliveryV3 = {
   id: string
@@ -31,6 +36,10 @@ export type DeliveryV3 = {
   booking_type?: string | null
   organization_id?: string | null
   vertical_code?: string | null
+  contact_email?: string | null
+  business_name?: string | null
+  has_invoice?: boolean | null
+  invoice_status?: string | null
   payment_received_at?: string | null
   vehicle_type?: string | null
   num_stops?: number | null
@@ -174,6 +183,81 @@ export function AllDeliveriesV3DataTable({
       } else {
         toast("Error: " + (data.error || "Failed"), "x")
       }
+    },
+    [toast, router],
+  )
+
+  const runBulkInvoice = React.useCallback(
+    async (rows: DeliveryV3[]) => {
+      // Split the selection by the shared eligibility gates so the operator
+      // sees exactly what will be billed before any client is emailed.
+      const eligible: DeliveryV3[] = []
+      const skippedByReason = new Map<InvoiceIneligibleReason, number>()
+      for (const d of rows) {
+        const reason = deliveryBulkInvoiceIneligibleReason(d)
+        if (reason) {
+          skippedByReason.set(reason, (skippedByReason.get(reason) || 0) + 1)
+        } else {
+          eligible.push(d)
+        }
+      }
+
+      if (eligible.length === 0) {
+        const parts = [...skippedByReason.entries()].map(
+          ([r, n]) => `${n} ${INVOICE_INELIGIBLE_LABEL[r]}`,
+        )
+        toast(
+          `No invoices to send. ${parts.join(", ") || "Nothing eligible in selection."}`,
+          "x",
+        )
+        return
+      }
+
+      // Confirm — sending emails a Square invoice to each business client, so
+      // this is a deliberate, itemized step, not a silent bulk mutation.
+      if (typeof window !== "undefined") {
+        const lines = [
+          `Create and send ${eligible.length} Square invoice${eligible.length !== 1 ? "s" : ""} now?`,
+          "",
+          "Each eligible job gets an enriched invoice emailed to its business contact.",
+        ]
+        if (skippedByReason.size > 0) {
+          lines.push("")
+          lines.push("Skipped:")
+          for (const [r, n] of skippedByReason.entries()) {
+            lines.push(`  - ${n} ${INVOICE_INELIGIBLE_LABEL[r]}`)
+          }
+        }
+        if (!window.confirm(lines.join("\n"))) return
+      }
+
+      const res = await fetch("/api/admin/deliveries/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "send_invoice", ids: eligible.map((d) => d.id) }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.ok) {
+        toast("Error: " + (data.error || "Failed to send invoices"), "x")
+        return
+      }
+
+      const created = Number(data.created) || 0
+      const skipped = Number(data.skipped) || 0
+      const failed = Number(data.failed) || 0
+      let msg = `Sent ${created} invoice${created !== 1 ? "s" : ""}`
+      if (skipped > 0) msg += `, ${skipped} skipped`
+      if (failed > 0) {
+        const firstErr = Array.isArray(data.results)
+          ? data.results.find(
+              (r: { status?: string; reason?: string }) => r.status === "error",
+            )?.reason
+          : null
+        msg += `, ${failed} failed${firstErr ? ` (${firstErr})` : ""}`
+      }
+      toast(msg, failed > 0 ? "x" : "check")
+      setSelectedIds(new Set())
+      router.refresh()
     },
     [toast, router],
   )
@@ -324,6 +408,13 @@ export function AllDeliveriesV3DataTable({
   const bulkActions = React.useMemo<BulkAction<DeliveryV3>[]>(
     () => [
       {
+        id: "send-invoice",
+        label: "Send invoices",
+        disabled: (r) =>
+          !r.some((d) => deliveryBulkInvoiceIneligibleReason(d) === null),
+        run: (r) => runBulkInvoice(r),
+      },
+      {
         id: "export-selected",
         label: "Export selected",
         run: (r) => exportDeliveriesCsv(r, "deliveries-selected.csv"),
@@ -347,34 +438,55 @@ export function AllDeliveriesV3DataTable({
         run: (r) => runBulkDelete(r.map((d) => d.id)),
       },
     ],
-    [runBulk, runBulkDelete],
+    [runBulk, runBulkDelete, runBulkInvoice],
+  )
+
+  const uninvoicedEligibleIds = React.useMemo(
+    () => rows.filter((d) => deliveryBulkInvoiceIneligibleReason(d) === null).map((d) => d.id),
+    [rows],
   )
 
   return (
-    <DataTable<DeliveryV3>
-      columns={columns}
-      rows={rows}
-      rowId={(d) => d.id}
-      search={search}
-      onSearchChange={setSearch}
-      sort={sort}
-      onSortChange={setSort}
-      selectedRowIds={selectedIds}
-      onSelectedRowIdsChange={setSelectedIds}
-      bulkActions={bulkActions}
-      onRowClick={(d) => router.push(getDeliveryDetailPath(d))}
-      onExport={() => exportDeliveriesCsv(rows, "deliveries.csv")}
-      viewMode={viewMode}
-      onViewModeChange={setViewMode}
-      availableViews={["list"]}
-      searchPlaceholder="Search records…"
-      emptyState={
-        <div className="px-2 py-8 text-center">
-          <p className="text-[15px] font-semibold text-[var(--yu3-ink)]">
-            {emptyMessage}
-          </p>
+    <>
+      {uninvoicedEligibleIds.length > 0 ? (
+        <div className="mb-3 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSelectedIds(new Set(uninvoicedEligibleIds))}
+            className="inline-flex items-center gap-1.5 rounded-[var(--yu3-r-sm)] border border-[var(--yu3-line)] px-2.5 py-1.5 text-[12px] font-medium text-[var(--yu3-ink)] hover:bg-[var(--yu3-bg-surface-sunken)]"
+          >
+            Select all uninvoiced
+            <span className="yu3-num text-[11px] font-semibold text-[var(--yu3-ink-muted)]">
+              {uninvoicedEligibleIds.length}
+            </span>
+          </button>
         </div>
-      }
-    />
+      ) : null}
+      <DataTable<DeliveryV3>
+        columns={columns}
+        rows={rows}
+        rowId={(d) => d.id}
+        search={search}
+        onSearchChange={setSearch}
+        sort={sort}
+        onSortChange={setSort}
+        selectedRowIds={selectedIds}
+        onSelectedRowIdsChange={setSelectedIds}
+        bulkActions={bulkActions}
+        onRowClick={(d) => router.push(getDeliveryDetailPath(d))}
+        onExport={() => exportDeliveriesCsv(rows, "deliveries.csv")}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        availableViews={["list"]}
+        searchPlaceholder="Search records…"
+        emptyState={
+          <div className="px-2 py-8 text-center">
+            <p className="text-[15px] font-semibold text-[var(--yu3-ink)]">
+              {emptyMessage}
+            </p>
+          </div>
+        }
+      />
+    </>
   )
 }

@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/check-role";
-import { createAndPublishSquareInvoice } from "@/lib/square-invoice";
 import { resolveDeliveryUuidFromApiPathSegment } from "@/lib/delivery-resolve-id";
-import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
-import { opsInvoiceNumberForSquareJob } from "@/lib/invoice-display-number";
-import { resolveQuoteInvoiceDueDays } from "@/lib/b2b-invoice-terms";
+import { sendB2BOneOffDeliveryInvoice } from "@/lib/invoices/send-b2b-oneoff-invoice";
 
 /**
  * Creates a Square invoice for a B2B one-off delivery (no partner org), emails the business
  * contact when contact_email is present, and stores a row in invoices for admin.
+ *
+ * The enriched invoice logic lives in sendB2BOneOffDeliveryInvoice so the bulk
+ * "Send invoices" action produces byte-identical invoices; this route only
+ * resolves the id and maps the shared result to HTTP status codes.
  */
 export async function POST(req: NextRequest) {
   const { error: authErr } = await requireRole("coordinator");
@@ -37,155 +38,50 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Delivery not found" }, { status: 404 });
   }
 
-  const { data: existing } = await admin
-    .from("invoices")
-    .select("id, square_invoice_id, square_invoice_url, status")
-    .eq("delivery_id", deliveryUuid)
-    .maybeSingle();
+  const result = await sendB2BOneOffDeliveryInvoice(admin, deliveryUuid);
 
-  if (existing) {
+  if (result.status === "created") {
     return NextResponse.json({
-      message: "Invoice already exists",
-      id: existing.id,
-      squareInvoiceUrl: existing.square_invoice_url,
-      status: existing.status,
+      id: result.invoiceId,
+      invoiceNumber: result.invoiceNumber,
+      squareInvoiceId: result.squareInvoiceId,
+      squareInvoiceUrl: result.squareInvoiceUrl,
     });
   }
 
-  /** Avoid listing columns that may not exist on all DBs; effectiveDeliveryPrice reads common price fields from row. */
-  const { data: delivery, error: delErr } = await admin
-    .from("deliveries")
-    .select("*")
-    .eq("id", deliveryUuid)
-    .single();
-
-  if (delErr || !delivery) {
-    return NextResponse.json({ error: "Delivery not found" }, { status: 404 });
+  if (result.status === "skipped") {
+    // "Invoice already exists" is a benign 200 (matches prior contract); every
+    // other skip is an operator-fixable precondition (400).
+    if (result.reason === "Invoice already exists") {
+      return NextResponse.json({
+        message: "Invoice already exists",
+        id: result.invoiceId,
+        squareInvoiceUrl: result.squareInvoiceUrl,
+      });
+    }
+    return NextResponse.json({ error: skipReasonToMessage(result.reason) }, { status: 400 });
   }
 
-  if (delivery.booking_type !== "one_off" || delivery.organization_id) {
-    return NextResponse.json(
-      { error: "Square invoice for B2B one-off deliveries only (no partner account on file)." },
-      { status: 400 },
-    );
+  // status === "error"
+  const status = result.reason.startsWith("Square invoice could not be created") ? 502 : 500;
+  if (status === 500) {
+    console.error("[delivery-b2b-one-off-invoice] failed:", result.reason);
   }
+  return NextResponse.json({ error: skipReasonToMessage(result.reason) }, { status });
+}
 
-  const contactEmail = (delivery.contact_email || "").trim() || null;
-  if (!contactEmail) {
-    return NextResponse.json(
-      { error: "Business contact email is required to send a Square invoice." },
-      { status: 400 },
-    );
+/** Map the shared function's terse reasons back to this route's operator-facing copy. */
+function skipReasonToMessage(reason: string): string {
+  switch (reason) {
+    case "Partner-billed (invoiced via statements)":
+      return "Square invoice for B2B one-off deliveries only (no partner account on file).";
+    case "No business contact email":
+      return "Business contact email is required to send a Square invoice.";
+    case "No price set":
+      return "Set a quoted or total price before sending an invoice.";
+    case "Square invoice could not be created (check Square config)":
+      return "Square invoice could not be created. Check SQUARE_ACCESS_TOKEN and location configuration.";
+    default:
+      return reason;
   }
-
-  const amount = effectiveDeliveryPrice(delivery);
-  if (amount <= 0) {
-    return NextResponse.json({ error: "Set a quoted or total price before sending an invoice." }, { status: 400 });
-  }
-
-  const bizName =
-    (delivery.business_name || delivery.client_name || delivery.customer_name || "Business").trim();
-  const customerName = (delivery.customer_name || bizName).trim();
-  const addr =
-    (delivery.delivery_address || delivery.pickup_address || "").trim();
-
-  const invoiceNumber = opsInvoiceNumberForSquareJob({
-    jobType: "delivery",
-    referenceCode: delivery.delivery_number,
-  });
-
-  // Honor the invoice term the operator sold on the quote (net_15 / net_30 /
-  // on_completion). A one-off can still be quoted Net 15/30 even without a
-  // standing partner account; only fall back to due-on-receipt when the quote
-  // set no explicit term.
-  const jobDueDays = await resolveQuoteInvoiceDueDays(
-    admin,
-    (delivery as { source_quote_id?: string | null }).source_quote_id,
-  );
-  const dueDays = jobDueDays != null ? jobDueDays : 0;
-  const dueDate = new Date(Date.now() + dueDays * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
-
-  const deliveryDateRaw =
-    (delivery as { scheduled_date?: string | null; created_at?: string | null })
-      .scheduled_date ??
-    (delivery as { created_at?: string | null }).created_at ??
-    null;
-  const deliveryDate = deliveryDateRaw ? new Date(deliveryDateRaw) : new Date();
-  const rawLineItems = (delivery as { b2b_line_items?: unknown }).b2b_line_items;
-  const b2bLineItems = Array.isArray(rawLineItems)
-    ? (rawLineItems as Array<Record<string, unknown>>).map((row) => ({
-        description: typeof row.description === "string" ? row.description : null,
-        quantity:
-          typeof row.quantity === "number"
-            ? row.quantity
-            : Number(row.quantity ?? row.qty ?? 1),
-      }))
-    : null;
-  const vertical =
-    (delivery as { vertical_code?: string | null }).vertical_code || null;
-  const squareResult = await createAndPublishSquareInvoice({
-    deliveryId: deliveryUuid,
-    deliveryNumber: delivery.delivery_number || deliveryUuid.slice(0, 8),
-    customerName,
-    deliveryAddress: addr,
-    amount,
-    orgEmail: contactEmail,
-    orgName: bizName,
-    contactName: bizName,
-    invoiceDueDays: dueDays,
-    invoiceDueDayOfMonth: null,
-    jobType: "delivery",
-    // B2B one-off has no partner org row, but the delivery itself may
-    // carry vertical_code (set at quote time) — use it when present so
-    // the invoice reads "Furniture / Flooring / Cabinetry Delivery
-    // Services" instead of the generic fallback.
-    partnerVertical: vertical,
-    billingPeriodStart: deliveryDate,
-    billingPeriodEnd: deliveryDate,
-    sourceMove: {
-      from_address: (delivery as { pickup_address?: string | null }).pickup_address ?? null,
-      to_address: addr,
-      b2b_vertical_code: vertical,
-      b2b_line_items: b2bLineItems,
-      company_name: bizName || null,
-      client_name: customerName,
-    },
-  });
-
-  if (!squareResult) {
-    return NextResponse.json(
-      { error: "Square invoice could not be created. Check SQUARE_ACCESS_TOKEN and location configuration." },
-      { status: 502 },
-    );
-  }
-
-  const { data: invoice, error: insertErr } = await admin
-    .from("invoices")
-    .insert({
-      invoice_number: invoiceNumber,
-      delivery_id: deliveryUuid,
-      organization_id: null,
-      client_name: bizName,
-      amount,
-      status: "sent",
-      due_date: dueDate,
-      square_invoice_id: squareResult.squareInvoiceId,
-      square_invoice_url: squareResult.squareInvoiceUrl,
-    })
-    .select("id")
-    .single();
-
-  if (insertErr) {
-    console.error("[delivery-b2b-one-off-invoice] insert failed:", insertErr.message);
-    return NextResponse.json({ error: insertErr.message }, { status: 500 });
-  }
-
-  return NextResponse.json({
-    id: invoice.id,
-    invoiceNumber,
-    squareInvoiceId: squareResult.squareInvoiceId,
-    squareInvoiceUrl: squareResult.squareInvoiceUrl,
-  });
 }

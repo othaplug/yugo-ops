@@ -70,6 +70,11 @@ interface Delivery {
   category: string;
   booking_type?: string | null;
   organization_id?: string | null;
+  contact_email?: string | null;
+  business_name?: string | null;
+  vertical_code?: string | null;
+  has_invoice?: boolean | null;
+  invoice_status?: string | null;
   payment_received_at?: string | null;
   vehicle_type?: string | null;
   num_stops?: number | null;

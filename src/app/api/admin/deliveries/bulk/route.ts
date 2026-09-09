@@ -3,6 +3,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 import { syncDealStageByDeliveryId } from "@/lib/hubspot/sync-deal-stage";
 import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
+import { sendB2BOneOffDeliveryInvoice } from "@/lib/invoices/send-b2b-oneoff-invoice";
+
+/** Per-id outcome for actions that can partially succeed (e.g. send_invoice). */
+type BulkItemResult = {
+  id: string;
+  status: "created" | "skipped" | "error";
+  reason?: string;
+  squareInvoiceUrl?: string | null;
+};
 
 /** POST /api/admin/deliveries/bulk — Bulk status updates for deliveries */
 export async function POST(req: NextRequest) {
@@ -21,13 +30,42 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "action and ids[] required" }, { status: 400 });
   }
 
-  const validActions = ["deliver", "cancel", "delete"];
+  const validActions = ["deliver", "cancel", "delete", "send_invoice"];
   if (!validActions.includes(action)) {
     return NextResponse.json({ error: `action must be one of: ${validActions.join(", ")}` }, { status: 400 });
   }
 
   const admin = createAdminClient();
   const now = new Date().toISOString();
+
+  if (action === "send_invoice") {
+    // Create AND send (email) an enriched Square invoice per selected job,
+    // reusing the exact single-send logic so bulk invoices carry the same
+    // service description, line items, addresses, and net terms. Runs
+    // sequentially: each call hits the Square API, and a burst of parallel
+    // publishes risks rate-limiting. Never throws per row — every id comes
+    // back as created / skipped / error so the UI can show a clear summary.
+    const results: BulkItemResult[] = [];
+    for (const id of ids) {
+      const r = await sendB2BOneOffDeliveryInvoice(admin, id);
+      if (r.status === "created") {
+        results.push({ id, status: "created", squareInvoiceUrl: r.squareInvoiceUrl });
+      } else if (r.status === "skipped") {
+        results.push({
+          id,
+          status: "skipped",
+          reason: r.reason,
+          squareInvoiceUrl: r.squareInvoiceUrl ?? null,
+        });
+      } else {
+        results.push({ id, status: "error", reason: r.reason });
+      }
+    }
+    const created = results.filter((r) => r.status === "created").length;
+    const skipped = results.filter((r) => r.status === "skipped").length;
+    const failed = results.filter((r) => r.status === "error").length;
+    return NextResponse.json({ ok: true, action, created, skipped, failed, results });
+  }
 
   if (action === "deliver") {
     const { error } = await admin
