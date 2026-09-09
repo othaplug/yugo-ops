@@ -20,8 +20,14 @@ import { deliveryEligibleForAdminPrepaidMark } from "@/lib/delivery-prepaid-elig
 import {
   deliveryBulkInvoiceIneligibleReason,
   INVOICE_INELIGIBLE_LABEL,
-  type InvoiceIneligibleReason,
 } from "@/lib/delivery-invoice-eligibility"
+import {
+  deliveryTrackingBulkIneligibleReason,
+  TRACKING_INELIGIBLE_LABEL,
+  deliveryPaymentBulkIneligibleReason,
+  PAYMENT_INELIGIBLE_LABEL,
+  isDeliveredAndUnpaid,
+} from "@/lib/delivery-bulk-eligibility"
 
 export type DeliveryV3 = {
   id: string
@@ -38,6 +44,9 @@ export type DeliveryV3 = {
   vertical_code?: string | null
   contact_email?: string | null
   business_name?: string | null
+  customer_phone?: string | null
+  customer_email?: string | null
+  recipient_tracking_sent_at?: string | null
   has_invoice?: boolean | null
   invoice_status?: string | null
   payment_received_at?: string | null
@@ -187,46 +196,43 @@ export function AllDeliveriesV3DataTable({
     [toast, router],
   )
 
-  const runBulkInvoice = React.useCallback(
-    async (rows: DeliveryV3[]) => {
-      // Split the selection by the shared eligibility gates so the operator
-      // sees exactly what will be billed before any client is emailed.
+  // One generic pipeline for every eligibility-gated bulk action: split the
+  // selection by its shared gate, itemize what will be skipped, confirm the
+  // outward-facing ones deliberately, then POST and summarize per-id results.
+  const runBulkGated = React.useCallback(
+    async <R extends string>(
+      rows: DeliveryV3[],
+      opts: {
+        action: "send_invoice" | "send_tracking" | "record_payment"
+        ineligibleReason: (d: DeliveryV3) => R | null
+        label: Record<R, string>
+        confirmTitle: (n: number) => string
+        confirmNote: string
+        emptyNoun: string
+        successVerb: string
+        successNoun: (n: number) => string
+        errorNoun: string
+      },
+    ) => {
       const eligible: DeliveryV3[] = []
-      const skippedByReason = new Map<InvoiceIneligibleReason, number>()
+      const skippedByReason = new Map<R, number>()
       for (const d of rows) {
-        const reason = deliveryBulkInvoiceIneligibleReason(d)
-        if (reason) {
-          skippedByReason.set(reason, (skippedByReason.get(reason) || 0) + 1)
-        } else {
-          eligible.push(d)
-        }
+        const reason = opts.ineligibleReason(d)
+        if (reason) skippedByReason.set(reason, (skippedByReason.get(reason) || 0) + 1)
+        else eligible.push(d)
       }
 
       if (eligible.length === 0) {
-        const parts = [...skippedByReason.entries()].map(
-          ([r, n]) => `${n} ${INVOICE_INELIGIBLE_LABEL[r]}`,
-        )
-        toast(
-          `No invoices to send. ${parts.join(", ") || "Nothing eligible in selection."}`,
-          "x",
-        )
+        const parts = [...skippedByReason.entries()].map(([r, n]) => `${n} ${opts.label[r]}`)
+        toast(`No ${opts.emptyNoun} to process. ${parts.join(", ")}`.trim(), "x")
         return
       }
 
-      // Confirm — sending emails a Square invoice to each business client, so
-      // this is a deliberate, itemized step, not a silent bulk mutation.
       if (typeof window !== "undefined") {
-        const lines = [
-          `Create and send ${eligible.length} Square invoice${eligible.length !== 1 ? "s" : ""} now?`,
-          "",
-          "Each eligible job gets an enriched invoice emailed to its business contact.",
-        ]
+        const lines = [opts.confirmTitle(eligible.length), "", opts.confirmNote]
         if (skippedByReason.size > 0) {
-          lines.push("")
-          lines.push("Skipped:")
-          for (const [r, n] of skippedByReason.entries()) {
-            lines.push(`  - ${n} ${INVOICE_INELIGIBLE_LABEL[r]}`)
-          }
+          lines.push("", "Skipped:")
+          for (const [r, n] of skippedByReason.entries()) lines.push(`  - ${n} ${opts.label[r]}`)
         }
         if (!window.confirm(lines.join("\n"))) return
       }
@@ -234,24 +240,23 @@ export function AllDeliveriesV3DataTable({
       const res = await fetch("/api/admin/deliveries/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "send_invoice", ids: eligible.map((d) => d.id) }),
+        body: JSON.stringify({ action: opts.action, ids: eligible.map((d) => d.id) }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok || !data.ok) {
-        toast("Error: " + (data.error || "Failed to send invoices"), "x")
+        toast("Error: " + (data.error || `Failed to ${opts.errorNoun}`), "x")
         return
       }
 
       const created = Number(data.created) || 0
       const skipped = Number(data.skipped) || 0
       const failed = Number(data.failed) || 0
-      let msg = `Sent ${created} invoice${created !== 1 ? "s" : ""}`
+      let msg = `${opts.successVerb} ${created} ${opts.successNoun(created)}`
       if (skipped > 0) msg += `, ${skipped} skipped`
       if (failed > 0) {
         const firstErr = Array.isArray(data.results)
-          ? data.results.find(
-              (r: { status?: string; reason?: string }) => r.status === "error",
-            )?.reason
+          ? data.results.find((r: { status?: string; reason?: string }) => r.status === "error")
+              ?.reason
           : null
         msg += `, ${failed} failed${firstErr ? ` (${firstErr})` : ""}`
       }
@@ -260,6 +265,54 @@ export function AllDeliveriesV3DataTable({
       router.refresh()
     },
     [toast, router],
+  )
+
+  const runBulkInvoice = React.useCallback(
+    (rows: DeliveryV3[]) =>
+      runBulkGated(rows, {
+        action: "send_invoice",
+        ineligibleReason: deliveryBulkInvoiceIneligibleReason,
+        label: INVOICE_INELIGIBLE_LABEL,
+        confirmTitle: (n) => `Create and send ${n} Square invoice${n !== 1 ? "s" : ""} now?`,
+        confirmNote: "Each eligible job gets an enriched invoice emailed to its business contact.",
+        emptyNoun: "invoices",
+        successVerb: "Sent",
+        successNoun: (n) => `invoice${n !== 1 ? "s" : ""}`,
+        errorNoun: "send invoices",
+      }),
+    [runBulkGated],
+  )
+
+  const runBulkTracking = React.useCallback(
+    (rows: DeliveryV3[]) =>
+      runBulkGated(rows, {
+        action: "send_tracking",
+        ineligibleReason: deliveryTrackingBulkIneligibleReason,
+        label: TRACKING_INELIGIBLE_LABEL,
+        confirmTitle: (n) => `Send tracking links to ${n} customer${n !== 1 ? "s" : ""} now?`,
+        confirmNote: "Each eligible job texts/emails its end customer a live tracking link.",
+        emptyNoun: "tracking links",
+        successVerb: "Sent tracking to",
+        successNoun: (n) => `customer${n !== 1 ? "s" : ""}`,
+        errorNoun: "send tracking",
+      }),
+    [runBulkGated],
+  )
+
+  const runBulkPayment = React.useCallback(
+    (rows: DeliveryV3[]) =>
+      runBulkGated(rows, {
+        action: "record_payment",
+        ineligibleReason: deliveryPaymentBulkIneligibleReason,
+        label: PAYMENT_INELIGIBLE_LABEL,
+        confirmTitle: (n) => `Record payment on ${n} job${n !== 1 ? "s" : ""}?`,
+        confirmNote: "Marks each eligible job as paid. No card is charged; this records payment already received.",
+        emptyNoun: "payments",
+        successVerb: "Recorded payment on",
+        successNoun: (n) => `job${n !== 1 ? "s" : ""}`,
+        errorNoun: "record payment",
+      }),
+    [runBulkGated],
   )
 
   const columns = React.useMemo<ColumnDef<DeliveryV3>[]>(
@@ -415,6 +468,20 @@ export function AllDeliveriesV3DataTable({
         run: (r) => runBulkInvoice(r),
       },
       {
+        id: "send-tracking",
+        label: "Send tracking",
+        disabled: (r) =>
+          !r.some((d) => deliveryTrackingBulkIneligibleReason(d) === null),
+        run: (r) => runBulkTracking(r),
+      },
+      {
+        id: "record-payment",
+        label: "Record payment",
+        disabled: (r) =>
+          !r.some((d) => deliveryPaymentBulkIneligibleReason(d) === null),
+        run: (r) => runBulkPayment(r),
+      },
+      {
         id: "export-selected",
         label: "Export selected",
         run: (r) => exportDeliveriesCsv(r, "deliveries-selected.csv"),
@@ -438,28 +505,40 @@ export function AllDeliveriesV3DataTable({
         run: (r) => runBulkDelete(r.map((d) => d.id)),
       },
     ],
-    [runBulk, runBulkDelete, runBulkInvoice],
+    [runBulk, runBulkDelete, runBulkInvoice, runBulkTracking, runBulkPayment],
   )
 
   const uninvoicedEligibleIds = React.useMemo(
     () => rows.filter((d) => deliveryBulkInvoiceIneligibleReason(d) === null).map((d) => d.id),
     [rows],
   )
+  const deliveredUnpaidIds = React.useMemo(
+    () => rows.filter((d) => isDeliveredAndUnpaid(d)).map((d) => d.id),
+    [rows],
+  )
+
+  const smartSelects: { label: string; ids: string[] }[] = [
+    { label: "Select all uninvoiced", ids: uninvoicedEligibleIds },
+    { label: "Select delivered & unpaid", ids: deliveredUnpaidIds },
+  ].filter((s) => s.ids.length > 0)
 
   return (
     <>
-      {uninvoicedEligibleIds.length > 0 ? (
-        <div className="mb-3 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setSelectedIds(new Set(uninvoicedEligibleIds))}
-            className="inline-flex items-center gap-1.5 rounded-[var(--yu3-r-sm)] border border-[var(--yu3-line)] px-2.5 py-1.5 text-[12px] font-medium text-[var(--yu3-ink)] hover:bg-[var(--yu3-bg-surface-sunken)]"
-          >
-            Select all uninvoiced
-            <span className="yu3-num text-[11px] font-semibold text-[var(--yu3-ink-muted)]">
-              {uninvoicedEligibleIds.length}
-            </span>
-          </button>
+      {smartSelects.length > 0 ? (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          {smartSelects.map((s) => (
+            <button
+              key={s.label}
+              type="button"
+              onClick={() => setSelectedIds(new Set(s.ids))}
+              className="inline-flex items-center gap-1.5 rounded-[var(--yu3-r-sm)] border border-[var(--yu3-line)] px-2.5 py-1.5 text-[12px] font-medium text-[var(--yu3-ink)] hover:bg-[var(--yu3-bg-surface-sunken)]"
+            >
+              {s.label}
+              <span className="yu3-num text-[11px] font-semibold text-[var(--yu3-ink-muted)]">
+                {s.ids.length}
+              </span>
+            </button>
+          ))}
         </div>
       ) : null}
       <DataTable<DeliveryV3>

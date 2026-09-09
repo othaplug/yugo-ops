@@ -135,6 +135,14 @@ export async function POST(
     );
   }
 
+  // Record the send so the bulk "Send tracking" action dedups against it and
+  // won't re-message a customer who already received their link. Best-effort:
+  // the column may not exist on older DBs until the migration is applied.
+  await db
+    .from("deliveries")
+    .update({ recipient_tracking_sent_at: new Date().toISOString() })
+    .eq("id", del.id);
+
   return NextResponse.json({
     ok: true,
     delivery_number: del.delivery_number,

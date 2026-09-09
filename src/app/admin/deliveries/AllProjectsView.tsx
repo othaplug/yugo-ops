@@ -73,6 +73,9 @@ interface Delivery {
   contact_email?: string | null;
   business_name?: string | null;
   vertical_code?: string | null;
+  customer_phone?: string | null;
+  customer_email?: string | null;
+  recipient_tracking_sent_at?: string | null;
   has_invoice?: boolean | null;
   invoice_status?: string | null;
   payment_received_at?: string | null;

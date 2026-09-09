@@ -4,6 +4,8 @@ import { requireAdmin } from "@/lib/api-auth";
 import { syncDealStageByDeliveryId } from "@/lib/hubspot/sync-deal-stage";
 import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
 import { sendB2BOneOffDeliveryInvoice } from "@/lib/invoices/send-b2b-oneoff-invoice";
+import { sendDeliveryRecipientTracking } from "@/lib/deliveries/send-recipient-tracking";
+import { recordDeliveryPaymentBulk } from "@/lib/deliveries/record-delivery-payment";
 
 /** Per-id outcome for actions that can partially succeed (e.g. send_invoice). */
 type BulkItemResult = {
@@ -30,7 +32,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "action and ids[] required" }, { status: 400 });
   }
 
-  const validActions = ["deliver", "cancel", "delete", "send_invoice"];
+  const validActions = ["deliver", "cancel", "delete", "send_invoice", "send_tracking", "record_payment"];
   if (!validActions.includes(action)) {
     return NextResponse.json({ error: `action must be one of: ${validActions.join(", ")}` }, { status: 400 });
   }
@@ -57,6 +59,49 @@ export async function POST(req: NextRequest) {
           reason: r.reason,
           squareInvoiceUrl: r.squareInvoiceUrl ?? null,
         });
+      } else {
+        results.push({ id, status: "error", reason: r.reason });
+      }
+    }
+    const created = results.filter((r) => r.status === "created").length;
+    const skipped = results.filter((r) => r.status === "skipped").length;
+    const failed = results.filter((r) => r.status === "error").length;
+    return NextResponse.json({ ok: true, action, created, skipped, failed, results });
+  }
+
+  if (action === "send_tracking") {
+    // Send the recipient (end-customer) tracking link per selected job, reusing
+    // the single-send path. Sequential: each hits the SMS/email providers.
+    // Dedup on recipient_tracking_sent_at means a re-run skips customers who
+    // already got their link instead of re-spamming them.
+    const results: BulkItemResult[] = [];
+    for (const id of ids) {
+      const r = await sendDeliveryRecipientTracking(admin, id);
+      if (r.status === "sent") {
+        results.push({ id, status: "created", reason: r.channels.join(" + ") });
+      } else if (r.status === "skipped") {
+        results.push({ id, status: "skipped", reason: r.reason });
+      } else {
+        results.push({ id, status: "error", reason: r.reason });
+      }
+    }
+    const created = results.filter((r) => r.status === "created").length;
+    const skipped = results.filter((r) => r.status === "skipped").length;
+    const failed = results.filter((r) => r.status === "error").length;
+    return NextResponse.json({ ok: true, action, created, skipped, failed, results });
+  }
+
+  if (action === "record_payment") {
+    // Mark payment received per selected job, reusing the single "Record
+    // payment" flow (sets payment_received_at). Sequential and idempotent;
+    // already-paid rows are skipped.
+    const results: BulkItemResult[] = [];
+    for (const id of ids) {
+      const r = await recordDeliveryPaymentBulk(admin, id);
+      if (r.status === "recorded") {
+        results.push({ id, status: "created" });
+      } else if (r.status === "skipped") {
+        results.push({ id, status: "skipped", reason: r.reason });
       } else {
         results.push({ id, status: "error", reason: r.reason });
       }
