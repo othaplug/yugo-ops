@@ -96,11 +96,16 @@ export async function sendB2BOneOffDeliveryInvoice(
       .toISOString()
       .slice(0, 10);
 
-    const deliveryDateRaw =
-      (delivery as { scheduled_date?: string | null; created_at?: string | null }).scheduled_date ??
+    // The invoice's service date is when the job was actually completed, not
+    // when the invoice is raised. Prefer completed_at; fall back to the
+    // scheduled service date, then created_at, only when a job is invoiced
+    // before it is marked complete.
+    const serviceDateRaw =
+      (delivery as { completed_at?: string | null }).completed_at ??
+      (delivery as { scheduled_date?: string | null }).scheduled_date ??
       (delivery as { created_at?: string | null }).created_at ??
       null;
-    const deliveryDate = deliveryDateRaw ? new Date(deliveryDateRaw) : new Date();
+    const deliveryDate = serviceDateRaw ? new Date(serviceDateRaw) : new Date();
 
     const rawLineItems = (delivery as { b2b_line_items?: unknown }).b2b_line_items;
     const b2bLineItems = Array.isArray(rawLineItems)
