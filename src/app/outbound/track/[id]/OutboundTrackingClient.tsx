@@ -1,5 +1,7 @@
 "use client";
 
+import TrackingAgreementModal from "@/components/TrackingAgreementModal";
+
 /**
  * Partner-facing tracking page for outbound staging shipments.
  *
@@ -71,6 +73,7 @@ export default function OutboundTrackingClient({ data }: { data: Data }) {
 
   return (
     <div style={{ minHeight: "100vh", background: CREAM, padding: "32px 16px" }}>
+      <TrackingAgreementModal />
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
         {/* Header */}
         <div style={{ marginBottom: 32 }}>

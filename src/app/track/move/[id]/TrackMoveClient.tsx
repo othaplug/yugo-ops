@@ -40,7 +40,7 @@ import YugoLogo from "@/components/YugoLogo";
 import YugoMarketingFooter from "@/components/YugoMarketingFooter";
 import TipConfirmation from "@/components/tracking/TipConfirmation";
 import ExperienceRatingSection from "@/components/tracking/ExperienceRatingSection";
-import TrackingAgreementModal from "./TrackingAgreementModal";
+import TrackingAgreementModal from "@/components/TrackingAgreementModal";
 import SuppliesUpsell, { type SupplyCatalogItem } from "./SuppliesUpsell";
 import ActivityFeed from "./ActivityFeed";
 import InventoryChangeRequestModal from "@/components/tracking/InventoryChangeRequestModal";

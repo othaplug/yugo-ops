@@ -1,6 +1,7 @@
 "use client";
 
 import { Armchair, CheckCircle, Camera } from "@phosphor-icons/react";
+import TrackingAgreementModal from "@/components/TrackingAgreementModal";
 import {
   INBOUND_SHIPMENT_STATUS_LABELS,
   INBOUND_SERVICE_LEVEL_LABELS,
@@ -84,6 +85,7 @@ export default function RissdCustomerTrackClient({
 
   return (
     <div className="min-h-screen px-4 py-12" style={{ backgroundColor: BG, color: INK }}>
+      <TrackingAgreementModal />
       <div className="max-w-lg mx-auto">
         <div className="flex flex-col items-center text-center mb-7">
           <YugoLogo size={28} variant="black" />
