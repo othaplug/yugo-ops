@@ -43,6 +43,38 @@ function scheduleDateYmd(row: { scheduled_date?: unknown }): string {
   return String(v).trim().slice(0, 10)
 }
 
+/**
+ * Return the first candidate that looks like a real time window
+ * ("Morning", "9 AM - 11 AM", "09:00-11:00", "Early Morning (6-8 AM)")
+ * and NOT free-form prose ("Start time for move is 09:30. Elevator is
+ * booked from…"). Falls through to "TBD" if nothing usable.
+ *
+ * Rejection heuristics:
+ *   - length > 40 chars (a real window is ≤ ~30)
+ *   - sentence break: a period followed by whitespace + a letter
+ *   - more than 8 whitespace-separated words
+ *   - no digits AND no time keyword ("morning", "afternoon", …)
+ */
+function pickFirstTimeWindow(
+  candidates: Array<string | number | null | undefined | unknown>,
+): string {
+  const timeKeywords = /morning|afternoon|evening|noon|midday|anytime|tbd|dawn/i;
+  for (const raw of candidates) {
+    if (raw == null) continue;
+    const s = String(raw).trim();
+    if (!s) continue;
+    if (s.length > 40) continue;
+    // Sentence break — "text. Text"
+    if (/\.\s+\p{L}/u.test(s)) continue;
+    const words = s.split(/\s+/).filter(Boolean);
+    if (words.length > 8) continue;
+    // A real window has either a digit or one of the standard labels.
+    if (!/\d/.test(s) && !timeKeywords.test(s)) continue;
+    return s;
+  }
+  return "TBD";
+}
+
 /** Time label for Command Center job rows (matches detail page when slot is empty but window exists). */
 function commandCenterDeliveryTime(d: Record<string, unknown>): string {
   const slot =
@@ -564,14 +596,20 @@ export const loadCommandCenterData = async () => {
     // stale (e.g. MV-30315: scheduled_time "8 AM to 10 AM" while arrival_window
     // is "Early Morning (6:00 AM – 8:00 AM)"), so prefer arrival_window for
     // both display and ordering. (time_slot is not a real moves column.)
-    const moveTimeRaw =
-      m.arrival_window ||
-      m.scheduled_time ||
-      m.preferred_time
-    const moveTime =
-      moveTimeRaw != null && String(moveTimeRaw).trim() !== ""
-        ? String(moveTimeRaw).trim()
-        : "TBD"
+    //
+    // Guard: arrival_window has historically been abused as a free-form
+    // notes field (e.g. MV-30403: "Start time for move is 09:30. Elevator
+    // is booked from 09:30 to 11:30. I will be arriving and parking in
+    // the loading dock"). A prose blob rendered as job.time hijacks the
+    // Overview row layout — pushes the client name off-screen and looks
+    // like the primary label. pickFirstTimeWindow rejects any candidate
+    // that looks like a sentence and falls through to the next option;
+    // ultimately "TBD" rather than a message that obscures the client.
+    const moveTime = pickFirstTimeWindow([
+      m.arrival_window,
+      m.scheduled_time,
+      m.preferred_time,
+    ])
     return {
       id: String(m.id),
       type: "move",

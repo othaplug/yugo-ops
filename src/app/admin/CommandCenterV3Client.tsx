@@ -662,11 +662,14 @@ export default function CommandCenterV3Client({
                       {job.subtitle}
                     </div>
                   </div>
-                  <div className="flex flex-col items-end leading-tight flex-none">
-                    <span className="yu3-num text-[13px] text-[var(--yu3-ink-strong)]">
+                  <div className="flex flex-col items-end leading-tight flex-none max-w-[160px] min-w-0">
+                    <span
+                      className="yu3-num text-[13px] text-[var(--yu3-ink-strong)] truncate max-w-full text-right"
+                      title={job.time}
+                    >
                       {job.time}
                     </span>
-                    <span className="text-[11px] text-[var(--yu3-ink-faint)]">
+                    <span className="text-[11px] text-[var(--yu3-ink-faint)] truncate max-w-full text-right">
                       {serviceTypeDisplayLabel(job.tag) || job.tag}
                     </span>
                   </div>
