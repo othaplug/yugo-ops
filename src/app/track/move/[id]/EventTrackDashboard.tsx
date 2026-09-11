@@ -755,7 +755,7 @@ export default function EventTrackDashboard({
                 textDecoration: "none",
               }}
             >
-              Call {coordinatorName?.split(/\s+/)[0] || "your coordinator"}
+              Call support
             </a>
           ) : null}
         </Card>
