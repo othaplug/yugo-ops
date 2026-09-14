@@ -11,6 +11,10 @@ import {
 } from "../quote-shared";
 import { toTitleCase } from "@/lib/format-text";
 import {
+  pickupLocationsFromQuote,
+  dropoffLocationsFromQuote,
+} from "@/lib/quotes/quote-address-display";
+import {
   WG_ASSEMBLY_OPTIONS,
   WG_ITEM_CATEGORIES,
   WG_WEIGHT_CLASS_OPTIONS,
@@ -155,6 +159,13 @@ export default function WhiteGloveLayout({
   };
 
   const f = quote.factors_applied as Record<string, unknown> | null;
+  // All route stops. A white-glove quote can carry multiple pickups/dropoffs
+  // (factors_applied.pickup_locations / additional_pickup_addresses / b2b_stops);
+  // the shared helper folds every source and dedupes, so extra addresses are no
+  // longer dropped from the client proposal.
+  const pickupStops = pickupLocationsFromQuote(f, quote.from_address, quote.from_access);
+  const dropoffStops = dropoffLocationsFromQuote(f, quote.to_address, quote.to_access);
+  const multiStop = pickupStops.length + dropoffStops.length > 2;
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
   const deposit = calculateDeposit("white_glove", price);
@@ -368,43 +379,88 @@ export default function WhiteGloveLayout({
         >
           Route
         </h2>
-        <div className="flex items-center gap-3">
-          <div className="flex-1 min-w-0">
-            <p
-              className="text-[9px] font-bold tracking-[0.14em] uppercase"
-              style={{ color: C.muted }}
-            >
-              {isService ? "From" : "Pickup"}
-            </p>
-            <p
-              className="text-[12px] font-medium break-words"
-              style={{ color: C.strong }}
-            >
-              {(quote.from_address || "").trim() || "Provided on booking"}
-            </p>
+        {multiStop ? (
+          <div className="flex flex-col gap-3">
+            {pickupStops.map((p, i) => (
+              <div key={`pk-${i}`}>
+                <p
+                  className="text-[9px] font-bold tracking-[0.14em] uppercase"
+                  style={{ color: C.muted }}
+                >
+                  {pickupStops.length > 1
+                    ? `${isService ? "From" : "Pickup"} ${i + 1}`
+                    : isService
+                      ? "From"
+                      : "Pickup"}
+                </p>
+                <p
+                  className="text-[12px] font-medium break-words"
+                  style={{ color: C.strong }}
+                >
+                  {p.address}
+                </p>
+              </div>
+            ))}
+            {dropoffStops.map((p, i) => (
+              <div key={`dp-${i}`}>
+                <p
+                  className="text-[9px] font-bold tracking-[0.14em] uppercase"
+                  style={{ color: C.muted }}
+                >
+                  {dropoffStops.length > 1
+                    ? `${isService ? "To" : "Delivery"} ${i + 1}`
+                    : isService
+                      ? "To"
+                      : "Delivery"}
+                </p>
+                <p
+                  className="text-[12px] font-medium break-words"
+                  style={{ color: C.strong }}
+                >
+                  {p.address}
+                </p>
+              </div>
+            ))}
           </div>
-          <p
-            className="shrink-0 text-[9px] font-bold tracking-[0.14em] uppercase"
-            style={{ color: C.muted }}
-            aria-hidden
-          >
-            To
-          </p>
-          <div className="flex-1 min-w-0 text-right">
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p
+                className="text-[9px] font-bold tracking-[0.14em] uppercase"
+                style={{ color: C.muted }}
+              >
+                {isService ? "From" : "Pickup"}
+              </p>
+              <p
+                className="text-[12px] font-medium break-words"
+                style={{ color: C.strong }}
+              >
+                {(quote.from_address || "").trim() || "Provided on booking"}
+              </p>
+            </div>
             <p
-              className="text-[9px] font-bold tracking-[0.14em] uppercase"
+              className="shrink-0 text-[9px] font-bold tracking-[0.14em] uppercase"
               style={{ color: C.muted }}
+              aria-hidden
             >
-              {isService ? "To" : "Delivery"}
+              To
             </p>
-            <p
-              className="text-[12px] font-medium break-words"
-              style={{ color: C.strong }}
-            >
-              {(quote.to_address || "").trim() || "Provided on booking"}
-            </p>
+            <div className="flex-1 min-w-0 text-right">
+              <p
+                className="text-[9px] font-bold tracking-[0.14em] uppercase"
+                style={{ color: C.muted }}
+              >
+                {isService ? "To" : "Delivery"}
+              </p>
+              <p
+                className="text-[12px] font-medium break-words"
+                style={{ color: C.strong }}
+              >
+                {(quote.to_address || "").trim() || "Provided on booking"}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
         {quote.distance_km != null && (
           <p
             className="text-[10px] text-center mt-2"

@@ -9,6 +9,10 @@ import {
 } from "../quote-shared";
 import { toTitleCase } from "@/lib/format-text";
 import { formatPlatformDisplay } from "@/lib/date-format";
+import {
+  pickupLocationsFromQuote,
+  dropoffLocationsFromQuote,
+} from "@/lib/quotes/quote-address-display";
 
 const PROJECT_TYPE_LABELS: Record<string, string> = {
   art_installation: "Art Installation",
@@ -32,6 +36,11 @@ interface Props {
 
 export default function SpecialtyLayout({ quote, onConfirm, confirmed, protectionSlot }: Props) {
   const f = quote.factors_applied as Record<string, unknown> | null;
+  // Multi-stop: fold every stored pickup/dropoff so extra addresses render on
+  // the client proposal instead of being dropped to a single from/to.
+  const pickupStops = pickupLocationsFromQuote(f, quote.from_address, quote.from_access);
+  const dropoffStops = dropoffLocationsFromQuote(f, quote.to_address, quote.to_access);
+  const multiStop = pickupStops.length + dropoffStops.length > 2;
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
   const deposit = calculateDeposit("specialty", price);
@@ -127,21 +136,50 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed, protectio
         </div>
 
         <div className="grid sm:grid-cols-2 gap-3 pt-4 border-t border-[var(--brd)]/30">
-          <div className="flex items-start gap-2">
-            <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
-            <div>
-              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Location</p>
-              <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.from_address}</p>
-            </div>
-          </div>
-          {quote.to_address !== quote.from_address && (
-            <div className="flex items-start gap-2">
-              <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
-              <div>
-                <p className="admin-section-h2">Destination</p>
-                <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.to_address}</p>
+          {multiStop ? (
+            <>
+              {pickupStops.map((p, i) => (
+                <div key={`pk-${i}`} className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
+                  <div>
+                    <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">
+                      {pickupStops.length > 1 ? `Location ${i + 1}` : "Location"}
+                    </p>
+                    <p className="text-[12px] font-medium" style={{ color: FOREST }}>{p.address}</p>
+                  </div>
+                </div>
+              ))}
+              {dropoffStops.map((p, i) => (
+                <div key={`dp-${i}`} className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
+                  <div>
+                    <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">
+                      {dropoffStops.length > 1 ? `Destination ${i + 1}` : "Destination"}
+                    </p>
+                    <p className="text-[12px] font-medium" style={{ color: FOREST }}>{p.address}</p>
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
+                <div>
+                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Location</p>
+                  <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.from_address}</p>
+                </div>
               </div>
-            </div>
+              {quote.to_address !== quote.from_address && (
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
+                  <div>
+                    <p className="admin-section-h2">Destination</p>
+                    <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.to_address}</p>
+                  </div>
+                </div>
+              )}
+            </>
           )}
           {quote.move_date && (
             <div className="flex items-start gap-2">

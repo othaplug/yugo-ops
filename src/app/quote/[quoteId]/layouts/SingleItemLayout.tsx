@@ -9,6 +9,10 @@ import {
   isFullPaymentAtBookingService,
 } from "../quote-shared";
 import {
+  pickupLocationsFromQuote,
+  dropoffLocationsFromQuote,
+} from "@/lib/quotes/quote-address-display";
+import {
   resolveSingleItemLines,
   formatSingleItemCategoryLabel,
   type SingleItemLine,
@@ -38,6 +42,11 @@ export default function SingleItemLayout({
   protectionSlot,
 }: Props) {
   const f = quote.factors_applied as Record<string, unknown> | null;
+  // Multi-stop: fold every stored pickup/dropoff so extra addresses render on
+  // the client proposal instead of collapsing to a single from/to.
+  const pickupStops = pickupLocationsFromQuote(f, quote.from_address, quote.from_access);
+  const dropoffStops = dropoffLocationsFromQuote(f, quote.to_address, quote.to_access);
+  const isMultiStop = pickupStops.length + dropoffStops.length > 2;
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
   const deposit = calculateDeposit("single_item", price);
@@ -164,34 +173,60 @@ export default function SingleItemLayout({
 
         {/* Route */}
         <div className="mt-4 pt-4 border-t border-[var(--brd)]/30">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">
-                PICKUP
-              </p>
-              <p
-                className="text-[12px] font-medium truncate"
-                style={{ color: FOREST }}
-              >
-                {quote.from_address}
-              </p>
+          {isMultiStop ? (
+            <div className="flex flex-col gap-3">
+              {pickupStops.map((p, i) => (
+                <div key={`pk-${i}`}>
+                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">
+                    {pickupStops.length > 1 ? `PICKUP ${i + 1}` : "PICKUP"}
+                  </p>
+                  <p className="text-[12px] font-medium break-words" style={{ color: FOREST }}>
+                    {p.address}
+                  </p>
+                </div>
+              ))}
+              {dropoffStops.map((p, i) => (
+                <div key={`dp-${i}`}>
+                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">
+                    {(copy.mode === "residential" ? "DESTINATION" : "DELIVERY") +
+                      (dropoffStops.length > 1 ? ` ${i + 1}` : "")}
+                  </p>
+                  <p className="text-[12px] font-medium break-words" style={{ color: FOREST }}>
+                    {p.address}
+                  </p>
+                </div>
+              ))}
             </div>
-            <ArrowRight
-              className="w-4 h-4 shrink-0"
-              style={{ color: FOREST }}
-            />
-            <div className="flex-1 min-w-0 text-right">
-              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">
-                {copy.mode === "residential" ? "DESTINATION" : "DELIVERY"}
-              </p>
-              <p
-                className="text-[12px] font-medium truncate"
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">
+                  PICKUP
+                </p>
+                <p
+                  className="text-[12px] font-medium truncate"
+                  style={{ color: FOREST }}
+                >
+                  {quote.from_address}
+                </p>
+              </div>
+              <ArrowRight
+                className="w-4 h-4 shrink-0"
                 style={{ color: FOREST }}
-              >
-                {quote.to_address}
-              </p>
+              />
+              <div className="flex-1 min-w-0 text-right">
+                <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">
+                  {copy.mode === "residential" ? "DESTINATION" : "DELIVERY"}
+                </p>
+                <p
+                  className="text-[12px] font-medium truncate"
+                  style={{ color: FOREST }}
+                >
+                  {quote.to_address}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
           {quote.distance_km != null && (
             <p
               className="text-[10px] text-center mt-2"
