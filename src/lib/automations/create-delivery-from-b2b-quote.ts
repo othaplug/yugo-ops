@@ -151,8 +151,31 @@ export async function createDeliveryFromB2BQuote(
     partnerOrgType = (orgRow?.type as string | null) ?? null;
   }
 
+  // Multi-stop route from the quote (factors.b2b_stops carries the full ordered
+  // route when the quote had extra pickups/dropoffs beyond the basic
+  // pickup→delivery). Persist it to delivery_stops + flag the delivery so the
+  // delivery detail, crew app, and tracking pages — all of which read
+  // delivery_stops gated on is_multi_stop — show every address instead of just
+  // pickup_address→delivery_address.
+  const routeStops = (Array.isArray(factors.b2b_stops) ? factors.b2b_stops : [])
+    .map((s: { address?: string; type?: string; access?: string; items_at_stop?: unknown }) => ({
+      address: (s?.address || "").trim(),
+      type: (s?.type || "").toLowerCase() === "pickup" ? "pickup" : "delivery",
+      access: typeof s?.access === "string" ? s.access : null,
+      items: typeof s?.items_at_stop === "string" ? s.items_at_stop : null,
+    }))
+    .filter((s) => s.address.length > 0);
+  const fromALower = ((quote.from_address as string) || "").trim().toLowerCase();
+  const toALower = ((quote.to_address as string) || "").trim().toLowerCase();
+  const routeHasExtraStop = routeStops.some(
+    (s) => s.address.toLowerCase() !== fromALower && s.address.toLowerCase() !== toALower,
+  );
+  const isMultiStopRoute = routeStops.length > 1 && routeHasExtraStop;
+
   const insertPayload: Record<string, unknown> = {
     delivery_number: deliveryNumber,
+    is_multi_stop: isMultiStopRoute,
+    total_stops: isMultiStopRoute ? routeStops.length : null,
     organization_id: partnerOrgId,
     client_name: businessName,
     business_name: businessName,
@@ -219,31 +242,30 @@ export async function createDeliveryFromB2BQuote(
     console.error("[createDeliveryFromB2BQuote] ensureB2bDeliverySchedule:", e),
   );
 
-  const rawStops = factors.b2b_stops;
-  if (Array.isArray(rawStops) && rawStops.length > 0) {
-    const fromA = ((quote.from_address as string) || "").trim().toLowerCase();
-    const toA = ((quote.to_address as string) || "").trim().toLowerCase();
-    const extra = rawStops.filter((s: { address?: string }) => {
-      const a = (s.address || "").trim().toLowerCase();
-      if (!a) return false;
-      if (a === fromA || a === toA) return false;
-      return true;
+  if (isMultiStopRoute) {
+    // The final destination is the last delivery-type stop (fall back to the
+    // last stop overall) — drives the "N pickups → destination" rendering.
+    let finalIdx = routeStops.length - 1;
+    routeStops.forEach((s, i) => {
+      if (s.type === "delivery") finalIdx = i;
     });
-    if (extra.length > 0) {
-      const rows = extra.map(
-        (s: { address: string; type?: string; access?: string }, i: number) => ({
-          job_type: "delivery" as const,
-          job_id: deliveryId,
-          stop_type:
-            (s.type || "").toLowerCase() === "pickup"
-              ? ("pickup" as const)
-              : ("dropoff" as const),
-          address: (s.address || "").trim(),
-          sort_order: i + 1,
-          notes: (s.access || null) as string | null,
-        }),
-      );
-      await supabase.from("job_stops").insert(rows);
+    const stopRows = routeStops.map((s, i) => ({
+      delivery_id: deliveryId,
+      stop_number: i + 1,
+      address: s.address,
+      stop_type: s.type,
+      is_final_destination: i === finalIdx,
+      customer_name: businessName || clientName || null,
+      vendor_name: businessName || null,
+      items_description: s.items,
+      access_notes: s.access,
+      services_selected: [],
+      stop_status: i === 0 ? "current" : "pending",
+      status: i === 0 ? "current" : "pending",
+    }));
+    const { error: stopsErr } = await supabase.from("delivery_stops").insert(stopRows);
+    if (stopsErr) {
+      console.error("[createDeliveryFromB2BQuote] delivery_stops insert:", stopsErr.message);
     }
   }
 
