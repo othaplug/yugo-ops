@@ -15,6 +15,10 @@ import {
   calculateDeposit,
 } from "../quote-shared";
 import {
+  pickupLocationsFromQuote,
+  dropoffLocationsFromQuote,
+} from "@/lib/quotes/quote-address-display";
+import {
   SIGNATURE_PAGE_BG,
   SIGNATURE_ON_SHELL,
   SIGNATURE_CTA,
@@ -140,6 +144,11 @@ export default function OfficeLayout({
   premiumShellKind = "none",
 }: Props) {
   const f = quote.factors_applied as Record<string, unknown> | null;
+  // Multi-stop: fold every stored pickup/dropoff so extra addresses render on
+  // the client proposal instead of collapsing to a single from/to.
+  const pickupStops = pickupLocationsFromQuote(f, quote.from_address, quote.from_access);
+  const dropoffStops = dropoffLocationsFromQuote(f, quote.to_address, quote.to_access);
+  const multiStop = pickupStops.length + dropoffStops.length > 2;
   const officeTiered =
     !!tiers && OFFICE_TIER_ORDER.every((k) => tiers[k] && tiers[k].price > 0);
   // Split tiers by presentation mode.
@@ -633,34 +642,73 @@ export default function OfficeLayout({
           Scope of work
         </h2>
         <div className="grid sm:grid-cols-2 gap-3">
-          <div className="flex items-start gap-3">
-            <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: iconPrimary }} />
-            <div>
-              <p
-                className="text-[9px] font-bold tracking-[0.14em] uppercase"
-                style={{ color: eyebrowColor }}
-              >
-                From
-              </p>
-              <p className="text-[12px] font-medium" style={{ color: bodyColor }}>
-                {quote.from_address}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: iconSecondary }} />
-            <div>
-              <p
-                className="text-[9px] font-bold tracking-[0.14em] uppercase"
-                style={{ color: eyebrowColor }}
-              >
-                To
-              </p>
-              <p className="text-[12px] font-medium" style={{ color: bodyColor }}>
-                {quote.to_address}
-              </p>
-            </div>
-          </div>
+          {multiStop ? (
+            <>
+              {pickupStops.map((p, i) => (
+                <div key={`pk-${i}`} className="flex items-start gap-3">
+                  <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: iconPrimary }} />
+                  <div>
+                    <p
+                      className="text-[9px] font-bold tracking-[0.14em] uppercase"
+                      style={{ color: eyebrowColor }}
+                    >
+                      {pickupStops.length > 1 ? `From ${i + 1}` : "From"}
+                    </p>
+                    <p className="text-[12px] font-medium" style={{ color: bodyColor }}>
+                      {p.address}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {dropoffStops.map((p, i) => (
+                <div key={`dp-${i}`} className="flex items-start gap-3">
+                  <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: iconSecondary }} />
+                  <div>
+                    <p
+                      className="text-[9px] font-bold tracking-[0.14em] uppercase"
+                      style={{ color: eyebrowColor }}
+                    >
+                      {dropoffStops.length > 1 ? `To ${i + 1}` : "To"}
+                    </p>
+                    <p className="text-[12px] font-medium" style={{ color: bodyColor }}>
+                      {p.address}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              <div className="flex items-start gap-3">
+                <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: iconPrimary }} />
+                <div>
+                  <p
+                    className="text-[9px] font-bold tracking-[0.14em] uppercase"
+                    style={{ color: eyebrowColor }}
+                  >
+                    From
+                  </p>
+                  <p className="text-[12px] font-medium" style={{ color: bodyColor }}>
+                    {quote.from_address}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: iconSecondary }} />
+                <div>
+                  <p
+                    className="text-[9px] font-bold tracking-[0.14em] uppercase"
+                    style={{ color: eyebrowColor }}
+                  >
+                    To
+                  </p>
+                  <p className="text-[12px] font-medium" style={{ color: bodyColor }}>
+                    {quote.to_address}
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {scopeItems.length > 0 && (

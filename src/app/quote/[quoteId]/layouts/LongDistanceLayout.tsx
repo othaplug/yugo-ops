@@ -9,6 +9,10 @@ import {
   addDays,
   calculateDeposit,
 } from "../quote-shared";
+import {
+  pickupLocationsFromQuote,
+  dropoffLocationsFromQuote,
+} from "@/lib/quotes/quote-address-display";
 
 const DEFAULT_INCLUDES = [
   "Full packing & wrapping service",
@@ -35,6 +39,11 @@ export default function LongDistanceLayout({
   protectionSlot,
 }: Props) {
   const factors = quote.factors_applied as Record<string, unknown> | null;
+  // Multi-stop: fold every stored pickup/dropoff so extra addresses render on
+  // the client proposal instead of collapsing to a single origin/destination.
+  const pickupStops = pickupLocationsFromQuote(factors, quote.from_address, quote.from_access);
+  const dropoffStops = dropoffLocationsFromQuote(factors, quote.to_address, quote.to_access);
+  const multiStop = pickupStops.length + dropoffStops.length > 2;
   const includes =
     (factors?.includes as string[] | undefined) ?? DEFAULT_INCLUDES;
   const ldTruckSur = 0;
@@ -83,76 +92,132 @@ export default function LongDistanceLayout({
         >
           Your Route
         </h2>
-        <div className="flex items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start gap-2">
-              <MapPin
-                className="w-4 h-4 shrink-0 mt-0.5"
-                style={{ color: WINE }}
-              />
-              <div>
-                <p
-                  className="text-[10px] font-semibold tracking-wider uppercase"
-                  style={{ color: `${FOREST}80` }}
-                >
-                  Origin
-                </p>
-                <p
-                  className="text-[13px] font-medium"
-                  style={{ color: FOREST }}
-                >
-                  {quote.from_address}
-                </p>
+        {multiStop ? (
+          <div className="flex flex-col gap-3">
+            {pickupStops.map((p, i) => (
+              <div key={`pk-${i}`} className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
+                <div>
+                  <p
+                    className="text-[10px] font-semibold tracking-wider uppercase"
+                    style={{ color: `${FOREST}80` }}
+                  >
+                    {pickupStops.length > 1 ? `Origin ${i + 1}` : "Origin"}
+                  </p>
+                  <p className="text-[13px] font-medium" style={{ color: FOREST }}>
+                    {p.address}
+                  </p>
+                </div>
               </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center shrink-0">
-            <div
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full"
-              style={{ backgroundColor: `${FOREST}08` }}
-            >
-              <Truck className="w-3.5 h-3.5" style={{ color: FOREST }} />
-              <span
-                className="text-[11px] font-semibold"
-                style={{ color: FOREST }}
+            ))}
+            <div className="flex items-center gap-2 pl-6">
+              <div
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+                style={{ backgroundColor: `${FOREST}08` }}
               >
-                {quote.distance_km ?? "-"} km
-              </span>
-            </div>
-            {quote.drive_time_min != null && (
-              <div className="flex items-center gap-1 mt-1">
-                <Clock className="w-3 h-3" style={{ color: `${FOREST}60` }} />
-                <span className="text-[10px]" style={{ color: `${FOREST}60` }}>
-                  ~{Math.round(quote.drive_time_min / 60)}h drive
+                <Truck className="w-3.5 h-3.5" style={{ color: FOREST }} />
+                <span className="text-[11px] font-semibold" style={{ color: FOREST }}>
+                  {quote.distance_km ?? "-"} km
                 </span>
               </div>
-            )}
+              {quote.drive_time_min != null && (
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" style={{ color: `${FOREST}60` }} />
+                  <span className="text-[10px]" style={{ color: `${FOREST}60` }}>
+                    ~{Math.round(quote.drive_time_min / 60)}h drive
+                  </span>
+                </div>
+              )}
+            </div>
+            {dropoffStops.map((p, i) => (
+              <div key={`dp-${i}`} className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
+                <div>
+                  <p
+                    className="text-[10px] font-semibold tracking-wider uppercase"
+                    style={{ color: `${FOREST}80` }}
+                  >
+                    {dropoffStops.length > 1 ? `Destination ${i + 1}` : "Destination"}
+                  </p>
+                  <p className="text-[13px] font-medium" style={{ color: FOREST }}>
+                    {p.address}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
+        ) : (
+          <div className="flex items-center gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start gap-2">
+                <MapPin
+                  className="w-4 h-4 shrink-0 mt-0.5"
+                  style={{ color: WINE }}
+                />
+                <div>
+                  <p
+                    className="text-[10px] font-semibold tracking-wider uppercase"
+                    style={{ color: `${FOREST}80` }}
+                  >
+                    Origin
+                  </p>
+                  <p
+                    className="text-[13px] font-medium"
+                    style={{ color: FOREST }}
+                  >
+                    {quote.from_address}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-          <div className="flex-1 min-w-0 text-right">
-            <div className="flex items-start gap-2 justify-end">
-              <div>
-                <p
-                  className="text-[10px] font-semibold tracking-wider uppercase"
-                  style={{ color: `${FOREST}80` }}
-                >
-                  Destination
-                </p>
-                <p
-                  className="text-[13px] font-medium"
+            <div className="flex flex-col items-center shrink-0">
+              <div
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+                style={{ backgroundColor: `${FOREST}08` }}
+              >
+                <Truck className="w-3.5 h-3.5" style={{ color: FOREST }} />
+                <span
+                  className="text-[11px] font-semibold"
                   style={{ color: FOREST }}
                 >
-                  {quote.to_address}
-                </p>
+                  {quote.distance_km ?? "-"} km
+                </span>
               </div>
-              <MapPin
-                className="w-4 h-4 shrink-0 mt-0.5"
-                style={{ color: FOREST }}
-              />
+              {quote.drive_time_min != null && (
+                <div className="flex items-center gap-1 mt-1">
+                  <Clock className="w-3 h-3" style={{ color: `${FOREST}60` }} />
+                  <span className="text-[10px]" style={{ color: `${FOREST}60` }}>
+                    ~{Math.round(quote.drive_time_min / 60)}h drive
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 min-w-0 text-right">
+              <div className="flex items-start gap-2 justify-end">
+                <div>
+                  <p
+                    className="text-[10px] font-semibold tracking-wider uppercase"
+                    style={{ color: `${FOREST}80` }}
+                  >
+                    Destination
+                  </p>
+                  <p
+                    className="text-[13px] font-medium"
+                    style={{ color: FOREST }}
+                  >
+                    {quote.to_address}
+                  </p>
+                </div>
+                <MapPin
+                  className="w-4 h-4 shrink-0 mt-0.5"
+                  style={{ color: FOREST }}
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Protection slot renders here so coverage is next to the price. */}
