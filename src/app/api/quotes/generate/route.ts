@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TIER_DEFINITIONS } from "@/lib/tiers/tier-definitions";
+import { QUOTE_VALIDITY_DAYS } from "@/lib/quotes/quote-validity";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { isSuperAdminEmail } from "@/lib/super-admin";
@@ -6977,23 +6978,11 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  // R2: per-service-type quote validity. Reads quote_expiry_policy first;
-  // falls back to the global platform_config default if no row exists.
-  // The wholesale verticals (white_glove_swap, b2b_delivery) need a much
-  // longer horizon than the 7-day residential default.
-  let expiryDays = cfgNum(config, "quote_expiry_days", 7);
-  {
-    const expiryServiceKey =
-      svcType === "b2b_oneoff" ? "b2b_delivery" : svcType;
-    const { data: policyRow } = await sb
-      .from("quote_expiry_policy")
-      .select("days")
-      .eq("service_type", expiryServiceKey)
-      .maybeSingle();
-    if (policyRow?.days && Number.isFinite(Number(policyRow.days))) {
-      expiryDays = Number(policyRow.days);
-    }
-  }
+  // Firm global rule: every quote is valid for exactly QUOTE_VALIDITY_DAYS (7)
+  // days, regardless of service type. This intentionally ignores the old
+  // per-service-type quote_expiry_policy table and the quote_expiry_days config
+  // (which used to extend white glove / b2b to 30 days).
+  const expiryDays = QUOTE_VALIDITY_DAYS;
 
   if (!isPreview) {
     const mpForFlags = moveProjectPayloadSchema.safeParse(input.move_project);

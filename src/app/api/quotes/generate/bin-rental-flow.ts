@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { QUOTE_VALIDITY_DAYS } from "@/lib/quotes/quote-validity";
 import { logAudit } from "@/lib/audit";
 import { logActivity } from "@/lib/activity";
 import { applyProcessingRecoveryAndRound } from "@/lib/pricing/processing-recovery";
@@ -274,7 +275,8 @@ export async function buildBinRentalQuoteResponse(opts: {
     quoteId = await generateQuoteId();
   }
 
-  const expiryDays = cfgNum(config, "quote_expiry_days", 7);
+  // Firm global rule: all quotes valid for exactly QUOTE_VALIDITY_DAYS (7) days.
+  const expiryDays = QUOTE_VALIDITY_DAYS;
 
   let contactId = input.contact_id || null;
   if (!contactId && input.client_email) {

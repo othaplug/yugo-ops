@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { normalizePhone } from "@/lib/phone";
 import { generateNextQuoteId } from "@/lib/quotes/quote-id";
+import { QUOTE_VALIDITY_DAYS } from "@/lib/quotes/quote-validity";
 import {
   buildSpecialtyCostLines,
   hstOnPrice,
@@ -20,11 +21,6 @@ export const dynamic = "force-dynamic";
 
 const VEHICLES = new Set<VehicleType>(["sprinter", "16ft", "26ft"]);
 const ZONES = new Set<ZoneTier>(["gta_core", "zone_2", "zone_3", "outside"]);
-
-function cfgNum(rows: { key: string; value: string }[] | null, key: string, fb: number): number {
-  const v = rows?.find((r) => r.key === key)?.value;
-  return v !== undefined ? Number(v) : fb;
-}
 
 export async function POST(req: NextRequest) {
   const { user, error: authErr } = await requireStaff();
@@ -162,8 +158,8 @@ export async function POST(req: NextRequest) {
   const dimensionsText = String(body.dimensions_text || "").trim();
 
   const sb = sbForCost;
-  const { data: configRows } = await sb.from("platform_config").select("key, value");
-  const expiryDays = cfgNum(configRows ?? [], "quote_expiry_days", 7);
+  // Firm global rule: all quotes valid for exactly QUOTE_VALIDITY_DAYS (7) days.
+  const expiryDays = QUOTE_VALIDITY_DAYS;
   const hsTok = process.env.HUBSPOT_ACCESS_TOKEN ?? null;
   const quoteId = await generateNextQuoteId(sb, hsTok ? { hubspotAccessToken: hsTok } : {});
 
