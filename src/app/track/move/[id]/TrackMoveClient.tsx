@@ -569,6 +569,7 @@ export default function TrackMoveClient({
   binOrder = null,
   quotePickupStops = null,
   whiteGloveKind = "delivery",
+  whiteGloveScope = null,
   pendingBookingModification = null,
   moveProjectForTrack = null,
   fillParentHeight = false,
@@ -637,6 +638,7 @@ export default function TrackMoveClient({
   /** From originating quote factors when multiple pickups were quoted */
   quotePickupStops?: { address: string; access: string | null }[] | null;
   whiteGloveKind?: "delivery" | "service";
+  whiteGloveScope?: string | null;
   /** Coordinator booking change waiting for client approval (price increase). */
   pendingBookingModification?: {
     id: string;
@@ -2800,6 +2802,25 @@ export default function TrackMoveClient({
                             >
                               White glove handling, custom crating when needed,
                               and specialty care for high-value items.
+                            </p>
+                          </div>
+                        )}
+                        {serviceType === "white_glove" && whiteGloveScope && (
+                          <div
+                            className="pb-3 border-b"
+                            style={{ borderColor: `${FOREST}10` }}
+                          >
+                            <div
+                              className={`${TRACK_EYEBROW_CLASS} mb-1`}
+                              style={{ color: TEXT_MUTED_ON_LIGHT }}
+                            >
+                              Job details
+                            </div>
+                            <p
+                              className="text-[14px] leading-snug whitespace-pre-line"
+                              style={{ color: FOREST }}
+                            >
+                              {whiteGloveScope}
                             </p>
                           </div>
                         )}

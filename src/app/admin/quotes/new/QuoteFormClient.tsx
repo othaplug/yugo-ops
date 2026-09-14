@@ -1690,6 +1690,8 @@ export default function QuoteFormClient({
   const [wgBuildingReqs, setWgBuildingReqs] = useState<string[]>([]);
   const [wgBuildingNote, setWgBuildingNote] = useState("");
   const [wgDeliveryInstructions, setWgDeliveryInstructions] = useState("");
+  // White-glove "Job details" scope narrative, mirroring the event scope field.
+  const [wgScopeDetails, setWgScopeDetails] = useState("");
 
   // Specialty (dedicated item move)
   const [specialtyType, setSpecialtyType] = useState("");
@@ -2401,6 +2403,7 @@ export default function QuoteFormClient({
       wgBuildingReqs,
       wgBuildingNote,
       wgDeliveryInstructions,
+      wgScopeDetails,
       specialtyType,
       specialtyItemDescription,
       specialtyDimL,
@@ -2639,6 +2642,7 @@ export default function QuoteFormClient({
       arr(s.wgBuildingReqs, (v) => setWgBuildingReqs(v as Parameters<typeof setWgBuildingReqs>[0]));
       if (s.wgBuildingNote !== undefined) setWgBuildingNote(s.wgBuildingNote as Parameters<typeof setWgBuildingNote>[0]);
       if (s.wgDeliveryInstructions !== undefined) setWgDeliveryInstructions(s.wgDeliveryInstructions as Parameters<typeof setWgDeliveryInstructions>[0]);
+      if (s.wgScopeDetails !== undefined) setWgScopeDetails(s.wgScopeDetails as Parameters<typeof setWgScopeDetails>[0]);
       if (s.specialtyType !== undefined) setSpecialtyType(s.specialtyType as Parameters<typeof setSpecialtyType>[0]);
       if (s.specialtyItemDescription !== undefined) setSpecialtyItemDescription(s.specialtyItemDescription as Parameters<typeof setSpecialtyItemDescription>[0]);
       if (s.specialtyDimL !== undefined) setSpecialtyDimL(s.specialtyDimL as Parameters<typeof setSpecialtyDimL>[0]);
@@ -3779,6 +3783,8 @@ export default function QuoteFormClient({
           if (wgNote) setWgBuildingNote(wgNote);
           const wgDelivInstr = cStr(fa.white_glove_delivery_instructions);
           if (wgDelivInstr) setWgDeliveryInstructions(wgDelivInstr);
+          const wgScope = cStr(fa.white_glove_scope_details);
+          if (wgScope) setWgScopeDetails(wgScope);
         }
 
         // Office-move restoration
@@ -6519,6 +6525,9 @@ export default function QuoteFormClient({
           base.white_glove_delivery_instructions =
             wgDeliveryInstructions.trim();
         }
+        if (wgScopeDetails.trim()) {
+          base.white_glove_scope_details = wgScopeDetails.trim();
+        }
         if (fromLat != null && Number.isFinite(fromLat)) base.from_lat = fromLat;
         if (fromLng != null && Number.isFinite(fromLng)) base.from_lng = fromLng;
         if (toLat != null && Number.isFinite(toLat)) base.to_lat = toLat;
@@ -7078,6 +7087,7 @@ export default function QuoteFormClient({
       wgBuildingReqs,
       wgBuildingNote,
       wgDeliveryInstructions,
+      wgScopeDetails,
       isMultiScenario,
       scenarios,
       quoteId,
@@ -11046,6 +11056,15 @@ export default function QuoteFormClient({
                       </Field>
                     )}
                   </div>
+                  <Field label="Job details (shown on the client quote)">
+                    <textarea
+                      value={wgScopeDetails}
+                      onChange={(e) => setWgScopeDetails(e.target.value)}
+                      rows={3}
+                      placeholder="What the crew will do, sequencing, timing, access notes. The client sees this on their quote."
+                      className={`${fieldInput} resize-y min-h-[72px]`}
+                    />
+                  </Field>
                   <Field label="Delivery instructions">
                     <textarea
                       value={wgDeliveryInstructions}

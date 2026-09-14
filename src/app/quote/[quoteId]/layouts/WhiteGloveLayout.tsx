@@ -211,6 +211,12 @@ export default function WhiteGloveLayout({
     f.white_glove_delivery_instructions.trim().length > 0
       ? f.white_glove_delivery_instructions.trim()
       : null;
+  // Free-text "Job details" scope narrative (mirrors the event scope field).
+  const scopeDetails =
+    typeof f?.white_glove_scope_details === "string" &&
+    f.white_glove_scope_details.trim().length > 0
+      ? f.white_glove_scope_details.trim()
+      : null;
 
   return (
     <section className="mb-10 space-y-8 max-w-3xl mx-auto w-full">
@@ -480,6 +486,23 @@ export default function WhiteGloveLayout({
           </p>
         )}
       </div>
+
+      {scopeDetails && (
+        <div className="pt-6 border-t" style={{ borderColor: C.rule }}>
+          <h2
+            className="text-[13px] font-bold uppercase tracking-[0.14em] text-center"
+            style={{ color: C.kicker }}
+          >
+            Job details
+          </h2>
+          <p
+            className="text-[13px] leading-relaxed whitespace-pre-line mt-3"
+            style={{ color: C.strong }}
+          >
+            {scopeDetails}
+          </p>
+        </div>
+      )}
 
       {(buildingReqs.length > 0 || buildingNote || deliveryInstr) && (
         <div className="pt-6 border-t space-y-3" style={{ borderColor: C.rule }}>

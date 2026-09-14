@@ -358,6 +358,7 @@ interface QuoteInput {
   white_glove_guaranteed_window_hours?: number | null;
   white_glove_building_requirements_note?: string;
   white_glove_delivery_instructions?: string;
+  white_glove_scope_details?: string;
   // Specialty
   project_type?: string;
   timeline_hours?: number;
@@ -3496,6 +3497,8 @@ async function calcWhiteGlove(
         input.white_glove_building_requirements_note?.trim() || null,
       white_glove_delivery_instructions:
         input.white_glove_delivery_instructions?.trim() || null,
+      white_glove_scope_details:
+        input.white_glove_scope_details?.trim() || null,
     },
   };
 }

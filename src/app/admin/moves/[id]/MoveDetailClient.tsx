@@ -3383,6 +3383,7 @@ export default function MoveDetailClient({
           the underlying data is present, so this is a no-op for tiered moves
           and any single_item quote that doesn't use the new fields. */}
       <SingleItemTaskBlock move={move as unknown as Record<string, unknown>} />
+      <WhiteGloveScopeBlock move={move as unknown as Record<string, unknown>} />
 
       {/* Inventory, Files & Media */}
       <MoveInventorySection
@@ -4630,6 +4631,33 @@ function MoveOverviewDocumentsSection({
  * calcSingleItem in Phase 2). Renders nothing when the move doesn't have
  * single-item data — safe to mount on every move detail.
  */
+/**
+ * White-glove "Job details" scope narrative, from
+ * move.factors_applied.white_glove_scope_details (the same field shown on the
+ * client quote). Renders nothing unless the move is white glove and a scope
+ * was set — safe to mount on every move detail.
+ */
+function WhiteGloveScopeBlock({ move }: { move: Record<string, unknown> }) {
+  const serviceType = String(move.service_type ?? "").trim();
+  if (serviceType !== "white_glove") return null;
+  const fa = (move.factors_applied as Record<string, unknown> | null) ?? null;
+  const scope =
+    typeof fa?.white_glove_scope_details === "string"
+      ? fa.white_glove_scope_details.trim()
+      : "";
+  if (!scope) return null;
+  return (
+    <div className="rounded-xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 mb-3 space-y-2">
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--yu3-ink-muted)]">
+        Job details
+      </p>
+      <p className="text-[12px] leading-relaxed whitespace-pre-line text-[var(--yu3-ink)]">
+        {scope}
+      </p>
+    </div>
+  );
+}
+
 function SingleItemTaskBlock({
   move,
 }: {

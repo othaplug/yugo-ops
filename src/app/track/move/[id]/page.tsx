@@ -258,6 +258,9 @@ export default async function TrackMovePage({
   // factors_applied (not copied to the move row); surface it so the track page
   // can tailor copy. Defaults to "delivery" for legacy/unknown.
   let whiteGloveKind: "delivery" | "service" = "delivery";
+  // White-glove "Job details" scope narrative (client-facing), from the
+  // originating quote's factors_applied.
+  let whiteGloveScope: string | null = null;
   // Itemized add-ons the client selected, resolved to name + specifics + price so
   // the track page can show them prominently (bins count, TV size/mount). Priced
   // through the shared engine and tier-adjusted so it matches what was charged.
@@ -278,6 +281,9 @@ export default async function TrackMovePage({
     if (originQuote) {
       const fac = originQuote.factors_applied as Record<string, unknown> | null;
       if (fac?.white_glove_kind === "service") whiteGloveKind = "service";
+      if (typeof fac?.white_glove_scope_details === "string" && fac.white_glove_scope_details.trim()) {
+        whiteGloveScope = fac.white_glove_scope_details.trim();
+      }
       const rows = abbreviateLocationRows(
         pickupLocationsFromQuote(fac, originQuote.from_address, originQuote.from_access),
       );
@@ -519,6 +525,7 @@ export default async function TrackMovePage({
       binOrder={binOrder}
       quotePickupStops={quotePickupStops}
       whiteGloveKind={whiteGloveKind}
+      whiteGloveScope={whiteGloveScope}
       pendingBookingModification={pendingBookingMod ?? null}
       moveProjectForTrack={moveProjectForTrack}
       coordinatorName={trackCoordinatorName}
