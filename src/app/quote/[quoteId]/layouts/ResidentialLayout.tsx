@@ -17,6 +17,7 @@ import {
   FOREST_BODY,
   FOREST_MUTED,
   fmtPrice,
+  calculateTieredDeposit,
   QUOTE_EYEBROW_CLASS,
   QUOTE_SECTION_H2_CLASS,
 } from "../quote-shared";
@@ -678,38 +679,15 @@ export default function ResidentialLayout({
                         className="text-center text-[11px] mt-2.5 flex-shrink-0 font-medium"
                         style={{ color: depositColor }}
                       >
-                        {/* Sanity-check the displayed deposit against the
-                            tier's grand total. If the stored value is
-                            implausibly small (< 5% of total), assume it's a
-                            stale write and show the tier-policy floor
-                            instead: 10% Essential / 15% Signature / 25%
-                            Estate, with hard minimums $150 / $250 / $500.
-                            Estate hit this on 2026-06-27 where the card
-                            showed $100 deposit on a $2,091 quote whose
-                            booking flow actually charged $500 — the policy
-                            floor — leaving the client to discover the gap
-                            at the payment step. */}
-                        {fmtPrice(
-                          (() => {
-                            const stored = Number(t.deposit ?? 0);
-                            const total = Number(t.total ?? 0);
-                            if (stored >= total * 0.05) return stored;
-                            const price = Number(t.price ?? 0);
-                            const pct =
-                              tierKey === "essential"
-                                ? 0.1
-                                : tierKey === "signature"
-                                  ? 0.15
-                                  : 0.25;
-                            const min =
-                              tierKey === "essential"
-                                ? 150
-                                : tierKey === "signature"
-                                  ? 250
-                                  : 500;
-                            return Math.max(min, Math.round(price * pct));
-                          })(),
-                        )}{" "}
+                        {/* Deposit shown on the card is computed by the SAME
+                            function the booking step charges with
+                            (calculateTieredDeposit), from the tier's pre-tax
+                            price — never the stored t.deposit, which could be a
+                            stale write from an older config (e.g. a 20%
+                            deposit_amount lingering after the policy moved to
+                            10%). This guarantees the card and the payment step
+                            always show the same number. */}
+                        {fmtPrice(calculateTieredDeposit(tierKey, Number(t.price ?? 0)))}{" "}
                         deposit to book
                       </p>
                     )}
