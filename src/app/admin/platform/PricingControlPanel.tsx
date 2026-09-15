@@ -841,8 +841,8 @@ const SERVICE_TYPES = ["residential", "long_distance", "office", "single_item", 
 
 const DEPOSIT_TIER_KEYS = [
   { tier: "Essential", pctKey: "deposit_essential_pct", minKey: "deposit_essential_min", pctDefault: 10, minDefault: 150 },
-  { tier: "Signature", pctKey: "deposit_signature_pct", minKey: "deposit_signature_min", pctDefault: 15, minDefault: 250 },
-  { tier: "Estate", pctKey: "deposit_estate_pct", minKey: "deposit_estate_min", pctDefault: 25, minDefault: 500 },
+  { tier: "Signature", pctKey: "deposit_signature_pct", minKey: "deposit_signature_min", pctDefault: 10, minDefault: 250 },
+  { tier: "Estate", pctKey: "deposit_estate_pct", minKey: "deposit_estate_min", pctDefault: 30, minDefault: 0 },
 ] as const;
 
 function DepositRulesSection() {

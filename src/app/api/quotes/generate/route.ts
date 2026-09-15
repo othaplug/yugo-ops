@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TIER_DEFINITIONS } from "@/lib/tiers/tier-definitions";
 import { QUOTE_VALIDITY_DAYS } from "@/lib/quotes/quote-validity";
+import { residentialTierDeposit } from "@/lib/quotes/residential-deposit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { isSuperAdminEmail } from "@/lib/super-admin";
@@ -2396,16 +2397,13 @@ async function calcResidential(
   const sigTax = Math.round(sigPrice * taxRate);
   const estTax = Math.round(estPrice * taxRate);
 
-  // Tiered deposits from platform_config (Residential tier-based rules)
-  const curPct = cfgNum(config, "deposit_essential_pct", cfgNum(config, "deposit_curated_pct", 10));
-  const curMin = cfgNum(config, "deposit_essential_min", cfgNum(config, "deposit_curated_min", 150));
-  const sigPct = cfgNum(config, "deposit_signature_pct", 15);
-  const sigMin = cfgNum(config, "deposit_signature_min", 250);
-  const estPct = cfgNum(config, "deposit_estate_pct", 25);
-  const estMin = cfgNum(config, "deposit_estate_min", 500);
-  const curDep = Math.max(curMin, Math.round(curPrice * curPct / 100));
-  const sigDep = Math.max(sigMin, Math.round(sigPrice * sigPct / 100));
-  const estDep = Math.max(estMin, Math.round(estPrice * estPct / 100));
+  // Residential tier deposits — single source of truth (residentialTierDeposit):
+  // deposit = max(minimum, percentage × pre-tax price). Essential 10%/$150,
+  // Signature 10%/$250, Estate 30%/no-min. The client page and the server
+  // payment check call the exact same function.
+  const curDep = residentialTierDeposit("essential", curPrice);
+  const sigDep = residentialTierDeposit("signature", sigPrice);
+  const estDep = residentialTierDeposit("estate", estPrice);
 
   // Effective assembly: explicit override beats auto-detected value
   const effectiveAssemblyRequired =
@@ -6485,20 +6483,10 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
           }
         }
         if (newPrice < 600) return Math.round(newPrice);
-        // Policy (operator 2026-07-06 revert to established plan):
-        //   Essential 10 %, Signature 10 %, Estate 25 %.
-        //   Minimum $150 across every tier — operator directive
-        //   ("MINIMUM IS ALWAYS $150"). The < 600 gate above already
-        //   collects full payment on tiny jobs; this floor only bites
-        //   in the narrow band between $600 and ~$1,500 where 10 %
-        //   crosses $150.
-        const pct = cfgNum(
-          config,
-          `deposit_${tk}_pct`,
-          tk === "essential" ? 10 : tk === "signature" ? 10 : 25,
-        );
-        const min = cfgNum(config, `deposit_${tk}_min`, 150);
-        return Math.max(min, Math.round(newPrice * pct / 100));
+        // Recompute the deposit from policy on the overridden price — never
+        // scale the old deposit (scaling a min-floored deposit produced the
+        // $181 bug). Single source of truth: residentialTierDeposit.
+        return residentialTierDeposit(tk, newPrice);
       })();
       nextTiers[tk] = {
         ...t,
@@ -6673,7 +6661,11 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         const t = tiers[tk];
         if (!t) continue;
         const np = Math.max(0, Math.round(t.price * ratio));
-        const nd = Math.max(0, Math.round(t.deposit * ratio));
+        // Recompute the deposit from policy on the new price — do NOT scale the
+        // old deposit by the price ratio (scaling a min-floored deposit is what
+        // produced the $181-instead-of-$150 booking block). Single source of
+        // truth: residentialTierDeposit.
+        const nd = residentialTierDeposit(tk, np);
         nextTiers[tk] = {
           ...t,
           price: np,

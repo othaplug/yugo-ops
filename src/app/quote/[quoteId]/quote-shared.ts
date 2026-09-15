@@ -1,5 +1,6 @@
 import { SERVICE_TYPE_LABELS, TIER_LABELS } from "@/lib/displayLabels";
 import { formatPlatformDisplay } from "@/lib/date-format";
+import { residentialTierDeposit } from "@/lib/quotes/residential-deposit";
 
 export { ONTARIO_HST_RATE as TAX_RATE } from "@/lib/format-currency";
 export const WINE = "#5C1A33";
@@ -479,22 +480,10 @@ export function isFullPaymentAtBookingService(
  *   crosses $150).
  */
 export function calculateTieredDeposit(tier: string, total: number): number {
-  // Residential tier deposit policy — the single client-side source of truth,
-  // used by BOTH the tier card and the booking step so they can never show
-  // different numbers. These MUST mirror the platform_config the generate route
-  // reads: deposit_essential_pct=10/min 150, deposit_signature_pct=15/min 250,
-  // deposit_estate_pct=25/min 500. (Previously signature used 10%/min 150 and
-  // estate min 150, which disagreed with both config and the tier card.)
-  switch (tier) {
-    case "essential":
-      return Math.max(150, Math.round(total * 0.10));
-    case "signature":
-      return Math.max(250, Math.round(total * 0.15));
-    case "estate":
-      return Math.max(500, Math.round(total * 0.25));
-    default:
-      return Math.max(150, Math.round(total * 0.10));
-  }
+  // Delegates to the single residential deposit source of truth so the tier
+  // card, the booking step, quote generation, and the server check are always
+  // the same number. Policy lives in one place: residentialTierDeposit.
+  return residentialTierDeposit(tier, total);
 }
 
 /**

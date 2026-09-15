@@ -2,6 +2,7 @@
  * Residential move scope: day count detection and flat multi-day add-ons (Generate Quote Phase A).
  * Shared by admin quote UI and quotes/generate API.
  */
+import { residentialTierDeposit } from "@/lib/quotes/residential-deposit"
 
 export type MoveScopeTier = "essential" | "signature" | "estate"
 
@@ -368,23 +369,16 @@ export function applyMoveScopeAddonToResidentialTiers(
   const taxRate = cfgNumLocal(config, "tax_rate", 0.13)
   const rounding = cfgNumLocal(config, "rounding_nearest", 50)
 
-  const curPct = cfgNumLocal(config, "deposit_essential_pct", cfgNumLocal(config, "deposit_curated_pct", 10))
-  const curMin = cfgNumLocal(config, "deposit_essential_min", cfgNumLocal(config, "deposit_curated_min", 150))
-  const sigPct = cfgNumLocal(config, "deposit_signature_pct", 15)
-  const sigMin = cfgNumLocal(config, "deposit_signature_min", 250)
-  const estPct = cfgNumLocal(config, "deposit_estate_pct", 25)
-  const estMin = cfgNumLocal(config, "deposit_estate_min", 500)
-
   const bumpOne = (
     row: ScopedResidentialTier,
-    pct: number,
-    minDep: number,
+    tierKey: string,
   ): ScopedResidentialTier => {
     let price = row.price + addonPreTax
     price = Math.round(price / rounding) * rounding
     const tax = Math.round(price * taxRate)
     const total = price + tax
-    const deposit = Math.max(minDep, Math.round((price * pct) / 100))
+    // Single source of truth for residential deposits.
+    const deposit = residentialTierDeposit(tierKey, price)
     return {
       ...row,
       price,
@@ -404,8 +398,8 @@ export function applyMoveScopeAddonToResidentialTiers(
   // operational shape to match the multi-day Estate plan; they keep
   // getting bumped. See operator audit 2026-06-02 (YG-30272).
   return {
-    essential: bumpOne(tiers.essential, curPct, curMin),
-    signature: bumpOne(tiers.signature, sigPct, sigMin),
+    essential: bumpOne(tiers.essential, "essential"),
+    signature: bumpOne(tiers.signature, "signature"),
     estate: tiers.estate,
   }
 }

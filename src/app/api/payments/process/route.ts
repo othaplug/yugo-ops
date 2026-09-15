@@ -13,6 +13,7 @@ import {
 } from "@/lib/delivery-tracking-tokens";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { decideBookingPayment } from "@/lib/quotes/booking-payment-window";
+import { residentialTierDeposit } from "@/lib/quotes/residential-deposit";
 import { rateLimit } from "@/lib/rate-limit";
 import { isQuoteExpiredForBooking, quoteExpiryBlockedStatuses } from "@/lib/quote-expiry";
 import { squareThrownErrorStructured } from "@/lib/square-payment-errors";
@@ -133,14 +134,39 @@ export async function POST(req: Request) {
     ) {
       const taxRateForCheck = Number(factors?.tax_rate ?? 0.13);
       const customPrice = Number(quote.custom_price ?? 0);
-      const depositOnQuote = Number(quote.deposit_amount ?? 0);
+      let depositOnQuote = Number(quote.deposit_amount ?? 0);
       // Best-effort grand total: prefer the stored custom_price (already
       // tax-inclusive on most service types) when available; otherwise
       // approximate from deposit. Tolerance below covers any drift.
-      const grandTotalForCheck =
+      let grandTotalForCheck =
         customPrice > 0
           ? Math.round(customPrice * (1 + taxRateForCheck))
           : depositOnQuote;
+      // Residential (tier-based): recompute the required deposit AND grand total
+      // from the SELECTED tier using the single source of truth, so the server
+      // requires exactly what the client page charges — never a stale or
+      // override-scaled stored deposit_amount. This is what prevents the
+      // "payment below the deposit required" booking block.
+      if (svc === "local_move") {
+        const tiersForCheck = quote.tiers as
+          | Record<string, { price?: number | null; total?: number | null }>
+          | null
+          | undefined;
+        const tierKey = String(
+          (quote as { selected_tier?: string | null }).selected_tier ??
+            (quote as { recommended_tier?: string | null }).recommended_tier ??
+            "essential",
+        );
+        const tierRow = tiersForCheck?.[tierKey];
+        const tierPrice = tierRow ? Number(tierRow.price ?? 0) : 0;
+        if (tierPrice > 0) {
+          depositOnQuote = residentialTierDeposit(tierKey, tierPrice);
+          grandTotalForCheck =
+            tierRow && tierRow.total != null
+              ? Number(tierRow.total)
+              : Math.round(tierPrice * (1 + taxRateForCheck));
+        }
+      }
       const decision = quote.move_date
         ? decideBookingPayment({
             moveDate: quote.move_date as string,
