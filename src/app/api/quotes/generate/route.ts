@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TIER_DEFINITIONS } from "@/lib/tiers/tier-definitions";
 import { QUOTE_VALIDITY_DAYS } from "@/lib/quotes/quote-validity";
-import { residentialTierDeposit } from "@/lib/quotes/residential-deposit";
+import {
+  residentialTierDeposit,
+  LONG_DISTANCE_DEPOSIT_PCT,
+  LABOUR_DEPOSIT_PCT,
+  EVENT_DEPOSIT_PCT,
+  EVENT_FULL_PAYMENT_UNDER,
+} from "@/lib/quotes/residential-deposit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { isSuperAdminEmail } from "@/lib/super-admin";
@@ -1159,12 +1165,12 @@ function eventDeposit(
     }
   }
 
-  // Under the threshold (on the tax-inclusive total the client pays) → paid in full.
-  const fullUnder = cfgNum(config, "event_full_payment_under", 2500);
-  if (inclusive < fullUnder) return inclusive;
+  // At/under the threshold (on the tax-inclusive total the client pays) → full.
+  const fullUnder = EVENT_FULL_PAYMENT_UNDER;
+  if (inclusive <= fullUnder) return inclusive;
 
   // Above the threshold → percentage deposit, rounded, never below one step.
-  const pct = cfgNum(config, "event_deposit_pct", 25);
+  const pct = EVENT_DEPOSIT_PCT * 100;
   const step = Math.max(1, cfgNum(config, "event_deposit_round", 25));
   const dep = Math.round((preTax * pct) / 100 / step) * step;
   return Math.min(inclusive, Math.max(step, dep));
@@ -2437,7 +2443,7 @@ async function calcResidential(
         estate: calcLongDistanceTransit({ crew: tierCrew.estate, distKm: ldOneWayKm, driveTimeMin: ldDriveMin, truck: recTruck, moveSize: input.move_size, loadedRate: ldLoadedRate, config }),
       }
     : null;
-  const ldDepositPct = cfgNum(config, "ld_deposit_pct", 0.25);
+  const ldDepositPct = LONG_DISTANCE_DEPOSIT_PCT;
   const ldApplies = !!ldTransit?.estate.applies;
   const ldAdd = (base: number, t: LongDistanceTransit | undefined): number => base + (t?.total ?? 0);
   const ldTax = (p: number): number => Math.round(p * taxRate);
@@ -4987,7 +4993,8 @@ async function calcLabourOnly(
   // deposit amount. Prior to this the engine stored a flat $150 while
   // the client CTA computed the scaled value, so a $1,695 labour quote
   // rendered "$150 deposit" in one place and "$170 deposit" in another.
-  const scaledDeposit = Math.max(150, Math.round(total * 0.1));
+  // Labour only: 30% deposit, no minimum (single source: LABOUR_DEPOSIT_PCT).
+  const scaledDeposit = Math.round(total * LABOUR_DEPOSIT_PCT);
   const deposit = total < 550 || shortNoticeFullPayment ? total : scaledDeposit;
 
   // Internal ops context only — not shown on client quote.
@@ -5678,7 +5685,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   // tier %, per-tier overrides) can leave the tier card, the row deposit, and the
   // reserve page disagreeing. The row deposit tracks the recommended tier (the
   // pre-selected one the client reserves against), never the suppressed Essential.
-  const ldDepPctFinal = cfgNum(config, "ld_deposit_pct", 0.25);
+  const ldDepPctFinal = LONG_DISTANCE_DEPOSIT_PCT;
   const ldRecTier: "signature" | "estate" =
     normalizeRecommendedTierForDb(input.recommended_tier) === "estate" ? "estate" : "signature";
 

@@ -1166,7 +1166,7 @@ function eventTemplate(d: QuoteTemplateData): string {
   const rawDeposit =
     d.eventDeposit != null && d.eventDeposit > 0
       ? d.eventDeposit
-      : Math.max(300, Math.ceil(total * 0.25));
+      : Math.round(total * 0.3); // 30% fallback (real value is the stored eventDeposit)
   const deposit = rawDeposit >= grand - 2 ? grand : rawDeposit;
 
   const legs = d.eventLegBlocks;
@@ -1270,10 +1270,10 @@ function labourOnlyTemplate(d: QuoteTemplateData): string {
   const total = d.customPrice ?? 0;
   const tax = Math.round(total * 0.13);
   const totalWithTax = total + tax;
-  // Global rule: quotes under $600 (with tax) require full payment at booking.
-  const deposit = totalWithTax < 600
+  // Labour only: full payment under $550, otherwise 30% deposit (no minimum).
+  const deposit = totalWithTax < 550
     ? totalWithTax
-    : Math.max(200, Math.round(totalWithTax * 0.5));
+    : Math.round(totalWithTax * 0.3);
   const fullPayment = deposit >= totalWithTax;
   const depositLine = fullPayment
     ? "Full payment required at booking"

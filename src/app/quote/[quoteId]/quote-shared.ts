@@ -1,6 +1,13 @@
 import { SERVICE_TYPE_LABELS, TIER_LABELS } from "@/lib/displayLabels";
 import { formatPlatformDisplay } from "@/lib/date-format";
-import { residentialTierDeposit } from "@/lib/quotes/residential-deposit";
+import {
+  residentialTierDeposit,
+  OFFICE_DEPOSIT_PCT,
+  LONG_DISTANCE_DEPOSIT_PCT,
+  LABOUR_DEPOSIT_PCT,
+  EVENT_DEPOSIT_PCT,
+  EVENT_FULL_PAYMENT_UNDER,
+} from "@/lib/quotes/residential-deposit";
 
 export { ONTARIO_HST_RATE as TAX_RATE } from "@/lib/format-currency";
 export const WINE = "#5C1A33";
@@ -508,81 +515,55 @@ export function calculateDeposit(
   tier?: string,
   moveDate?: string | null,
 ): number {
-  // Global rule: any quote under $600 (total with tax) requires full payment at
-  // booking — no partial deposit. (Operator policy 2026-06-17, raised from $550.)
-  if (total < 600) return total;
+  // Universal small-job rule: any quote whose total (with tax) is under $550
+  // is collected in full at booking — no partial deposit. (Operator-confirmed
+  // 2026-09-15.)
+  if (total < 550) return total;
 
-  // Universal short-notice rule (operator decision 2026-06-11): bookings
-  // less than 4 days from the move date require full payment at booking.
-  // The 4-day window matches the operator's 48-hour-before-move balance
-  // collection window, a booking made 3 days out leaves no operational
-  // gap to collect a balance before crew dispatch. Applies to ALL
-  // service types so a last-minute Estate or labour-only book doesn't
-  // ship without payment locked in.
+  // Universal short-notice rule: bookings less than 4 days from the move date
+  // require full payment at booking (no operational gap to collect a balance
+  // before crew dispatch). Applies to ALL service types.
   const dUntil = daysUntilMove(moveDate);
   if (dUntil < 4) return total;
 
   if (serviceType === "local_move" && tier) {
     return calculateTieredDeposit(tier, total);
   }
-  // ─────────────────────────────────────────────────────────────
-  // Established deposit policy (operator 2026-07-06 revert to plan):
-  //   White Glove / Specialty / Single Item / Event / Bin Rental
-  //     → full payment at booking
-  //   Residential Essential / Signature   → 10 %   (min $50)
-  //   Residential Estate                  → 25 %   (min $200)
-  //   Long Distance                       → 50 %
-  //   Office Relocation                   → 25 % (< $5k), 30 % (>= $5k)
-  //   B2B delivery / one-off              → full payment (invoice / Net 30
-  //                                          settle separately; the deposit
-  //                                          flow only reserves the slot)
-  //   Labour Only                         → 10 %   (min $50)
-  //   Fallback (unknown type)             → 10 %   (min $50)
-  // ─────────────────────────────────────────────────────────────
+  // Non-residential deposit policy (operator-confirmed 2026-09-15), pinned to
+  // the shared constants in @/lib/quotes/residential-deposit so the client, the
+  // generate route, and the server payment check can never drift:
+  //   Office / Long distance / Labour only  → 30 %, no minimum
+  //   Event                                 → full ≤ $2,500 total, else 30 %
+  //   White glove / Single item / Specialty / Bin rental / B2B → full at booking
   switch (serviceType) {
     case "local_move":
-      // Reached only when tier is not supplied; tier-aware path above
-      // is the normal residential call.
-      return Math.max(150, Math.round(total * 0.10));
+      // Reached only when tier is not supplied; the tier-aware path above is
+      // the normal residential call.
+      return calculateTieredDeposit("essential", total);
     case "long_distance":
-      return Math.round(total * 0.50);
+      return Math.round(total * LONG_DISTANCE_DEPOSIT_PCT);
     case "office_move":
-      return total < 5000 ? Math.round(total * 0.25) : Math.round(total * 0.30);
+      return Math.round(total * OFFICE_DEPOSIT_PCT);
+    case "labour_only":
+      return Math.round(total * LABOUR_DEPOSIT_PCT);
+    case "event":
+      // Event deposit is computed authoritatively by eventDeposit() in the
+      // generate route and stored on quote.deposit_amount, which every event
+      // surface reads first. This fallback mirrors the threshold policy: full
+      // at/under $2,500, else 30%.
+      return total <= EVENT_FULL_PAYMENT_UNDER
+        ? total
+        : Math.round(total * EVENT_DEPOSIT_PCT);
     case "single_item":
-      return total; // full payment at booking
     case "white_glove":
-      return total; // full payment at booking
     case "specialty":
-      return total; // full payment at booking
+    case "bin_rental":
     case "b2b_oneoff":
     case "b2b_delivery":
-      // Full payment at booking. Partners on invoice terms settle via
-      // Net 30 outside this flow; this branch fires for one-off
-      // unregistered bookings where we collect up front to reserve
-      // the slot.
-      return total;
-    case "event":
-      // Events use a threshold policy (full under ~$1.5k, else 25% + balance),
-      // computed authoritatively by eventDeposit() in the generate route and
-      // stored on quote.deposit_amount — which every event surface reads first.
-      // This branch is only a missing-value fallback, so return the full total
-      // (safe: never under-charges) rather than duplicate the threshold logic.
-      return total;
-    case "labour_only":
-      // 10 % with a $150 floor (operator directive: minimum is always
-      // $150). The universal < $600 gate above already collects full
-      // payment on tiny jobs, so this floor only bites between $600
-      // and ~$1,500.
-      return Math.max(150, Math.round(total * 0.10));
-    case "bin_rental":
-      return total;
+      return total; // full payment at booking
     default:
-      // Unknown service: percentage-based fallback (10 %, min $150) so
-      // any new service that slips in without an explicit branch lands
-      // on a proportional deposit instead of a flat number that scales
-      // badly at the ends. $150 minimum matches the operator directive
-      // ("MINIMUM IS ALWAYS $150").
-      return Math.max(150, Math.round(total * 0.10));
+      // Unknown service: full payment (safe — never under-collects).
+      return total;
   }
 }
 

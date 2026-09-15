@@ -30,3 +30,25 @@ export function residentialTierDeposit(tier: string, preTaxPrice: number): numbe
   const price = Number.isFinite(preTaxPrice) && preTaxPrice > 0 ? preTaxPrice : 0;
   return Math.max(policy.min, Math.round(price * policy.pct));
 }
+
+/**
+ * Deposit policy for the non-residential services (operator-confirmed
+ * 2026-09-15). All are a flat percentage with NO minimum:
+ *   Office (all tiers) 30%, Long distance 30%, Labour only 30%.
+ * Event is a threshold policy: full payment at or below EVENT_FULL_PAYMENT_UNDER
+ * (tax-inclusive total), otherwise EVENT_DEPOSIT_PCT.
+ * Full-payment-at-booking services (no deposit split): white glove, single item,
+ * specialty, bin rental. B2B settles via its own invoice/one-off flow.
+ */
+export const OFFICE_DEPOSIT_PCT = 0.3;
+export const LONG_DISTANCE_DEPOSIT_PCT = 0.3;
+export const LABOUR_DEPOSIT_PCT = 0.3;
+export const EVENT_DEPOSIT_PCT = 0.3;
+export const EVENT_FULL_PAYMENT_UNDER = 2500; // tax-inclusive total
+
+export const FULL_PAYMENT_AT_BOOKING = new Set([
+  "white_glove",
+  "single_item",
+  "specialty",
+  "bin_rental",
+]);
