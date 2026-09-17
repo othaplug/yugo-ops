@@ -1547,10 +1547,11 @@ export default function QuotePageClient({
           );
           if (!cell) continue;
           const sizeDisplay = v.size.replace("-", "-") + '"';
-          const typeDisplay = typeLabelMap[v.type] ?? v.type;
-          const label = cell.mount_model
-            ? `${addon.name} (${sizeDisplay} · ${typeDisplay} · ${cell.mount_model})`
-            : `${addon.name} (${sizeDisplay} · ${typeDisplay})`;
+          // Operator directive: never render the mount type ("full motion",
+          // "fixed", "tilt"), the bracket brand, or the model number on any
+          // customer-facing surface. Show size + quantity only.
+          void typeLabelMap;
+          const label = `${addon.name} (${sizeDisplay})`;
           list.push({
             name: label,
             price: cell.price * (v.quantity || 1),
@@ -6753,17 +6754,9 @@ function AddOnsSection({
               // Variant sub-line: "43-55 · Tilting · Kanto T3760"
               let variantSubline = "";
               if (a.variant) {
-                const typeLabelMap: Record<string, string> = {
-                  fixed: "Fixed",
-                  tilt: "Tilting",
-                  full_motion: "Full motion",
-                };
-                const sizeDisplay = a.variant.size.replace("-", "-") + '"';
-                const typeDisplay =
-                  typeLabelMap[a.variant.type] ?? a.variant.type;
-                variantSubline = a.variant.mount_model
-                  ? `${sizeDisplay} · ${typeDisplay} · ${a.variant.mount_model}`
-                  : `${sizeDisplay} · ${typeDisplay}`;
+                // Operator directive: no mount type / brand / model on the
+                // customer summary. Size is the only public-safe segment.
+                variantSubline = a.variant.size.replace("-", "-") + '"';
               }
               return (
                 <li

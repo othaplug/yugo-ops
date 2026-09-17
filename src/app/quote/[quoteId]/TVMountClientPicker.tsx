@@ -278,8 +278,11 @@ export function TVMountClientPicker({
                           className="text-[10px] mt-1"
                           style={{ color: mutedText }}
                         >
-                          {cell.mount_model} · about {cell.labour_minutes} min
-                          install
+                          {/* Operator directive: no bracket brand / model
+                              on client-facing surfaces. Show install-time
+                              only so the customer sees what they're paying
+                              for without leaking the specific hardware. */}
+                          about {cell.labour_minutes} min install
                         </p>
                       </div>
                     </label>

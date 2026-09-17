@@ -182,8 +182,13 @@ export async function calculateAddons(
           // Multiple TVs: keep the full list on the breakdown for display.
           variantsOut = pricedVariants;
         }
-        // e.g. "56-65\" full motion (Kanto LDX640)" — one clause per TV so admin
-        // and crew know the exact size, mount type and bracket model to bring.
+        // Show ONLY size + quantity on the customer-facing / admin detail line
+        // (e.g. `56"-65" x2`). Operator directive: never leak the mount type
+        // ("full motion" / "fixed" / "tilt"), the bracket brand ("Kanto"), or
+        // the bracket model number ("LDX640") onto ANY facing surface — client
+        // quote, admin quote detail, PDFs, crew app. The exact make + model
+        // still lives on `variantsOut` (raw structured data) for the crew
+        // dispatch layer to consume internally, but never as a rendered label.
         if (pricedVariants.length > 0) {
           detail = pricedVariants
             .map((v) => {
@@ -195,11 +200,7 @@ export async function calculateAddons(
                 /\s*[—–]\s*/g,
                 "-",
               );
-              return (
-                `${sizeLabel} ${String(v.type).replace(/_/g, " ")}` +
-                (v.mount_model ? ` (${v.mount_model})` : "") +
-                (v.quantity > 1 ? ` x${v.quantity}` : "")
-              );
+              return `${sizeLabel}${v.quantity > 1 ? ` x${v.quantity}` : ""}`;
             })
             .join(", ");
         }

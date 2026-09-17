@@ -457,11 +457,11 @@ export default async function MoveDetailPage({
                   /\s*[—–]\s*/g,
                   "-",
                 );
-                parts.push(
-                  `${sizeLabel} ${String(v.type).replace(/_/g, " ")}` +
-                    (cell.mount_model ? ` (${cell.mount_model})` : "") +
-                    (vq > 1 ? ` x${vq}` : ""),
-                );
+                // Operator directive: no mount type / brand / model on any
+                // facing surface. Size + quantity only. The raw cell (with
+                // mount_model + type) is still available on selected_addons
+                // for internal dispatch use.
+                parts.push(`${sizeLabel}${vq > 1 ? ` x${vq}` : ""}`);
               }
             }
             detail = parts.length > 0 ? parts.join(", ") : undefined;

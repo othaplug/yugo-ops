@@ -199,7 +199,9 @@ export function TVMountVariantPicker({
                           {desc}
                         </p>
                         <p className="text-[10px] text-[var(--tx3)]/80 mt-0.5">
-                          {cell.mount_model} · ~{cell.labour_minutes} min install
+                          {/* Operator directive: no bracket brand / model on any
+                              facing surface (client OR admin). Install time only. */}
+                          ~{cell.labour_minutes} min install
                         </p>
                       </div>
                     </label>
