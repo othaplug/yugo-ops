@@ -1423,7 +1423,9 @@ export default function QuoteFormClient({
   // copied to moves.coordinator_name when the move is created from the
   // quote (createMoveFromQuote).
   const [coordinatorName, setCoordinatorName] = useState(operatorName ?? "");
-  const [quoteFlowStep, setQuoteFlowStep] = useState(0);
+  // Editing an existing quote skips the service-type step entirely (the service
+  // type of a quote cannot change) and opens straight on Job details.
+  const [quoteFlowStep, setQuoteFlowStep] = useState(editMode ? 2 : 0);
   // Set by a draft restore so the [serviceType] reset effect keeps the restored
   // step instead of slamming it back to 0. Null when not restoring.
   const restoringStepRef = useRef<number | null>(null);
@@ -3634,6 +3636,33 @@ export default function QuoteFormClient({
         if (cStr(Q.move_date)) setMoveDate(cStr(Q.move_date).slice(0, 10));
         if (cStr(Q.from_access)) setFromAccess(cStr(Q.from_access));
         if (cStr(Q.to_access)) setToAccess(cStr(Q.to_access));
+
+        // Multi-stop: seed the 2nd+ pickup/dropoff addresses so an edited quote
+        // keeps every stop instead of collapsing to a single from/to. The shared
+        // helper folds pickup_locations / additional_pickup_addresses / b2b_stops
+        // and dedupes; the extras are everything after the primary stop.
+        const faStops =
+          Q.factors_applied &&
+          typeof Q.factors_applied === "object" &&
+          !Array.isArray(Q.factors_applied)
+            ? (Q.factors_applied as Record<string, unknown>)
+            : null;
+        const pickupStops = pickupLocationsFromQuote(
+          faStops,
+          cStr(Q.from_address),
+          cStr(Q.from_access),
+        );
+        const dropoffStops = dropoffLocationsFromQuote(
+          faStops,
+          cStr(Q.to_address),
+          cStr(Q.to_access),
+        );
+        if (pickupStops.length > 1) {
+          setExtraFromStops(pickupStops.slice(1).map((s) => ({ address: s.address })));
+        }
+        if (dropoffStops.length > 1) {
+          setExtraToStops(dropoffStops.slice(1).map((s) => ({ address: s.address })));
+        }
 
         // Residential / single-item extras
         const moveSize = cStr(Q.move_size);
@@ -7809,6 +7838,9 @@ export default function QuoteFormClient({
     SKIP_CATALOG_ADDONS_QUOTE_STEP.has(serviceType);
 
   useEffect(() => {
+    // Editing: the service type is fixed, and prefill sets it once. Never bounce
+    // the operator back to the (hidden) service-type step on that flip.
+    if (editMode) return;
     // A draft restore that changed serviceType stashes the target step here so
     // this reset keeps it instead of forcing the user back to service selection.
     if (restoringStepRef.current != null) {
@@ -7818,7 +7850,7 @@ export default function QuoteFormClient({
       return;
     }
     setQuoteFlowStep(0);
-  }, [serviceType]);
+  }, [serviceType, editMode]);
 
   // Confirm before navigating away in-app (sidebar, links) while a quote is
   // genuinely in progress and not yet sent. The draft is autosaved, so the
@@ -7841,7 +7873,8 @@ export default function QuoteFormClient({
   }, [quoteFlowStep]);
 
   const handleQuoteFlowBack = () => {
-    setQuoteFlowStep((s) => Math.max(0, s - 1));
+    // In edit mode the service-type step (0) is hidden; Client (1) is the floor.
+    setQuoteFlowStep((s) => Math.max(editMode ? 1 : 0, s - 1));
   };
 
   const handleQuoteFlowContinue = () => {
@@ -8176,6 +8209,8 @@ export default function QuoteFormClient({
             <nav className="mt-5 w-full" aria-label="Quote form steps">
               <div className="flex w-full min-w-0 items-start gap-0">
                 {quoteFlowNavLabels.map((label, i) => {
+                  // Editing: the service-type step is not shown or navigable.
+                  if (editMode && i === 0) return null;
                   const done = i < quoteFlowStep;
                   const active = i === quoteFlowStep;
                   const canJumpBack = i < quoteFlowStep;
@@ -14029,12 +14064,12 @@ export default function QuoteFormClient({
               <button
                 type="button"
                 onClick={() => {
-                  if (quoteFlowStep === 0) router.back();
+                  if (quoteFlowStep === 0 || (editMode && quoteFlowStep === 1)) router.back();
                   else handleQuoteFlowBack();
                 }}
                 className="admin-btn admin-btn-secondary flex-1"
               >
-                {quoteFlowStep === 0 ? "Cancel" : "Back"}
+                {quoteFlowStep === 0 || (editMode && quoteFlowStep === 1) ? "Cancel" : "Back"}
               </button>
               <button
                 type="button"
