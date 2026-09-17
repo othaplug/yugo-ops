@@ -1,21 +1,19 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { Plus, Minus, ClipboardText, ArrowCounterClockwise } from "@phosphor-icons/react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Plus,
+  Minus,
+  ClipboardText,
+  ArrowCounterClockwise,
+  MagnifyingGlass as Search,
+} from "@phosphor-icons/react";
 import {
   OFFICE_INVENTORY_CATALOG,
   type OfficeItemCategory,
 } from "@/lib/quotes/office-inventory-catalog";
-import {
-  estimateOfficeLabour,
-  type OfficeInventoryLine,
-} from "@/lib/quotes/office-inventory-labour";
-import {
-  calcOfficeTiers,
-  type OfficeQuoteContext,
-} from "@/lib/quotes/office-quote-engine";
-import { OFFICE_TIER_DEFINITIONS, OFFICE_TIER_ORDER } from "@/lib/tiers/office-tier-definitions";
-import { applyProcessingRecoveryToTier } from "@/lib/pricing/processing-recovery";
+import { type OfficeInventoryLine } from "@/lib/quotes/office-inventory-labour";
+import { type OfficeQuoteContext } from "@/lib/quotes/office-quote-engine";
 
 /* ── Preset templates ──
  * One-click prefills for typical office sizes. Operator picks the closest
@@ -184,8 +182,6 @@ export interface OfficeInventoryInputProps {
   onContextChange: (next: OfficeQuoteContext) => void;
 }
 
-const fmt = (n: number) => `$${Math.round(n).toLocaleString("en-CA")}`;
-
 export default function OfficeInventoryInput({
   inventory,
   onInventoryChange,
@@ -204,29 +200,50 @@ export default function OfficeInventoryInput({
     onInventoryChange(q > 0 ? [...rest, { slug, quantity: q }] : rest);
   };
 
-  const grouped = useMemo(() => {
-    const out = {} as Record<OfficeItemCategory, typeof OFFICE_INVENTORY_CATALOG>;
-    for (const item of OFFICE_INVENTORY_CATALOG) (out[item.category] ??= []).push(item);
-    return out;
+  // Residential-style catalog UI: category tabs + quick-add + search, showing
+  // only the items actually added. The live estimate lives on the generate
+  // screen, so it is intentionally not rendered here.
+  const [activeCat, setActiveCat] = useState<OfficeItemCategory | "all">("all");
+  const [search, setSearch] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showAllQuickAdd, setShowAllQuickAdd] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
-  const { labour, quote } = useMemo(() => {
-    const lab = estimateOfficeLabour(inventory);
-    const raw = calcOfficeTiers(lab, context);
-    // Match the server: bake CC processing recovery into every tier
-    // price so the live estimate matches the post-Generate right rail.
-    // Before this, the engine returned pre-recovery numbers
-    // ($6,450/$8,400/$9,300) while the server applied recovery in
-    // route.ts (yielding $6,650/$8,650/$9,600). Operator flagged the
-    // ~$200-300 gap on 2026-06-29. Uses platform defaults; if the
-    // platform_config rates ever drift, the gap will be a few dollars,
-    // not hundreds.
-    const grossedTiers = {} as typeof raw.tiers;
-    for (const k of Object.keys(raw.tiers) as (keyof typeof raw.tiers)[]) {
-      grossedTiers[k] = applyProcessingRecoveryToTier(raw.tiers[k], {}, 50);
-    }
-    return { labour: lab, quote: { ...raw, tiers: grossedTiers } };
-  }, [inventory, context]);
+  const quickAddItems = useMemo(
+    () =>
+      OFFICE_INVENTORY_CATALOG.filter(
+        (it) => activeCat === "all" || it.category === activeCat,
+      ),
+    [activeCat],
+  );
+
+  const searchResults = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    return OFFICE_INVENTORY_CATALOG.filter((it) =>
+      it.label.toLowerCase().includes(q),
+    ).slice(0, 10);
+  }, [search]);
+
+  // The items the operator has actually added, in catalog order.
+  const selectedItems = useMemo(
+    () => OFFICE_INVENTORY_CATALOG.filter((it) => (qtyBySlug.get(it.slug) ?? 0) > 0),
+    [qtyBySlug],
+  );
+  const totalUnits = useMemo(
+    () => inventory.reduce((s, l) => s + Math.max(0, l.quantity), 0),
+    [inventory],
+  );
 
   const patchCtx = (patch: Partial<OfficeQuoteContext>) =>
     onContextChange({ ...context, ...patch });
@@ -400,60 +417,173 @@ export default function OfficeInventoryInput({
         )}
       </div>
 
-      {/* ── Catalog ── */}
-      <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] px-3 py-3 space-y-4">
-        {CATEGORY_ORDER.filter((cat) => grouped[cat]?.length).map((cat) => (
-          <div key={cat} className="space-y-2">
-            <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--tx3)]">
-              {CATEGORY_LABELS[cat]}
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
-              {grouped[cat].map((item) => {
-                const qty = qtyBySlug.get(item.slug) ?? 0;
-                const active = qty > 0;
-                return (
-                  <div
-                    key={item.slug}
-                    className="flex items-center justify-between gap-3"
-                  >
-                    <span
-                      className={`text-[11px] leading-snug ${active ? "text-[var(--tx)] font-medium" : "text-[var(--tx3)]"}`}
+      {/* ── Catalog: category tabs + quick-add + search, only-added list ── */}
+      <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] px-3 py-3 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+            Equipment &amp; furniture
+          </h3>
+          {totalUnits > 0 && (
+            <span className="text-[10px] text-[var(--tx3)] tabular-nums">
+              {totalUnits} item{totalUnits === 1 ? "" : "s"}
+            </span>
+          )}
+        </div>
+
+        {/* Category tabs */}
+        <div className="flex flex-wrap gap-1.5">
+          {(["all", ...CATEGORY_ORDER] as (OfficeItemCategory | "all")[]).map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => {
+                setActiveCat(cat);
+                setShowAllQuickAdd(false);
+              }}
+              className={`px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
+                activeCat === cat
+                  ? "bg-[var(--admin-primary-fill)]/15 text-[var(--tx)] border-[var(--admin-primary-fill)]"
+                  : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
+              }`}
+            >
+              {cat === "all" ? "All" : CATEGORY_LABELS[cat]}
+            </button>
+          ))}
+        </div>
+
+        {/* Quick-add chips for the active category */}
+        {(() => {
+          const LIMIT = 16;
+          const visible = showAllQuickAdd ? quickAddItems : quickAddItems.slice(0, LIMIT);
+          return (
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap gap-1.5">
+                {visible.map((item) => {
+                  const qty = qtyBySlug.get(item.slug) ?? 0;
+                  return (
+                    <button
+                      key={item.slug}
+                      type="button"
+                      onClick={() => setQty(item.slug, qty + 1)}
+                      title={item.label}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
+                        qty > 0
+                          ? "bg-[var(--admin-primary-fill)]/15 text-[var(--tx)] border-[var(--admin-primary-fill)]"
+                          : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
+                      }`}
                     >
+                      <Plus className="w-2.5 h-2.5 shrink-0" weight="bold" aria-hidden />
                       {item.label}
+                      {qty > 0 && <span className="ml-0.5 tabular-nums">×{qty}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+              {quickAddItems.length > LIMIT && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllQuickAdd((v) => !v)}
+                  className="text-[9px] text-[var(--tx3)] hover:text-[var(--tx2)]"
+                >
+                  {showAllQuickAdd ? "Show less" : `Show all ${quickAddItems.length}`}
+                </button>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Search anything in the catalog */}
+        <div ref={searchRef} className="relative">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--tx2)]"
+            aria-hidden
+          />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setShowDropdown(true);
+            }}
+            onFocus={() => setShowDropdown(true)}
+            placeholder="Search items (desk, filing cabinet, server rack...)"
+            aria-label="Search office inventory"
+            className="h-9 w-full rounded-lg border border-[var(--brd)] bg-[var(--card)] pl-9 pr-3 text-[12px] text-[var(--tx)]"
+          />
+          {showDropdown && searchResults.length > 0 && (
+            <div className="absolute z-20 top-full left-0 right-0 mt-1 max-h-[240px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-lg">
+              {searchResults.map((item) => {
+                const qty = qtyBySlug.get(item.slug) ?? 0;
+                return (
+                  <button
+                    key={item.slug}
+                    type="button"
+                    onClick={() => {
+                      setQty(item.slug, qty + 1);
+                      setSearch("");
+                      setShowDropdown(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)]/50 last:border-0 flex items-center justify-between gap-3"
+                  >
+                    <span>{item.label}</span>
+                    <span className="text-[9px] uppercase tracking-wide text-[var(--tx3)] shrink-0">
+                      {CATEGORY_LABELS[item.category]}
+                      {qty > 0 ? ` · ×${qty}` : ""}
                     </span>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        aria-label={`Remove one ${item.label}`}
-                        disabled={qty === 0}
-                        onClick={() => setQty(item.slug, qty - 1)}
-                        className="flex h-6 w-6 items-center justify-center rounded border border-[var(--brd)] text-[var(--tx3)] disabled:opacity-30 hover:border-[var(--tx3)]"
-                      >
-                        <Minus className="h-3 w-3" weight="bold" aria-hidden />
-                      </button>
-                      <input
-                        type="number"
-                        min={0}
-                        value={qty === 0 ? "" : qty}
-                        placeholder="0"
-                        onChange={(e) => setQty(item.slug, Number(e.target.value || 0))}
-                        className="h-6 w-12 rounded border border-[var(--brd)] bg-[var(--card)] text-center text-[11px] text-[var(--tx)] tabular-nums"
-                      />
-                      <button
-                        type="button"
-                        aria-label={`Add one ${item.label}`}
-                        onClick={() => setQty(item.slug, qty + 1)}
-                        className="flex h-6 w-6 items-center justify-center rounded border border-[var(--admin-primary-fill)] bg-[var(--admin-primary-fill)]/10 text-[var(--tx)] hover:bg-[var(--admin-primary-fill)]/20"
-                      >
-                        <Plus className="h-3 w-3" weight="bold" aria-hidden />
-                      </button>
-                    </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
+          )}
+        </div>
+
+        {/* What's been added — only these show a stepper */}
+        {selectedItems.length > 0 ? (
+          <div className="space-y-1.5 pt-0.5">
+            {selectedItems.map((item) => {
+              const qty = qtyBySlug.get(item.slug) ?? 0;
+              return (
+                <div
+                  key={item.slug}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-[var(--brd)]/60 bg-[var(--card)] px-3 py-1.5"
+                >
+                  <span className="text-[11px] font-medium text-[var(--tx)] leading-snug min-w-0 truncate">
+                    {item.label}
+                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      aria-label={`Remove one ${item.label}`}
+                      onClick={() => setQty(item.slug, qty - 1)}
+                      className="flex h-6 w-6 items-center justify-center rounded border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--tx3)]"
+                    >
+                      <Minus className="h-3 w-3" weight="bold" aria-hidden />
+                    </button>
+                    <input
+                      type="number"
+                      min={0}
+                      value={qty}
+                      onChange={(e) => setQty(item.slug, Number(e.target.value || 0))}
+                      className="h-6 w-12 rounded border border-[var(--brd)] bg-[var(--card)] text-center text-[11px] text-[var(--tx)] tabular-nums"
+                    />
+                    <button
+                      type="button"
+                      aria-label={`Add one ${item.label}`}
+                      onClick={() => setQty(item.slug, qty + 1)}
+                      className="flex h-6 w-6 items-center justify-center rounded border border-[var(--admin-primary-fill)] bg-[var(--admin-primary-fill)]/10 text-[var(--tx)] hover:bg-[var(--admin-primary-fill)]/20"
+                    >
+                      <Plus className="h-3 w-3" weight="bold" aria-hidden />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        ))}
+        ) : (
+          <p className="text-[10px] text-[var(--tx3)] italic pt-0.5">
+            No items yet. Pick a preset above, tap a category chip, or search to add.
+          </p>
+        )}
       </div>
 
       {/* ── Scope & timing ── */}
@@ -508,54 +638,6 @@ export default function OfficeInventoryInput({
         </div>
       </div>
 
-      {/* ── Live preview ── */}
-      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] px-3 py-3 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--tx3)]">
-            Live estimate
-          </p>
-          <span
-            className={`text-[9px] font-bold uppercase tracking-[0.06em] px-2 py-0.5 rounded ${
-              quote.confidence.level === "high"
-                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-                : "bg-amber-500/15 text-amber-700 dark:text-amber-300"
-            }`}
-          >
-            {quote.confidence.level === "high" ? "On model" : "Review"}
-          </span>
-        </div>
-        <p className="text-[10px] text-[var(--tx3)]">
-          {labour.unitCount} items · crew {labour.crew} · {labour.trucks} truck
-          {labour.trucks === 1 ? "" : "s"} · volume {labour.volumeScore}
-        </p>
-        <div className="grid grid-cols-3 gap-2">
-          {OFFICE_TIER_ORDER.map((t) => {
-            const tp = quote.tiers[t];
-            const def = OFFICE_TIER_DEFINITIONS[t];
-            return (
-              <div
-                key={t}
-                className={`rounded-lg border px-2.5 py-2 ${
-                  def.recommended
-                    ? "border-[var(--admin-primary-fill)] bg-[var(--admin-primary-fill)]/5"
-                    : "border-[var(--brd)]"
-                }`}
-              >
-                <p className="text-[9px] font-bold uppercase tracking-[0.06em] text-[var(--tx3)]">
-                  {def.name}
-                </p>
-                <p className="text-[15px] font-bold text-[var(--tx)] tabular-nums leading-tight mt-0.5">
-                  {fmt(tp.price)}
-                </p>
-                <p className="text-[9px] text-[var(--tx3)] mt-0.5">
-                  +{fmt(tp.tax)} HST · {tp.days}d · {tp.crew} crew
-                </p>
-              </div>
-            );
-          })}
-        </div>
-        <p className="text-[9px] text-[var(--tx3)] leading-snug">{quote.confidence.reason}</p>
-      </div>
     </div>
   );
 }
