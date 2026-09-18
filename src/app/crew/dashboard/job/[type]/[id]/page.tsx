@@ -525,33 +525,30 @@ export default function CrewJobPage({
 
   const navDestination: CrewNavDestination | null = useMemo(() => {
     if (!job || !session?.isActive || isCompleted) return null;
-    if (
-      currentStatus === "en_route_to_pickup" &&
-      isValidNavCoord(job.fromLat, job.fromLng)
-    ) {
-      return { lat: job.fromLat!, lng: job.fromLng!, address: job.fromAddress };
-    }
-    if (
-      (currentStatus === "en_route_to_destination" ||
-        currentStatus === "en_route_venue") &&
-      isValidNavCoord(job.toLat, job.toLng)
-    ) {
-      return { lat: job.toLat!, lng: job.toLng!, address: job.toAddress };
-    }
-    if (
-      currentStatus === "en_route_return" &&
-      isValidNavCoord(job.fromLat, job.fromLng)
-    ) {
-      return { lat: job.fromLat!, lng: job.fromLng!, address: job.fromAddress };
-    }
-    if (currentStatus === "en_route") {
-      if (isValidNavCoord(job.toLat, job.toLng)) {
-        return { lat: job.toLat!, lng: job.toLng!, address: job.toAddress };
-      }
-      if (isValidNavCoord(job.fromLat, job.fromLng)) {
-        return { lat: job.fromLat!, lng: job.fromLng!, address: job.fromAddress };
-      }
-    }
+    const fromDest = isValidNavCoord(job.fromLat, job.fromLng)
+      ? { lat: job.fromLat!, lng: job.fromLng!, address: job.fromAddress }
+      : null;
+    const toDest = isValidNavCoord(job.toLat, job.toLng)
+      ? { lat: job.toLat!, lng: job.toLng!, address: job.toAddress }
+      : null;
+    // An event RETURN leg is a separate move row whose from/to are already
+    // REVERSED from the delivery (from = venue it loads out of, to = the place
+    // it brings goods back to). The event flow still uses en_route_venue then
+    // en_route_return — statuses written for a single-row round trip — so on the
+    // reversed return row those two legs must be flipped or the GPS routes the
+    // crew back to the venue instead of on to the drop-off.
+    const isEventReturn = job.eventPhase === "return";
+
+    if (currentStatus === "en_route_to_pickup") return fromDest;
+    if (currentStatus === "en_route_to_destination") return toDest;
+    // Drive to the venue: on a return leg the venue is `from`; otherwise `to`.
+    if (currentStatus === "en_route_venue")
+      return isEventReturn ? fromDest : toDest;
+    // Drive to the final drop-off: on a two-row return that is `to`; a legacy
+    // single-row event returns to its origin (`from`).
+    if (currentStatus === "en_route_return")
+      return isEventReturn ? toDest : fromDest;
+    if (currentStatus === "en_route") return toDest ?? fromDest;
     return null;
   }, [job, session?.isActive, isCompleted, currentStatus]);
 
