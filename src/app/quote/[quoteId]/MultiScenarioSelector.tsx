@@ -9,6 +9,7 @@ import {
   FOREST_BODY,
   FOREST_MUTED,
   calculateDeposit,
+  isFullPaymentAtBookingService,
 } from "./quote-shared";
 import YugoLogo from "@/components/YugoLogo";
 
@@ -148,16 +149,24 @@ export default function MultiScenarioSelector({
         <div className="space-y-4">
           {scenarios.map((sc) => {
             const total = sc.total_price ?? baseTotalWithTax;
-            const deposit =
-              sc.deposit_amount ??
-              (total != null
-                ? calculateDeposit(
-                    serviceType,
-                    total,
-                    undefined,
-                    sc.scenario_date ?? moveDate,
-                  )
-                : baseDepositAmount);
+            // Service-policy guard: for full-payment-at-booking services,
+            // ignore any stale sc.deposit_amount and force the full amount.
+            // Prevents a scenario row written by an old flow (partial
+            // deposit) from displaying "Deposit $X" on a WG / specialty /
+            // single_item / b2b / bin_rental card. Same guarantee the
+            // client checkout memo has post-YG-30428 fix.
+            const isFullPay = isFullPaymentAtBookingService(serviceType);
+            const deposit = isFullPay
+              ? (total ?? 0)
+              : sc.deposit_amount ??
+                (total != null
+                  ? calculateDeposit(
+                      serviceType,
+                      total,
+                      undefined,
+                      sc.scenario_date ?? moveDate,
+                    )
+                  : baseDepositAmount);
             const fullPayment =
               total != null && deposit != null && deposit >= total - 0.5;
             const effectiveDate = sc.scenario_date ?? moveDate;

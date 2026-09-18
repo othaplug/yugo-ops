@@ -29,6 +29,7 @@ import {
 } from "../quote-premium-shell";
 import { toTitleCase, formatAccessForDisplay } from "@/lib/format-text";
 import { formatMoveDate } from "@/lib/date-format";
+import { decideBookingPayment } from "@/lib/quotes/booking-payment-window";
 
 interface TierData {
   price: number;
@@ -806,7 +807,18 @@ export default function OfficeLayout({
         (() => {
           const price = quote.custom_price ?? 0;
           const tax = Math.round(price * TAX_RATE);
-          const deposit = calculateDeposit("office_move", price);
+          // 48h-window guard: if the move is booked inside the full-
+          // payment window, force the full tax-inclusive amount so the
+          // Investment Summary "Deposit" line can't misrepresent what
+          // will be charged.
+          const officeBookingDecision = decideBookingPayment({
+            moveDate: quote.move_date,
+            deposit: calculateDeposit("office_move", price),
+            grandTotal: price + tax,
+          });
+          const deposit = officeBookingDecision.requireFullPayment
+            ? price + tax
+            : calculateDeposit("office_move", price);
           return (
             <div
               className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden"

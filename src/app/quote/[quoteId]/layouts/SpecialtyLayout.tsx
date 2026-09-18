@@ -6,6 +6,7 @@ import {
   TAX_RATE,
   fmtPrice,
   calculateDeposit,
+  isFullPaymentAtBookingService,
 } from "../quote-shared";
 import { toTitleCase } from "@/lib/format-text";
 import { formatPlatformDisplay } from "@/lib/date-format";
@@ -43,7 +44,14 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed, protectio
   const multiStop = pickupStops.length + dropoffStops.length > 2;
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
-  const deposit = calculateDeposit("specialty", price);
+  // Specialty is a full-payment-at-booking service. Force the full
+  // tax-inclusive amount so the layout can never render a "deposit
+  // then balance" story that the server (correctly) rejects at
+  // payment time. Falls back to calculateDeposit for future-proofing
+  // if the service is ever removed from FULL_PAYMENT_AT_BOOKING_SERVICES.
+  const deposit = isFullPaymentAtBookingService(quote.service_type)
+    ? price + tax
+    : calculateDeposit("specialty", price);
   const projectType = (f?.project_type as string) ?? "custom";
   const includes = (f?.includes as string[] | undefined) ?? [
     "Specialized handling equipment",

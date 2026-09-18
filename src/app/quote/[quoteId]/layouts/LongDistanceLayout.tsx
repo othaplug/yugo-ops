@@ -9,6 +9,7 @@ import {
   addDays,
   calculateDeposit,
 } from "../quote-shared";
+import { decideBookingPayment } from "@/lib/quotes/booking-payment-window";
 import {
   pickupLocationsFromQuote,
   dropoffLocationsFromQuote,
@@ -50,7 +51,17 @@ export default function LongDistanceLayout({
   const ldTruckLine: string | null = null;
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
-  const deposit = calculateDeposit("long_distance", price);
+  // 48h-window guard: if the move is booked inside the full-payment
+  // window, force the full amount so the "$X Deposit" CTA can't
+  // contradict the server's decision at payment time.
+  const ldBookingDecision = decideBookingPayment({
+    moveDate: quote.move_date,
+    deposit: calculateDeposit("long_distance", price),
+    grandTotal: price + tax,
+  });
+  const deposit = ldBookingDecision.requireFullPayment
+    ? price + tax
+    : calculateDeposit("long_distance", price);
 
   const moveDate = quote.move_date
     ? new Date(quote.move_date + "T00:00:00")

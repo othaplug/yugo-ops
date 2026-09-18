@@ -644,6 +644,17 @@ export function getOfflineDepositInclusiveFromQuote(quote: {
     );
   }
 
+  // Service-policy guard: full-payment-at-booking services always
+  // return the full tax-inclusive amount, regardless of what value is
+  // stored on quote.deposit_amount. A stale $150 written by an older
+  // generate-route path (deposit_rules table drift) previously
+  // short-circuited here — the admin "First payment" tile then showed
+  // the wrong number and the offline-payment recorder let an operator
+  // log a partial deposit for a service the server would reject.
+  if (isFullPaymentAtBookingService(st)) {
+    return totalWithTax;
+  }
+
   if (quote.deposit_amount != null && Number(quote.deposit_amount) > 0) {
     return Math.min(totalWithTax, Number(quote.deposit_amount));
   }
