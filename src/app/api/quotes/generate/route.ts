@@ -1256,56 +1256,45 @@ async function fetchTierFeatures(
 }
 
 async function residentialIncludes(
-  sb: SupabaseAdmin,
+  _sb: SupabaseAdmin,
   /** Per-tier crew counts — Estate carries the full crew, Essential/Signature run lighter. */
   tierCrew: { essential: number; signature: number; estate: number },
-  estHours: number,
+  _estHours: number,
   moveSize?: string,
-  /** When explicitly false, suppress "Basic disassembly & reassembly" from the includes list. */
+  /** When explicitly false, suppress the disassembly line from the higher-tier includes list. */
   assemblyRequired?: boolean | null,
 ): Promise<{ essential: string[]; signature: string[]; estate: string[] }> {
   const truckLabel = DEFAULT_TRUCK_BY_SIZE[moveSize ?? "2br"] ?? "Dedicated moving truck";
 
-  const [dbEss, dbSig, dbEst] = await Promise.all([
-    fetchTierFeatures(sb, "local_move", "essential"),
-    fetchTierFeatures(sb, "local_move", "signature"),
-    fetchTierFeatures(sb, "local_move", "estate"),
-  ]);
-
-  // Each tier shows its own crew line so a plain Essential move isn't quoted an
-  // Estate-sized team. Estate = full crew; Essential/Signature = lighter.
+  // Source of truth is the code library (residential-tier-quote-display.ts:
+  // DEFAULT_ESSENTIAL + DEFAULT_SIGNATURE_ADDITIONS + DEFAULT_ESTATE_ADDITIONS,
+  // exposed via getResolvedMoveIncludeTitles which returns the fully-composed
+  // ladder per tier). The tier_features DB rows for `local_move` are no longer
+  // read here — they had drifted (Essential leaked Signature perks, Estate
+  // rendered fewer bullets than Signature, "pay more get less" false-
+  // advertising on YG-30428). Bypassing the fetch means the library is the
+  // structural single source of truth: no migration can drift the ladder
+  // again, tier copy edits deploy straight through the library.
   const crewLineFor = (n: number) => `Professional crew of ${n}`;
-  const ASSEMBLY_PATTERN = /(disassembly\s*(&|and)?\s*reassembly|basic\s+disassembly)/i;
-  const hydrate = (list: string[], crewLine: string) => {
-    const filtered = assemblyRequired === false ? list.filter((f) => !ASSEMBLY_PATTERN.test(f)) : list;
-    return filtered.map((f) => {
-      if (f === "Dedicated moving truck") return truckLabel;
-      if (f === "Professional movers" || f.toLowerCase().includes("professional crew of")) return crewLine;
-      return f;
-    });
-  };
-
-  const crewLineEss = crewLineFor(tierCrew.essential);
-  const crewLineSig = crewLineFor(tierCrew.signature);
-  const crewLineEst = crewLineFor(tierCrew.estate);
-
-  if (dbEss.length > 0) {
-    const essential = hydrate(dbEss, crewLineEss);
-    const signature =
-      dbSig.length > 0
-        ? hydrate(dbSig, crewLineSig)
-        : getResolvedMoveIncludeTitles("signature", truckLabel, crewLineSig, assemblyRequired);
-    const estate =
-      dbEst.length > 0
-        ? hydrate(dbEst, crewLineEst)
-        : getResolvedMoveIncludeTitles("estate", truckLabel, crewLineEst, assemblyRequired);
-    return { essential, signature, estate };
-  }
-
   return {
-    essential: getResolvedMoveIncludeTitles("essential", truckLabel, crewLineEss, assemblyRequired),
-    signature: getResolvedMoveIncludeTitles("signature", truckLabel, crewLineSig, assemblyRequired),
-    estate: getResolvedMoveIncludeTitles("estate", truckLabel, crewLineEst, assemblyRequired),
+    essential: getResolvedMoveIncludeTitles(
+      "essential",
+      truckLabel,
+      crewLineFor(tierCrew.essential),
+      assemblyRequired,
+    ),
+    signature: getResolvedMoveIncludeTitles(
+      "signature",
+      truckLabel,
+      crewLineFor(tierCrew.signature),
+      assemblyRequired,
+    ),
+    estate: getResolvedMoveIncludeTitles(
+      "estate",
+      truckLabel,
+      crewLineFor(tierCrew.estate),
+      assemblyRequired,
+    ),
   };
 }
 
