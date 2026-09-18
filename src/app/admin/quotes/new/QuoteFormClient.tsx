@@ -4377,12 +4377,27 @@ export default function QuoteFormClient({
                 (x): x is Record<string, unknown> =>
                   x !== null && typeof x === "object",
               )
-              .map((x) => ({
-                slug: String(x.slug ?? ""),
-                quantity: Math.max(1, Math.floor(Number(x.quantity ?? 1))) || 1,
-              }))
+              .map((x) => {
+                const c = x.custom as
+                  | { label?: unknown; size?: unknown }
+                  | undefined;
+                return {
+                  slug: String(x.slug ?? ""),
+                  quantity: Math.max(1, Math.floor(Number(x.quantity ?? 1))) || 1,
+                  // Preserve custom (not-in-catalog) items so an edit / re-quote
+                  // keeps their label + size instead of dropping the line.
+                  ...(c && c.label
+                    ? {
+                        custom: {
+                          label: String(c.label),
+                          size: String(c.size ?? "custom_medium"),
+                        },
+                      }
+                    : {}),
+                };
+              })
               .filter((r) => r.slug);
-            if (rows.length > 0) setOfficeInventory(rows);
+            if (rows.length > 0) setOfficeInventory(rows as OfficeInventoryLine[]);
           }
         }
 

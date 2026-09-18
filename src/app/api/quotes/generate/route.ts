@@ -235,7 +235,11 @@ interface QuoteInput {
   /** Inventory-driven office quoting (Phase 4+). When present, office returns
    *  3 scope tiers (Essential/Signature/Priority) instead of the legacy
    *  workstation single-price. */
-  office_inventory?: { slug: string; quantity: number }[];
+  office_inventory?: {
+    slug: string;
+    quantity: number;
+    custom?: { label: string; size: string };
+  }[];
   /** Selected-items / partial move — suppresses the $/sqft lower bound. */
   office_partial_move?: boolean;
   /** Estimated square footage actually moving (for the confidence band). */

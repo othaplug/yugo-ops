@@ -10,9 +10,15 @@ import {
 } from "@phosphor-icons/react";
 import {
   OFFICE_INVENTORY_CATALOG,
+  OFFICE_CUSTOM_SIZE_SLUGS,
   type OfficeItemCategory,
+  type OfficeCustomSizeSlug,
 } from "@/lib/quotes/office-inventory-catalog";
-import { type OfficeInventoryLine } from "@/lib/quotes/office-inventory-labour";
+import {
+  officeLineItem,
+  type OfficeInventoryLine,
+} from "@/lib/quotes/office-inventory-labour";
+import { parseOfficeBulkInventory } from "@/lib/quotes/office-inventory-parse";
 import { type OfficeQuoteContext } from "@/lib/quotes/office-quote-engine";
 import {
   type OfficeSiteAccess,
@@ -95,73 +101,21 @@ const PRESETS: Record<
   },
 };
 
-/* ── Bulk-paste parser ──
- * Maps freeform lines like "30 standing desks", "25 office chairs", "9 TVs"
- * into catalog slugs. Forgiving on case + plurals + verbose modifiers.
- * Unknown lines are dropped (and reported in the UI). */
-const BULK_KEYWORDS: { test: RegExp; slug: string }[] = [
-  { test: /standing\s*desk/i, slug: "standing_desk" },
-  { test: /executive\s*desk/i, slug: "desk_executive" },
-  { test: /\bdesk/i, slug: "desk_standard" },
-  { test: /specialty\s*chair|exec(?:utive)?\s*chair/i, slug: "specialty_chair" },
-  { test: /chair|stool/i, slug: "office_chair" },
-  { test: /monitor\s*(?:arm|mount|stand)|desk\s*arm/i, slug: "monitor_arm" },
-  { test: /monitor|screen|display/i, slug: "monitor" },
-  { test: /server|it\s*rack/i, slug: "server_rack" },
-  { test: /printer|copier/i, slug: "printer_copier" },
-  { test: /\btv|television/i, slug: "tv" },
-  { test: /boardroom|meeting\s*table|conference\s*table/i, slug: "boardroom_table" },
-  { test: /side\s*table|breakout\s*table|small\s*table/i, slug: "small_table" },
-  { test: /lunch\s*table|cafe\s*table/i, slug: "lunch_table" },
-  { test: /high.?top|stool/i, slug: "hightop_chair" },
-  { test: /filing|file\s*cabinet/i, slug: "filing_cabinet" },
-  { test: /storage\s*cabinet|metal\s*cabinet|cabinet/i, slug: "storage_cabinet" },
-  { test: /drawer/i, slug: "storage_drawer" },
-  { test: /couch|sofa/i, slug: "couch" },
-  { test: /lounge|bench/i, slug: "lounge_seating" },
-  { test: /glass\s*(?:coffee\s*)?table|coffee\s*table/i, slug: "coffee_table_glass" },
-  { test: /floor\s*lamp|lamp/i, slug: "floor_lamp" },
-  { test: /plant/i, slug: "plant" },
-  { test: /art(?:work)?|painting|framed/i, slug: "artwork" },
-  { test: /kitchen|cutlery|dishes/i, slug: "kitchen_box" },
-  { test: /appliance|fridge|microwave/i, slug: "appliance_small" },
-  { test: /whiteboard|panel/i, slug: "whiteboard" },
-  { test: /\bbox(?:es)?\b|carton/i, slug: "box" },
-];
+/* Bulk-paste parsing lives in @/lib/quotes/office-inventory-parse
+   (parseOfficeBulkInventory) — specificity-ordered rules that map freeform
+   lines onto catalog slugs, with unmatched lines auto-created as custom items
+   so nothing is dropped. */
 
-function parseBulkInventory(
-  text: string,
-): { lines: OfficeInventoryLine[]; unmatched: string[] } {
-  const lines: OfficeInventoryLine[] = [];
-  const unmatched: string[] = [];
-  const sumBySlug = new Map<string, number>();
-  for (const rawLine of text.split(/\r?\n|[,;]/)) {
-    const line = rawLine.trim();
-    if (!line) continue;
-    // Accept patterns like "30 desks", "Desks 30", "30 x desks", "30 - desks"
-    const m =
-      line.match(/^(\d+)\s*[x×\-:]?\s*(.+)$/i) ||
-      line.match(/^(.+?)\s*[:\-]?\s*(\d+)$/i);
-    if (!m) {
-      unmatched.push(line);
-      continue;
-    }
-    const qty = parseInt(/^\d+$/.test(m[1]) ? m[1] : m[2], 10);
-    const label = /^\d+$/.test(m[1]) ? m[2] : m[1];
-    if (!qty || qty <= 0) {
-      unmatched.push(line);
-      continue;
-    }
-    const hit = BULK_KEYWORDS.find((kw) => kw.test.test(label));
-    if (!hit) {
-      unmatched.push(line);
-      continue;
-    }
-    sumBySlug.set(hit.slug, (sumBySlug.get(hit.slug) ?? 0) + qty);
-  }
-  for (const [slug, quantity] of sumBySlug) lines.push({ slug, quantity });
-  return { lines, unmatched };
-}
+/* Boxes quick-range: office clients rarely count boxes exactly, so offer a
+   dropdown of typical ranges that sets a representative count. */
+const BOX_RANGES: { label: string; value: number }[] = [
+  { label: "No boxes", value: 0 },
+  { label: "A few (1 to 10)", value: 6 },
+  { label: "Some (10 to 25)", value: 18 },
+  { label: "Many (25 to 50)", value: 38 },
+  { label: "A lot (50 to 100)", value: 75 },
+  { label: "100+", value: 120 },
+];
 
 const CATEGORY_LABELS: Record<OfficeItemCategory, string> = {
   desks: "Desks",
@@ -181,6 +135,19 @@ const CATEGORY_ORDER: OfficeItemCategory[] = [
   "desks", "seating", "it", "tables", "storage",
   "lounge", "lunch", "decor", "kitchen", "boxes", "misc",
 ];
+
+// The custom_* templates back the "add custom item" flow — never show them as
+// normal quick-add / search results.
+const PICKABLE_CATALOG = OFFICE_INVENTORY_CATALOG.filter(
+  (it) => !it.slug.startsWith("custom_"),
+);
+
+const CUSTOM_SIZE_LABELS: Record<OfficeCustomSizeSlug, string> = {
+  custom_small: "Small",
+  custom_medium: "Medium",
+  custom_large: "Large",
+  custom_xlarge: "Extra-large",
+};
 
 /* ── Building access (commercial) ──
  * Per-site access drivers that price the tier-agnostic access surcharge:
@@ -332,10 +299,34 @@ export default function OfficeInventoryInput({
     return m;
   }, [inventory]);
 
+  // Set a quantity while PRESERVING any custom payload on the existing line
+  // (a custom item stepped up/down must keep its label + size).
   const setQty = (slug: string, next: number) => {
     const q = Math.max(0, Math.floor(next));
+    const existing = inventory.find((l) => l.slug === slug);
     const rest = inventory.filter((l) => l.slug !== slug);
-    onInventoryChange(q > 0 ? [...rest, { slug, quantity: q }] : rest);
+    if (q <= 0) {
+      onInventoryChange(rest);
+      return;
+    }
+    const line: OfficeInventoryLine = existing
+      ? { ...existing, quantity: q }
+      : { slug, quantity: q };
+    onInventoryChange([...rest, line]);
+  };
+
+  // Add a custom (not-in-catalog) item as a distinct line with a unique slug.
+  const addCustomItem = (label: string, size: OfficeCustomSizeSlug, qty: number) => {
+    const clean = label.trim();
+    if (!clean || qty <= 0) return;
+    const slug = `custom:${Date.now().toString(36)}:${clean
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .slice(0, 24)}`;
+    onInventoryChange([
+      ...inventory,
+      { slug, quantity: Math.floor(qty), custom: { label: clean, size } },
+    ]);
   };
 
   // Residential-style catalog UI: category tabs + quick-add + search, showing
@@ -359,7 +350,7 @@ export default function OfficeInventoryInput({
 
   const quickAddItems = useMemo(
     () =>
-      OFFICE_INVENTORY_CATALOG.filter(
+      PICKABLE_CATALOG.filter(
         (it) => activeCat === "all" || it.category === activeCat,
       ),
     [activeCat],
@@ -368,15 +359,20 @@ export default function OfficeInventoryInput({
   const searchResults = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return [];
-    return OFFICE_INVENTORY_CATALOG.filter((it) =>
+    return PICKABLE_CATALOG.filter((it) =>
       it.label.toLowerCase().includes(q),
     ).slice(0, 10);
   }, [search]);
 
-  // The items the operator has actually added, in catalog order.
-  const selectedItems = useMemo(
-    () => OFFICE_INVENTORY_CATALOG.filter((it) => (qtyBySlug.get(it.slug) ?? 0) > 0),
-    [qtyBySlug],
+  // Everything the operator has added, in insertion order — resolves each line
+  // to its catalog OR custom item so custom entries render alongside the rest.
+  const selectedLines = useMemo(
+    () =>
+      inventory
+        .filter((l) => Math.max(0, l.quantity) > 0)
+        .map((line) => ({ line, item: officeLineItem(line) }))
+        .filter((x): x is { line: OfficeInventoryLine; item: NonNullable<typeof x.item> } => x.item != null),
+    [inventory],
   );
   const totalUnits = useMemo(
     () => inventory.reduce((s, l) => s + Math.max(0, l.quantity), 0),
@@ -392,6 +388,11 @@ export default function OfficeInventoryInput({
   const [bulkUnmatched, setBulkUnmatched] = useState<string[]>([]);
   const [bulkMessage, setBulkMessage] = useState<string | null>(null);
 
+  // Local UI state for the custom-item entry row.
+  const [customName, setCustomName] = useState("");
+  const [customSize, setCustomSize] = useState<OfficeCustomSizeSlug>("custom_medium");
+  const [customQty, setCustomQty] = useState(1);
+
   /** Replace inventory with the supplied lines (used by presets). */
   const replaceWith = (next: OfficeInventoryLine[]) => {
     onInventoryChange(next);
@@ -399,14 +400,17 @@ export default function OfficeInventoryInput({
     setBulkMessage(null);
   };
 
-  /** Merge bulk-paste lines on top of whatever is already there (additive). */
+  /** Merge bulk-paste lines on top of whatever is already there (additive).
+   *  Catalog lines merge by slug; custom lines carry unique slugs so they add
+   *  as distinct entries, keeping their label + size payload. */
   const mergeLines = (incoming: OfficeInventoryLine[]) => {
-    const m = new Map<string, number>();
-    for (const l of inventory) m.set(l.slug, l.quantity);
-    for (const l of incoming) m.set(l.slug, (m.get(l.slug) ?? 0) + l.quantity);
-    const merged: OfficeInventoryLine[] = [];
-    for (const [slug, quantity] of m) if (quantity > 0) merged.push({ slug, quantity });
-    onInventoryChange(merged);
+    const bySlug = new Map<string, OfficeInventoryLine>();
+    for (const l of inventory) bySlug.set(l.slug, { ...l });
+    for (const l of incoming) {
+      const prev = bySlug.get(l.slug);
+      bySlug.set(l.slug, prev ? { ...prev, quantity: prev.quantity + l.quantity } : { ...l });
+    }
+    onInventoryChange([...bySlug.values()].filter((l) => l.quantity > 0));
   };
 
   return (
@@ -504,20 +508,30 @@ export default function OfficeInventoryInput({
               <button
                 type="button"
                 onClick={() => {
-                  const parsed = parseBulkInventory(bulkText);
+                  const parsed = parseOfficeBulkInventory(bulkText);
                   if (parsed.lines.length === 0) {
-                    setBulkUnmatched(parsed.unmatched);
+                    setBulkUnmatched(parsed.unrecognized);
                     setBulkMessage("No items recognized. Check the format.");
                     return;
                   }
                   mergeLines(parsed.lines);
-                  setBulkUnmatched(parsed.unmatched);
-                  setBulkMessage(
-                    `Added ${parsed.lines.length} line${parsed.lines.length === 1 ? "" : "s"}` +
-                      (parsed.unmatched.length > 0
-                        ? ` · ${parsed.unmatched.length} line${parsed.unmatched.length === 1 ? "" : "s"} not recognized (see below)`
-                        : ""),
-                  );
+                  setBulkUnmatched(parsed.unrecognized);
+                  const parts: string[] = [];
+                  if (parsed.matched.length > 0)
+                    parts.push(
+                      `matched ${parsed.matched.length} item${parsed.matched.length === 1 ? "" : "s"}`,
+                    );
+                  if (parsed.customCreated.length > 0)
+                    parts.push(
+                      `${parsed.customCreated.length} added as custom (${parsed.customCreated
+                        .map((c) => c.label)
+                        .join(", ")})`,
+                    );
+                  if (parsed.unrecognized.length > 0)
+                    parts.push(
+                      `${parsed.unrecognized.length} line${parsed.unrecognized.length === 1 ? "" : "s"} unreadable (see below)`,
+                    );
+                  setBulkMessage(parts.join(" · ") || "Nothing to add.");
                   setBulkText("");
                 }}
                 className="inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-[var(--admin-primary-fill)] text-[var(--card)] text-[10px] font-semibold uppercase tracking-wider hover:opacity-90"
@@ -675,24 +689,107 @@ export default function OfficeInventoryInput({
           )}
         </div>
 
-        {/* What's been added — only these show a stepper */}
-        {selectedItems.length > 0 ? (
+        {/* Boxes quick-range + custom item entry */}
+        <div className="flex flex-wrap items-end gap-3 pt-1">
+          <label className="flex flex-col gap-1">
+            <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--tx3)]">
+              Boxes (estimate)
+            </span>
+            <select
+              value={qtyBySlug.get("box") ?? 0}
+              onChange={(e) => setQty("box", Number(e.target.value))}
+              className="h-7 rounded border border-[var(--brd)] bg-[var(--card)] px-1.5 text-[11px] text-[var(--tx)]"
+            >
+              {BOX_RANGES.map((r) => (
+                <option key={r.label} value={r.value}>{r.label}</option>
+              ))}
+              {/* Preserve a bulk/manual box count that isn't a range midpoint. */}
+              {(() => {
+                const q = qtyBySlug.get("box") ?? 0;
+                return q > 0 && !BOX_RANGES.some((r) => r.value === q) ? (
+                  <option value={q}>{`Exact: ${q}`}</option>
+                ) : null;
+              })()}
+            </select>
+          </label>
+        </div>
+
+        {/* Add a custom item that isn't in the catalog. */}
+        <div className="rounded-lg border border-dashed border-[var(--brd)] bg-[var(--bg)] px-3 py-2.5 space-y-2">
+          <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--tx3)]">
+            Add a custom item
+          </p>
+          <div className="flex flex-wrap items-end gap-2">
+            <input
+              type="text"
+              value={customName}
+              onChange={(e) => setCustomName(e.target.value)}
+              placeholder="Item name (e.g. antique safe)"
+              className="h-7 flex-1 min-w-[160px] rounded border border-[var(--brd)] bg-[var(--card)] px-2 text-[11px] text-[var(--tx)]"
+            />
+            <select
+              value={customSize}
+              onChange={(e) => setCustomSize(e.target.value as OfficeCustomSizeSlug)}
+              className="h-7 rounded border border-[var(--brd)] bg-[var(--card)] px-1.5 text-[11px] text-[var(--tx)]"
+              aria-label="Custom item size"
+            >
+              {OFFICE_CUSTOM_SIZE_SLUGS.map((s) => (
+                <option key={s} value={s}>{CUSTOM_SIZE_LABELS[s]}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              min={1}
+              value={customQty}
+              onChange={(e) => setCustomQty(Math.max(1, Number(e.target.value || 1)))}
+              className="h-7 w-14 rounded border border-[var(--brd)] bg-[var(--card)] px-2 text-[11px] text-[var(--tx)] tabular-nums"
+              aria-label="Custom item quantity"
+            />
+            <button
+              type="button"
+              disabled={!customName.trim()}
+              onClick={() => {
+                addCustomItem(customName, customSize, customQty);
+                setCustomName("");
+                setCustomSize("custom_medium");
+                setCustomQty(1);
+              }}
+              className="inline-flex items-center gap-1 h-7 px-3 rounded-md bg-[var(--admin-primary-fill)] text-[var(--card)] text-[10px] font-semibold uppercase tracking-wider hover:opacity-90 disabled:opacity-40"
+            >
+              <Plus className="h-3 w-3" weight="bold" aria-hidden />
+              Add
+            </button>
+          </div>
+          <p className="text-[9px] text-[var(--tx3)] leading-snug">
+            Size sets the labour weight. Bulk-paste lines we don&apos;t recognize
+            are added here as medium custom items automatically.
+          </p>
+        </div>
+
+        {/* What's been added — catalog and custom, each with a stepper */}
+        {selectedLines.length > 0 ? (
           <div className="space-y-1.5 pt-0.5">
-            {selectedItems.map((item) => {
-              const qty = qtyBySlug.get(item.slug) ?? 0;
+            {selectedLines.map(({ line, item }) => {
+              const qty = line.quantity;
+              const isCustom = !!line.custom;
               return (
                 <div
-                  key={item.slug}
+                  key={line.slug}
                   className="flex items-center justify-between gap-3 rounded-lg border border-[var(--brd)]/60 bg-[var(--card)] px-3 py-1.5"
                 >
-                  <span className="text-[11px] font-medium text-[var(--tx)] leading-snug min-w-0 truncate">
+                  <span className="text-[11px] font-medium text-[var(--tx)] leading-snug min-w-0 truncate flex items-center gap-1.5">
                     {item.label}
+                    {isCustom && (
+                      <span className="text-[8px] uppercase tracking-wide text-[var(--admin-primary-fill)] border border-[var(--admin-primary-fill)]/40 rounded px-1 py-px shrink-0">
+                        Custom · {CUSTOM_SIZE_LABELS[line.custom!.size]}
+                      </span>
+                    )}
                   </span>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
                       aria-label={`Remove one ${item.label}`}
-                      onClick={() => setQty(item.slug, qty - 1)}
+                      onClick={() => setQty(line.slug, qty - 1)}
                       className="flex h-6 w-6 items-center justify-center rounded border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--tx3)]"
                     >
                       <Minus className="h-3 w-3" weight="bold" aria-hidden />
@@ -701,13 +798,13 @@ export default function OfficeInventoryInput({
                       type="number"
                       min={0}
                       value={qty}
-                      onChange={(e) => setQty(item.slug, Number(e.target.value || 0))}
+                      onChange={(e) => setQty(line.slug, Number(e.target.value || 0))}
                       className="h-6 w-12 rounded border border-[var(--brd)] bg-[var(--card)] text-center text-[11px] text-[var(--tx)] tabular-nums"
                     />
                     <button
                       type="button"
                       aria-label={`Add one ${item.label}`}
-                      onClick={() => setQty(item.slug, qty + 1)}
+                      onClick={() => setQty(line.slug, qty + 1)}
                       className="flex h-6 w-6 items-center justify-center rounded border border-[var(--admin-primary-fill)] bg-[var(--admin-primary-fill)]/10 text-[var(--tx)] hover:bg-[var(--admin-primary-fill)]/20"
                     >
                       <Plus className="h-3 w-3" weight="bold" aria-hidden />
@@ -719,7 +816,7 @@ export default function OfficeInventoryInput({
           </div>
         ) : (
           <p className="text-[10px] text-[var(--tx3)] italic pt-0.5">
-            No items yet. Pick a preset above, tap a category chip, or search to add.
+            No items yet. Pick a preset above, tap a category chip, search, or add a custom item.
           </p>
         )}
       </div>

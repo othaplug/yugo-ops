@@ -26,6 +26,7 @@
 import {
   officeCatalogItem,
   type OfficeCatalogItem,
+  type OfficeCustomSizeSlug,
 } from "@/lib/quotes/office-inventory-catalog";
 import {
   OFFICE_TIER_DEFINITIONS,
@@ -110,6 +111,35 @@ function truckSizeFromVolume(
 export interface OfficeInventoryLine {
   slug: string;
   quantity: number;
+  /**
+   * Custom (not-in-catalog) item. When present, the line is priced off the
+   * chosen size template (custom_small/medium/large/xlarge) and displayed with
+   * this label instead of the catalog label. Its `slug` is a unique id (e.g.
+   * "custom:1699..."), so two distinct custom items never collapse together.
+   */
+  custom?: {
+    label: string;
+    size: OfficeCustomSizeSlug;
+  };
+}
+
+/**
+ * Resolve the catalog item a line prices against. A custom line resolves to its
+ * size-template entry (with the operator's label overlaid); a normal line
+ * resolves by slug. Returns null for an unknown, non-custom slug.
+ */
+export function officeLineItem(line: OfficeInventoryLine): OfficeCatalogItem | null {
+  if (line.custom) {
+    const tpl = officeCatalogItem(line.custom.size);
+    if (!tpl) return null;
+    return { ...tpl, slug: line.slug, label: line.custom.label || tpl.label };
+  }
+  return officeCatalogItem(line.slug);
+}
+
+/** Display label for any line (custom label, else catalog label, else slug). */
+export function officeLineLabel(line: OfficeInventoryLine): string {
+  return officeLineItem(line)?.label ?? line.slug;
 }
 
 export interface OfficeTierLabour {
@@ -163,7 +193,7 @@ export function estimateOfficeLabour(
   for (const line of inventory) {
     const qty = Math.max(0, Math.floor(line.quantity || 0));
     if (qty === 0) continue;
-    const item: OfficeCatalogItem | null = officeCatalogItem(line.slug);
+    const item: OfficeCatalogItem | null = officeLineItem(line);
     if (!item) continue;
     lineCount += 1;
     unitCount += qty;
