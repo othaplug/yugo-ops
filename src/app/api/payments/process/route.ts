@@ -12,8 +12,7 @@ import {
   sendB2BTrackingNotifications,
 } from "@/lib/delivery-tracking-tokens";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
-import { decideBookingPayment } from "@/lib/quotes/booking-payment-window";
-import { residentialTierDeposit } from "@/lib/quotes/residential-deposit";
+import { resolvePaymentPolicy } from "@/lib/payments/policy";
 import { rateLimit } from "@/lib/rate-limit";
 import { isQuoteExpiredForBooking, quoteExpiryBlockedStatuses } from "@/lib/quote-expiry";
 import { squareThrownErrorStructured } from "@/lib/square-payment-errors";
@@ -134,19 +133,18 @@ export async function POST(req: Request) {
     ) {
       const taxRateForCheck = Number(factors?.tax_rate ?? 0.13);
       const customPrice = Number(quote.custom_price ?? 0);
-      let depositOnQuote = Number(quote.deposit_amount ?? 0);
       // Best-effort grand total: prefer the stored custom_price (already
       // tax-inclusive on most service types) when available; otherwise
-      // approximate from deposit. Tolerance below covers any drift.
+      // fall back to the stored deposit (drift covered by the 2% policy
+      // tolerance below).
       let grandTotalForCheck =
         customPrice > 0
           ? Math.round(customPrice * (1 + taxRateForCheck))
-          : depositOnQuote;
-      // Residential (tier-based): recompute the required deposit AND grand total
-      // from the SELECTED tier using the single source of truth, so the server
-      // requires exactly what the client page charges — never a stale or
-      // override-scaled stored deposit_amount. This is what prevents the
-      // "payment below the deposit required" booking block.
+          : Number(quote.deposit_amount ?? 0);
+      // Residential (tier-based): recompute the grand total from the
+      // SELECTED tier so the check runs against the exact number the
+      // client saw, not a stale or override-scaled stored deposit_amount.
+      let residentialTier: string | null | undefined = undefined;
       if (svc === "local_move") {
         const tiersForCheck = quote.tiers as
           | Record<string, { price?: number | null; total?: number | null }>
@@ -160,69 +158,60 @@ export async function POST(req: Request) {
         const tierRow = tiersForCheck?.[tierKey];
         const tierPrice = tierRow ? Number(tierRow.price ?? 0) : 0;
         if (tierPrice > 0) {
-          depositOnQuote = residentialTierDeposit(tierKey, tierPrice);
+          residentialTier = tierKey;
           grandTotalForCheck =
             tierRow && tierRow.total != null
               ? Number(tierRow.total)
               : Math.round(tierPrice * (1 + taxRateForCheck));
         }
       }
-      const decision = quote.move_date
-        ? decideBookingPayment({
-            moveDate: quote.move_date as string,
-            deposit: depositOnQuote,
-            grandTotal: grandTotalForCheck,
-            serverSide: true,
-          })
-        : { requireFullPayment: false, hoursUntilMove: Infinity };
-      const fullPaymentByServicePolicy = isFullPaymentAtBookingService(svc);
-      if (decision.requireFullPayment || fullPaymentByServicePolicy) {
-        // Require client to pay at least 98% of the grand total (allow 2%
-        // tolerance for rounding / tax delta between client and server).
-        const minRequired = Math.floor(grandTotalForCheck * 0.98);
-        if (Number(amount) < minRequired) {
-          console.warn("[payments/process] full-payment required, deposit submitted", {
-            quoteId,
-            moveDate: quote.move_date,
-            hoursUntilMove: decision.hoursUntilMove,
-            submittedAmount: amount,
-            grandTotal: grandTotalForCheck,
-          });
-          const errMsg = fullPaymentByServicePolicy
-            ? `${svc.replace(/_/g, " ")} bookings collect the full amount at booking, no deposit split. Refresh the page and the form will switch to full payment automatically.`
-            : `Your move is in ${decision.hoursUntilMove} hours, so the full balance is collected at booking. Refresh the page, the form will switch to full payment automatically.`;
+
+      // Single source of truth for "what to charge" — same helper the
+      // client's checkout memo uses. If the client saw amount X and the
+      // policy says amount Y, this route will reject with a specific
+      // reason code; that mismatch can only exist if a build hasn't
+      // shipped yet, since both surfaces call the same function.
+      const policy = resolvePaymentPolicy({
+        service_type: svc,
+        totalWithTax: grandTotalForCheck,
+        move_date: quote.move_date as string | null,
+        selected_tier: residentialTier ?? null,
+        serverSide: true,
+      });
+      // 2% tolerance covers HST rounding / cents-precision differences
+      // between the client's client_price arithmetic and the server's.
+      const minRequired = Math.floor(policy.amountAtBooking * 0.98);
+      if (minRequired > 0 && Number(amount) < minRequired) {
+        console.warn("[payments/process] payment below policy minimum", {
+          quoteId,
+          submittedAmount: amount,
+          policy_required: policy.amountAtBooking,
+          policy_reason: policy.reason,
+          grand_total: grandTotalForCheck,
+        });
+        if (policy.requiresFullPayment) {
+          const errMsg =
+            policy.reason === "service_policy" || policy.reason === "small_job_under_550"
+              ? `${svc.replace(/_/g, " ")} bookings collect the full amount at booking, no deposit split. Refresh the page and the form will switch to full payment automatically.`
+              : `Your move is inside the short-notice window, so the full balance is collected at booking. Refresh the page, the form will switch to full payment automatically.`;
           return NextResponse.json(
             {
               error: errMsg,
               code: "FULL_PAYMENT_REQUIRED",
-              hours_until_move: decision.hoursUntilMove,
               grand_total: grandTotalForCheck,
-              reason: fullPaymentByServicePolicy ? "service_policy" : "inside_window",
+              reason: policy.reason,
             },
             { status: 400 },
           );
         }
-      } else {
-        // Deposit booking (>48h out, not a full-payment service): the client
-        // still must pay at least the server-quoted deposit. Without this floor,
-        // amount was charged verbatim, so a crafted payload could book a
-        // confirmed move for $1. 2% tolerance for client/server rounding drift.
-        const minDeposit = Math.floor(depositOnQuote * 0.98);
-        if (minDeposit > 0 && Number(amount) < minDeposit) {
-          console.warn("[payments/process] deposit below quoted minimum", {
-            quoteId,
-            submittedAmount: amount,
-            requiredDeposit: depositOnQuote,
-          });
-          return NextResponse.json(
-            {
-              error: "Payment is below the deposit required to confirm this booking. Refresh the page and try again.",
-              code: "DEPOSIT_BELOW_MINIMUM",
-              required_deposit: depositOnQuote,
-            },
-            { status: 400 },
-          );
-        }
+        return NextResponse.json(
+          {
+            error: "Payment is below the deposit required to confirm this booking. Refresh the page and try again.",
+            code: "DEPOSIT_BELOW_MINIMUM",
+            required_deposit: policy.amountAtBooking,
+          },
+          { status: 400 },
+        );
       }
     }
 

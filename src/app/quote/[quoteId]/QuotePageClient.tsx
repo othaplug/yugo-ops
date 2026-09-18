@@ -51,9 +51,6 @@ import {
   shouldShowQuoteInventorySectionByMoveSize,
   expiresLabel,
   expiresValue,
-  calculateDeposit,
-  calculateTieredDeposit,
-  isFullPaymentAtBookingService,
 } from "./quote-shared";
 
 import YugoLogo from "@/components/YugoLogo";
@@ -157,7 +154,7 @@ import {
   detectSingleItemMode,
   getSingleItemQuoteCopy,
 } from "@/lib/quotes/single-item-copy";
-import { decideBookingPayment } from "@/lib/quotes/booking-payment-window";
+import { resolvePaymentPolicy } from "@/lib/payments/policy";
 import {
   getB2BQuoteHero,
   getLogisticsLoadingUnloadingFeature,
@@ -1448,104 +1445,66 @@ export default function QuotePageClient({
   const referralDiscountAmt = referralVerified ? referralDiscount : 0;
   const tax = Math.round((totalBeforeTax - referralDiscountAmt) * TAX_RATE);
   const grandTotal = totalBeforeTax - referralDiscountAmt + tax;
-  const deposit = useMemo(() => {
+  const paymentPolicy = useMemo(() => {
     const faEarly = quote.factors_applied as Record<string, unknown> | null;
+    // Invoiced B2B skips card capture entirely at booking — its deposit
+    // is $0 and the shared policy helper doesn't cover this admin-side
+    // billing model, so handle it inline before delegating.
     if (isB2BInvoiceQuote(faEarly, quote.service_type)) {
-      return 0;
+      return {
+        requiresFullPayment: false as const,
+        amountAtBooking: 0,
+        balanceAmount: grandTotal,
+        reason: "b2b_invoice" as const,
+      };
     }
-    const b2bCardFullPay =
-      isB2BDeliveryQuoteServiceType(quote.service_type) &&
-      !isB2BInvoiceQuote(faEarly, quote.service_type);
-    if (b2bCardFullPay) {
-      return grandTotal;
-    }
-    if (quote.service_type === "bin_rental") {
-      return grandTotal;
-    }
-    // Full-payment-at-booking service policy (white_glove, single_item,
-    // specialty, b2b_*). YG-30428-class incident: white_glove quote
-    // rendered a $1,000 "deposit" because the useMemo had no branch for
-    // this service and fell through to a stale quote.deposit_amount.
-    // The server correctly rejects with FULL_PAYMENT_REQUIRED but the
-    // client sees a red "refresh the page" banner mid-checkout. Kill
-    // the mismatch at the source — for these services the client
-    // always shows the full amount.
-    if (isFullPaymentAtBookingService(quote.service_type)) {
-      return grandTotal;
-    }
-    if (isOfficeTiered) {
-      // Office keeps a flat 30% deposit across all tiers (the platform rule).
-      return Math.round(totalBeforeTax * 0.3);
-    }
-    if (isResidential && selectedTier) {
-      return calculateTieredDeposit(selectedTier, totalBeforeTax);
-    }
-    // Residential WITHOUT a tier selected yet (first render before user
-    // clicks Continue) used to fall through to quote.deposit_amount,
-    // which the engine sometimes stored as the corrupted $100 from the
-    // residential | 1000_2999 | flat 100 deposit_rules bracket. That
-    // produced the "shows $100, then changes" flash Oche flagged
-    // 2026-06-29. Always compute tier-aware floor for residential —
-    // prefer recommended_tier as the default-shown tier; otherwise pick
-    // the cheapest available tier so the page-level deposit at least
-    // matches what the operator would expect by default.
-    if (isResidential) {
+    // Residential without a selected tier: prefer recommended, else
+    // essential, else signature, else estate — so the page-level
+    // deposit reads the same tier the operator recommends by default.
+    // (Matches the pre-consolidation resolution order at lines 1497-1503
+    // of the old useMemo; kept as the caller's responsibility since the
+    // shared policy helper is service-agnostic on tier picking.)
+    let effectiveTier: string | null | undefined = selectedTier ?? null;
+    if (isResidential && !effectiveTier) {
       const tiers = quote.tiers as
         | Record<string, { price?: number | null } | null>
         | null
         | undefined;
-      const preferred =
+      effectiveTier =
         (quote.recommended_tier && tiers?.[quote.recommended_tier]
           ? quote.recommended_tier
           : null) ||
         (tiers?.essential ? "essential" : null) ||
         (tiers?.signature ? "signature" : null) ||
         (tiers?.estate ? "estate" : null);
-      if (preferred) {
-        return calculateTieredDeposit(preferred, totalBeforeTax);
-      }
     }
-    const stored =
-      quote.deposit_amount != null ? Number(quote.deposit_amount) : null;
-    if (stored != null && stored > 0) {
-      return stored;
-    }
-    return calculateDeposit(quote.service_type, totalBeforeTax);
+    return resolvePaymentPolicy({
+      service_type: quote.service_type,
+      totalWithTax: grandTotal,
+      move_date: quote.move_date,
+      selected_tier: effectiveTier,
+      recommended_tier: quote.recommended_tier,
+    });
   }, [
     isResidential,
-    isOfficeTiered,
     selectedTier,
     quote.service_type,
-    quote.deposit_amount,
     quote.factors_applied,
-    totalBeforeTax,
+    quote.move_date,
+    quote.recommended_tier,
+    quote.tiers,
     grandTotal,
   ]);
+  const deposit = paymentPolicy.amountAtBooking;
 
-  /* ── Booking payment window, full payment vs deposit ──
-     Two independent triggers for full-payment-at-booking:
-       1. The 48h window rule (any service booked < 48h from move day)
-       2. The service-type policy (white_glove / single_item / specialty /
-          b2b_* — see FULL_PAYMENT_AT_BOOKING_SERVICES in quote-shared.ts)
-     Both must be respected by the UI or the "DEPOSIT AMOUNT / PAY
-     $X & BOOK" copy misleads the client and the server rejects with a
-     mid-checkout "refresh the page" banner. Server enforces the same
-     rules independently — see src/app/api/payments/process/route.ts. */
-  const bookingPayment = useMemo(() => {
-    return decideBookingPayment({
-      moveDate: quote.move_date,
-      deposit,
-      grandTotal,
-    });
-  }, [quote.move_date, deposit, grandTotal]);
-  const serviceRequiresFullPayment = isFullPaymentAtBookingService(
-    quote.service_type,
-  );
-  const bookingRequiresFullPayment =
-    bookingPayment.requireFullPayment || serviceRequiresFullPayment;
-  const bookingAmount = bookingRequiresFullPayment
-    ? grandTotal
-    : bookingPayment.amountToCharge;
+  /* ── Booking amount + full-payment gate ──
+     Sourced from resolvePaymentPolicy above. That helper folds all
+     three triggers (service-type policy, 48h window, small-job rule)
+     into one decision so the UI, the server route, and every admin
+     surface can never disagree at the boundary. See
+     src/lib/payments/policy.ts for the precedence. */
+  const bookingRequiresFullPayment = paymentPolicy.requiresFullPayment;
+  const bookingAmount = paymentPolicy.amountAtBooking;
 
   /* ── Contract data for ContractSign component ── */
   const contractAddonsList = useMemo((): ContractAddon[] => {
@@ -3434,8 +3393,7 @@ export default function QuotePageClient({
                           className="text-[12px] leading-snug"
                           style={{ color: shellInk.body }}
                         >
-                          Your move is within {bookingPayment.thresholdHours}{" "}
-                          hours, so the full balance is collected at booking
+                          The full balance is collected at booking
                           (deposit + remaining balance together). Same total
                           as quoted, just paid in one step.
                         </p>
