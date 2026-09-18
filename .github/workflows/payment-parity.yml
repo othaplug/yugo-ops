@@ -1,0 +1,29 @@
+name: Payment parity
+
+# Guards the "half-a-refactor" class of payment bug: the client charge (quote
+# page) and the server gate (payments/process) must agree on deposit vs full
+# payment for every service type across the 48h boundary, or bookings get
+# blocked with "refresh the page and try again". Pure functions, no DB/secrets.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/lib/quotes/**"
+      - "src/app/quote/**"
+      - "src/app/api/payments/**"
+      - "scripts/test-payment-parity.ts"
+      - ".github/workflows/payment-parity.yml"
+  workflow_dispatch:
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run test:payments
