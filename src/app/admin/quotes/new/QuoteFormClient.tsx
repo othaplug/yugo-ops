@@ -4341,11 +4341,32 @@ export default function QuoteFormClient({
         if (nextService === "office_move") {
           const oMov = faNum("office_moving_sqft");
           const oPartial = fa.office_partial_move === true;
-          if ((oMov != null && oMov > 0) || oPartial) {
+          const oAccess = (fa.office_access ?? null) as {
+            origin_input?: unknown;
+            dest_input?: unknown;
+          } | null;
+          const oAfterHours = fa.office_after_hours === true;
+          const oWeekend = fa.office_weekend === true;
+          if (
+            (oMov != null && oMov > 0) ||
+            oPartial ||
+            oAfterHours ||
+            oWeekend ||
+            oAccess?.origin_input ||
+            oAccess?.dest_input
+          ) {
             setOfficeQuoteContext((prev) => ({
               ...prev,
               ...(oMov != null && oMov > 0 ? { movingSqft: oMov } : {}),
               ...(oPartial ? { partialMove: true } : {}),
+              ...(oAfterHours ? { afterHours: true } : {}),
+              ...(oWeekend ? { weekend: true } : {}),
+              ...(oAccess?.origin_input
+                ? { originAccess: oAccess.origin_input as OfficeQuoteContext["originAccess"] }
+                : {}),
+              ...(oAccess?.dest_input
+                ? { destAccess: oAccess.dest_input as OfficeQuoteContext["destAccess"] }
+                : {}),
             }));
           }
           const oInvRaw = (Q as { office_inventory?: unknown }).office_inventory
@@ -6472,6 +6493,10 @@ export default function QuoteFormClient({
           base.office_moving_sqft = officeQuoteContext.movingSqft ?? undefined;
           if (officeQuoteContext.afterHours) base.office_after_hours = true;
           if (officeQuoteContext.weekend) base.office_weekend = true;
+          if (officeQuoteContext.originAccess)
+            base.office_origin_access = officeQuoteContext.originAccess;
+          if (officeQuoteContext.destAccess)
+            base.office_dest_access = officeQuoteContext.destAccess;
         }
         if (multiPickupInventoryMode && perPickupInventory.length > 0) {
           base.inventory_items = perPickupInventory.flatMap((items, idx) =>

@@ -33,6 +33,10 @@ import {
   type OfficeTierKey,
 } from "@/lib/tiers/office-tier-definitions";
 import type { OfficeLabourEstimate } from "@/lib/quotes/office-inventory-labour";
+import {
+  deriveOfficeAccessModel,
+  type OfficeSiteAccess,
+} from "@/lib/quotes/office-access-model";
 
 export interface OfficeQuoteContext {
   /** One-way drive distance (km). Beyond the free threshold bills per km. */
@@ -41,8 +45,16 @@ export interface OfficeQuoteContext {
   afterHours?: boolean;
   /** Weekend access → flat surcharge. */
   weekend?: boolean;
-  /** Total access surcharge for origin + destination (computed upstream). */
+  /**
+   * Explicit total access surcharge for origin + destination. When set it wins;
+   * otherwise it is derived from originAccess/destAccess against the inventory
+   * volume (the office access model, tier-agnostic).
+   */
   accessSurcharge?: number;
+  /** Per-building commercial access (origin). Drives the derived surcharge. */
+  originAccess?: OfficeSiteAccess | null;
+  /** Per-building commercial access (destination). */
+  destAccess?: OfficeSiteAccess | null;
   /** Estimated square footage ACTUALLY moving (preferred for the band). */
   movingSqft?: number | null;
   /** Full origin footprint — used only as an upper sanity bound. */
@@ -142,7 +154,22 @@ export function calcOfficeTiers(
   const distanceSurcharge =
     Math.max(0, (ctx.distanceKm ?? 0) - c.freeDistanceKm) * c.perKm;
   const weekendSurcharge = ctx.weekend ? c.weekendSurcharge : 0;
-  const accessSurcharge = ctx.accessSurcharge ?? 0;
+
+  // ── Commercial access model (origin + destination) ──
+  // Tier-agnostic: the same physical access work is added equally to every
+  // tier. An explicit ctx.accessSurcharge (legacy / override) still wins.
+  const accessModel = deriveOfficeAccessModel(
+    ctx.originAccess ?? null,
+    ctx.destAccess ?? null,
+    labour.unitCount,
+    { moveRate: c.moveRate },
+  );
+  const accessSurcharge = ctx.accessSurcharge ?? accessModel.surcharge;
+  // A building rule can force after-hours even when the operator didn't tick it.
+  const effectiveAfterHours = !!ctx.afterHours || accessModel.afterHoursRequired;
+  // High access complexity staffs one more crew (staffing only — office bills
+  // man-hours, not crew-hours, so this never changes the price).
+  const accessExtraCrew = accessModel.recommendExtraCrew ? 1 : 0;
 
   const tiers = {} as Record<OfficeTierKey, OfficeTierPrice>;
 
@@ -167,7 +194,7 @@ export function calcOfficeTiers(
   for (const tier of OFFICE_TIER_ORDER) {
     const def = OFFICE_TIER_DEFINITIONS[tier];
     const lt = labour.perTier[tier];
-    const crew = Math.max(labour.crew, def.ops.crewMinimum);
+    const crew = Math.max(labour.crew, def.ops.crewMinimum) + accessExtraCrew;
     const trucks = labour.trucks;
     const days = lt.days;
 
@@ -182,7 +209,7 @@ export function calcOfficeTiers(
     // Labour (move + pack), with after-hours premium applied to labour only.
     const labourBase =
       moveLabourManHours * c.moveRate + packManHours * c.packRate;
-    const afterHoursAdj = ctx.afterHours
+    const afterHoursAdj = effectiveAfterHours
       ? labourBase * (c.afterHoursMultiplier - 1)
       : 0;
 
@@ -333,8 +360,27 @@ export function calcOfficeTiers(
       signature: labour.perTier.signature.days,
       priority: labour.perTier.priority.days,
     },
-    office_after_hours: !!ctx.afterHours,
+    office_after_hours: effectiveAfterHours,
+    office_after_hours_building_rule: accessModel.afterHoursRequired,
     office_weekend: !!ctx.weekend,
+    // Commercial access model — surcharge + ops flags surfaced for display and
+    // move tasks. Raw per-site inputs are stashed so a re-quote / edit restores
+    // the fields. accessSurcharge (below in breakdown) lifts every tier equally.
+    office_access: accessModel.present
+      ? {
+          surcharge: accessSurcharge,
+          per_cycle_minutes: accessModel.perCycleMinutes,
+          loading_cycles: accessModel.loadingCycles,
+          access_crew_minutes: accessModel.accessCrewMinutes,
+          complexity: accessModel.complexityRating,
+          recommend_extra_crew: accessModel.recommendExtraCrew,
+          after_hours_required: accessModel.afterHoursRequired,
+          scheduling_flags: accessModel.schedulingFlags,
+          drivers: accessModel.drivers,
+          origin_input: ctx.originAccess ?? null,
+          dest_input: ctx.destAccess ?? null,
+        }
+      : null,
     office_distance_km: ctx.distanceKm ?? null,
     office_partial_move: !!ctx.partialMove,
     office_moving_sqft: ctx.movingSqft ?? null,

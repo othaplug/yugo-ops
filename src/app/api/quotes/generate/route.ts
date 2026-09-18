@@ -113,6 +113,7 @@ import { safePatchDeal } from "@/lib/hubspot/safe-deal-write";
 import { buildAllDealProperties } from "@/lib/hubspot/deal-properties-builder";
 import { getResolvedMoveIncludeTitles } from "@/lib/quotes/residential-tier-quote-display";
 import { buildOfficeTierQuote } from "@/lib/quotes/office-quote-from-input";
+import { type OfficeSiteAccess } from "@/lib/quotes/office-access-model";
 import { normalizePhone } from "@/lib/phone";
 import {
   computeWhiteGlovePricingBreakdown,
@@ -239,6 +240,10 @@ interface QuoteInput {
   office_partial_move?: boolean;
   /** Estimated square footage actually moving (for the confidence band). */
   office_moving_sqft?: number | null;
+  /** Per-building commercial access (origin / destination). Drives the
+   *  tier-agnostic access surcharge + scheduling flags. */
+  office_origin_access?: OfficeSiteAccess | null;
+  office_dest_access?: OfficeSiteAccess | null;
   // White glove — standalone engine (optional overrides)
   white_glove_crew_override?: number;
   white_glove_hours_override?: number;
@@ -5646,6 +5651,8 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
           movingSqft: input.office_moving_sqft ?? null,
           totalOriginSqft: input.square_footage ?? null,
           distanceKm: distInfo?.distance_km ?? undefined,
+          originAccess: input.office_origin_access ?? null,
+          destAccess: input.office_dest_access ?? null,
         },
         {},
         officeAddonByTier,

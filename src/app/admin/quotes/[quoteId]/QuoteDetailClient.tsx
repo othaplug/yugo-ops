@@ -2390,6 +2390,69 @@ export default function QuoteDetailClient({
                     })()}
                   </p>
                 </div>
+                {/* Access & site logistics (office). Ops-facing: the access
+                    surcharge that lifts every tier equally, plus the scheduling
+                    flags (elevator window, COI, after-hours, site check) the
+                    coordinator must action. Renders only when the office access
+                    model produced something. */}
+                {quote.service_type === "office_move" &&
+                  (() => {
+                    const access = (factors as Record<string, unknown>)
+                      ?.office_access as
+                      | {
+                          surcharge?: number;
+                          per_cycle_minutes?: number;
+                          recommend_extra_crew?: boolean;
+                          scheduling_flags?: { key: string; label: string }[];
+                        }
+                      | null
+                      | undefined;
+                    if (!access) return null;
+                    const flags = Array.isArray(access.scheduling_flags)
+                      ? access.scheduling_flags
+                      : [];
+                    const surcharge = Math.round(access.surcharge ?? 0);
+                    if (surcharge <= 0 && flags.length === 0) return null;
+                    return (
+                      <div>
+                        <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)] mb-1.5">
+                          Access &amp; site logistics
+                        </p>
+                        {surcharge > 0 && (
+                          <p className="text-[13px] font-semibold text-[var(--tx)] leading-tight">
+                            +${surcharge.toLocaleString()} access
+                            <span className="font-normal text-[var(--tx3)]">
+                              {" "}
+                              (all tiers)
+                            </span>
+                          </p>
+                        )}
+                        {access.recommend_extra_crew && (
+                          <p className="text-[11px] text-[var(--tx2)] mt-0.5">
+                            +1 crew recommended for access
+                          </p>
+                        )}
+                        {flags.length > 0 && (
+                          <ul className="mt-1.5 space-y-1">
+                            {flags.map((f) => (
+                              <li
+                                key={f.key}
+                                className="text-[11px] text-[var(--tx2)] leading-snug flex gap-1.5"
+                              >
+                                <span
+                                  aria-hidden
+                                  className="text-[var(--admin-primary-fill)] shrink-0"
+                                >
+                                  •
+                                </span>
+                                <span>{f.label}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    );
+                  })()}
                 {/* Route — shows every pickup and drop-off. Multi-origin
                     quotes used to surface only the primary from/to,
                     hiding the extras. */}
