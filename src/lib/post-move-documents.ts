@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { generateMoveInvoicePDF, generateMoveSnapshotPDF } from "@/lib/pdf";
 import type { MoveInvoiceData, MoveSnapshotData } from "@/lib/pdf";
 import { opsInvoiceNumberForSquareJob } from "@/lib/invoice-display-number";
+import { calculateDeposit } from "@/app/quote/[quoteId]/quote-shared";
 
 export async function generatePostMoveDocuments(moveId: string): Promise<void> {
   const admin = createAdminClient();
@@ -15,7 +16,22 @@ export async function generatePostMoveDocuments(moveId: string): Promise<void> {
 
   const moveCode = move.move_code || moveId.slice(0, 8).toUpperCase();
   const estimate = Number(move.estimate ?? move.amount ?? 0);
-  const depositPaid = Number(move.deposit_amount ?? Math.round(estimate * 0.25));
+  // Policy-aware fallback: when move.deposit_amount is null (rare —
+  // completed moves normally have it set), fall back to the shared
+  // calculateDeposit helper instead of the 25% hardcode. The hardcode
+  // painted "Deposit paid $X" on invoices for full-payment services
+  // (WG / specialty / single_item / b2b / bin_rental) at a random
+  // 25% of tier price — wrong on both the deposit AND the implied
+  // outstanding balance.
+  const depositPaid = Number(
+    move.deposit_amount ??
+      calculateDeposit(
+        String(move.service_type ?? ""),
+        estimate,
+        move.tier_selected ?? undefined,
+        move.scheduled_date ?? null,
+      ),
+  );
   const baseBalance = Number(move.balance_amount ?? (estimate - depositPaid));
 
   // Fetch related data in parallel

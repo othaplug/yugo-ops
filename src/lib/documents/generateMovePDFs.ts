@@ -10,6 +10,7 @@ import autoTable from "jspdf-autotable";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
 import { getLegalBranding } from "@/lib/legal-branding";
+import { calculateDeposit } from "@/app/quote/[quoteId]/quote-shared";
 import {
   WINE,
   DARK,
@@ -1210,7 +1211,19 @@ function _legacyGenerateInvoicePDF(
   const subtotal = tierPrice + approvedExtras.reduce((s, e) => s + (Number(e.fee_cents) || 0) / 100 * (e.quantity || 1), 0);
   const hst = calcHST(subtotal);
   const total = subtotal + hst;
-  const depositPaid = Number(move.deposit_amount ?? Math.round(tierPrice * 0.25));
+  // Policy-aware fallback (replaced 25% hardcode): for full-payment
+  // services like WG / specialty / single_item, calculateDeposit
+  // returns the full amount so the "Deposit paid" line on the PDF
+  // cannot lie about what was collected at booking.
+  const depositPaid = Number(
+    move.deposit_amount ??
+      calculateDeposit(
+        String(move.service_type ?? "local_move"),
+        tierPrice,
+        move.tier_selected ?? undefined,
+        move.scheduled_date ?? null,
+      ),
+  );
   const balancePaid = Number(move.balance_amount ?? (total - depositPaid));
   const amountOwing = Math.max(0, total - depositPaid - balancePaid);
 
@@ -1453,7 +1466,16 @@ function generateEditorialInvoicePDF(
     );
   const hst = calcHST(subtotal);
   const total = subtotal + hst;
-  const depositPaid = Number(move.deposit_amount ?? Math.round(tierPrice * 0.25));
+  // Policy-aware fallback — see the twin block above for rationale.
+  const depositPaid = Number(
+    move.deposit_amount ??
+      calculateDeposit(
+        String(move.service_type ?? "local_move"),
+        tierPrice,
+        move.tier_selected ?? undefined,
+        move.scheduled_date ?? null,
+      ),
+  );
   const balancePaid = Number(move.balance_amount ?? (total - depositPaid));
   const amountOwing = Math.max(0, total - depositPaid - balancePaid);
 
@@ -2086,7 +2108,16 @@ export async function generateMovePDFs(moveId: string): Promise<{ summaryPath: s
 
   const tierLabel = (moveRow.tier_selected || "Essential").replace(/_/g, " ");
   const tierPrice = Number(moveRow.estimate ?? moveRow.amount ?? 0);
-  const depositPaid = Number(moveRow.deposit_amount ?? Math.round(tierPrice * 0.25));
+  // Policy-aware fallback — same reasoning as the invoice block above.
+  const depositPaid = Number(
+    moveRow.deposit_amount ??
+      calculateDeposit(
+        String(moveRow.service_type ?? "local_move"),
+        tierPrice,
+        moveRow.tier_selected ?? undefined,
+        moveRow.scheduled_date ?? null,
+      ),
+  );
   const balancePaid = Number(moveRow.balance_amount ?? (tierPrice - depositPaid));
 
   const branding = await getLegalBranding();
