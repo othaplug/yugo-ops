@@ -462,14 +462,16 @@ function whyYugoBlock(): string {
 }
 
 function questionsFooter(
-  coordinatorName?: string | null,
-  coordinatorPhone?: string | null,
+  _coordinatorName?: string | null,
+  _coordinatorPhone?: string | null,
 ): string {
+  // Operator directive: no coordinator name anywhere in the quote email.
+  // "Your coordinator Jon is available at ..." was frequently pulling
+  // the email local-part ("Jon") when platform_users.name was unset,
+  // introducing a stranger to the client. Support address only.
   const support = getClientSupportEmail();
   const supportLink = `<a href="mailto:${encodeURIComponent(support)}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;font-weight:600;">${escapeHtmlEmail(support)}</a>`;
-  const contact = coordinatorName
-    ? `Your coordinator ${escapeHtmlEmail(coordinatorName ?? "")} is available${coordinatorPhone ? ` at ${escapeHtmlEmail(coordinatorPhone)}` : ""} or by email at ${supportLink}.`
-    : `Email us at ${supportLink} and we will get back to you within a few hours.`;
+  const contact = `Email us at ${supportLink} and we will get back to you within a few hours.`;
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:24px;border-top:1px solid ${SHELL_BORDER};">
       <tr>
@@ -684,19 +686,19 @@ function priceCard(label: string, price: number, note: string): string {
   `;
 }
 
-function coordinatorBlock(name?: string | null, phone?: string | null): string {
-  if (!name) return "";
-  return `
-    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:20px 0 24px;border-top:1px solid ${SHELL_BORDER};">
-      <tr>
-        <td style="padding-top:16px;">
-          <div style="${SHELL_EYEBROW}margin-bottom:8px;">Your coordinator</div>
-          <div style="font-size:14px;color:${SHELL_TX};font-weight:600;">${name}</div>
-          ${phone ? `<div style="font-size:12px;color:${SHELL_TX2};margin-top:3px;">${phone}</div>` : ""}
-        </td>
-      </tr>
-    </table>
-  `;
+function coordinatorBlock(_name?: string | null, _phone?: string | null): string {
+  // Operator directive: the standalone "Your coordinator · <name> · <phone>"
+  // section is removed from every quote email. The name was routinely
+  // rendering as the email local-part ("Jon") on quotes where
+  // platform_users.name was unset, which read like a stranger reaching out
+  // — worse than no name at all. Signature and every downstream contact
+  // point carry the support address; the coordinator introduces themselves
+  // by name in their own outbound follow-up when appropriate.
+  //
+  // Function kept as a no-op so the ~6 template call sites do not need to
+  // change. The prop stays on QuoteTemplateData for backwards compat and
+  // in case a future opt-in coordinator block returns.
+  return "";
 }
 
 const HERO_FONT = "'Instrument Serif', Georgia, 'Times New Roman', serif";
