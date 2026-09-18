@@ -53,6 +53,7 @@ import {
   expiresValue,
   calculateDeposit,
   calculateTieredDeposit,
+  isFullPaymentAtBookingService,
 } from "./quote-shared";
 
 import YugoLogo from "@/components/YugoLogo";
@@ -1461,6 +1462,17 @@ export default function QuotePageClient({
     if (quote.service_type === "bin_rental") {
       return grandTotal;
     }
+    // Full-payment-at-booking service policy (white_glove, single_item,
+    // specialty, b2b_*). YG-30428-class incident: white_glove quote
+    // rendered a $1,000 "deposit" because the useMemo had no branch for
+    // this service and fell through to a stale quote.deposit_amount.
+    // The server correctly rejects with FULL_PAYMENT_REQUIRED but the
+    // client sees a red "refresh the page" banner mid-checkout. Kill
+    // the mismatch at the source — for these services the client
+    // always shows the full amount.
+    if (isFullPaymentAtBookingService(quote.service_type)) {
+      return grandTotal;
+    }
     if (isOfficeTiered) {
       // Office keeps a flat 30% deposit across all tiers (the platform rule).
       return Math.round(totalBeforeTax * 0.3);
@@ -1511,9 +1523,14 @@ export default function QuotePageClient({
   ]);
 
   /* ── Booking payment window, full payment vs deposit ──
-     When move is < 48h away, charge the full grand total at booking.
-     Server enforces independently (no client trust). See
-     src/lib/quotes/booking-payment-window.ts. */
+     Two independent triggers for full-payment-at-booking:
+       1. The 48h window rule (any service booked < 48h from move day)
+       2. The service-type policy (white_glove / single_item / specialty /
+          b2b_* — see FULL_PAYMENT_AT_BOOKING_SERVICES in quote-shared.ts)
+     Both must be respected by the UI or the "DEPOSIT AMOUNT / PAY
+     $X & BOOK" copy misleads the client and the server rejects with a
+     mid-checkout "refresh the page" banner. Server enforces the same
+     rules independently — see src/app/api/payments/process/route.ts. */
   const bookingPayment = useMemo(() => {
     return decideBookingPayment({
       moveDate: quote.move_date,
@@ -1521,8 +1538,14 @@ export default function QuotePageClient({
       grandTotal,
     });
   }, [quote.move_date, deposit, grandTotal]);
-  const bookingAmount = bookingPayment.amountToCharge;
-  const bookingRequiresFullPayment = bookingPayment.requireFullPayment;
+  const serviceRequiresFullPayment = isFullPaymentAtBookingService(
+    quote.service_type,
+  );
+  const bookingRequiresFullPayment =
+    bookingPayment.requireFullPayment || serviceRequiresFullPayment;
+  const bookingAmount = bookingRequiresFullPayment
+    ? grandTotal
+    : bookingPayment.amountToCharge;
 
   /* ── Contract data for ContractSign component ── */
   const contractAddonsList = useMemo((): ContractAddon[] => {
