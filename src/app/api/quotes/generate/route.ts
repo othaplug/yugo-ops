@@ -2803,142 +2803,6 @@ async function calcResidential(
 }
 
 // ═══════════════════════════════════════════════
-// OFFICE MOVE — single price
-// ═══════════════════════════════════════════════
-
-async function calcOffice(
-  sb: SupabaseAdmin,
-  input: QuoteInput,
-  config: Map<string, string>,
-  distInfo: { distance_km: number; drive_time_min: number } | null,
-  _neighbourhood: { tier: string | null; multiplier: number },
-  _dateMult: { multiplier: number },
-  addonResult: Awaited<ReturnType<typeof calculateAddons>>,
-) {
-  const perWs = cfgNum(config, "office_per_workstation", 85);
-  const desks = Math.max(0, Math.floor(input.office_desks_count ?? 0));
-  const chairs = Math.max(0, Math.floor(input.office_chairs_count ?? 0));
-  const wsFromFields = Math.max(desks, chairs);
-  const workstationCount = Math.max(
-    0,
-    Math.floor(input.workstation_count ?? 0) || wsFromFields,
-  );
-
-  const serverRoom = input.office_server_room ?? !!input.has_it_equipment;
-  let boardroomCount = Math.max(0, Math.floor(input.office_boardroom_count ?? 0));
-  if (boardroomCount === 0 && input.has_conference_room) boardroomCount = 1;
-  const kitchen = !!input.office_kitchen_break_room;
-  const reception = !!input.has_reception_area;
-
-  const timing = (input.timing_preference || "").toLowerCase();
-  const afterHours =
-    !!input.office_after_hours ||
-    timing.includes("evening") ||
-    timing.includes("night") ||
-    timing.includes("after");
-  const weekend =
-    !!input.office_weekend ||
-    timing.includes("weekend") ||
-    isMoveDateWeekend(input.move_date || "");
-
-  let subtotal = workstationCount * perWs;
-
-  if (serverRoom) subtotal += cfgNum(config, "office_server_room", 500);
-  if (boardroomCount > 0) {
-    subtotal += cfgNum(config, "office_boardroom", 300) * boardroomCount;
-  }
-  if (kitchen) subtotal += cfgNum(config, "office_kitchen", 200);
-  if (reception) subtotal += cfgNum(config, "office_reception", 250);
-
-  if (afterHours) subtotal *= cfgNum(config, "office_after_hours_multiplier", 1.2);
-  if (weekend) subtotal += cfgNum(config, "office_weekend_surcharge", 200);
-
-  const distKm = distInfo?.distance_km ?? 0;
-  const distFree = cfgNum(config, "office_dist_free_km", 40);
-  if (distKm > distFree) {
-    subtotal += (distKm - distFree) * cfgNum(config, "office_per_km", 4);
-  }
-
-  const truckOffice = normalizeTruckType(input.truck_type ?? "16ft");
-  const truckCount = Math.max(1, Math.floor(input.office_truck_count ?? 1));
-  const truckSur = officeTruckSurchargeStack(truckOffice, truckCount, config);
-  subtotal += truckSur;
-
-  const minOffice = cfgNum(config, "office_minimum", 800);
-  const rounding = cfgNum(config, "rounding_nearest", 50);
-  subtotal = Math.max(subtotal, minOffice);
-  subtotal = roundTo(subtotal, rounding);
-
-  const [fromAccess, toAccess] = await Promise.all([
-    getAccessSurcharge(sb, input.from_access),
-    getAccessSurcharge(sb, input.to_access),
-  ]);
-  const accessTotal = fromAccess + toAccess;
-  const plcOffice = parkingLongCarryLineTotal(config, input, "both");
-  let price = subtotal + accessTotal + plcOffice.total;
-
-  const scheduleFlags: OfficeScheduleFlags = {
-    serverRoom,
-    boardroomCount,
-    kitchen,
-    reception,
-  };
-  const estCrew = input.office_crew_size ?? estimateOfficeCrew(workstationCount);
-  const estHours = input.office_estimated_hours ?? estimateOfficeHours(workstationCount, scheduleFlags);
-  const loadedRate = cfgNum(config, "crew_loaded_hourly_rate", 28);
-  const estCost =
-    estCrew * estHours * loadedRate + estimateOfficeTruckOpsCost(truckOffice, truckCount, config);
-  const marginPct = price > 0 ? Math.round((1 - estCost / price) * 100) : 0;
-
-  price += addonResult.total;
-  const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
-  const tax = Math.round(price * taxRate);
-  const deposit = await calculateDeposit(sb, "office", price, input.move_date);
-
-  const officeFeatures = await fetchTierFeatures(sb, "office_move", "custom");
-  const includes = officeFeatures.length > 0 ? [...officeFeatures] : [
-    "Professional moving crew",
-    "Moving truck(s) as needed",
-    "Basic disassembly & reassembly",
-    "Floor & door frame protection",
-    "Labeled crate system",
-  ];
-  if (serverRoom && !includes.includes("Server / IT area handling"))
-    includes.push("Server / IT area handling");
-  if (boardroomCount > 0 && !includes.includes("Boardroom teardown & setup"))
-    includes.push("Boardroom teardown & setup");
-
-  return {
-    custom_price: { price, deposit, tax, total: price + tax, includes } as TierResult,
-    factors: {
-      office_pricing_model: "workstation_based",
-      office_per_workstation: perWs,
-      office_workstations_billed: workstationCount,
-      office_server_room: serverRoom,
-      office_boardroom_count: boardroomCount,
-      office_kitchen: kitchen,
-      office_reception: reception,
-      office_after_hours: afterHours,
-      office_weekend: weekend,
-      office_truck_count: truckCount,
-      office_hours_estimated: estHours,
-      office_crew_estimated: estCrew,
-      distance_km: distKm,
-      access_surcharge: accessTotal,
-      parking_long_carry_total: plcOffice.total,
-      truck_recommended: truckOffice,
-      truck_surcharge: truckSur,
-      office_estimated_ops_cost: Math.round(estCost),
-      office_estimated_margin_pct: marginPct,
-      square_footage: input.square_footage ?? null,
-      company_name:
-        (typeof input.company_name === "string" && input.company_name.trim()) ||
-        null,
-    },
-  };
-}
-
-// ═══════════════════════════════════════════════
 // LONG DISTANCE — single price
 // ═══════════════════════════════════════════════
 
@@ -5777,6 +5641,13 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         }
       }
       const officeInv = explicitInv.length > 0 ? explicitInv : synth;
+      // Bill selected add-ons on office (previously computed but dropped). Net
+      // each office tier's add-on dollars of any per-tier exclusion.
+      const officeAddonByTier = {
+        essential: addonResult.total - (addonResult.byTierExclusion.get("essential") ?? 0),
+        signature: addonResult.total - (addonResult.byTierExclusion.get("signature") ?? 0),
+        priority: addonResult.total - (addonResult.byTierExclusion.get("priority") ?? 0),
+      };
       const oq = buildOfficeTierQuote(
         officeInv,
         {
@@ -5788,9 +5659,10 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
           distanceKm: distInfo?.distance_km ?? undefined,
         },
         {},
+        officeAddonByTier,
       );
       officeTiers = oq.tiers;
-      // custom_price defaults to the recommended (Priority) tier for
+      // custom_price defaults to the recommended (Signature) tier for
       // back-compat with code paths that read a single headline price.
       // The client OfficeLayout now renders all three tiers from
       // officeTiers; selected_tier on accept determines what actually

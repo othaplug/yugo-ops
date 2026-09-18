@@ -28,7 +28,7 @@ export interface OfficeTierResultShape {
 
 export interface OfficeTierQuote {
   tiers: Record<OfficeTierKey, OfficeTierResultShape>;
-  /** Recommended (Priority) tier, surfaced as the single-price fallback. */
+  /** Recommended (Signature) tier, surfaced as the single-price fallback. */
   recommended: OfficeTierResultShape;
   factors: Record<string, unknown>;
 }
@@ -37,24 +37,47 @@ export function buildOfficeTierQuote(
   inventory: OfficeInventoryLine[],
   ctx: OfficeQuoteContext = {},
   config: OfficeQuoteConfig = {},
+  /**
+   * Pre-tax add-on dollars to add on top of each tier's base price (already net
+   * of any per-tier exclusion). Office quotes DO offer add-ons (IT
+   * disconnect/reconnect, workstation labeling, COI processing, shredding,
+   * etc.) — previously these were computed but never billed on office.
+   */
+  addonByTier: Partial<Record<OfficeTierKey, number>> = {},
 ): OfficeTierQuote {
   const labour = estimateOfficeLabour(inventory);
   const result = calcOfficeTiers(labour, ctx, config);
+  const taxRate = config.taxRate ?? 0.13;
+  const depositPct = config.depositPct ?? 30;
 
   const tiers = {} as Record<OfficeTierKey, OfficeTierResultShape>;
+  let addonTotalApplied = 0;
   for (const tier of OFFICE_TIER_ORDER) {
     const tp = result.tiers[tier];
-    tiers[tier] = {
-      price: tp.price,
-      deposit: tp.deposit,
-      tax: tp.tax,
-      total: tp.total,
-      includes: officeTierIncludes(tier, { crew: tp.crew, trucks: tp.trucks }),
-    };
+    const addon = Math.max(0, Math.round(addonByTier[tier] ?? 0));
+    const price = tp.price + addon;
+    if (addon > 0) addonTotalApplied = Math.max(addonTotalApplied, addon);
+    tiers[tier] =
+      addon > 0
+        ? {
+            price,
+            tax: Math.round(price * taxRate),
+            total: price + Math.round(price * taxRate),
+            deposit: Math.round(price * (depositPct / 100)),
+            includes: officeTierIncludes(tier, { crew: tp.crew, trucks: tp.trucks }),
+          }
+        : {
+            price: tp.price,
+            deposit: tp.deposit,
+            tax: tp.tax,
+            total: tp.total,
+            includes: officeTierIncludes(tier, { crew: tp.crew, trucks: tp.trucks }),
+          };
   }
 
   const factors = {
     ...result.factors,
+    office_addon_total: addonTotalApplied,
     // Persist the raw inventory so the move + quote display can rebuild scope
     // without re-deriving it (and so a re-quote is reproducible).
     office_inventory: inventory,
@@ -66,5 +89,5 @@ export function buildOfficeTierQuote(
     },
   };
 
-  return { tiers, recommended: tiers.priority, factors };
+  return { tiers, recommended: tiers.signature, factors };
 }

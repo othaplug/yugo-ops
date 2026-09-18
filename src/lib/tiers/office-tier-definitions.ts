@@ -38,7 +38,12 @@ export interface OfficeTierDefinition {
   tagline: string;
   clientDescription: string;
   bestFor: string;
-  /** Priority is the recommended tier (mirrors Estate-featured on residential). */
+  /**
+   * The tier featured to the client. Signature is the default recommendation
+   * (the middle tier — Yugo handles IT, the team handles general boxes),
+   * consistent with the residential default and the stored recommended_tier.
+   * A data-driven recommendation (by inventory size / client type) is planned.
+   */
   recommended: boolean;
 
   /** Operational scope flags — drive the engine's pack/unpack labour and the card copy. */
@@ -118,7 +123,7 @@ export const OFFICE_TIER_DEFINITIONS: Record<OfficeTierKey, OfficeTierDefinition
     clientDescription:
       "Yugo packs and protects all IT and hardware, wraps and moves every piece. Your team packs general boxes and unpacks at the new space.",
     bestFor: "Teams that want their technology handled by professionals.",
-    recommended: false,
+    recommended: true,
     ops: {
       packsGeneral: "client",
       packsIT: "yugo",
@@ -148,7 +153,7 @@ export const OFFICE_TIER_DEFINITIONS: Record<OfficeTierKey, OfficeTierDefinition
     clientDescription:
       "Yugo packs every box and every item, moves and reassembles per your floor plan, and unpacks everything at the destination. A dedicated on-site project manager runs the day. All supplies included.",
     bestFor: "Teams that want to show up Monday to a finished office.",
-    recommended: true,
+    recommended: false,
     ops: {
       packsGeneral: "yugo",
       packsIT: "yugo",

@@ -229,24 +229,23 @@ export function calcOfficeTiers(
     });
   }
 
-  // Minimum-price floor uplift. If Essential (the cheapest tier) lands
-  // below the floor, scale all three proportionally so Essential lifts
-  // to minPrice and Signature/Priority preserve their relative
-  // premium. Without this, a small office job ($500 / $700 / $1,200
-  // computed) becomes $1,500 / $1,500 / $1,500 after the per-tier
-  // Math.max -- which looks broken to operators and removes the
-  // upsell.
+  // Minimum-price floor lift. If Essential (the cheapest tier) lands below the
+  // floor, lift EVERY tier by the same fixed deficit (floor - essentialPre)
+  // rather than scaling. The old code multiplied all tiers by floor/essentialPre,
+  // which gave the SMALLEST jobs the biggest multiplier on their upper tiers —
+  // so a 5-desk Priority ($2,450) could cost more than a 50-desk Priority
+  // ($2,100). An additive lift keeps the dollar spread between tiers intact and
+  // is monotonic: a smaller job can never price above a larger one.
   const essentialPre = interim[0]?.pricePre ?? 0;
   const floor = c.minPrice;
-  const upliftScale =
-    essentialPre > 0 && essentialPre < floor ? floor / essentialPre : 1;
+  const floorLift =
+    essentialPre > 0 && essentialPre < floor ? floor - essentialPre : 0;
 
   for (const r of interim) {
-    const scaled = r.pricePre * upliftScale;
-    // Belt-and-suspenders: still respect minPrice as the absolute
-    // floor for every tier (in case Essential was already at $0 and
-    // the scale didn't lift the higher tiers above floor).
-    const price = Math.max(floor, round(scaled, c.rounding));
+    const lifted = r.pricePre + floorLift;
+    // Still respect minPrice as the absolute floor for every tier (covers the
+    // essentialPre === 0 empty-inventory case where floorLift stays 0).
+    const price = Math.max(floor, round(lifted, c.rounding));
     const tax = Math.round(price * c.taxRate);
     const total = price + tax;
     const deposit = Math.round(price * (c.depositPct / 100));
