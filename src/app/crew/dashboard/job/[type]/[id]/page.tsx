@@ -462,7 +462,18 @@ export default function CrewJobPage({
     return expandFlowForStops(statusFlow, pickupAddrs, dropoffAddrs);
   }, [statusFlow, job?.moveStops]);
 
-  const currentStatus = session?.status || "not_started";
+  // The move's own DB status is authoritative for "is this job done". A job can
+  // be completed (crew sign-off, or an admin marking it complete) while a stale
+  // or never-persisted local tracking session still reads "en_route_return" —
+  // that mismatch is what kept a completed event return showing a live timer and
+  // a Client sign-off button. Once the move is terminal, force currentStatus to
+  // "completed" so the timer, steps, nav, and sign-off all collapse to done.
+  const moveIsTerminal = ["completed", "delivered", "done", "cancelled"].includes(
+    (job?.status || "").toLowerCase(),
+  );
+  const currentStatus = moveIsTerminal
+    ? "completed"
+    : session?.status || "not_started";
   const currentExpandedPos = useMemo(
     () =>
       findCurrentExpandedPosition(
@@ -682,6 +693,13 @@ export default function CrewJobPage({
       currentStatus === "arrived_at_pickup" &&
       !walkthroughDone &&
       !walkthroughSkipped &&
+      // Authoritative server flags too — the local `walkthroughDone` is synced
+      // by a separate effect that lags this one by a render, so on reload/new
+      // session it was still false here and re-opened the modal on a job whose
+      // walkthrough was already completed (MV-30378: "keeps showing the
+      // inventory check" after the crew finished it). Gate on the DB truth.
+      !job?.walkthroughCompleted &&
+      !job?.walkthroughSkipped &&
       !loading &&
       session?.isActive &&
       walkthroughDismissedForSessionRef.current !== sid
@@ -692,6 +710,8 @@ export default function CrewJobPage({
     currentStatus,
     walkthroughDone,
     walkthroughSkipped,
+    job?.walkthroughCompleted,
+    job?.walkthroughSkipped,
     loading,
     session?.isActive,
     session?.id,
@@ -1211,11 +1231,15 @@ export default function CrewJobPage({
   const blockedByPhotos = atArrivedRequiringPhotos && !canAdvanceFromArrived;
   const finalWalkPhotoAtLoading =
     jobType === "move" && !moveStatusFlow.includes("unloading");
-  // Walkthrough must be done (or skipped) before loading can start
+  // Walkthrough must be done (or skipped) before loading can start. Respect the
+  // server flags as well as the local ones so a lagging local sync never blocks
+  // advancing a job whose walkthrough is already completed in the DB.
   const blockedByWalkthrough =
     currentStatus === "arrived_at_pickup" &&
     !walkthroughDone &&
-    !walkthroughSkipped;
+    !walkthroughSkipped &&
+    !job?.walkthroughCompleted &&
+    !job?.walkthroughSkipped;
   const showAdvanceButton = session?.isActive && nextStatus && !showStartButton;
   const canUseLocationActions = !blockedByLocation;
 
