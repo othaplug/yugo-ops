@@ -328,17 +328,30 @@ export async function POST(
         subjects[tier] ??
         `Booking confirmed, ${moveCode}`;
 
-    await resend.emails.send({
-      from: emailFrom,
-      to: clientEmail,
-      subject,
-      html: templateFn(confirmParams),
-      headers: {
-        Precedence: "auto",
-        "X-Auto-Response-Suppress": "All",
-      },
-    });
-    results.push({ name: "booking_confirmation", ok: true });
+    if (svcRoute === "event") {
+      // Events use a distinct template (eventConfirmationEmail) with its own
+      // param shape (venue, both legs, teardown). The generic confirmParams
+      // here would render the residential "signature" confirmation, which is
+      // wrong for an event. Skip rather than send the wrong email — the
+      // automatic post-payment path already sends the correct event copy.
+      results.push({
+        name: "booking_confirmation",
+        ok: false,
+        error: "Event bookings send event-specific confirmation automatically; manual resend is not wired for events.",
+      });
+    } else {
+      await resend.emails.send({
+        from: emailFrom,
+        to: clientEmail,
+        subject,
+        html: templateFn(confirmParams),
+        headers: {
+          Precedence: "auto",
+          "X-Auto-Response-Suppress": "All",
+        },
+      });
+      results.push({ name: "booking_confirmation", ok: true });
+    }
     }
   } catch (e) {
     results.push({
@@ -351,6 +364,7 @@ export async function POST(
   /* ── 2. Pre-move survey invite (mirrors post-payment.ts) ── */
   try {
     if (
+      String(quote.service_type ?? "").toLowerCase() === "event" ||
       ![
         "essential",
         "curated",
@@ -359,8 +373,9 @@ export async function POST(
         "premier",
       ].includes(tier)
     ) {
-      // Estate tier and non-residential service types don't get the
-      // survey invite. Skip silently to match the original automation.
+      // Estate tier and non-residential service types (incl. events, whose tier
+      // defaults to "signature") don't get the room-photos survey invite. Skip
+      // silently to match the original automation.
       results.push({
         name: "pre_move_survey",
         ok: true,

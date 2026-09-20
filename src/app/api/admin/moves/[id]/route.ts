@@ -521,6 +521,47 @@ export async function PATCH(
 
       if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 400 });
 
+      // Event edit fan-out: an event is two linked legs whose addresses are
+      // REVERSED (delivery from→to, return to→from). Editing one leg must keep
+      // the sibling consistent, or the return leg's venue/base drift out of sync
+      // and its GPS/tracking break. Propagate the shared operational fields and
+      // mirror any address change with the reversal. Per-leg fields
+      // (scheduled_date, arrival_window) are intentionally NOT propagated — the
+      // two legs run on different days/times.
+      const u = updated as Record<string, unknown>;
+      if (
+        String(u.move_type ?? u.service_type ?? "") === "event" &&
+        u.event_group_id
+      ) {
+        const { data: sibs } = await admin
+          .from("moves")
+          .select("id")
+          .eq("event_group_id", u.event_group_id as string)
+          .neq("id", id);
+        if (sibs && sibs.length > 0) {
+          const sib: Record<string, unknown> = { updated_at: new Date().toISOString() };
+          if (crew_id !== undefined) sib.crew_id = crew_id;
+          if (coordinator_name !== undefined) sib.coordinator_name = coordinator_name;
+          if (truck_primary !== undefined) sib.truck_primary = truck_primary;
+          if (truck_secondary !== undefined) sib.truck_secondary = truck_secondary;
+          if (est_hours !== undefined) sib.est_hours = est_hours;
+          if (estimated_duration_minutes !== undefined) sib.estimated_duration_minutes = estimated_duration_minutes;
+          if (margin_alert_minutes !== undefined) sib.margin_alert_minutes = margin_alert_minutes;
+          // Reversed addresses: this leg's FROM is the sibling's TO and vice versa.
+          if (from_address !== undefined) { sib.to_address = from_address; sib.delivery_address = from_address; }
+          if (from_lat !== undefined) sib.to_lat = from_lat;
+          if (from_lng !== undefined) sib.to_lng = from_lng;
+          if (from_access !== undefined) sib.to_access = from_access;
+          if (to_address !== undefined) sib.from_address = to_address;
+          if (to_lat !== undefined) sib.from_lat = to_lat;
+          if (to_lng !== undefined) sib.from_lng = to_lng;
+          if (to_access !== undefined) sib.from_access = to_access;
+          if (Object.keys(sib).length > 1) {
+            await admin.from("moves").update(sib).in("id", sibs.map((s) => s.id as string));
+          }
+        }
+      }
+
       // Multi-stop sync: if the modal sent additional_pickup_addresses /
       // additional_dropoff_addresses, write them onto the linked quote.
       // The arrays come in as { address: string }[]; we normalize and
@@ -753,53 +794,79 @@ export async function DELETE(
     const { id } = await params;
     const admin = createAdminClient();
 
-    const { data: moveMeta } = await admin
+    // Event bookings are two linked move rows (delivery + return) sharing an
+    // event_group_id and a HubSpot deal, each with its own GCal event. Deleting
+    // one leg must delete BOTH — otherwise the sibling is orphaned with a dead
+    // event_group_id, and (because the deal is shared) archiving it on the first
+    // delete already broke the survivor's HubSpot link. Resolve the full set.
+    const { data: primaryMeta } = await admin
       .from("moves")
-      .select("hubspot_deal_id, gcal_event_id")
+      .select("hubspot_deal_id, gcal_event_id, event_group_id")
       .eq("id", id)
       .maybeSingle();
-    const moveHsId = ((moveMeta as { hubspot_deal_id?: string | null } | null)?.hubspot_deal_id ?? "").trim();
-    const moveGcalId = ((moveMeta as { gcal_event_id?: string | null } | null)?.gcal_event_id ?? "").trim();
-
-    await admin.from("move_inventory").delete().eq("move_id", id);
-    await admin.from("move_documents").delete().eq("move_id", id);
-    await admin.from("move_photos").delete().eq("move_id", id);
-    await admin.from("move_change_requests").delete().eq("move_id", id);
-    await admin.from("proof_of_delivery").delete().eq("move_id", id);
-
-    const { data: moveInvoices } = await admin
-      .from("invoices")
-      .select("id, square_invoice_id")
-      .eq("move_id", id);
-    for (const inv of moveInvoices || []) {
-      await cancelOrDeleteSquareInvoice(inv.square_invoice_id);
+    const groupId = (primaryMeta as { event_group_id?: string | null } | null)?.event_group_id ?? null;
+    const { data: legMetas } = groupId
+      ? await admin
+          .from("moves")
+          .select("id, hubspot_deal_id, gcal_event_id")
+          .eq("event_group_id", groupId)
+      : await admin
+          .from("moves")
+          .select("id, hubspot_deal_id, gcal_event_id")
+          .eq("id", id);
+    const legs = legMetas ?? [];
+    const targetIds = legs.length > 0 ? legs.map((l) => l.id as string) : [id];
+    const hsIds = new Set<string>();
+    const gcalIds = new Set<string>();
+    for (const l of legs) {
+      const hs = ((l as { hubspot_deal_id?: string | null }).hubspot_deal_id ?? "").trim();
+      const gc = ((l as { gcal_event_id?: string | null }).gcal_event_id ?? "").trim();
+      if (hs) hsIds.add(hs);
+      if (gc) gcalIds.add(gc);
     }
-    await admin.from("invoices").delete().eq("move_id", id);
-    const { error } = await admin.from("moves").delete().eq("id", id);
+
+    for (const targetId of targetIds) {
+      await admin.from("move_inventory").delete().eq("move_id", targetId);
+      await admin.from("move_documents").delete().eq("move_id", targetId);
+      await admin.from("move_photos").delete().eq("move_id", targetId);
+      await admin.from("move_change_requests").delete().eq("move_id", targetId);
+      await admin.from("proof_of_delivery").delete().eq("move_id", targetId);
+
+      const { data: moveInvoices } = await admin
+        .from("invoices")
+        .select("id, square_invoice_id")
+        .eq("move_id", targetId);
+      for (const inv of moveInvoices || []) {
+        await cancelOrDeleteSquareInvoice(inv.square_invoice_id);
+      }
+      await admin.from("invoices").delete().eq("move_id", targetId);
+    }
+    const { error } = await admin.from("moves").delete().in("id", targetIds);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-    // Delete in Ops means delete everywhere: archive the HubSpot deal
-    // (removes from active pipelines; portal keeps a 90-day restore
-    // window) and drop the Google Calendar event so it doesn't linger
-    // on crew calendars. Fire-and-forget — HubSpot/GCal outages must
-    // never block a successful Ops delete.
-    if (moveHsId) {
+    // Delete in Ops means delete everywhere: archive the (shared) HubSpot deal
+    // once, and drop each leg's Google Calendar event so nothing lingers on crew
+    // calendars. Fire-and-forget — HubSpot/GCal outages must never block a
+    // successful Ops delete.
+    if (hsIds.size > 0) {
       const { hubspotArchiveOnDelete } = await import(
         "@/lib/hubspot/archive-on-delete"
       );
-      hubspotArchiveOnDelete(moveHsId).catch(() => {});
+      for (const hs of hsIds) hubspotArchiveOnDelete(hs).catch(() => {});
     }
-    if (moveGcalId) {
+    if (gcalIds.size > 0) {
       const { deleteGCalEvent } = await import(
         "@/lib/google-calendar/sync-job"
       );
-      deleteGCalEvent(moveGcalId).catch((e) =>
-        console.error("[gcal] deleteEvent on move delete:", e),
-      );
+      for (const gc of gcalIds) {
+        deleteGCalEvent(gc).catch((e) =>
+          console.error("[gcal] deleteEvent on move delete:", e),
+        );
+      }
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, deleted: targetIds.length });
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to delete move" },
