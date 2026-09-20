@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { eventCompletionGate } from "@/lib/events/event-group";
 import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
 import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
 import { sendSMS } from "@/lib/sms/sendSMS";
@@ -428,20 +429,31 @@ export const runMoveCompletionFollowUp = async (
   },
 ): Promise<void> => {
   syncDealStageByMoveId(moveId, "completed").catch(() => {});
-  // Immediate thank-you text (luxury tone), separate from the review ask.
-  sendMoveCompleteThankYouSms(admin, moveId).catch((e) =>
-    console.error("[move-complete-sms] schedule failed:", e),
-  );
-  // Unified review cadence: one review_requests row drives the SMS at ~3h and
-  // the two email touches (via /api/cron/review-requests), with the star tap
-  // gating who reaches Google. Replaces the old rating-gated post-move SMS
-  // scheduler, so a client is never texted the review ask twice.
-  createReviewRequestIfEligible(admin, moveId).catch((e) =>
-    console.error("[review] create failed:", e),
-  );
-  createClientReferralIfNeeded(admin, moveId).catch((e) =>
-    console.error("[referral] create failed:", e),
-  );
+  // Events are two move rows (delivery + return). The thank-you text, review
+  // cadence, and referral must fire ONCE for the client, on the final leg (the
+  // teardown/return) — not on the delivery leg while the return is still days
+  // away, and never twice. Non-event moves always fire.
+  const evGate = await eventCompletionGate(admin, moveId).catch(() => ({
+    isEvent: false,
+    isReturnLeg: false,
+    fireClientNotifications: true,
+  }));
+  if (evGate.fireClientNotifications) {
+    // Immediate thank-you text (luxury tone), separate from the review ask.
+    sendMoveCompleteThankYouSms(admin, moveId).catch((e) =>
+      console.error("[move-complete-sms] schedule failed:", e),
+    );
+    // Unified review cadence: one review_requests row drives the SMS at ~3h and
+    // the two email touches (via /api/cron/review-requests), with the star tap
+    // gating who reaches Google. Replaces the old rating-gated post-move SMS
+    // scheduler, so a client is never texted the review ask twice.
+    createReviewRequestIfEligible(admin, moveId).catch((e) =>
+      console.error("[review] create failed:", e),
+    );
+    createClientReferralIfNeeded(admin, moveId).catch((e) =>
+      console.error("[referral] create failed:", e),
+    );
+  }
 
   if (opts.source === "crew_signoff_skip") {
     generatePostMoveDocuments(moveId).catch((e) => console.error("[post-move-documents] failed:", e));
@@ -453,10 +465,15 @@ export const runMoveCompletionFollowUp = async (
     }
   }
 
-  fireSendCompletedEta(moveId, "move");
+  // "Your move is complete" ETA email — same once-per-event rule as above.
+  if (evGate.fireClientNotifications) {
+    fireSendCompletedEta(moveId, "move");
+  }
   fireAutoInvoice(moveId, "move");
 
-  if (opts.marginActualHours != null) {
+  // Skip the margin snapshot on the $0 return leg — it would write a bogus 0%
+  // margin over the event's real numbers (which live on the delivery leg).
+  if (opts.marginActualHours != null && !evGate.isReturnLeg) {
     void persistActualMarginForMove(admin, moveId, opts.marginActualHours);
   }
 };

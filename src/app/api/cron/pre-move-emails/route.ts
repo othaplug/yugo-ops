@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
     )
     .in("status", ["confirmed", "scheduled", "paid"])
     .eq("scheduled_date", threeDaysOut)
+    .or("event_phase.is.null,event_phase.neq.return") // events: skip the $0 return/teardown leg
     .is("pre_move_72hr_sent", null);
 
   if (moves72 && moves72.length > 0) {
@@ -326,6 +327,7 @@ export async function GET(req: NextRequest) {
       "id, move_code, client_name, client_email, scheduled_date, arrival_window, from_access, to_access, from_address, to_address, from_parking, to_parking, elevator_reminder_sent_at, parking_reminder_sent_at",
     )
     .in("status", ["confirmed", "scheduled", "paid"])
+    .or("event_phase.is.null,event_phase.neq.return") // events: skip the $0 return/teardown leg
     .eq("scheduled_date", fiveDaysOut);
 
   for (const m of moves5 || []) {
@@ -425,6 +427,7 @@ export async function GET(req: NextRequest) {
     )
     .in("status", ["confirmed", "scheduled", "paid"])
     .eq("scheduled_date", threeDaysOut)
+    .or("event_phase.is.null,event_phase.neq.return") // events: skip the $0 return/teardown leg
     .is("move_prep_checklist_email_sent_at", null);
 
   for (const m of movesCheck3 || []) {
@@ -492,6 +495,7 @@ export async function GET(req: NextRequest) {
     )
     .in("status", ["confirmed", "scheduled", "paid"])
     .eq("scheduled_date", oneDayOut)
+    .or("event_phase.is.null,event_phase.neq.return") // events: skip the $0 return/teardown leg
     .is("pre_move_24hr_sent", null);
 
   if (moves24 && moves24.length > 0) {
