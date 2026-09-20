@@ -277,6 +277,8 @@ export type MoveRow = {
   contact_id?: string | null;
   margin_percent?: number | null;
   organization_id?: string | null;
+  event_phase?: string | null;
+  event_group_id?: string | null;
 };
 
 export const mapMove = (

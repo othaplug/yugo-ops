@@ -1,6 +1,7 @@
 import "server-only"
 import { cache } from "react"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { isEventReturnLeg } from "@/lib/events/event-group"
 import { isPropertyManagementDeliveryVertical } from "@/lib/partner-type"
 import {
   mapB2BPartner,
@@ -161,7 +162,7 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
       db
         .from("moves")
         .select(
-          "id, move_code, client_name, client_email, organization_id, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, crew_id, created_at, margin_percent",
+          "id, move_code, client_name, client_email, organization_id, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, crew_id, created_at, margin_percent, event_phase, event_group_id",
         )
         .order("created_at", { ascending: false })
         .limit(LIMIT),
@@ -274,9 +275,12 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
   const quotes: Quote[] = (quotesResp.rows ?? []).map((row) =>
     mapQuote(row, contactNameById.get(row.contact_id ?? "")),
   )
-  const moves: Move[] = (movesResp.rows ?? []).map((row) =>
-    mapMove(row, crewById),
-  )
+  // Drop the $0 event return leg so a single event counts once (and never as a
+  // second, $0 job) in customer LTV / move counts. The delivery leg carries the
+  // revenue and represents the event.
+  const moves: Move[] = (movesResp.rows ?? [])
+    .filter((row) => !isEventReturnLeg(row))
+    .map((row) => mapMove(row, crewById))
   const invoices: Invoice[] = (invoicesResp.rows ?? []).map((row) => mapInvoice(row))
   const crew: CrewMember[] = crewRows.map((row) => mapCrewMember(row))
 
@@ -326,6 +330,7 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
   const b2bStats = new Map<string, { jobsLast30: number; revenueLast30: number }>()
   for (const row of movesResp.rows ?? []) {
     if (!row.organization_id) continue
+    if (isEventReturnLeg(row)) continue // event counts once, on the delivery leg
     const scheduledMs = row.scheduled_date ? new Date(row.scheduled_date).getTime() : 0
     if (scheduledMs < thirtyDays) continue
     const existing = b2bStats.get(row.organization_id) ?? { jobsLast30: 0, revenueLast30: 0 }
@@ -353,6 +358,7 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
   const pmMovesLast30 = new Map<string, number>()
   for (const row of movesResp.rows ?? []) {
     if (!row.organization_id) continue
+    if (isEventReturnLeg(row)) continue // event counts once, on the delivery leg
     const scheduledMs = row.scheduled_date ? new Date(row.scheduled_date).getTime() : 0
     if (scheduledMs < thirtyDays) continue
     pmMovesLast30.set(row.organization_id, (pmMovesLast30.get(row.organization_id) ?? 0) + 1)
