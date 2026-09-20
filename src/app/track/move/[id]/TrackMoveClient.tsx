@@ -1307,6 +1307,17 @@ export default function TrackMoveClient({
   // Suppress the residential greeting hero / scheduling note / "days until
   // move day" countdown above the tabs so an event never shows move framing.
   const isEvent = serviceType === "event";
+  // An event spans two legs (delivery + return/teardown). The event is only
+  // "done" when BOTH are complete — otherwise finishing the delivery leg flipped
+  // the tracker to the completed/perks hub and hid the upcoming teardown (and
+  // prompted a review before teardown even happened). Gate the event-level views
+  // on this instead of the current leg's status.
+  const eventSiblingComplete = eventSibling
+    ? ["completed", "delivered"].includes(String(eventSibling.status ?? ""))
+    : true;
+  const eventFullyComplete = isEvent
+    ? isCompleted && eventSiblingComplete
+    : isCompleted;
   const isLogisticsDeliveryTrack = isMoveRowLogisticsDelivery({
     service_type: move.service_type,
     move_type: move.move_type,
@@ -2618,8 +2629,10 @@ export default function TrackMoveClient({
 
           {/* ═══ COMPLETED: Permanent Perks Hub ═══════════════════════════════════════
             Shown instead of the countdown + tabs for all completed moves.
-            This page never expires, clients revisiting years later see their perks. */}
-          {isCompleted && (
+            This page never expires, clients revisiting years later see their perks.
+            An event waits for BOTH legs (delivery + teardown) before it flips
+            here, so the client keeps the live event view between the two dates. */}
+          {eventFullyComplete && (
             <div className="space-y-5 mt-1">
               {binOrder && (
                 <BinRentalTrackingSection
@@ -3968,8 +3981,9 @@ export default function TrackMoveClient({
             </div>
           )}
 
-          {/* Tabs (hidden for completed moves, perks hub is the permanent view) */}
-          {!isCompleted && (
+          {/* Tabs (hidden for completed moves, perks hub is the permanent view;
+              an event keeps its tabs until BOTH legs are done). */}
+          {!eventFullyComplete && (
             <div className="sticky top-0 z-20 -mx-4 px-4 mb-5 pt-1 pb-0.5 bg-[#F9EDE4] border-b sm:static sm:z-auto sm:mx-0 sm:px-0 sm:mb-5 sm:border-b-0 sm:bg-transparent sm:pt-0 sm:pb-0" style={{ borderColor: `${FOREST}10` }}>
               <div
                 className="flex flex-nowrap justify-start gap-x-0 overflow-x-auto overflow-y-hidden scrollbar-hide scroll-smooth snap-x snap-mandatory"
@@ -4004,7 +4018,7 @@ export default function TrackMoveClient({
           )}
 
           {/* Tab content */}
-          {activeTab === "dash" && !isCompleted && (
+          {activeTab === "dash" && !eventFullyComplete && (
             serviceType === "event" ? (
               /* Events get a purpose-built logistics overview on the Dashboard
                  tab: unified two-leg timeline (delivery + return), the concrete
@@ -4928,8 +4942,9 @@ export default function TrackMoveClient({
                   </div>
                 )}
 
-              {/* ── Perks & Referral (completed moves only) ── */}
-              {isCompleted && (
+              {/* ── Perks & Referral (completed moves only; an event waits for
+                   both legs so it isn't shown between delivery and teardown) ── */}
+              {eventFullyComplete && (
                 <div className="border-t border-[var(--brd)]/20 pt-6 mt-6 space-y-6">
                   {/* Your offers (hero): perks + referral */}
                   <div className="space-y-5">

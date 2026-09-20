@@ -7,6 +7,7 @@ import {
   TAX_RATE,
   fmtPrice,
   calculateDeposit,
+  daysUntilMove,
 } from "../quote-shared";
 import { decideBookingPayment } from "@/lib/quotes/booking-payment-window";
 import {
@@ -115,7 +116,14 @@ export default function EventLayout({
     deposit,
     grandTotal,
   });
-  const dueToday = Math.min(grandTotal, Math.max(0, bookingDecision.amountToCharge));
+  // The actual charge (calculateDeposit / resolvePaymentPolicy) collects the
+  // FULL amount when the move is under 4 days out — a universal short-notice
+  // rule the 48h decideBookingPayment gate above does not apply. Honor it here
+  // so the displayed "due today" never says deposit while checkout charges full.
+  const shortNoticeFull = daysUntilMove(quote.move_date) < 4;
+  const dueToday = shortNoticeFull
+    ? grandTotal
+    : Math.min(grandTotal, Math.max(0, bookingDecision.amountToCharge));
   const balanceDue = Math.max(0, grandTotal - dueToday);
   const paidInFull = balanceDue < 2;
 

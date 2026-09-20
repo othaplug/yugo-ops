@@ -95,8 +95,11 @@ export default function EventTrackDashboard({
     ? eventSibling?.status === "completed"
     : move.status === "completed";
 
-  const origin = str(move.from_address);
-  const venueAddr = str(move.to_address);
+  // The return leg stores addresses REVERSED (from = venue, to = origin), so
+  // read origin/venue from the delivery-leg perspective regardless of which leg
+  // is being viewed — otherwise the return-leg tracker shows them swapped.
+  const origin = isDeliveryLeg ? str(move.from_address) : str(move.to_address);
+  const venueAddr = isDeliveryLeg ? str(move.to_address) : str(move.from_address);
   const venueName =
     str(factors.event_venue) ||
     str(factors.venue_name) ||
@@ -524,7 +527,11 @@ export default function EventTrackDashboard({
           ) : null}
         </Card>
 
-        {/* BALANCE */}
+        {/* BALANCE — only on the delivery-leg view. The event's money (deposit,
+            balance, contract total) lives on the delivery leg; the return leg is
+            $0 and would misleadingly read "Paid in full / $0", hiding the real
+            contract. */}
+        {isDeliveryLeg && (
         <Card>
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
             <div>
@@ -588,6 +595,7 @@ export default function EventTrackDashboard({
             </div>
           ) : null}
         </Card>
+        )}
 
         {/* FILES + LIVE TRACKING — the two things a client comes back for.
             These route to the existing Files (receipts/photos/documents) and
