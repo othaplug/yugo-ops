@@ -438,6 +438,11 @@ export async function GET(req: NextRequest) {
       type: m.move_type || m.service_type || "local_move",
       tier: m.tier_selected ?? null,
       revenue,
+      // Event legs (delivery + return) share an event_group_id and are merged
+      // into one P&L row below — the return leg carries $0 revenue but real
+      // labour, so left un-merged it shows as a phantom money-losing job.
+      event_group_id: (m.event_group_id as string | null) ?? null,
+      event_phase: (m.event_phase as string | null) ?? null,
       neighbourhood,
       actual_hours: trackedHours ?? m.actual_hours ?? null,
       est_hours: m.est_hours ?? m.quoted_hours ?? null,
@@ -532,7 +537,77 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  const rows = [...moveRows, ...deliveryRows].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  // ── Merge event legs into one P&L row ──
+  // An event is two move rows (delivery + return) sharing an event_group_id.
+  // Revenue is consolidated on the delivery leg; the return carries $0 revenue
+  // but real crew labour, so as separate rows the return reads as a money-losing
+  // job (-$149, 0% margin) and inflates the job count. Collapse each group into
+  // a single row: sum revenue + every cost + hours across both legs and
+  // recompute margins on the combined revenue, so the event shows as one job
+  // whose labour and resources count together.
+  const mergedMoveRows = (() => {
+    type MoveRow = (typeof moveRows)[number] & { event_legs?: number };
+    const groups = new Map<string, MoveRow[]>();
+    const out: MoveRow[] = [];
+    for (const r of moveRows) {
+      const gid = r.event_group_id;
+      if (!gid) {
+        out.push(r);
+        continue;
+      }
+      const arr = groups.get(gid) ?? [];
+      arr.push(r);
+      groups.set(gid, arr);
+    }
+    for (const legs of groups.values()) {
+      if (legs.length === 1) {
+        out.push(legs[0]);
+        continue;
+      }
+      // Primary = the delivery leg (holds the code/date/revenue); fall back to
+      // the highest-revenue leg if phase labels are missing.
+      const primary =
+        legs.find((l) => l.event_phase === "delivery") ??
+        [...legs].sort((a, b) => b.revenue - a.revenue)[0];
+      const sum = (pick: (r: (typeof legs)[number]) => number | null | undefined) =>
+        legs.reduce((s, l) => s + (Number(pick(l)) || 0), 0);
+      const revenue = sum((l) => l.revenue);
+      const labour = sum((l) => l.labour);
+      const fuel = Math.round(sum((l) => l.fuel) * 100) / 100;
+      const truck = sum((l) => l.truck);
+      const supplies = sum((l) => l.supplies);
+      const processing = Math.round(sum((l) => l.processing) * 100) / 100;
+      const totalDirect = labour + fuel + truck + supplies;
+      const allocatedOverhead = sum((l) => l.allocatedOverhead);
+      const claimsReserve = Math.round(sum((l) => l.claimsReserve) * 100) / 100;
+      const grossProfit = revenue - totalDirect;
+      const netProfit = grossProfit - allocatedOverhead - claimsReserve;
+      out.push({
+        ...primary,
+        revenue,
+        labour: Math.round(labour),
+        fuel,
+        truck,
+        supplies,
+        processing,
+        totalDirect: Math.round(totalDirect),
+        allocatedOverhead: Math.round(allocatedOverhead),
+        claimsReserve,
+        grossProfit: Math.round(grossProfit),
+        netProfit: Math.round(netProfit),
+        grossMargin: revenue > 0 ? Math.round((grossProfit / revenue) * 1000) / 10 : 0,
+        netMargin: revenue > 0 ? Math.round((netProfit / revenue) * 1000) / 10 : 0,
+        actual_hours: sum((l) => l.actual_hours),
+        est_hours: sum((l) => l.est_hours),
+        hasOverride: legs.some((l) => l.hasOverride),
+        // Flag so the UI can show "Event (2 legs)" instead of a single move.
+        event_legs: legs.length,
+      });
+    }
+    return out;
+  })();
+
+  const rows = [...mergedMoveRows, ...deliveryRows].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
   const totalRevenue = rows.reduce((s, r) => s + r.revenue, 0);
   const totalDirectCost = rows.reduce((s, r) => s + r.totalDirect, 0);
