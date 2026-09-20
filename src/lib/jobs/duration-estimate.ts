@@ -98,6 +98,11 @@ const EXPLICIT_HOURS_SERVICE_TYPES = new Set([
   "office_move",
   "office",
   "local_move",
+  // Events carry a coordinator est_hours (e.g. 3.5h); without this the generic
+  // inventory model produced a meaningless ~38 min for a venue event, which fed
+  // the crew timer (false "over-allocated"), ops alerts, and the admin calendar
+  // block length. Falls back to the model only when bookedHours is unset.
+  "event",
 ])
 
 export function estimateJobDuration(input: {

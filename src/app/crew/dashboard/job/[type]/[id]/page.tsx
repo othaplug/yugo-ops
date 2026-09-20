@@ -1049,20 +1049,13 @@ export default function CrewJobPage({
         void doAdvance("arrived_venue");
       }
     } else if (currentStatus === "en_route_return") {
-      if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          (p) =>
-            void doAdvance(
-              "unloading_return",
-              p.coords.latitude,
-              p.coords.longitude,
-            ),
-          () => void doAdvance("unloading_return"),
-          { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
-        );
-      } else {
-        void doAdvance("unloading_return");
-      }
+      // The return leg ends `en_route_return → completed` (EVENT_RETURN_FLOW /
+      // EVENT_MOVE_FLOW) — there is no "unloading_return" checkpoint, so the old
+      // doAdvance("unloading_return") was rejected by the checkpoint API (400
+      // "not part of this job type flow") and the in-nav "I've arrived" button
+      // dead-ended. Arriving back is the cue to close out, so send the crew to
+      // sign-off, matching what the Status-tab advance button already does.
+      router.push(`/crew/dashboard/job/${jobType}/${id}/signoff`);
     } else if (currentStatus === "en_route") {
       if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
@@ -1227,6 +1220,9 @@ export default function CrewJobPage({
   const atArrivedRequiringPhotos = [
     "arrived_at_destination",
     "arrived",
+    // Event venue (setup/placement) — require at least one photo before the
+    // crew can move on, so an event isn't signed off with zero PoD evidence.
+    "arrived_venue",
   ].includes(currentStatus);
   const blockedByPhotos = atArrivedRequiringPhotos && !canAdvanceFromArrived;
   const finalWalkPhotoAtLoading =

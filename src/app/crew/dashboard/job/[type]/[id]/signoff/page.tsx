@@ -200,6 +200,10 @@ const SKIP_REASONS = [
   { value: "client_not_home", label: "Client not home, doing another route" },
   { value: "client_refused", label: "Client refused to sign" },
   { value: "client_requested_delay", label: "Client requested delay" },
+  // Event teardown / return legs are typically unattended (warehouse or empty
+  // venue), so closing them out isn't a client no-show — give crews a truthful
+  // exit instead of forcing a misleading "client refused / not home" reason.
+  { value: "unattended_return", label: "Return / teardown leg, no client on site" },
   { value: "emergency", label: "Emergency" },
   { value: "other", label: "Other" },
 ] as const;

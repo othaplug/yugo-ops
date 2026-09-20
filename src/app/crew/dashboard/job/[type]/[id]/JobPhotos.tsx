@@ -45,6 +45,14 @@ const CHECKPOINT_TO_CATEGORY: Record<string, string> = {
   unloading: "post_move_condition",
   arrived: "pre_move_condition",
   delivering: "delivery_placement",
+  // Event legs — without these every event photo resolved to "other" and never
+  // reached the proof-of-delivery buckets (pre_move_condition / in_transit /
+  // delivery_placement). Map venue setup + teardown into those buckets so an
+  // event still builds categorized PoD evidence.
+  en_route_venue: "in_transit",
+  arrived_venue: "delivery_placement",
+  teardown: "pre_move_condition",
+  en_route_return: "in_transit",
 };
 
 const CATEGORY_PROMPTS: Record<string, string> = {
@@ -115,10 +123,10 @@ interface PhotoItem {
   note: string | null;
 }
 
-const ARRIVED_CHECKPOINTS = ["arrived_at_pickup", "arrived_at_destination", "arrived"];
+const ARRIVED_CHECKPOINTS = ["arrived_at_pickup", "arrived_at_destination", "arrived", "arrived_venue"];
 
-/** No add-photo while crew is in transit (driving). Photos only at pickup/destination. */
-const NO_PHOTO_STATUSES = ["en_route_to_pickup", "en_route", "en_route_to_destination"];
+/** No add-photo while crew is in transit (driving). Photos only at pickup/destination/venue. */
+const NO_PHOTO_STATUSES = ["en_route_to_pickup", "en_route", "en_route_to_destination", "en_route_venue", "en_route_return"];
 
 export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, onPhotoTaken, onPhotoCountChange, onCanAdvanceFromArrivedChange, finalWalkPhotoAtLoading = false, readOnly = false, uploadOverride, stopId }: JobPhotosProps) {
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
