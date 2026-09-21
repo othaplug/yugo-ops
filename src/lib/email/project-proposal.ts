@@ -117,13 +117,14 @@ export function projectProposalEmailBody(input: {
   const td = (t: string, extra = "") =>
     `<td style="padding:11px 12px 11px 0;font-size:13px;color:${BODY};border-bottom:1px solid ${RULE};${extra}">${t}</td>`;
 
+  // Location takes the slack so the row spans full width; date columns hug right.
+  const rightCol = "text-align:right;";
   const phaseRows = (phases ?? [])
     .map((p) => {
       const cols = [
-        td(`<span style="font-size:14px;color:${INK};font-weight:600;">${esc(p.phase_name) || "Phase"}</span>`),
-        td(`<span style="color:${FOREST};font-weight:600;white-space:nowrap;">${fmtDate(p.install_date)}</span>`),
-        hasTeardown ? td(`<span style="white-space:nowrap;">${fmtDate(p.teardown_date)}</span>`) : "",
-        td(esc(p.address) || "&mdash;"),
+        td(`<span style="font-size:14px;color:${INK};font-weight:600;">${esc(p.phase_name) || "Phase"}</span>`, "width:100%;"),
+        td(`<span style="color:${FOREST};font-weight:600;white-space:nowrap;">${fmtDate(p.install_date)}</span>`, rightCol),
+        hasTeardown ? td(`<span style="white-space:nowrap;">${fmtDate(p.teardown_date)}</span>`, rightCol) : "",
       ].join("");
       return `<tr>${cols}</tr>`;
     })
@@ -135,7 +136,7 @@ export function projectProposalEmailBody(input: {
       <div style="font-family:${SERIF};font-size:11px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;color:${FOREST};margin:0 0 10px;">The Program &middot; ${phases.length} location${phases.length === 1 ? "" : "s"}</div>
       <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;border-top:1px solid ${RULE};">
         <thead><tr>
-          ${th("Location")}${th("Install")}${hasTeardown ? th("Teardown") : ""}${th("Address")}
+          ${th("Location")}${th("Install", rightCol)}${hasTeardown ? th("Teardown", rightCol) : ""}
         </tr></thead>
         <tbody>${phaseRows}</tbody>
       </table>`
