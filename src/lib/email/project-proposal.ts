@@ -31,7 +31,6 @@ const WINE = "#2B0416";
 const INK = "#3A3532";
 const BODY = "#6B635C";
 const RULE = "#E4DDD2";
-const CARD = "#FFFCF9";
 
 function fmtDate(d?: string | null): string {
   if (!d) return "TBC";
@@ -143,7 +142,7 @@ export function projectProposalEmailBody(input: {
       : "";
 
   const html = `
-    <div style="padding:6px 16px 40px;">
+    <div style="padding:6px 12px 40px;">
       <!-- Eyebrow -->
       <div style="font-family:${SERIF};font-size:12px;font-weight:400;letter-spacing:0.22em;text-transform:uppercase;color:${WINE};margin:0 0 16px;">Project Proposal</div>
 
@@ -164,8 +163,8 @@ export function projectProposalEmailBody(input: {
         ${org.contact_name ? `Hi ${esc(org.contact_name.split(" ")[0])},<br/><br/>` : ""}Here is the full program, location by location${hasTeardown ? ". Each site is set up and taken down by the same crew, so the whole run stays in one pair of hands" : ""}. Review the schedule below and log in to confirm.
       </p>
 
-      <!-- Program table (full width, minimal side padding) -->
-      <div style="background:${CARD};border:1px solid ${RULE};border-radius:2px;padding:18px 12px;margin:0 0 30px;">
+      <!-- Program table (spans the full content width, no card padding) -->
+      <div style="margin:2px 0 30px;">
         ${program}
       </div>
 
