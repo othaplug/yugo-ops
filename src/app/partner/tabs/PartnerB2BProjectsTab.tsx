@@ -673,7 +673,7 @@ export default function PartnerB2BProjectsTab({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
-          <h2 className="font-hero text-[22px] sm:text-[26px] font-normal text-[#5C1A33] leading-[1.15] tracking-tight">
+          <h2 className="font-hero text-[22px] sm:text-[26px] font-normal text-[#5C1A33] leading-[1.15] tracking-tight" style={{ fontFamily: '"Instrument Serif", Georgia, serif' }}>
             New {t.coordinationTitle}
           </h2>
           <button type="button" onClick={() => setShowNewProject(false)} className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors text-[#454545]" aria-label="Close">
@@ -742,7 +742,7 @@ export default function PartnerB2BProjectsTab({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
-          <h2 className="font-hero text-[22px] sm:text-[26px] font-normal text-[#5C1A33] leading-[1.15] tracking-tight">
+          <h2 className="font-hero text-[22px] sm:text-[26px] font-normal text-[#5C1A33] leading-[1.15] tracking-tight" style={{ fontFamily: '"Instrument Serif", Georgia, serif' }}>
             Edit {t.coordinationTitle}
           </h2>
           <button type="button" onClick={() => setShowEditProject(false)} className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors text-[#454545]" aria-label="Close">
@@ -823,7 +823,7 @@ export default function PartnerB2BProjectsTab({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] flex items-center justify-between px-5 py-4 shrink-0 z-10">
-          <h3 className="font-hero text-[22px] sm:text-[24px] font-normal text-[#5C1A33] leading-[1.15] tracking-tight">Add Item</h3>
+          <h3 className="font-hero text-[22px] sm:text-[24px] font-normal text-[#5C1A33] leading-[1.15] tracking-tight" style={{ fontFamily: '"Instrument Serif", Georgia, serif' }}>Add Item</h3>
           <button type="button" onClick={() => { setShowAddItem(false); resetAddItem(); }}
             className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors text-[#454545]">
             <X className="w-4 h-4" />
