@@ -151,7 +151,7 @@ export default function PartnerLoginForm({
         }
         .ptr-right {
           display: none; flex: 1; position: relative; overflow: hidden;
-          background: linear-gradient(135deg, #1A1714 0%, #2D261F 50%, #1A1714 100%);
+          background: linear-gradient(150deg, #2B0416 0%, #4A0F2B 52%, #1D0410 100%);
         }
         @media (min-width: 768px) {
           .ptr-right { display: flex; align-items: center; justify-content: center; }
@@ -674,13 +674,13 @@ export default function PartnerLoginForm({
                     width: 36,
                     height: 36,
                     borderRadius: 10,
-                    background: "rgba(45,106,79,0.22)",
+                    background: "rgba(201,169,98,0.20)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <Calendar size={18} color="#86EFAC" weight="duotone" />
+                  <Calendar size={18} color="#E8C87E" weight="duotone" />
                 </div>
                 <div>
                   <div
@@ -705,13 +705,13 @@ export default function PartnerLoginForm({
                     width: 36,
                     height: 36,
                     borderRadius: 10,
-                    background: "rgba(139,92,246,0.22)",
+                    background: "rgba(163,50,90,0.28)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <ShareNetwork size={18} color="#DDD6FE" weight="duotone" />
+                  <ShareNetwork size={18} color="#F2C9D8" weight="duotone" />
                 </div>
                 <div>
                   <div
@@ -760,7 +760,7 @@ export default function PartnerLoginForm({
           >
             Track deliveries, schedule pickups, share live updates with your
             clients, and manage invoices, powered by{" "}
-            <YugoLogo size={16} variant="wine" />
+            <YugoLogo size={16} variant="gold" />
           </p>
         </div>
       </div>
