@@ -5,7 +5,7 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { emailLayout } from "@/lib/email-templates";
 import { getResend } from "@/lib/resend";
 import { getEmailFrom } from "@/lib/email/send";
-import { projectProposalEmailBody } from "@/lib/email/project-proposal";
+import { projectProposalEmailBody, enrichPhasesWithJobs } from "@/lib/email/project-proposal";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { error: authErr } = await requireStaff();
@@ -73,16 +73,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           const baseUrl = getEmailBaseUrl();
           const resend = getResend();
           const emailFrom = await getEmailFrom();
-          // Enriched proposal: include every phase with its date + location.
+          // Enriched proposal: every phase with its install + teardown date.
           const { data: phases } = await db
             .from("project_phases")
-            .select("phase_name, scheduled_date, address")
+            .select("id, phase_name, scheduled_date, address")
             .eq("project_id", id)
             .order("phase_order");
+          const { data: jobs } = await db
+            .from("deliveries")
+            .select("phase_id, scheduled_date")
+            .eq("project_id", id);
           const { subject, html: inner } = projectProposalEmailBody({
             project: project ?? {},
             org,
-            phases: phases ?? [],
+            phases: enrichPhasesWithJobs(phases ?? [], jobs ?? []),
             baseUrl,
           });
           await resend.emails.send({

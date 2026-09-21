@@ -5,7 +5,7 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { emailLayout } from "@/lib/email-templates";
 import { getResend } from "@/lib/resend";
 import { getEmailFrom } from "@/lib/email/send";
-import { projectProposalEmailBody } from "@/lib/email/project-proposal";
+import { projectProposalEmailBody, enrichPhasesWithJobs } from "@/lib/email/project-proposal";
 
 export async function GET(req: NextRequest) {
   const { error: authErr } = await requireStaff();
@@ -96,9 +96,11 @@ export async function POST(req: NextRequest) {
         const resend = getResend();
         const emailFrom = await getEmailFrom();
         // Phases were just inserted above — pull them for the enriched email.
+        // No jobs exist yet at create time, so install falls back to the phase
+        // date and teardown is omitted until jobs are added.
         const { data: phases } = await db
           .from("project_phases")
-          .select("phase_name, scheduled_date, address")
+          .select("id, phase_name, scheduled_date, address")
           .eq("project_id", project.id)
           .order("phase_order");
         const { subject, html: inner } = projectProposalEmailBody({
@@ -112,7 +114,7 @@ export async function POST(req: NextRequest) {
             site_address: body.site_address,
           },
           org,
-          phases: phases ?? [],
+          phases: enrichPhasesWithJobs(phases ?? [], []),
           baseUrl,
         });
         await resend.emails.send({
