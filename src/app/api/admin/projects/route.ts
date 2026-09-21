@@ -5,6 +5,7 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { emailLayout } from "@/lib/email-templates";
 import { getResend } from "@/lib/resend";
 import { getEmailFrom } from "@/lib/email/send";
+import { projectProposalEmailBody } from "@/lib/email/project-proposal";
 
 export async function GET(req: NextRequest) {
   const { error: authErr } = await requireStaff();
@@ -94,31 +95,31 @@ export async function POST(req: NextRequest) {
         const baseUrl = getEmailBaseUrl();
         const resend = getResend();
         const emailFrom = await getEmailFrom();
-        const budget = (body.estimated_budget || 0) + (body.project_mgmt_fee || 0);
-        const html = emailLayout(
-          `
-          <div style="font-size:9px;font-weight:700;color:#2C3E2D;letter-spacing:1.5px;text-transform:none;margin-bottom:8px">New Project Proposal</div>
-          <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#3A3532">${body.project_name}</h1>
-          <p style="font-size:13px;color:#6B635C;line-height:1.6;margin:0 0 20px">
-            Hi${org.contact_name ? ` ${org.contact_name}` : ""},<br/><br/>
-            A new project proposal has been created for <strong style="color:#2C3E2D">${org.name}</strong>.
-            ${budget > 0 ? `The estimated budget is <strong style="color:#3A3532">$${budget.toLocaleString()}</strong>.` : ""}
-          </p>
-          <p style="font-size:13px;color:#6B635C;line-height:1.6;margin:0 0 20px">
-            Log in to your partner portal to review the details.
-          </p>
-          <a href="${baseUrl}/partner" style="display:inline-block;background:#2C3E2D;color:#FFFFFF;padding:14px 28px;border-radius:0;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:24px">
-            View Project
-          </a>
-        `,
-          undefined,
-          "partner",
-        );
+        // Phases were just inserted above — pull them for the enriched email.
+        const { data: phases } = await db
+          .from("project_phases")
+          .select("phase_name, scheduled_date, address")
+          .eq("project_id", project.id)
+          .order("phase_order");
+        const { subject, html: inner } = projectProposalEmailBody({
+          project: {
+            project_name: body.project_name,
+            project_number: project.project_number,
+            estimated_budget: body.estimated_budget,
+            project_mgmt_fee: body.project_mgmt_fee,
+            start_date: body.start_date,
+            target_end_date: body.target_end_date,
+            site_address: body.site_address,
+          },
+          org,
+          phases: phases ?? [],
+          baseUrl,
+        });
         await resend.emails.send({
           from: emailFrom,
           to: org.email,
-          subject: `New Project Proposal: ${body.project_name} (${project.project_number})`,
-          html,
+          subject,
+          html: emailLayout(inner, undefined, "partner"),
         });
       }
     } catch (e) {
