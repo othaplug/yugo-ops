@@ -27,6 +27,9 @@ import { Plus, Trash } from "@phosphor-icons/react";
 
 interface Move {
   id: string;
+  /** Event booking leg — "delivery" or "return"; the $0 return leg is excluded
+   *  from KPI counts so an event counts once (it still lists as its own job). */
+  event_phase?: string | null;
   move_code?: string;
   client_name?: string;
   client_email?: string;
@@ -223,25 +226,30 @@ export default function AllMovesV3Client({
   );
 
   const kpis = React.useMemo(() => {
-    const totalEstimate = moves.reduce((a, m) => a + (Number(m.final_amount ?? m.total_price ?? m.estimate) || 0), 0);
-    const confirmed = moves.filter((m) =>
+    // Count an event once: exclude the $0 return/teardown leg from KPI counts
+    // (it still appears as its own row in the list below).
+    const countableMoves = moves.filter(
+      (m) => String(m.event_phase ?? "") !== "return",
+    );
+    const totalEstimate = countableMoves.reduce((a, m) => a + (Number(m.final_amount ?? m.total_price ?? m.estimate) || 0), 0);
+    const confirmed = countableMoves.filter((m) =>
       ["confirmed", "scheduled", "in_progress"].includes(
         effective(m).toLowerCase(),
       ),
     ).length;
     // `paid` is a payment flag — a move can be paid in advance and still be
     // scheduled for a future date. Don't count it as completed for the KPIs.
-    const completedMoves = moves.filter((m) =>
+    const completedMoves = countableMoves.filter((m) =>
       ["completed", "delivered"].includes(effective(m).toLowerCase()),
     );
     const completed = completedMoves.length;
     const avgMargin =
-      moves
+      countableMoves
         .map((m) => Number(m.margin_percent ?? m.est_margin_percent ?? 0))
         .filter((n) => n > 0)
         .reduce((a, b, _, arr) => a + b / arr.length, 0) || 0;
 
-    const bookedOrCompleted = moves.filter((m) =>
+    const bookedOrCompleted = countableMoves.filter((m) =>
       ["booked", "confirmed", "scheduled", "in_progress", "completed", "delivered", "paid"].includes(
         effective(m).toLowerCase(),
       ),
@@ -289,7 +297,7 @@ export default function AllMovesV3Client({
       {
         id: "total",
         label: "Total moves",
-        value: moves.length.toString(),
+        value: countableMoves.length.toString(),
       },
       {
         id: "confirmed",

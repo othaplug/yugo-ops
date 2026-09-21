@@ -89,7 +89,7 @@ export async function GET(req: Request) {
     leadsRes, crewsRes, quotesMetricsRes, claimsRes, leadsCountRes,
   ] = await Promise.all([
     db.from("moves")
-      .select("id, estimate, amount, status, service_type, move_type, scheduled_date, payment_marked_paid")
+      .select("id, estimate, amount, status, service_type, move_type, scheduled_date, payment_marked_paid, event_phase, event_group_id")
       .gte("scheduled_date", lastMonthStart).lte("scheduled_date", endDate)
       .not("status", "eq", "cancelled"),
 
@@ -127,7 +127,12 @@ export async function GET(req: Request) {
       .gte("created_at", thisMonthStart),
   ]);
 
-  const allMoves = movesRes.data || [];
+  // An event is two move rows; drop the $0 return/teardown leg so it counts once
+  // across booking counts, day forecasts, and utilization. Revenue is unaffected
+  // (the return leg is $0).
+  const allMoves = (movesRes.data || []).filter(
+    (m) => String((m as { event_phase?: string | null }).event_phase ?? "") !== "return",
+  );
   const allDeliveries = deliveriesRes.data || [];
   const activeQuotes = activeQuotesRes.data || [];
   const pendingDlvs = pendingDlvsRes.data || [];

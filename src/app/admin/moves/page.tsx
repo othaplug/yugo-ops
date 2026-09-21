@@ -27,11 +27,11 @@ export default async function AllMovesPage() {
     // generic "PM Move" — Oche caught two same-building rows (MV-30331 /
     // MV-30332) where the wrong reason had been saved and the bare label
     // gave no way to spot the data error.
-    "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, neighbourhood_tier, crew_id, created_at, margin_percent, margin_flag, est_margin_percent, contract_id, is_pm_move, pm_reason_code, organization_id, organizations:organization_id(vertical, type), est_hours, est_crew_size, estimated_duration_minutes, distance_km, truck_primary, truck_secondary, move_size, balance_method, deposit_method, actual_labour_cost, actual_fuel_cost, actual_truck_cost, actual_supplies_cost";
+    "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, neighbourhood_tier, crew_id, created_at, margin_percent, margin_flag, est_margin_percent, contract_id, is_pm_move, pm_reason_code, organization_id, organizations:organization_id(vertical, type), est_hours, est_crew_size, estimated_duration_minutes, distance_km, truck_primary, truck_secondary, move_size, balance_method, deposit_method, actual_labour_cost, actual_fuel_cost, actual_truck_cost, actual_supplies_cost, event_phase, event_group_id";
 
   const minimalMovesSelect =
     // Fallback if extended columns are missing in an older DB schema
-    "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, crew_id, created_at";
+    "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, crew_id, created_at, event_phase, event_group_id";
 
   const [movesResp, quotesResp] = await Promise.all([
     db.from("moves").select(movesSelect).order("created_at", { ascending: false }),

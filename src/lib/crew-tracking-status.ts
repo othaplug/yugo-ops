@@ -307,8 +307,14 @@ const LABOUR_ONLY_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
   completed: "Client Sign-off",
 };
 
-/** Event copy. Return is the close-out tap; no client present. */
+/** Event copy. Return is the close-out tap; no client present. Labels read
+ *  correctly on both legs: the return leg drives to the venue to load out, then
+ *  to the drop-off (base). */
 const EVENT_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
+  en_route_venue: "En route to venue",
+  arrived_venue: "At venue",
+  teardown: "Teardown & load-out",
+  en_route_return: "En route to drop-off",
   completed: "Done",
 };
 

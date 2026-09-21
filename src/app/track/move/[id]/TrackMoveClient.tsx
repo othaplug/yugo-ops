@@ -4081,13 +4081,13 @@ export default function TrackMoveClient({
                 <div
                   className="rounded-2xl p-4 mb-4 space-y-3"
                   style={{
-                    background: "#7C3AED11",
-                    border: "1px solid #7C3AED30",
+                    background: "#66143D11",
+                    border: "1px solid #66143D30",
                   }}
                 >
                   <div
                     className="text-[11px] font-bold uppercase tracking-[0.08em]"
-                    style={{ color: "#7C3AED" }}
+                    style={{ color: "#66143D" }}
                   >
                     Event · {move.event_name}
                   </div>
@@ -4102,9 +4102,9 @@ export default function TrackMoveClient({
                             move.status === "completed"
                               ? "#22C55E22"
                               : move.event_phase === "delivery"
-                                ? "#7C3AED22"
+                                ? "#66143D22"
                                 : "#E5E7EB22",
-                          border: `1.5px solid ${move.event_phase === "delivery" && move.status === "completed" ? "#22C55E" : move.event_phase === "delivery" ? "#7C3AED" : "#9CA3AF"}`,
+                          border: `1.5px solid ${move.event_phase === "delivery" && move.status === "completed" ? "#22C55E" : move.event_phase === "delivery" ? "#66143D" : "#9CA3AF"}`,
                         }}
                       >
                         {move.event_phase === "delivery" &&
@@ -4116,7 +4116,7 @@ export default function TrackMoveClient({
                             style={{
                               background:
                                 move.event_phase === "delivery"
-                                  ? "#7C3AED"
+                                  ? "#66143D"
                                   : "#9CA3AF",
                             }}
                           />
@@ -4154,7 +4154,7 @@ export default function TrackMoveClient({
                               color:
                                 move.status === "completed"
                                   ? "#22C55E"
-                                  : "#7C3AED",
+                                  : "#66143D",
                             }}
                           >
                             {move.status === "completed"
@@ -4174,9 +4174,9 @@ export default function TrackMoveClient({
                             move.status === "completed"
                               ? "#22C55E22"
                               : move.event_phase === "return"
-                                ? "#05966922"
+                                ? "#2B392722"
                                 : "#E5E7EB22",
-                          border: `1.5px solid ${move.event_phase === "return" && move.status === "completed" ? "#22C55E" : move.event_phase === "return" ? "#059669" : "#9CA3AF"}`,
+                          border: `1.5px solid ${move.event_phase === "return" && move.status === "completed" ? "#22C55E" : move.event_phase === "return" ? "#2B3927" : "#9CA3AF"}`,
                         }}
                       >
                         {move.event_phase === "return" &&
@@ -4188,7 +4188,7 @@ export default function TrackMoveClient({
                             style={{
                               background:
                                 move.event_phase === "return"
-                                  ? "#059669"
+                                  ? "#2B3927"
                                   : "#9CA3AF",
                             }}
                           />
@@ -4226,7 +4226,7 @@ export default function TrackMoveClient({
                               color:
                                 move.status === "completed"
                                   ? "#22C55E"
-                                  : "#059669",
+                                  : "#2B3927",
                             }}
                           >
                             {move.status === "completed"
@@ -4241,7 +4241,7 @@ export default function TrackMoveClient({
                     <a
                       href={eventSibling.trackUrl}
                       className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-[12px] font-medium"
-                      style={{ background: "#7C3AED14", color: "#6D28D9" }}
+                      style={{ background: "#66143D14", color: "#6D28D9" }}
                     >
                       <span>
                         {eventSibling.phase === "return"

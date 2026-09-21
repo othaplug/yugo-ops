@@ -98,7 +98,9 @@ export async function GET() {
       supabase
         .from("moves")
         .select("id", { count: "exact", head: true })
-        .gte("created_at", thirtyDaysAgo),
+        .gte("created_at", thirtyDaysAgo)
+        // Count an event once: exclude the $0 return/teardown leg.
+        .or("event_phase.is.null,event_phase.neq.return"),
       supabase
         .from("deliveries")
         .select("id", { count: "exact", head: true })
