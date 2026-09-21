@@ -119,9 +119,8 @@ export function projectProposalEmailBody(input: {
     `<td style="padding:11px 12px 11px 0;font-size:13px;color:${BODY};border-bottom:1px solid ${RULE};${extra}">${t}</td>`;
 
   const phaseRows = (phases ?? [])
-    .map((p, i) => {
+    .map((p) => {
       const cols = [
-        `<td style="padding:11px 12px 11px 0;font-size:12px;color:${BODY};border-bottom:1px solid ${RULE};width:22px;">${i + 1}</td>`,
         td(`<span style="font-size:14px;color:${INK};font-weight:600;">${esc(p.phase_name) || "Phase"}</span>`),
         td(`<span style="color:${FOREST};font-weight:600;white-space:nowrap;">${fmtDate(p.install_date)}</span>`),
         hasTeardown ? td(`<span style="white-space:nowrap;">${fmtDate(p.teardown_date)}</span>`) : "",
@@ -137,14 +136,14 @@ export function projectProposalEmailBody(input: {
       <div style="font-family:${SERIF};font-size:11px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;color:${FOREST};margin:0 0 10px;">The Program &middot; ${phases.length} location${phases.length === 1 ? "" : "s"}</div>
       <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;border-top:1px solid ${RULE};">
         <thead><tr>
-          ${th("")}${th("Location")}${th("Install")}${hasTeardown ? th("Teardown") : ""}${th("Address")}
+          ${th("Location")}${th("Install")}${hasTeardown ? th("Teardown") : ""}${th("Address")}
         </tr></thead>
         <tbody>${phaseRows}</tbody>
       </table>`
       : "";
 
   const html = `
-    <div style="padding:6px 30px 44px;">
+    <div style="padding:6px 16px 40px;">
       <!-- Eyebrow -->
       <div style="font-family:${SERIF};font-size:12px;font-weight:400;letter-spacing:0.22em;text-transform:uppercase;color:${WINE};margin:0 0 16px;">Project Proposal</div>
 
@@ -165,8 +164,8 @@ export function projectProposalEmailBody(input: {
         ${org.contact_name ? `Hi ${esc(org.contact_name.split(" ")[0])},<br/><br/>` : ""}Here is the full program, location by location${hasTeardown ? ". Each site is set up and taken down by the same crew, so the whole run stays in one pair of hands" : ""}. Review the schedule below and log in to confirm.
       </p>
 
-      <!-- Program table -->
-      <div style="background:${CARD};border:1px solid ${RULE};border-radius:2px;padding:20px 22px;margin:0 0 30px;">
+      <!-- Program table (full width, minimal side padding) -->
+      <div style="background:${CARD};border:1px solid ${RULE};border-radius:2px;padding:18px 12px;margin:0 0 30px;">
         ${program}
       </div>
 
