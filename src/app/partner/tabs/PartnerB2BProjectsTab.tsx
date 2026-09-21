@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import type { CSSProperties } from "react";
 import type { PartnerPortalTerminology } from "@/lib/partner-vertical-copy";
 import { getPartnerPortalTerminology } from "@/lib/partner-vertical-copy";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
@@ -660,6 +661,10 @@ export default function PartnerB2BProjectsTab({
   }
 
   // ── Modals ────────────────────────────────────────────────────────────────
+  // Yu3PortaledTokenRoot scopes these portaled panels under [data-yugo-admin-v3],
+  // where globals.css maps --font-hero to the sans body font. Restore the partner
+  // portal's serif so every `font-hero` element (titles, labels) reads premium.
+  const heroSerif = { ["--font-hero"]: '"Instrument Serif", Georgia, "Times New Roman", serif' } as CSSProperties;
 
   const NewProjectModal = showNewProject && typeof document !== "undefined" ? createPortal(
     <div
@@ -670,10 +675,11 @@ export default function PartnerB2BProjectsTab({
       <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={() => setShowNewProject(false)} />
       <Yu3PortaledTokenRoot
         className="relative z-10 w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4 rounded-t-[var(--yu3-r-lg)] sm:rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] modal-card"
+        style={heroSerif}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
-          <h2 className="font-hero text-[22px] sm:text-[26px] font-normal text-[#5C1A33] leading-[1.15] tracking-tight" style={{ fontFamily: '"Instrument Serif", Georgia, serif' }}>
+          <h2 className="font-hero text-[22px] sm:text-[26px] font-normal text-[#5C1A33] leading-[1.15] tracking-tight">
             New {t.coordinationTitle}
           </h2>
           <button type="button" onClick={() => setShowNewProject(false)} className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors text-[#454545]" aria-label="Close">
@@ -739,10 +745,11 @@ export default function PartnerB2BProjectsTab({
       <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={() => setShowEditProject(false)} />
       <Yu3PortaledTokenRoot
         className="relative z-10 w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4 rounded-t-[var(--yu3-r-lg)] sm:rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] modal-card"
+        style={heroSerif}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
-          <h2 className="font-hero text-[22px] sm:text-[26px] font-normal text-[#5C1A33] leading-[1.15] tracking-tight" style={{ fontFamily: '"Instrument Serif", Georgia, serif' }}>
+          <h2 className="font-hero text-[22px] sm:text-[26px] font-normal text-[#5C1A33] leading-[1.15] tracking-tight">
             Edit {t.coordinationTitle}
           </h2>
           <button type="button" onClick={() => setShowEditProject(false)} className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors text-[#454545]" aria-label="Close">
@@ -820,10 +827,11 @@ export default function PartnerB2BProjectsTab({
       />
       <Yu3PortaledTokenRoot
         className="relative z-10 w-full max-w-[520px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4 rounded-t-[var(--yu3-r-lg)] sm:rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] modal-card"
+        style={heroSerif}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] flex items-center justify-between px-5 py-4 shrink-0 z-10">
-          <h3 className="font-hero text-[22px] sm:text-[24px] font-normal text-[#5C1A33] leading-[1.15] tracking-tight" style={{ fontFamily: '"Instrument Serif", Georgia, serif' }}>Add Item</h3>
+          <h3 className="font-hero text-[22px] sm:text-[24px] font-normal text-[#5C1A33] leading-[1.15] tracking-tight">Add Item</h3>
           <button type="button" onClick={() => { setShowAddItem(false); resetAddItem(); }}
             className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors text-[#454545]">
             <X className="w-4 h-4" />
@@ -1020,6 +1028,7 @@ export default function PartnerB2BProjectsTab({
       <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={() => setStatusItem(null)} />
       <Yu3PortaledTokenRoot
         className="relative z-10 w-full max-w-[420px] overflow-hidden flex flex-col mx-0 sm:mx-4 rounded-t-[var(--yu3-r-lg)] sm:rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] modal-card"
+        style={heroSerif}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E4DF] shrink-0">
@@ -1079,6 +1088,7 @@ export default function PartnerB2BProjectsTab({
       <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={() => setScheduleItem(null)} />
       <Yu3PortaledTokenRoot
         className="relative z-10 w-full max-w-[380px] rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] p-6 text-center text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] modal-card"
+        style={heroSerif}
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-[18px] font-bold text-[#1A1A1A] mb-2">
