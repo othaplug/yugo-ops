@@ -64,6 +64,12 @@ export type AccessFieldSpec = {
   /** Values stored as booleans ("1"/"0"). */
   boolean?: boolean;
   default: string;
+  /**
+   * Captured (its default still feeds the pricing engine) but not shown as a
+   * question — used to trim rarely-changed factors off the form. The admin can
+   * still override it later on the building profile.
+   */
+  hidden?: boolean;
 };
 
 export type AccessTypeSpec = {
@@ -80,8 +86,8 @@ export const ACCESS_TYPE_SPECS: AccessTypeSpec[] = [
     archetype: "house",
     fields: [
       { key: "interior_levels", label: "Interior storeys", numeric: true, default: "2", options: [["1", "1"], ["2", "2"], ["3", "3"], ["4", "4+"]] },
-      { key: "finished_basement", label: "Finished basement with contents?", boolean: true, default: "0", options: [["0", "No"], ["1", "Yes"]] },
-      { key: "staircase_type", label: "Staircase shape", default: "open", options: [["open", "Open"], ["narrow", "Narrow"], ["tight_turn", "Tight turn"], ["spiral", "Spiral"]] },
+      { key: "finished_basement", label: "Finished basement with contents?", boolean: true, default: "0", options: [["0", "No"], ["1", "Yes"]], hidden: true },
+      { key: "staircase_type", label: "Staircase shape", default: "open", options: [["open", "Open"], ["narrow", "Narrow"], ["tight_turn", "Tight turn"], ["spiral", "Spiral"]], hidden: true },
       { key: "entrance_steps_band", label: "Steps to front door", default: "few", options: [["none", "None"], ["few", "A few"], ["porch", "Porch"], ["many", "Many"]] },
       { key: "truck_spot", label: "Truck can park", default: "driveway", options: [["driveway", "Driveway"], ["street", "Street"], ["laneway", "Laneway"], ["far", "Far off"]] },
     ],
@@ -92,8 +98,8 @@ export const ACCESS_TYPE_SPECS: AccessTypeSpec[] = [
     archetype: "house",
     fields: [
       { key: "interior_levels", label: "Interior levels", numeric: true, default: "3", options: [["2", "2"], ["3", "3"], ["4", "4"]] },
-      { key: "finished_basement", label: "Finished basement with contents?", boolean: true, default: "1", options: [["0", "No"], ["1", "Yes"]] },
-      { key: "staircase_type", label: "Staircase shape", default: "narrow", options: [["open", "Open"], ["narrow", "Narrow"], ["tight_turn", "Tight turn"], ["spiral", "Spiral"]] },
+      { key: "finished_basement", label: "Finished basement with contents?", boolean: true, default: "1", options: [["0", "No"], ["1", "Yes"]], hidden: true },
+      { key: "staircase_type", label: "Staircase shape", default: "narrow", options: [["open", "Open"], ["narrow", "Narrow"], ["tight_turn", "Tight turn"], ["spiral", "Spiral"]], hidden: true },
       { key: "entrance_steps_band", label: "Steps to front door", default: "few", options: [["none", "None"], ["few", "A few"], ["porch", "Porch"], ["many", "Many"]] },
       { key: "truck_spot", label: "Truck can park", default: "driveway", options: [["driveway", "Driveway/garage"], ["street", "Street"], ["laneway", "Laneway"], ["far", "Far off"]] },
     ],
@@ -104,8 +110,8 @@ export const ACCESS_TYPE_SPECS: AccessTypeSpec[] = [
     archetype: "elevator",
     fields: [
       { key: "unit_floor", label: "Unit floor", numeric: true, default: "10", options: [["3", "1 to 6"], ["10", "7 to 15"], ["22", "16 to 30"], ["34", "30+"]] },
-      { key: "elevator_type", label: "Elevator", default: "passenger", options: [["passenger", "Passenger"], ["freight", "Service/freight"], ["both", "Both"], ["none", "Out of service"]] },
-      { key: "reserved_window", label: "Reserved elevator window?", boolean: true, default: "0", options: [["0", "Not needed"], ["1", "Yes, booked"]] },
+      { key: "elevator_type", label: "Elevator", default: "freight", options: [["passenger", "Passenger"], ["freight", "Service/freight"], ["both", "Both"], ["none", "Out of service"]], hidden: true },
+      { key: "reserved_window", label: "Reserved elevator window?", boolean: true, default: "0", options: [["0", "Not needed"], ["1", "Yes, booked"]], hidden: true },
       { key: "carry_band", label: "Lobby-to-truck carry", default: "medium", options: [["short", "Short"], ["medium", "Medium"], ["long", "Long"], ["very_long", "Very long"]] },
       { key: "coi_required", label: "COI required?", boolean: true, default: "0", options: [["0", "No"], ["1", "Yes"]] },
     ],
@@ -116,9 +122,9 @@ export const ACCESS_TYPE_SPECS: AccessTypeSpec[] = [
     archetype: "walk_up",
     fields: [
       { key: "unit_floor", label: "Unit floor", numeric: true, default: "3", options: [["2", "2nd"], ["3", "3rd"], ["4", "4th"], ["5", "5th+"]] },
-      { key: "stair_type", label: "Stair run", default: "switchback", options: [["straight", "Straight"], ["switchback", "Switchback"], ["exterior", "Exterior"], ["spiral", "Spiral"]] },
+      { key: "stair_type", label: "Stair run", default: "switchback", options: [["straight", "Straight"], ["switchback", "Switchback"], ["exterior", "Exterior"], ["spiral", "Spiral"]], hidden: true },
       { key: "stair_width_band", label: "Stair width", default: "standard", options: [["roomy", "Roomy"], ["standard", "Standard"], ["tight", "Tight"]] },
-      { key: "entrance_steps_band", label: "Steps to entrance", default: "few", options: [["none", "None"], ["few", "A few"], ["porch", "Stoop"], ["many", "Many"]] },
+      { key: "entrance_steps_band", label: "Steps to entrance", default: "few", options: [["none", "None"], ["few", "A few"], ["porch", "Stoop"], ["many", "Many"]], hidden: true },
       { key: "truck_spot", label: "Truck can park", default: "street", options: [["driveway", "Out front"], ["street", "Street"], ["laneway", "Laneway"], ["far", "Far off"]] },
     ],
   },

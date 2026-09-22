@@ -13,35 +13,6 @@ import {
   type AccessPropertyType,
 } from "@/lib/buildings/access-profile";
 
-const TYPE_ICON: Record<AccessPropertyType, React.ReactNode> = {
-  house: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
-      <path d="M3 11l9-7 9 7" /><path d="M5 10v9h14v-9" /><path d="M10 19v-5h4v5" />
-    </svg>
-  ),
-  town: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
-      <path d="M4 20V8l4-3 4 3v12" /><path d="M12 20V10l4-2 4 2v10" /><path d="M7 12h.01M7 16h.01" />
-    </svg>
-  ),
-  condo: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
-      <rect x="6" y="3" width="12" height="18" rx="1" />
-      <path d="M9 7h.01M12 7h.01M15 7h.01M9 11h.01M12 11h.01M15 11h.01M9 15h.01M12 15h.01M15 15h.01" />
-    </svg>
-  ),
-  walkup: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
-      <path d="M3 20h4v-4h4v-4h4v-4h4" />
-    </svg>
-  ),
-  ground: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
-      <path d="M3 20h18" /><path d="M6 20V9h6v11" /><path d="M12 20V13h6v7" />
-    </svg>
-  ),
-};
-
 const CX_LABEL = ["", "Very easy", "Easy", "Moderate", "Hard", "Very hard"];
 
 function setField(
@@ -95,15 +66,13 @@ export function AccessProfileField({
   }
 
   return (
-    <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-3 sm:p-4">
-      <div className="mb-3">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--tx3)]">
-          {endLabel} access
-        </span>
-      </div>
+    <div className="space-y-3">
+      <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--tx3)]">
+        {endLabel} access
+      </span>
 
-      {/* property type chips */}
-      <div className="flex flex-wrap gap-2">
+      {/* property type — slim pills, no chrome */}
+      <div className="flex flex-wrap gap-1.5">
         {ACCESS_TYPE_SPECS.map((t) => {
           const on = value?.property_type === t.key;
           return (
@@ -111,26 +80,25 @@ export function AccessProfileField({
               key={t.key}
               type="button"
               onClick={() => onChange(defaultProfile(t.key))}
-              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-[13px] font-semibold transition ${
+              className={`rounded-full border px-3 py-1.5 text-[12.5px] leading-none transition ${
                 on
-                  ? "border-[var(--admin-primary-fill)] bg-[var(--gdim)] text-[var(--admin-primary-fill)]"
-                  : "border-[var(--brd)] bg-[var(--bg2)] text-[var(--tx)] hover:border-[var(--admin-primary-fill)]"
+                  ? "border-transparent bg-[var(--admin-primary-fill)] font-medium text-[var(--btn-text-on-accent)]"
+                  : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--admin-primary-fill)] hover:text-[var(--tx)]"
               }`}
               aria-pressed={on}
             >
-              <span className="h-4 w-4 shrink-0">{TYPE_ICON[t.key]}</span>
               {t.label}
             </button>
           );
         })}
       </div>
 
-      {/* Unit / suite number — only for multi-unit buildings (condo / walk-up). */}
+      {/* Unit / suite — only for multi-unit buildings (condo / walk-up). */}
       {value && onUnitChange && UNIT_BEARING_TYPES.includes(value.property_type) ? (
-        <div className="mt-4 w-full sm:max-w-[16rem]">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5">
           <label
             htmlFor={`access-unit-${endLabel}`}
-            className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--tx3)]"
+            className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--tx3)]"
           >
             Unit / Suite
           </label>
@@ -140,116 +108,91 @@ export function AccessProfileField({
             value={unit ?? ""}
             onChange={(e) => onUnitChange(e.target.value)}
             placeholder="e.g. 1201"
-            className="w-full rounded-lg border border-[var(--brd)] bg-[var(--bg2)] px-3 py-2 text-[14px] text-[var(--tx)] outline-none transition focus:border-[var(--admin-primary-fill)]"
+            className="w-28 rounded-md border border-[var(--brd)] bg-[var(--bg2)] px-2.5 py-1.5 text-[13px] text-[var(--tx)] outline-none transition focus:border-[var(--admin-primary-fill)]"
             aria-label={`${endLabel} unit or suite number`}
           />
-          <p className="mt-1 text-[11px] text-[var(--tx3)]">
-            Shown with the address on the quote, crew sheet, and tracking.
-          </p>
+          <span className="text-[11px] text-[var(--tx3)]">shown on quote, crew sheet &amp; tracking</span>
         </div>
       ) : null}
 
       {value && spec ? (
-        <div className="mt-4 grid gap-4 sm:grid-cols-[1.1fr_0.9fr]">
-          {/* fields */}
-          <div className="flex flex-col gap-3">
-            {spec.fields.map((f) => {
-              const cur = fieldValueAsString(value, f);
-              return (
-                <div key={String(f.key)}>
-                  <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--tx3)]">
-                    {f.label}
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {f.options.map(([v, l]) => {
-                      const on = cur === v;
-                      return (
-                        <button
-                          key={v}
-                          type="button"
-                          onClick={() => onChange(setField(value, f, v))}
-                          className={`rounded-md border px-2.5 py-1.5 text-[13px] transition ${
-                            on
-                              ? "border-[var(--admin-primary-fill)] bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
-                              : "border-[var(--brd)] bg-[var(--bg2)] text-[var(--tx)] hover:border-[var(--admin-primary-fill)]"
-                          }`}
-                          aria-pressed={on}
-                        >
-                          {l}
-                        </button>
-                      );
-                    })}
-                  </div>
+        <div className="space-y-2.5 pt-0.5">
+          {/* each question: label left, options inline (hidden factors keep their default) */}
+          {spec.fields.filter((f) => !f.hidden).map((f) => {
+            const cur = fieldValueAsString(value, f);
+            return (
+              <div key={String(f.key)} className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                <span className="w-full text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--tx3)] sm:w-[104px] sm:shrink-0">
+                  {f.label}
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {f.options.map(([v, l]) => {
+                    const on = cur === v;
+                    return (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => onChange(setField(value, f, v))}
+                        className={`rounded-full border px-2.5 py-1 text-[12px] leading-none transition ${
+                          on
+                            ? "border-transparent bg-[var(--admin-primary-fill)] font-medium text-[var(--btn-text-on-accent)]"
+                            : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--admin-primary-fill)] hover:text-[var(--tx)]"
+                        }`}
+                        aria-pressed={on}
+                      >
+                        {l}
+                      </button>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
 
-          {/* readout */}
+          {/* readout — one compact strip */}
           {model ? (
-            <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg2)] p-3">
-              <div className="text-[12px] font-semibold text-[var(--tx)]">
-                What the crew &amp; engine see
-              </div>
-              <div className="mt-2 flex items-baseline justify-between border-b border-dashed border-[var(--brd)] pb-2">
-                <span className="text-[12px] text-[var(--tx3)]">Extra time / trip</span>
-                <span className="text-[16px] font-semibold tabular-nums text-[var(--tx)]">
-                  +{model.estimatedExtraMinutesPerTrip} min
+            <div className="space-y-1.5 pt-1">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12px]">
+                <span className="tabular-nums font-semibold text-[var(--tx)]">
+                  +{model.estimatedExtraMinutesPerTrip}<span className="ml-0.5 font-normal text-[var(--tx3)]">min / trip</span>
                 </span>
-              </div>
-              <div className="mt-2 flex items-baseline justify-between">
-                <span className="text-[12px] text-[var(--tx3)]">Complexity</span>
-                <span className="text-[12px] font-semibold text-[var(--tx)]">
-                  {CX_LABEL[model.complexityRating]} · {model.complexityRating}/5
+                <span className="h-3 w-px bg-[var(--brd)]" aria-hidden />
+                <span className="inline-flex items-center gap-1.5 text-[var(--tx3)]">
+                  {CX_LABEL[model.complexityRating]}
+                  <span className="flex gap-0.5" aria-hidden>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <span
+                        key={i}
+                        className={`h-1 w-3 rounded-sm ${
+                          i <= model.complexityRating ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"
+                        }`}
+                      />
+                    ))}
+                  </span>
                 </span>
-              </div>
-              <div className="mt-1 flex gap-1">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <span
-                    key={i}
-                    className={`h-1.5 flex-1 rounded-sm ${
-                      i <= model.complexityRating
-                        ? "bg-[var(--admin-primary-fill)]"
-                        : "bg-[var(--brd)]"
-                    }`}
-                  />
-                ))}
-              </div>
-              <div className="mt-3">
-                <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-semibold ${
-                    model.recommendExtraCrew
-                      ? "bg-[var(--bg2)] text-[var(--grn)]"
-                      : "bg-[var(--card)] text-[var(--tx3)]"
-                  }`}
-                >
-                  {model.recommendExtraCrew ? "+1 mover at this end" : "Standard crew"}
+                <span className="h-3 w-px bg-[var(--brd)]" aria-hidden />
+                <span className={model.recommendExtraCrew ? "font-medium text-[var(--grn)]" : "text-[var(--tx3)]"}>
+                  {model.recommendExtraCrew ? "+1 mover" : "Standard crew"}
                 </span>
               </div>
               {model.drivers.length > 0 ? (
-                <ul className="mt-3 space-y-1">
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-[var(--tx3)]">
                   {model.drivers.map((d) => (
-                    <li
-                      key={d.key}
-                      className="flex justify-between text-[12px] text-[var(--tx3)]"
-                    >
-                      <span>{d.label}</span>
-                      <span className="font-semibold tabular-nums text-[var(--tx)]">
-                        +{d.minutesPerTrip} min
-                      </span>
-                    </li>
+                    <span key={d.key}>
+                      {d.label} <span className="font-semibold tabular-nums text-[var(--tx)]">+{d.minutesPerTrip}m</span>
+                    </span>
                   ))}
-                </ul>
+                </div>
               ) : null}
               {model.schedulingFlags.length > 0 ? (
-                <div className="mt-3 flex flex-col gap-1.5">
+                <div className="flex flex-wrap gap-1">
                   {model.schedulingFlags.map((fl) => (
-                    <div
+                    <span
                       key={fl.key}
-                      className="rounded-md bg-[var(--ordim)] px-2.5 py-1.5 text-[12px] text-[var(--org)]"
+                      className="rounded bg-[var(--ordim)] px-2 py-0.5 text-[11px] text-[var(--org)]"
                     >
                       {fl.label}
-                    </div>
+                    </span>
                   ))}
                 </div>
               ) : null}
@@ -257,18 +200,16 @@ export function AccessProfileField({
           ) : null}
         </div>
       ) : (
-        <p className="mt-3 text-[13px] italic text-[var(--tx3)]">
-          Pick a property type to capture access.
-        </p>
+        <p className="text-[12px] text-[var(--tx3)]">Pick a property type to capture access.</p>
       )}
 
       {value && address?.trim() ? (
-        <div className="mt-3 flex items-center gap-3 border-t border-[var(--brd)] pt-3">
+        <div className="flex items-center gap-2.5 pt-0.5">
           <button
             type="button"
             onClick={saveAsBuilding}
             disabled={saveState === "saving" || saveState === "saved"}
-            className="rounded-md border border-[var(--brd)] bg-[var(--bg2)] px-3 py-1.5 text-[12px] font-semibold text-[var(--tx)] transition hover:border-[var(--admin-primary-fill)] disabled:opacity-60"
+            className="text-[11px] font-semibold text-[var(--admin-primary-fill)] underline-offset-2 hover:underline disabled:opacity-60 disabled:no-underline"
           >
             {saveState === "saving"
               ? "Saving…"
@@ -277,9 +218,9 @@ export function AccessProfileField({
                 : "Save as building profile"}
           </button>
           {saveState === "error" ? (
-            <span className="text-[12px] text-[var(--org)]">Could not save, try again</span>
+            <span className="text-[11px] text-[var(--org)]">Could not save, try again</span>
           ) : (
-            <span className="text-[12px] text-[var(--tx3)]">Reuse this access on future quotes</span>
+            <span className="text-[11px] text-[var(--tx3)]">reuse on future quotes</span>
           )}
         </div>
       ) : null}
