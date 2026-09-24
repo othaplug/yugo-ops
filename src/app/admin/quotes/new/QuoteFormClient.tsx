@@ -3377,13 +3377,18 @@ export default function QuoteFormClient({
     if (serviceType !== "local_move" && serviceType !== "long_distance") {
       return;
     }
-    if (inventoryItems.length === 0) return;
+    // Use the COMBINED inventory (flat single-pickup OR the per-pickup lines in
+    // multi-pickup mode). Gating on the flat `inventoryItems` left move-size
+    // auto-detect dead for multi-pickup quotes: items live in perPickupInventory,
+    // so `inventoryItems` was empty, the size never set, and Generate stayed
+    // blocked with "Select a move size or add inventory to auto-detect".
+    if (inventoryLinesForScore.length === 0) return;
     if (moveSizeUserTouchedRef.current) return;
     if (moveSize.trim()) return;
     const s = moveSizeSuggestion;
     if (!s) return;
     setMoveSize(s.suggested);
-  }, [serviceType, inventoryItems.length, moveSize, moveSizeSuggestion]);
+  }, [serviceType, inventoryLinesForScore.length, moveSize, moveSizeSuggestion]);
 
   // ── HubSpot pre-fill ──────────────────────
   useEffect(() => {
@@ -5504,9 +5509,12 @@ export default function QuoteFormClient({
   ]);
 
   // ── Live assembly auto-detection from inventory ──────────────────────────────
+  // Use the COMBINED inventory so multi-pickup moves detect assembly from every
+  // pickup's items, not just the (empty) flat list. In single-pickup mode
+  // inventoryLinesForScore === inventoryItems, so behaviour is unchanged.
   const assemblyDetection = useMemo(
-    () => detectAssemblyRequired(inventoryItems, itemWeights),
-    [inventoryItems, itemWeights],
+    () => detectAssemblyRequired(inventoryLinesForScore, itemWeights),
+    [inventoryLinesForScore, itemWeights],
   );
   // Effective value passed downstream: override beats auto-detection
   const effectiveAssemblyRequired =
@@ -5518,9 +5526,9 @@ export default function QuoteFormClient({
   // /api/quotes/generate.
   const effectiveAssemblyMinutes = useMemo(() => {
     if (!effectiveAssemblyRequired) return 0;
-    const { totalMinutes } = calcAssemblyMinutes(inventoryItems, itemWeights);
+    const { totalMinutes } = calcAssemblyMinutes(inventoryLinesForScore, itemWeights);
     return totalMinutes > 0 ? totalMinutes : 0;
-  }, [effectiveAssemblyRequired, inventoryItems, itemWeights]);
+  }, [effectiveAssemblyRequired, inventoryLinesForScore, itemWeights]);
 
   // ── Quick optimistic estimate — updates on ANY pricing-relevant change ──────
   const liveEstimate = useMemo(
@@ -6425,8 +6433,12 @@ export default function QuoteFormClient({
           );
         }
         // Assembly auto-detection — store results so the client quote page + API can use them
-        if (inventoryItems.length > 0 && itemWeights.length > 0) {
-          const { totalMinutes, breakdown } = calcAssemblyMinutes(inventoryItems, itemWeights);
+        const assemblyLines =
+          multiPickupInventoryMode && perPickupInventory.length > 0
+            ? perPickupInventory.flat()
+            : inventoryItems;
+        if (assemblyLines.length > 0 && itemWeights.length > 0) {
+          const { totalMinutes, breakdown } = calcAssemblyMinutes(assemblyLines, itemWeights);
           base.assembly_auto_detected = true;
           base.assembly_required = totalMinutes > 0;
           base.assembly_minutes = totalMinutes > 0 ? totalMinutes : null;
