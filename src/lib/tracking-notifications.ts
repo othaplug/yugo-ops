@@ -784,16 +784,18 @@ export async function notifyOnCheckpoint(
   const phoneOk = (raw: string | null | undefined) =>
     (raw || "").replace(/\D/g, "").length >= 10;
 
+  // Partner-class deliveries: the partner checkpoint sender (sendPartnerDelivery
+  // CheckpointSms below) is the SINGLE owner of all SMS for the job. It texts the
+  // business, and — on the stages that matter — the recipient too when they are a
+  // DISTINCT contact (its own `sent` set collapses business+recipient onto one
+  // message when they share a phone). So the generic client SMS must never also
+  // fire for these: otherwise a delivery where the business is also the receiver,
+  // a one-off, or one with no separate receiving contact gets the same
+  // "on the way to pickup" text twice — one from each sender to the same phone.
   const partnerHandlesClientSms =
     (jobType === "delivery" &&
-      deliveryRowForSms &&
-      isPartnerClassDelivery(deliveryRowForSms) &&
-      partnerSmsNotifyClient &&
-      phoneOk(
-        deliveryRowForSms.end_client_phone ||
-          deliveryRowForSms.end_customer_phone ||
-          deliveryRowForSms.customer_phone,
-      )) ||
+      !!deliveryRowForSms &&
+      isPartnerClassDelivery(deliveryRowForSms)) ||
     (jobType === "move" &&
       moveRowForSms &&
       movePartnerEligible &&
