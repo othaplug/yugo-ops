@@ -52,12 +52,15 @@ const COST_MODEL_KEYS = [
   // not part of monthly OH burn. Default 0.005 (0.5%) — industry standard
   // for damages/disputes provisioning.
   "overhead_claims_reserve_pct",
-  // Per-tier true-margin floors (luxury positioning). Engine surfaces a
-  // warning if a tier's projected true margin falls below these; does NOT
-  // auto-bump price. See PR 5.
+  // Per-tier true-margin floors (luxury positioning). The engine now AUTO-BUMPS
+  // any tier up to the price that hits these floors (default 0.55/0.62/0.70).
+  // Stored as a fraction (0.55) or percent (55); both are accepted.
   "true_margin_floor_essential",
   "true_margin_floor_signature",
   "true_margin_floor_estate",
+  // Kill switch for the auto-bump above. Defaults ON; set false/0/off to revert
+  // to warn-only (the floors then only drive the advisory banner).
+  "enforce_true_margin_floor",
   // Per-role base wages — fed into the loaded-rate calculator
   // (src/lib/finance/payroll-burden.ts) so the engine derives crew
   // cost from auditable inputs instead of a magic $28 number.

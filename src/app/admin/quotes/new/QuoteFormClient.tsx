@@ -2224,6 +2224,10 @@ export default function QuoteFormClient({
       >
     >
   >({});
+  // Super-admin escape hatch: deliberately price a residential quote below the
+  // enforced true-margin floor (strategic deals). Off by default; the engine
+  // ignores it for non-super-admin callers.
+  const [forceBelowFloor, setForceBelowFloor] = useState(false);
   // The three tier keys for the current service. Office uses Priority as its
   // third tier; everything tiered else uses Estate.
   const activeTierKeys =
@@ -6944,6 +6948,15 @@ export default function QuoteFormClient({
           if (Object.keys(cleanedOverrides).length > 0) {
             base.tier_price_overrides = cleanedOverrides;
           }
+          // Super-admin escape: intentionally send below the enforced margin
+          // floor. Server re-checks the caller is a super-admin before honoring.
+          if (
+            forceBelowFloor &&
+            isSuperAdmin &&
+            (serviceType === "local_move" || serviceType === "long_distance")
+          ) {
+            base.force_below_floor = true;
+          }
         }
         // Presentation mode — sent when meaningful:
         //   - residential/long-distance with Estate recommended → estate_* modes
@@ -7166,6 +7179,8 @@ export default function QuoteFormClient({
       // and Regenerate/Send ships the OLD engine price — the override silently
       // never persists (YG-30294/30295: $680 typed, server kept $950).
       tierPriceOverrides,
+      forceBelowFloor,
+      isSuperAdmin,
     ],
   );
 
@@ -16021,15 +16036,29 @@ export default function QuoteFormClient({
                         claimsReserve: claimsEst,
                       },
                     ].filter((t) => t.price > 0);
-                    // Per-tier true-margin floors. Configurable via
-                    // platform_config but defaults reflect the luxury
-                    // positioning the operator set: Essential ≥55%, Signature
-                    // ≥62%, Estate ≥70%. Used for the soft warning ribbon.
+                    // Per-tier true-margin floors — the ENFORCED rail. Read the
+                    // engine's own floors (factors.true_margin_floor.floors, set
+                    // from platform_config) so the banner and the engine never
+                    // disagree; fall back to the luxury defaults for older quotes.
+                    const tmf = f.true_margin_floor as
+                      | {
+                          floors?: { essential?: number; signature?: number; estate?: number };
+                          applied?: boolean;
+                          forced?: boolean;
+                          enforced?: boolean;
+                        }
+                      | undefined;
+                    const floorPct = (frac: number | undefined, dflt: number) =>
+                      typeof frac === "number" && frac > 0
+                        ? Math.round(frac <= 1 ? frac * 100 : frac)
+                        : dflt;
                     const trueFloorByTier: Record<string, number> = {
-                      Essential: 55,
-                      Signature: 62,
-                      Estate: 70,
+                      Essential: floorPct(tmf?.floors?.essential, 55),
+                      Signature: floorPct(tmf?.floors?.signature, 62),
+                      Estate: floorPct(tmf?.floors?.estate, 70),
                     };
+                    const floorApplied = tmf?.applied === true;
+                    const floorForced = tmf?.forced === true;
 
                     function marginAlertStyle(m: number) {
                       if (m < 15) {
@@ -16074,7 +16103,7 @@ export default function QuoteFormClient({
                       }));
                     return (
                       <>
-                        {belowFloorTiers.length > 0 && (
+                        {belowFloorTiers.length > 0 ? (
                           <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5 text-[10px]">
                             <div className="flex items-start gap-1.5">
                               <Warning
@@ -16083,7 +16112,7 @@ export default function QuoteFormClient({
                               />
                               <div className="space-y-0.5">
                                 <p className="font-semibold text-amber-700 dark:text-amber-300">
-                                  True margin below luxury floor on{" "}
+                                  {floorForced ? "Priced BELOW the margin floor (forced) on " : "True margin below luxury floor on "}
                                   {belowFloorTiers.map((t) => t.label).join(", ")}
                                 </p>
                                 <ul className="text-amber-700/90 dark:text-amber-200/85 leading-snug">
@@ -16095,13 +16124,46 @@ export default function QuoteFormClient({
                                   ))}
                                 </ul>
                                 <p className="text-amber-600/90 dark:text-amber-300/75 text-[9px] mt-1">
-                                  Informational, pricing algorithm is not auto-bumping.
-                                  Review inputs or proceed manually if the price is intentional.
+                                  {floorForced
+                                    ? "Floor enforcement was overridden for this quote (super-admin). This price ships below the margin floor on purpose."
+                                    : "Floor enforcement is off (enforce_true_margin_floor). Turn it on to auto-bump, or price up manually."}
                                 </p>
                               </div>
                             </div>
                           </div>
-                        )}
+                        ) : floorApplied ? (
+                          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-[10px]">
+                            <div className="flex items-start gap-1.5">
+                              <CheckCircle
+                                weight="fill"
+                                className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5"
+                              />
+                              <p className="text-emerald-700 dark:text-emerald-300 leading-snug">
+                                Auto-adjusted to the margin floor. One or more tiers were
+                                bumped up so every tier meets its true-margin floor
+                                (Essential {trueFloorByTier.Essential}% · Signature{" "}
+                                {trueFloorByTier.Signature}% · Estate {trueFloorByTier.Estate}%).
+                              </p>
+                            </div>
+                          </div>
+                        ) : null}
+                        {isSuperAdmin &&
+                          (serviceType === "local_move" ||
+                            serviceType === "long_distance") && (
+                            <label className="flex items-start gap-1.5 rounded-lg border border-[var(--brd)] bg-[var(--bg2)] p-2 text-[10px] cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={forceBelowFloor}
+                                onChange={(e) => setForceBelowFloor(e.target.checked)}
+                                className="mt-0.5 accent-[var(--admin-primary-fill)]"
+                              />
+                              <span className="text-[var(--tx2)] leading-snug">
+                                <span className="font-semibold text-[var(--tx)]">Price below margin floor</span>{" "}
+                                (strategic, super-admin). Skips the auto-bump on the next
+                                Regenerate. Recorded on the quote.
+                              </span>
+                            </label>
+                          )}
                         {margins.map(
                           ({
                             label,

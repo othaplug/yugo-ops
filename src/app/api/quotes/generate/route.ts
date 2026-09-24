@@ -73,6 +73,11 @@ import {
   expectedInventoryScoreForMoveSize,
 } from "@/lib/pricing/margin-cost-model";
 import { calcThreeLegFuelCost } from "@/lib/pricing/three-leg-fuel";
+import {
+  trueMarginFloorsFromConfig,
+  isTrueMarginFloorEnforced,
+  trueMarginFloorPrice,
+} from "@/lib/pricing/true-margin-floor";
 import { cleanItemName } from "@/lib/text/dedash";
 import { calcLongDistanceTransit, type LongDistanceTransit } from "@/lib/pricing/long-distance";
 import { evaluateServiceAreaForQuote } from "@/lib/pricing/service-area";
@@ -286,6 +291,12 @@ interface QuoteInput {
       { price?: number; reason?: string }
     >
   >;
+  /**
+   * Super-admin escape hatch: intentionally price a residential quote below the
+   * enforced true-margin floor (strategic deals). Honored only for super-admin
+   * callers; the engine records it in factors.true_margin_floor for audit.
+   */
+  force_below_floor?: boolean;
   /**
    * R2: Structured override reason code from a controlled taxonomy
    * (competitive_match | partner_acquisition | multi_job_discount |
@@ -6594,6 +6605,118 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     };
   }
 
+  // ── Enforce the luxury TRUE-margin floor on the FINAL tier prices ──────────
+  // Unlike the advisory banner, this auto-bumps any residential tier up to the
+  // price that hits its configured true-margin floor (default 55 / 62 / 70). It
+  // runs AFTER add-ons, long-distance transit, and per-tier / global overrides,
+  // so the persisted number can never sit below the floor. A super-admin may
+  // deliberately price under it with `force_below_floor` (recorded in
+  // factors.true_margin_floor for audit). Killable via `enforce_true_margin_floor`.
+  // Mirrors the gross hard-floor block (~L2322) but solves TRUE margin (direct
+  // cost + overhead share + claims reserve). Residential only — gated on the
+  // estimated_cost stamp, which office / event / b2b tiers never carry.
+  if (tiers && tiers.essential && tiers.signature && tiers.estate) {
+    const estCost = (factors as Record<string, unknown>).estimated_cost as
+      | Record<string, number>
+      | undefined;
+    if (estCost) {
+      const num = (v: unknown): number => (typeof v === "number" ? v : 0);
+      const floors = trueMarginFloorsFromConfig(config);
+      const enforce = isTrueMarginFloorEnforced(config);
+      const forced =
+        input.force_below_floor === true && isSuperAdminEmail(authUser?.email);
+      const roundingFloor = cfgNum(config, "rounding_nearest", 50);
+      const claimsPct = num(estCost.claims_reserve_pct);
+      const costEssSig = num(estCost.total_ess_sig) || num(estCost.total);
+      const costEstate = num(estCost.total_estate_ops) || costEssSig;
+      const targets = {
+        essential: trueMarginFloorPrice({ directCost: costEssSig, ohShare: num(estCost.oh_share_essential), claimsPct, floorFrac: floors.essential, rounding: roundingFloor }),
+        signature: trueMarginFloorPrice({ directCost: costEssSig, ohShare: num(estCost.oh_share_signature), claimsPct, floorFrac: floors.signature, rounding: roundingFloor }),
+        estate: trueMarginFloorPrice({ directCost: costEstate, ohShare: num(estCost.oh_share_estate), claimsPct, floorFrac: floors.estate, rounding: roundingFloor }),
+      };
+      const before = {
+        essential: tiers.essential.price,
+        signature: tiers.signature.price,
+        estate: tiers.estate.price,
+      };
+      let ess = before.essential;
+      let sig = before.signature;
+      let est = before.estate;
+      if (enforce && !forced) {
+        ess = Math.max(ess, targets.essential);
+        sig = Math.max(sig, targets.signature);
+        est = Math.max(est, targets.estate);
+        // Preserve the tier ladder if a floor lifted a lower tier past a higher one.
+        sig = Math.max(sig, ess);
+        est = Math.max(est, sig);
+      }
+      const after = { essential: ess, signature: sig, estate: est };
+      const changed =
+        after.essential !== before.essential ||
+        after.signature !== before.signature ||
+        after.estate !== before.estate;
+      if (changed) {
+        const taxRateFloor = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
+        const depKeyFloor =
+          svcType === "long_distance" ? "long_distance"
+          : svcType === "office_move" ? "office"
+          : svcType === "single_item" ? "single_item"
+          : svcType === "white_glove" ? "white_glove"
+          : svcType === "specialty" ? "specialty"
+          : "residential";
+        const floorDeposit = async (
+          tk: "essential" | "signature" | "estate",
+          price: number,
+        ): Promise<number> => {
+          // Non-local residential (e.g. long-distance) uses deposit_rules; local
+          // uses the tier-aware policy with the short-notice / sub-$600 full-pay
+          // gates — mirrors the per-tier override recompute (~L6344).
+          if (svcType !== "local_move") {
+            return calculateDeposit(sb, depKeyFloor, price, input.move_date);
+          }
+          if (input.move_date) {
+            const target = new Date(`${String(input.move_date).trim().slice(0, 10)}T00:00:00`);
+            if (!Number.isNaN(target.getTime())) {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const daysOut = Math.floor((target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+              if (daysOut < 4) return Math.round(price);
+            }
+          }
+          if (price < 600) return Math.round(price);
+          return residentialTierDeposit(tk, price);
+        };
+        const bumped: Record<string, TierResult> = { ...tiers };
+        for (const tk of ["essential", "signature", "estate"] as const) {
+          const t = tiers[tk];
+          const newPrice = after[tk];
+          if (!t || newPrice === t.price) continue;
+          bumped[tk] = {
+            ...t,
+            price: newPrice,
+            tax: Math.round(newPrice * taxRateFloor),
+            total: Math.round(newPrice * (1 + taxRateFloor)),
+            deposit: await floorDeposit(tk, newPrice),
+          };
+        }
+        tiers = bumped;
+      }
+      factors = {
+        ...factors,
+        true_margin_floor: {
+          enforced: enforce,
+          applied: changed,
+          forced,
+          forced_by: forced ? authUser?.email ?? null : null,
+          floors,
+          targets,
+          before,
+          after,
+        },
+      };
+    }
+  }
+
   // ── Recompute margin %s against FINAL tier prices ───────────────────
   // estimated_margin_* was first computed inside calcResidential using
   // the pre-addon tier prices (lines ~1999-2003). Several price-changing
@@ -6609,7 +6732,15 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   if (tiers) {
     const fr = factors as Record<string, unknown>;
     const cost = fr.estimated_cost as
-      | { total?: number; total_estate_ops?: number }
+      | {
+          total?: number;
+          total_ess_sig?: number;
+          total_estate_ops?: number;
+          oh_share_essential?: number;
+          oh_share_signature?: number;
+          oh_share_estate?: number;
+          claims_reserve_pct?: number;
+        }
       | undefined;
     const costTotal =
       cost && typeof cost.total === "number" ? cost.total : null;
@@ -6617,9 +6748,30 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       cost && typeof cost.total_estate_ops === "number"
         ? cost.total_estate_ops
         : costTotal;
+    // Essential/Signature true margin is measured against the lighter-crew cost
+    // basis (total_ess_sig), matching calcResidential; fall back to total.
+    const costEssSig =
+      cost && typeof cost.total_ess_sig === "number"
+        ? cost.total_ess_sig
+        : costTotal;
     const marginFor = (price: number, c: number | null): number | null => {
       if (c == null || price <= 0) return null;
       return Math.round(((price - c) / price) * 100);
+    };
+    // True margin = gross over direct cost, minus the day's overhead share and
+    // the price-scaled claims reserve. Recomputed here so the admin banner and
+    // the true-margin floor audit reflect the FINAL (possibly floor-bumped or
+    // overridden) prices, not the pre-override numbers from calcResidential.
+    const num = (v: unknown): number => (typeof v === "number" ? v : 0);
+    const claimsPct = num(cost?.claims_reserve_pct);
+    const trueMarginFor = (
+      price: number,
+      directCost: number | null,
+      ohShare: number,
+    ): number | null => {
+      if (directCost == null || price <= 0) return null;
+      const claims = price * claimsPct;
+      return Math.round(((price - directCost - ohShare - claims) / price) * 100);
     };
     const essPrice = tiers.essential?.price ?? 0;
     const sigPrice = tiers.signature?.price ?? 0;
@@ -6627,6 +6779,9 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     const newEssMargin = marginFor(essPrice, costTotal);
     const newSigMargin = marginFor(sigPrice, costTotal);
     const newEstMargin = marginFor(estPriceFinal, costTotalEstateOps);
+    const newEssTrue = trueMarginFor(essPrice, costEssSig, num(cost?.oh_share_essential));
+    const newSigTrue = trueMarginFor(sigPrice, costEssSig, num(cost?.oh_share_signature));
+    const newEstTrue = trueMarginFor(estPriceFinal, costTotalEstateOps, num(cost?.oh_share_estate));
     factors = {
       ...factors,
       ...(newEssMargin != null
@@ -6641,6 +6796,9 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       ...(newEstMargin != null
         ? { estimated_margin_estate: newEstMargin }
         : {}),
+      ...(newEssTrue != null ? { true_margin_essential: newEssTrue } : {}),
+      ...(newSigTrue != null ? { true_margin_signature: newSigTrue } : {}),
+      ...(newEstTrue != null ? { true_margin_estate: newEstTrue } : {}),
     };
   }
 
