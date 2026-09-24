@@ -86,7 +86,7 @@ export const ACCESS_TYPE_SPECS: AccessTypeSpec[] = [
     archetype: "house",
     fields: [
       { key: "interior_levels", label: "Interior storeys", numeric: true, default: "2", options: [["1", "1"], ["2", "2"], ["3", "3"], ["4", "4+"]] },
-      { key: "finished_basement", label: "Finished basement with contents?", boolean: true, default: "0", options: [["0", "No"], ["1", "Yes"]], hidden: true },
+      { key: "finished_basement", label: "Finished basement with contents?", boolean: true, default: "0", options: [["0", "No"], ["1", "Yes"]] },
       { key: "staircase_type", label: "Staircase shape", default: "open", options: [["open", "Open"], ["narrow", "Narrow"], ["tight_turn", "Tight turn"], ["spiral", "Spiral"]], hidden: true },
       { key: "entrance_steps_band", label: "Steps to front door", default: "few", options: [["none", "None"], ["few", "A few"], ["porch", "Porch"], ["many", "Many"]] },
       { key: "truck_spot", label: "Truck can park", default: "driveway", options: [["driveway", "Driveway"], ["street", "Street"], ["laneway", "Laneway"], ["far", "Far off"]] },
@@ -239,6 +239,51 @@ const DEFAULT_COMPLEXITY_SURCHARGE: Record<string, number> = {
   "5": 300,
 };
 
+function cfgNumber(config: ConfigLike | undefined, key: string, fallback: number): number {
+  if (!config) return fallback;
+  const raw = cfgGet(config, key);
+  if (raw == null || raw === "") return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/**
+ * House / townhouse storey premium. The tier base already prices "how much
+ * stuff"; this prices "how many storeys we carry it up and down". A 2-storey
+ * house is the baseline ($0); each storey above adds a flat premium, and
+ * townhouses (narrow, steep, stacked) carry a multiplier so a 3-storey townhouse
+ * costs more than a 3-storey detached. A finished basement with contents counts
+ * as one more storey to carry. Config: `house_storey_surcharge_per_level`
+ * (default $150), `townhouse_access_multiplier` (default 1.25).
+ */
+export function houseStoreySurcharge(p: AccessProfile, config?: ConfigLike): number {
+  if (p.property_type !== "house" && p.property_type !== "town") return 0;
+  const perLevel = cfgNumber(config, "house_storey_surcharge_per_level", 150);
+  const townMult = cfgNumber(config, "townhouse_access_multiplier", 1.25);
+  const BASELINE_STOREYS = 2;
+  // A finished basement adds a level (house only — town's hidden default would
+  // otherwise silently inflate every townhouse).
+  const basementLevel = p.property_type === "house" && p.finished_basement ? 1 : 0;
+  const levels = Math.max(1, Math.round(p.interior_levels ?? BASELINE_STOREYS)) + basementLevel;
+  const above = Math.max(0, levels - BASELINE_STOREYS);
+  if (above <= 0) return 0;
+  const mult = p.property_type === "town" ? townMult : 1;
+  return Math.round((above * perLevel * mult) / 25) * 25; // nearest $25
+}
+
+/**
+ * Walk-up premium beyond the complexity table's $300 ceiling. The band table
+ * saturates at a 5th-floor walk-up; above that each additional floor keeps
+ * adding a flat amount so an 8th-floor walk-up isn't priced like a 5th.
+ * Config: `walkup_surcharge_per_floor_above_5` (default $75).
+ */
+export function walkupHighFloorSurcharge(p: AccessProfile, config?: ConfigLike): number {
+  if (p.property_type !== "walkup") return 0;
+  const perFloor = cfgNumber(config, "walkup_surcharge_per_floor_above_5", 75);
+  const extra = Math.max(0, Math.round(p.unit_floor ?? 1) - 5);
+  return extra > 0 ? Math.round((extra * perFloor) / 25) * 25 : 0;
+}
+
 export function accessProfileSurcharge(
   p: AccessProfile,
   config?: ConfigLike,
@@ -253,8 +298,12 @@ export function accessProfileSurcharge(
       /* keep defaults */
     }
   }
-  const amt = table[String(model.complexityRating)] ?? 0;
-  return Math.max(0, Math.round(Number(amt) || 0));
+  const band = Math.max(0, Math.round(Number(table[String(model.complexityRating)] ?? 0) || 0));
+  // House storeys and high walk-up floors price ON TOP of the complexity band
+  // (not through it) so they scale past the band ceiling and are never zeroed by
+  // the "easy access = $0" bands.
+  const total = band + houseStoreySurcharge(p, config) + walkupHighFloorSurcharge(p, config);
+  return Math.max(0, Math.round(total));
 }
 
 /**

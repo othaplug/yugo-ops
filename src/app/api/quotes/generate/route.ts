@@ -189,7 +189,10 @@ interface QuoteInput {
   to_unit?: string;
   from_access?: string;
   to_access?: string;
-  /** Ship 1: type-aware access capture (property_type + typed dimensions). Persisted; not yet priced. */
+  /** Type-aware access capture (property_type + typed dimensions). PRICED: drives
+   *  the access surcharge (complexity band + house-storey / walk-up-floor adders)
+   *  via accessProfileSurcharge; takes precedence over the legacy from/to_access
+   *  string per address. */
   from_access_profile?: unknown;
   to_access_profile?: unknown;
   move_date: string;
@@ -5216,13 +5219,30 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     (input.service_type === "b2b_delivery" || input.service_type === "b2b_oneoff") &&
     Array.isArray(input.b2b_stops) &&
     input.b2b_stops.length >= 2;
+  // Residential multi-pickup: a 2nd/3rd origin adds real driving (e.g. a
+  // Mississauga pickup on a Toronto move). Route the job distance THROUGH the
+  // extra origins so mileage reflects the detour, instead of pricing only the
+  // flat multi_pickup_premium. Order: primary pickup -> extra pickups -> dropoff.
+  const residentialExtraPickups =
+    input.service_type === "local_move" || input.service_type === "long_distance"
+      ? (input.additional_pickup_addresses ?? [])
+          .map((a) => String(a?.address ?? "").trim())
+          .filter((a) => a.length > 0)
+      : [];
+  const residentialMultiPickup = residentialExtraPickups.length > 0;
 
   const [distInfo, neighbourhood, dateMult, deadheadInfo, returnInfo] = await Promise.all([
     b2bMultiStop
       ? getMultiStopDrivingDistance(
           input.b2b_stops!.map((s) => s.address).filter((a) => a?.trim()),
         ).then((m) => m ?? getDistance(input.from_address, input.to_address))
-      : getDistance(input.from_address, input.to_address),
+      : residentialMultiPickup
+        ? getMultiStopDrivingDistance(
+            [input.from_address, ...residentialExtraPickups, input.to_address]
+              .map((a) => a.trim())
+              .filter((a) => a.length > 0),
+          ).then((m) => m ?? getDistance(input.from_address, input.to_address))
+        : getDistance(input.from_address, input.to_address),
     getNeighbourhood(sb, input.from_address),
     getDateMultiplier(sb, input.move_date),
     // Section 4D: Yugo base → pickup (deadhead)
