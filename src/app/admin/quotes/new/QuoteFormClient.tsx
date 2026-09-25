@@ -1640,6 +1640,12 @@ export default function QuoteFormClient({
   // the client proposal and at booking.
   const [residentialTruckOverride, setResidentialTruckOverride] = useState("");
   const [residentialTruckSecondary, setResidentialTruckSecondary] = useState("");
+  // Crew override on the Labour Estimate panel. "" = auto (engine recommendation).
+  // Residential → crew_size_override; white-glove → white_glove_crew_override.
+  const [crewSizeOverride, setCrewSizeOverride] = useState("");
+  const [whiteGloveCrewOverride, setWhiteGloveCrewOverride] = useState("");
+  // White-glove truck override (residential uses residentialTruckOverride) → truck_type.
+  const [wgTruckOverride, setWgTruckOverride] = useState("");
 
   // Residential assembly auto-detection — null = use auto, true/false = coordinator override
   const [assemblyOverride, setAssemblyOverride] = useState<boolean | null>(null);
@@ -2387,6 +2393,9 @@ export default function QuoteFormClient({
       officeTruckCount,
       residentialTruckOverride,
       residentialTruckSecondary,
+      crewSizeOverride,
+      whiteGloveCrewOverride,
+      wgTruckOverride,
       assemblyOverride,
       sizeOverrideConfirmed,
       itemDescription,
@@ -2626,6 +2635,9 @@ export default function QuoteFormClient({
       if (s.officeTruckCount !== undefined) setOfficeTruckCount(s.officeTruckCount as Parameters<typeof setOfficeTruckCount>[0]);
       if (s.residentialTruckOverride !== undefined) setResidentialTruckOverride(String(s.residentialTruckOverride ?? ""));
       if (s.residentialTruckSecondary !== undefined) setResidentialTruckSecondary(String(s.residentialTruckSecondary ?? ""));
+      if (s.crewSizeOverride !== undefined) setCrewSizeOverride(String(s.crewSizeOverride ?? ""));
+      if (s.whiteGloveCrewOverride !== undefined) setWhiteGloveCrewOverride(String(s.whiteGloveCrewOverride ?? ""));
+      if (s.wgTruckOverride !== undefined) setWgTruckOverride(String(s.wgTruckOverride ?? ""));
       if (s.assemblyOverride !== undefined) setAssemblyOverride(s.assemblyOverride as Parameters<typeof setAssemblyOverride>[0]);
       if (s.sizeOverrideConfirmed !== undefined) setSizeOverrideConfirmed(s.sizeOverrideConfirmed as Parameters<typeof setSizeOverrideConfirmed>[0]);
       if (s.itemDescription !== undefined) setItemDescription(s.itemDescription as Parameters<typeof setItemDescription>[0]);
@@ -6457,6 +6469,11 @@ export default function QuoteFormClient({
         if (residentialTruckOverride) base.truck_type = residentialTruckOverride;
         if (residentialTruckSecondary)
           base.truck_secondary = residentialTruckSecondary;
+        // Crew override from the Labour Estimate panel ("" = auto).
+        if (crewSizeOverride) {
+          const n = Number(crewSizeOverride);
+          if (Number.isFinite(n) && n >= 1) base.crew_size_override = Math.round(n);
+        }
         if (fromLat != null && Number.isFinite(fromLat)) base.from_lat = fromLat;
         if (fromLng != null && Number.isFinite(fromLng)) base.from_lng = fromLng;
         if (toLat != null && Number.isFinite(toLat)) base.to_lat = toLat;
@@ -6590,6 +6607,12 @@ export default function QuoteFormClient({
         base.white_glove_items = items.length > 0 ? items : undefined;
         base.white_glove_kind = whiteGloveKind;
         base.declared_value = Number(declaredValue) || undefined;
+        // Crew + truck overrides from the Labour Estimate panel ("" = auto).
+        if (whiteGloveCrewOverride) {
+          const n = Number(whiteGloveCrewOverride);
+          if (Number.isFinite(n) && n >= 1) base.white_glove_crew_override = Math.round(n);
+        }
+        if (wgTruckOverride) base.truck_type = wgTruckOverride;
         if (wgDebrisRemoval) base.white_glove_debris_removal = true;
         if (
           wgGuaranteedWindow &&
@@ -7068,6 +7091,9 @@ export default function QuoteFormClient({
       officeTruckCount,
       residentialTruckOverride,
       residentialTruckSecondary,
+      crewSizeOverride,
+      whiteGloveCrewOverride,
+      wgTruckOverride,
       officeCrewSize,
       officeEstHours,
       quotePreTaxOverride,
@@ -15542,6 +15568,115 @@ export default function QuoteFormClient({
                     })()}
                   </span>
                 </div>
+                {/* Editable override: crew + truck. The engine accepts these per
+                    service (crew_size_override / white_glove_crew_override /
+                    office_crew_size / event_crew_override; truck_type /
+                    event_truck_type / office_truck_count). Empty = auto. */}
+                {["local_move", "long_distance", "white_glove", "office_move", "event"].includes(
+                  serviceType,
+                ) && (
+                  <div className="pt-2.5 mt-1 border-t border-[var(--brd)]/50 space-y-2">
+                    <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+                      Override crew &amp; truck
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="block">
+                        <span className="text-[10px] text-[var(--tx3)]">Crew</span>
+                        {(() => {
+                          const sel =
+                            "mt-0.5 w-full text-[11px] rounded-lg border border-[var(--brd)] bg-[var(--card)] px-2 py-1.5 text-[var(--tx)]";
+                          const autoLabel = `Auto (${quoteResult.labour.crewSize})`;
+                          if (serviceType === "office_move") {
+                            return (
+                              <select
+                                className={sel}
+                                value={String(officeCrewSize)}
+                                onChange={(e) => setOfficeCrewSize(Number(e.target.value))}
+                              >
+                                {[2, 3, 4, 5, 6, 7, 8].map((n) => (
+                                  <option key={n} value={n}>{n}-person</option>
+                                ))}
+                              </select>
+                            );
+                          }
+                          const val =
+                            serviceType === "white_glove"
+                              ? whiteGloveCrewOverride
+                              : serviceType === "event"
+                                ? eventCrewOverride
+                                : crewSizeOverride;
+                          const setter =
+                            serviceType === "white_glove"
+                              ? setWhiteGloveCrewOverride
+                              : serviceType === "event"
+                                ? setEventCrewOverride
+                                : setCrewSizeOverride;
+                          return (
+                            <select className={sel} value={val} onChange={(e) => setter(e.target.value)}>
+                              <option value="">{autoLabel}</option>
+                              {[2, 3, 4, 5, 6, 7, 8].map((n) => (
+                                <option key={n} value={String(n)}>{n}-person</option>
+                              ))}
+                            </select>
+                          );
+                        })()}
+                      </label>
+                      <label className="block">
+                        <span className="text-[10px] text-[var(--tx3)]">
+                          {serviceType === "office_move" ? "Trucks" : "Truck"}
+                        </span>
+                        {(() => {
+                          const sel =
+                            "mt-0.5 w-full text-[11px] rounded-lg border border-[var(--brd)] bg-[var(--card)] px-2 py-1.5 text-[var(--tx)]";
+                          if (serviceType === "office_move") {
+                            return (
+                              <select
+                                className={sel}
+                                value={String(officeTruckCount)}
+                                onChange={(e) => setOfficeTruckCount(Number(e.target.value))}
+                              >
+                                {[1, 2, 3, 4].map((n) => (
+                                  <option key={n} value={n}>{n} × truck</option>
+                                ))}
+                              </select>
+                            );
+                          }
+                          const TRUCKS: Array<[string, string]> = [
+                            ["sprinter", "Extended Sprinter van"],
+                            ["16ft", "16ft"],
+                            ["20ft", "20ft"],
+                            ["24ft", "24ft"],
+                            ["26ft", "26ft"],
+                          ];
+                          if (serviceType === "event") {
+                            return (
+                              <select className={sel} value={eventTruckType} onChange={(e) => setEventTruckType(e.target.value)}>
+                                {TRUCKS.map(([v, l]) => (
+                                  <option key={v} value={v}>{l}</option>
+                                ))}
+                              </select>
+                            );
+                          }
+                          const val = serviceType === "white_glove" ? wgTruckOverride : residentialTruckOverride;
+                          const setter =
+                            serviceType === "white_glove" ? setWgTruckOverride : setResidentialTruckOverride;
+                          return (
+                            <select className={sel} value={val} onChange={(e) => setter(e.target.value)}>
+                              <option value="">Auto</option>
+                              {TRUCKS.map(([v, l]) => (
+                                <option key={v} value={v}>{l}</option>
+                              ))}
+                            </select>
+                          );
+                        })()}
+                      </label>
+                    </div>
+                    <p className="text-[10px] text-[var(--gold)]">
+                      Regenerate to apply. A truck below the move-size minimum is floored up
+                      automatically.
+                    </p>
+                  </div>
+                )}
                 {quoteResult.inventory &&
                   (quoteResult.inventory.modifier !== 1.0 ||
                     (quoteResult.inventory.boxCount ?? 0) > 0) && (
