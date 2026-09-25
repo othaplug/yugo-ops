@@ -7,6 +7,7 @@ import {
   useCallback,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { formatPhone } from "@/lib/phone";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
@@ -1717,9 +1718,19 @@ export default function MoveDetailClient({
                 )}
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
-                  Client
-                </p>
+                <div className="flex items-center justify-between gap-2 mb-0.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)]">
+                    Client
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setContactModalOpen(true)}
+                    className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-wine)] hover:underline"
+                    aria-label="Edit client contact"
+                  >
+                    Edit
+                  </button>
+                </div>
                 {/* PM moves often have `client_name` set to the unit
                     number when no real tenant was captured at booking
                     (synthetic placeholder so the column has a value).
@@ -1748,9 +1759,60 @@ export default function MoveDetailClient({
                     );
                   }
                   return (
-                    <p className="text-[var(--yu3-ink)]">
-                      {clientName || "-"}
-                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setContactModalOpen(true)}
+                      className="text-left w-full hover:opacity-80 transition-opacity"
+                      aria-label="Edit client contact"
+                    >
+                      <span className="block text-[var(--yu3-ink)]">{clientName || "-"}</span>
+                      {move.client_phone ? (
+                        <span className="block text-[12px] text-[var(--yu3-ink-muted)]">
+                          {formatPhone(move.client_phone)}
+                        </span>
+                      ) : null}
+                      {move.client_email ? (
+                        <span className="block text-[12px] text-[var(--yu3-ink-muted)] truncate max-w-[240px]">
+                          {move.client_email}
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })()}
+                {(() => {
+                  const extras = Array.isArray(move.additional_contacts)
+                    ? (move.additional_contacts as Array<{
+                        name?: string | null;
+                        phone?: string | null;
+                      }>)
+                    : [];
+                  if (extras.length === 0) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => setContactModalOpen(true)}
+                        className="mt-1.5 text-[11px] font-semibold text-[var(--yu3-wine)] hover:underline"
+                      >
+                        + Add contact
+                      </button>
+                    );
+                  }
+                  return (
+                    <div className="mt-1.5 space-y-0.5">
+                      {extras.map((c, i) => (
+                        <p key={i} className="text-[12px] text-[var(--yu3-ink-muted)]">
+                          + {(c.name || "").trim() || "Contact"}
+                          {c.phone ? ` · ${formatPhone(c.phone)}` : ""}
+                        </p>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setContactModalOpen(true)}
+                        className="text-[11px] font-semibold text-[var(--yu3-wine)] hover:underline"
+                      >
+                        Manage contacts
+                      </button>
+                    </div>
                   );
                 })()}
               </div>
