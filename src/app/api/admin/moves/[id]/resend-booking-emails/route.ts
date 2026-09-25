@@ -23,6 +23,7 @@ import { requireStaff, isSuperAdminEmail } from "@/lib/api-auth";
 import { getResend } from "@/lib/resend";
 import { getEmailFrom } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
+import { getMoveClientRecipients, recipientsWithEmail } from "@/lib/moves/move-recipients";
 import { signTrackToken } from "@/lib/track-token";
 import { formatMoveDate } from "@/lib/date-format";
 import {
@@ -130,6 +131,19 @@ export async function POST(
       { status: 400 },
     );
   }
+  // Booking emails go to the primary client + any additional contacts opted into
+  // reminders/updates (deduped). Falls back to just the primary email.
+  const bookingEmailRecipients = (() => {
+    const list = recipientsWithEmail(
+      getMoveClientRecipients(
+        { ...move, client_email: clientEmail, client_name: clientName },
+        "reminders",
+      ),
+    )
+      .map((r) => (r.email || "").trim())
+      .filter(Boolean);
+    return list.length > 0 ? Array.from(new Set(list)) : [clientEmail];
+  })();
 
   const moveCode: string = move.move_code || moveSlug.toUpperCase();
   const baseUrl = getEmailBaseUrl();
@@ -187,7 +201,7 @@ export async function POST(
         2;
       await resend.emails.send({
         from: emailFrom,
-        to: clientEmail,
+        to: bookingEmailRecipients,
         subject: `Booking confirmed, ${moveCode}`,
         html: singleItemConfirmationEmail({
           clientName,
@@ -342,7 +356,7 @@ export async function POST(
     } else {
       await resend.emails.send({
         from: emailFrom,
-        to: clientEmail,
+        to: bookingEmailRecipients,
         subject,
         html: templateFn(confirmParams),
         headers: {
@@ -435,7 +449,7 @@ export async function POST(
         : `${first}, help us prepare for your move`;
       await resend.emails.send({
         from: emailFrom,
-        to: clientEmail,
+        to: bookingEmailRecipients,
         subject,
         html,
         headers: {

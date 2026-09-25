@@ -477,6 +477,9 @@ export async function PATCH(
         crew_id, coordinator_name,
         complexity_indicators, internal_notes,
         truck_primary, truck_secondary,
+        // Additional move contacts (JSONB array) — extra people who also get
+        // tracking / reminder notifications. See src/lib/moves/move-recipients.ts.
+        additional_contacts,
         // Multi-pickup / multi-dropoff -- persisted on the LINKED quote
         // (moves has no such columns). We pass them through here so the
         // admin edit modal can manage them alongside the primary
@@ -511,6 +514,7 @@ export async function PATCH(
       if (internal_notes !== undefined) updatePayload.internal_notes = internal_notes;
       if (truck_primary !== undefined) updatePayload.truck_primary = truck_primary;
       if (truck_secondary !== undefined) updatePayload.truck_secondary = truck_secondary;
+      if (additional_contacts !== undefined) updatePayload.additional_contacts = additional_contacts;
 
       const { data: updated, error: updateErr } = await admin
         .from("moves")

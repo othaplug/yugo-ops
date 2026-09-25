@@ -7,6 +7,7 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { getMoveCode, formatJobId, getTrackMoveSlug } from "@/lib/move-code";
 import { requireStaff } from "@/lib/api-auth";
 import { getEmailFrom } from "@/lib/email/send";
+import { getMoveClientRecipients, recipientsWithEmail } from "@/lib/moves/move-recipients";
 
 export async function POST(
   req: NextRequest,
@@ -20,7 +21,7 @@ export async function POST(
     const supabase = await createClient();
     const { data: move } = await supabase
       .from("moves")
-      .select("id, client_name, client_email, estimate, move_code")
+      .select("id, client_name, client_email, estimate, move_code, client_phone, additional_contacts")
       .eq("id", id)
       .single();
 
@@ -29,6 +30,11 @@ export async function POST(
     const email = (move.client_email || "").trim().toLowerCase();
     const name = (move.client_name || "").trim();
     if (!email) return NextResponse.json({ error: "Add client email first" }, { status: 400 });
+
+    // Primary + any additional tracking contacts with an email (deduped).
+    const emailRecipients = recipientsWithEmail(
+      getMoveClientRecipients(move, "tracking"),
+    );
 
     if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re_your_api_key_here") {
       return NextResponse.json({ error: "Email not configured" }, { status: 503 });
@@ -40,26 +46,34 @@ export async function POST(
 
     const resend = getResend();
     const emailFrom = await getEmailFrom();
-    const { error: sendError } = await resend.emails.send({
-      from: emailFrom,
-      to: email,
-      subject: `Your move is scheduled ${jobIdDisplay}`,
-      html: trackingLinkEmail({
-        clientName: name || "there",
-        trackUrl,
-        moveNumber: jobIdDisplay,
-      }),
-      headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
-    });
-
-    if (sendError) {
-      const msg = typeof sendError === "object" && sendError !== null && "message" in sendError
-        ? String((sendError as { message?: string }).message)
-        : String(sendError);
-      return NextResponse.json({ error: msg || "Email failed to send" }, { status: 500 });
+    let firstError: string | null = null;
+    for (const r of emailRecipients) {
+      const to = (r.email || "").trim().toLowerCase();
+      if (!to) continue;
+      const { error: sendError } = await resend.emails.send({
+        from: emailFrom,
+        to,
+        subject: `Your move is scheduled ${jobIdDisplay}`,
+        html: trackingLinkEmail({
+          clientName: (r.name || "").trim() || name || "there",
+          trackUrl,
+          moveNumber: jobIdDisplay,
+        }),
+        headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
+      });
+      if (sendError && !firstError) {
+        firstError =
+          typeof sendError === "object" && sendError !== null && "message" in sendError
+            ? String((sendError as { message?: string }).message)
+            : String(sendError);
+      }
     }
 
-    return NextResponse.json({ ok: true });
+    if (firstError) {
+      return NextResponse.json({ error: firstError || "Email failed to send" }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true, sent: emailRecipients.length });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to send tracking link";
     return NextResponse.json({ error: msg }, { status: 500 });

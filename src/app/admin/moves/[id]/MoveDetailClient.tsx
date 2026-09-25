@@ -3510,6 +3510,9 @@ export default function MoveDetailClient({
           client_email: move.client_email || move.customer_email || "",
           client_phone: move.client_phone ?? "",
           preferred_contact: move.preferred_contact ?? undefined,
+          additional_contacts: Array.isArray(move.additional_contacts)
+            ? move.additional_contacts
+            : [],
         }}
         onSaved={(updates) => setMove((prev: any) => ({ ...prev, ...updates }))}
       />

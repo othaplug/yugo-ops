@@ -20,6 +20,11 @@ import {
 import { deliveryContactEmail } from "@/lib/calendar/delivery-contact";
 import { getFeatureConfig } from "@/lib/platform-settings";
 import { sendClientTrackingCheckpointSms } from "@/lib/notifications/client-tracking-sms";
+import {
+  getMoveClientRecipients,
+  recipientsWithEmail,
+  recipientsWithPhone,
+} from "@/lib/moves/move-recipients";
 import type { TrackingStatus } from "@/lib/tracking-status-types";
 import { getStatusLabel } from "@/lib/crew-tracking-status";
 
@@ -389,6 +394,14 @@ export async function notifyOnCheckpoint(
   if (!cfg.notifyClient && !cfg.notifyPartner) return;
 
   let clientEmail: string | null = null;
+  // Primary + additional client contacts for a move — drives tracking fan-out
+  // (SMS + email) to extra people ops added on the move. Null for deliveries.
+  let moveContactSource: {
+    client_name?: string | null;
+    client_email?: string | null;
+    client_phone?: string | null;
+    additional_contacts?: unknown;
+  } | null = null;
   let partnerEmail: string | null = null;
   let trackUrl: string | undefined;
   let smsTrackUrl: string | undefined;
@@ -441,7 +454,7 @@ export async function notifyOnCheckpoint(
     const { data: move } = await admin
       .from("moves")
       .select(
-        "id, client_email, move_code, from_address, to_address, client_name, tier_selected, organization_id, client_phone, is_pm_move, service_type, event_phase, quote_id",
+        "id, client_email, move_code, from_address, to_address, client_name, tier_selected, organization_id, client_phone, is_pm_move, service_type, event_phase, quote_id, additional_contacts",
       )
       .eq("id", jobId)
       .single();
@@ -452,6 +465,12 @@ export async function notifyOnCheckpoint(
           .organization_id,
         client_phone: (move as { client_phone?: string | null }).client_phone,
         is_pm_move: (move as { is_pm_move?: boolean | null }).is_pm_move,
+      };
+      moveContactSource = {
+        client_name: move.client_name ?? null,
+        client_email: move.client_email ?? null,
+        client_phone: (move as { client_phone?: string | null }).client_phone ?? null,
+        additional_contacts: (move as { additional_contacts?: unknown }).additional_contacts,
       };
       estateMove = isEstateTier(
         (move as { tier_selected?: string | null }).tier_selected,
@@ -691,6 +710,17 @@ export async function notifyOnCheckpoint(
 
   const toSend: string[] = [];
   if (cfg.notifyClient && clientEmail) toSend.push(clientEmail);
+  // Fan tracking emails out to any additional move contacts opted into tracking
+  // (deduped against the primary by getMoveClientRecipients).
+  if (cfg.notifyClient && moveContactSource) {
+    for (const r of recipientsWithEmail(
+      getMoveClientRecipients(moveContactSource, "tracking"),
+    )) {
+      if (r.role === "additional" && r.email && !toSend.includes(r.email)) {
+        toSend.push(r.email);
+      }
+    }
+  }
   // Partner recipients — property manager orgs skip every checkpoint
   // except `completed`. Mid-move progress emails to PMs read as spam
   // (they only care that a move is scheduled and that it's done);
@@ -826,6 +856,37 @@ export async function notifyOnCheckpoint(
           jobType === "move"
             ? moveClientName
             : deliveryClientName ?? undefined,
+        trackUrl: smsTrackUrl ?? trackUrl,
+        estateMove: estateMove && jobType === "move",
+        eventMove: eventMove && jobType === "move",
+        eventPhase,
+        officeMove: officeMove && jobType === "move",
+        projectManagerName: officeProjectManagerName,
+        jobUuid: jobId,
+      }).catch(() => {});
+    }
+  }
+
+  // Fan tracking SMS out to additional move contacts, under the SAME guard as
+  // the primary client SMS (so partner/PM moves that suppress the client text
+  // suppress these too). Each distinct phone gets exactly one message: the
+  // phone-scoped reserveStageNotification key dedups, and getMoveClientRecipients
+  // already dropped anyone sharing the primary's number.
+  if (
+    cfg.notifyClient &&
+    !partnerHandlesClientSms &&
+    jobType === "move" &&
+    moveContactSource
+  ) {
+    for (const r of recipientsWithPhone(
+      getMoveClientRecipients(moveContactSource, "tracking"),
+    )) {
+      if (r.role !== "additional" || !r.phone) continue;
+      sendClientTrackingCheckpointSms({
+        status,
+        jobType,
+        phone: r.phone,
+        clientName: r.name ?? moveClientName,
         trackUrl: smsTrackUrl ?? trackUrl,
         estateMove: estateMove && jobType === "move",
         eventMove: eventMove && jobType === "move",

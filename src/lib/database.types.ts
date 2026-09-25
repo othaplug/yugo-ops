@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   graphql_public: {
     Tables: {
@@ -83,6 +83,7 @@ export type Database = {
           tiers: Json | null
           unit_label: string | null
           updated_at: string | null
+          variant_config: Json | null
         }
         Insert: {
           active?: boolean | null
@@ -103,6 +104,7 @@ export type Database = {
           tiers?: Json | null
           unit_label?: string | null
           updated_at?: string | null
+          variant_config?: Json | null
         }
         Update: {
           active?: boolean | null
@@ -123,6 +125,7 @@ export type Database = {
           tiers?: Json | null
           unit_label?: string | null
           updated_at?: string | null
+          variant_config?: Json | null
         }
         Relationships: []
       }
@@ -1216,6 +1219,7 @@ export type Database = {
           feedback_note: string | null
           furniture_reassembled: boolean | null
           id: string
+          idempotency_key: string | null
           item_conditions: Json | null
           items_placed_correctly: boolean | null
           job_id: string
@@ -1254,6 +1258,7 @@ export type Database = {
           feedback_note?: string | null
           furniture_reassembled?: boolean | null
           id?: string
+          idempotency_key?: string | null
           item_conditions?: Json | null
           items_placed_correctly?: boolean | null
           job_id: string
@@ -1292,6 +1297,7 @@ export type Database = {
           feedback_note?: string | null
           furniture_reassembled?: boolean | null
           id?: string
+          idempotency_key?: string | null
           item_conditions?: Json | null
           items_placed_correctly?: boolean | null
           job_id?: string
@@ -1994,6 +2000,12 @@ export type Database = {
           project_name: string | null
           quoted_price: number | null
           rate_card_id: string | null
+          recipient_email: string | null
+          recipient_mode: string
+          recipient_name: string | null
+          recipient_notes: string | null
+          recipient_phone: string | null
+          recipient_tracking_sent_at: string | null
           recipient_tracking_token: string | null
           recommended_day_type: string | null
           recommended_vehicle: string | null
@@ -2007,6 +2019,7 @@ export type Database = {
           score_scope_change: boolean | null
           services_price: number | null
           services_selected: Json | null
+          signoff_completed_at: string | null
           source_quote_id: string | null
           source_recurring_delivery_schedule_id: string | null
           special_handling: boolean
@@ -2024,6 +2037,7 @@ export type Database = {
           updated_at: string | null
           vehicle_type: string | null
           vertical_code: string | null
+          walkthrough_completed_at: string | null
           weight_surcharge: number | null
           zone: number | null
           zone_surcharge: number | null
@@ -2119,6 +2133,12 @@ export type Database = {
           project_name?: string | null
           quoted_price?: number | null
           rate_card_id?: string | null
+          recipient_email?: string | null
+          recipient_mode?: string
+          recipient_name?: string | null
+          recipient_notes?: string | null
+          recipient_phone?: string | null
+          recipient_tracking_sent_at?: string | null
           recipient_tracking_token?: string | null
           recommended_day_type?: string | null
           recommended_vehicle?: string | null
@@ -2132,6 +2152,7 @@ export type Database = {
           score_scope_change?: boolean | null
           services_price?: number | null
           services_selected?: Json | null
+          signoff_completed_at?: string | null
           source_quote_id?: string | null
           source_recurring_delivery_schedule_id?: string | null
           special_handling?: boolean
@@ -2149,6 +2170,7 @@ export type Database = {
           updated_at?: string | null
           vehicle_type?: string | null
           vertical_code?: string | null
+          walkthrough_completed_at?: string | null
           weight_surcharge?: number | null
           zone?: number | null
           zone_surcharge?: number | null
@@ -2244,6 +2266,12 @@ export type Database = {
           project_name?: string | null
           quoted_price?: number | null
           rate_card_id?: string | null
+          recipient_email?: string | null
+          recipient_mode?: string
+          recipient_name?: string | null
+          recipient_notes?: string | null
+          recipient_phone?: string | null
+          recipient_tracking_sent_at?: string | null
           recipient_tracking_token?: string | null
           recommended_day_type?: string | null
           recommended_vehicle?: string | null
@@ -2257,6 +2285,7 @@ export type Database = {
           score_scope_change?: boolean | null
           services_price?: number | null
           services_selected?: Json | null
+          signoff_completed_at?: string | null
           source_quote_id?: string | null
           source_recurring_delivery_schedule_id?: string | null
           special_handling?: boolean
@@ -2274,6 +2303,7 @@ export type Database = {
           updated_at?: string | null
           vehicle_type?: string | null
           vertical_code?: string | null
+          walkthrough_completed_at?: string | null
           weight_surcharge?: number | null
           zone?: number | null
           zone_surcharge?: number | null
@@ -4301,9 +4331,10 @@ export type Database = {
           lng: number | null
           note: string | null
           session_id: string | null
+          stop_id: string | null
           storage_path: string
           taken_at: string | null
-          taken_by: string
+          taken_by: string | null
           thumbnail_path: string | null
         }
         Insert: {
@@ -4318,9 +4349,10 @@ export type Database = {
           lng?: number | null
           note?: string | null
           session_id?: string | null
+          stop_id?: string | null
           storage_path: string
           taken_at?: string | null
-          taken_by: string
+          taken_by?: string | null
           thumbnail_path?: string | null
         }
         Update: {
@@ -4335,9 +4367,10 @@ export type Database = {
           lng?: number | null
           note?: string | null
           session_id?: string | null
+          stop_id?: string | null
           storage_path?: string
           taken_at?: string | null
-          taken_by?: string
+          taken_by?: string | null
           thumbnail_path?: string | null
         }
         Relationships: [
@@ -4346,6 +4379,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "tracking_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_photos_stop_id_fkey"
+            columns: ["stop_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_stops"
             referencedColumns: ["id"]
           },
           {
@@ -5645,6 +5685,7 @@ export type Database = {
           actual_labour_cost: number | null
           actual_supplies_cost: number | null
           actual_truck_cost: number | null
+          additional_contacts: Json | null
           addons: Json | null
           amount: number | null
           anniversary_email_sent: string | null
@@ -5735,11 +5776,13 @@ export type Database = {
           externally_booked: boolean | null
           final_amount: number | null
           from_access: string | null
+          from_access_profile: Json | null
           from_address: string
           from_lat: number | null
           from_lng: number | null
           from_long_carry: boolean | null
           from_parking: string | null
+          from_unit: string | null
           gcal_event_id: string | null
           gps_alert_sent: boolean | null
           gross_profit: number | null
@@ -5854,11 +5897,13 @@ export type Database = {
           tip_prompt_shown_at: string | null
           tip_skipped_at: string | null
           to_access: string | null
+          to_access_profile: Json | null
           to_address: string
           to_lat: number | null
           to_lng: number | null
           to_long_carry: boolean | null
           to_parking: string | null
+          to_unit: string | null
           total_cost: number | null
           total_paid: number | null
           total_price: number | null
@@ -5892,6 +5937,7 @@ export type Database = {
           actual_labour_cost?: number | null
           actual_supplies_cost?: number | null
           actual_truck_cost?: number | null
+          additional_contacts?: Json | null
           addons?: Json | null
           amount?: number | null
           anniversary_email_sent?: string | null
@@ -5982,11 +6028,13 @@ export type Database = {
           externally_booked?: boolean | null
           final_amount?: number | null
           from_access?: string | null
+          from_access_profile?: Json | null
           from_address: string
           from_lat?: number | null
           from_lng?: number | null
           from_long_carry?: boolean | null
           from_parking?: string | null
+          from_unit?: string | null
           gcal_event_id?: string | null
           gps_alert_sent?: boolean | null
           gross_profit?: number | null
@@ -6101,11 +6149,13 @@ export type Database = {
           tip_prompt_shown_at?: string | null
           tip_skipped_at?: string | null
           to_access?: string | null
+          to_access_profile?: Json | null
           to_address: string
           to_lat?: number | null
           to_lng?: number | null
           to_long_carry?: boolean | null
           to_parking?: string | null
+          to_unit?: string | null
           total_cost?: number | null
           total_paid?: number | null
           total_price?: number | null
@@ -6139,6 +6189,7 @@ export type Database = {
           actual_labour_cost?: number | null
           actual_supplies_cost?: number | null
           actual_truck_cost?: number | null
+          additional_contacts?: Json | null
           addons?: Json | null
           amount?: number | null
           anniversary_email_sent?: string | null
@@ -6229,11 +6280,13 @@ export type Database = {
           externally_booked?: boolean | null
           final_amount?: number | null
           from_access?: string | null
+          from_access_profile?: Json | null
           from_address?: string
           from_lat?: number | null
           from_lng?: number | null
           from_long_carry?: boolean | null
           from_parking?: string | null
+          from_unit?: string | null
           gcal_event_id?: string | null
           gps_alert_sent?: boolean | null
           gross_profit?: number | null
@@ -6348,11 +6401,13 @@ export type Database = {
           tip_prompt_shown_at?: string | null
           tip_skipped_at?: string | null
           to_access?: string | null
+          to_access_profile?: Json | null
           to_address?: string
           to_lat?: number | null
           to_lng?: number | null
           to_long_carry?: boolean | null
           to_parking?: string | null
+          to_unit?: string | null
           total_cost?: number | null
           total_paid?: number | null
           total_price?: number | null
@@ -6550,6 +6605,7 @@ export type Database = {
           job_id: string | null
           job_type: string | null
           message: string | null
+          notification_key: string | null
           recipient_email: string | null
           recipient_phone: string | null
           status: string
@@ -6563,6 +6619,7 @@ export type Database = {
           job_id?: string | null
           job_type?: string | null
           message?: string | null
+          notification_key?: string | null
           recipient_email?: string | null
           recipient_phone?: string | null
           status?: string
@@ -6576,6 +6633,7 @@ export type Database = {
           job_id?: string | null
           job_type?: string | null
           message?: string | null
+          notification_key?: string | null
           recipient_email?: string | null
           recipient_phone?: string | null
           status?: string
@@ -8974,6 +9032,39 @@ export type Database = {
           },
         ]
       }
+      quote_drafts: {
+        Row: {
+          created_at: string
+          form_type: string
+          id: string
+          operator_email: string
+          path: string | null
+          snapshot: Json
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          form_type?: string
+          id: string
+          operator_email: string
+          path?: string | null
+          snapshot?: Json
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          form_type?: string
+          id?: string
+          operator_email?: string
+          path?: string | null
+          snapshot?: Json
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       quote_engagement: {
         Row: {
           created_at: string | null
@@ -9344,10 +9435,12 @@ export type Database = {
           followup_expiry_sent: string | null
           followup_urgency_sent: string | null
           from_access: string | null
+          from_access_profile: Json | null
           from_address: string
           from_long_carry: boolean | null
           from_parking: string | null
           from_postal: string | null
+          from_unit: string | null
           high_value_declarations: Json
           hubspot_deal_id: string | null
           hubspot_duplicate_detected: boolean
@@ -9423,10 +9516,12 @@ export type Database = {
           tier_price_overrides: Json | null
           tiers: Json | null
           to_access: string | null
+          to_access_profile: Json | null
           to_address: string
           to_long_carry: boolean | null
           to_parking: string | null
           to_postal: string | null
+          to_unit: string | null
           truck_override: boolean | null
           truck_primary: string | null
           truck_secondary: string | null
@@ -9494,10 +9589,12 @@ export type Database = {
           followup_expiry_sent?: string | null
           followup_urgency_sent?: string | null
           from_access?: string | null
+          from_access_profile?: Json | null
           from_address: string
           from_long_carry?: boolean | null
           from_parking?: string | null
           from_postal?: string | null
+          from_unit?: string | null
           high_value_declarations?: Json
           hubspot_deal_id?: string | null
           hubspot_duplicate_detected?: boolean
@@ -9573,10 +9670,12 @@ export type Database = {
           tier_price_overrides?: Json | null
           tiers?: Json | null
           to_access?: string | null
+          to_access_profile?: Json | null
           to_address: string
           to_long_carry?: boolean | null
           to_parking?: string | null
           to_postal?: string | null
+          to_unit?: string | null
           truck_override?: boolean | null
           truck_primary?: string | null
           truck_secondary?: string | null
@@ -9644,10 +9743,12 @@ export type Database = {
           followup_expiry_sent?: string | null
           followup_urgency_sent?: string | null
           from_access?: string | null
+          from_access_profile?: Json | null
           from_address?: string
           from_long_carry?: boolean | null
           from_parking?: string | null
           from_postal?: string | null
+          from_unit?: string | null
           high_value_declarations?: Json
           hubspot_deal_id?: string | null
           hubspot_duplicate_detected?: boolean
@@ -9723,10 +9824,12 @@ export type Database = {
           tier_price_overrides?: Json | null
           tiers?: Json | null
           to_access?: string | null
+          to_access_profile?: Json | null
           to_address?: string
           to_long_carry?: boolean | null
           to_parking?: string | null
           to_postal?: string | null
+          to_unit?: string | null
           truck_override?: boolean | null
           truck_primary?: string | null
           truck_secondary?: string | null
@@ -10533,6 +10636,30 @@ export type Database = {
           },
         ]
       }
+      review_opt_outs: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          phone: string | null
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          phone?: string | null
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          phone?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       review_requests: {
         Row: {
           client_email: string | null
@@ -10542,15 +10669,20 @@ export type Database = {
           client_rating: number | null
           created_at: string | null
           email_sent_at: string | null
+          final_send_at: string | null
+          final_sent_at: string | null
           id: string
           move_id: string | null
+          platform: string | null
           pod_rating: number | null
           reminder_send_at: string | null
           reminder_sent_at: string | null
           review_clicked: boolean | null
           review_clicked_at: string | null
           scheduled_send_at: string
+          short_code: string | null
           sms_sent_at: string | null
+          source: string
           status: string | null
           tier: string | null
         }
@@ -10562,15 +10694,20 @@ export type Database = {
           client_rating?: number | null
           created_at?: string | null
           email_sent_at?: string | null
+          final_send_at?: string | null
+          final_sent_at?: string | null
           id?: string
           move_id?: string | null
+          platform?: string | null
           pod_rating?: number | null
           reminder_send_at?: string | null
           reminder_sent_at?: string | null
           review_clicked?: boolean | null
           review_clicked_at?: string | null
           scheduled_send_at: string
+          short_code?: string | null
           sms_sent_at?: string | null
+          source?: string
           status?: string | null
           tier?: string | null
         }
@@ -10582,15 +10719,20 @@ export type Database = {
           client_rating?: number | null
           created_at?: string | null
           email_sent_at?: string | null
+          final_send_at?: string | null
+          final_sent_at?: string | null
           id?: string
           move_id?: string | null
+          platform?: string | null
           pod_rating?: number | null
           reminder_send_at?: string | null
           reminder_sent_at?: string | null
           review_clicked?: boolean | null
           review_clicked_at?: string | null
           scheduled_send_at?: string
+          short_code?: string | null
           sms_sent_at?: string | null
+          source?: string
           status?: string | null
           tier?: string | null
         }
@@ -11904,6 +12046,7 @@ export type Database = {
         | "damage_documentation"
         | "other"
         | "walkthrough_final"
+        | "admin_upload"
       tracking_status:
         | "not_started"
         | "en_route_to_pickup"
@@ -11928,12 +12071,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -11957,11 +12100,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -11982,11 +12125,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -12007,11 +12150,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -12024,11 +12167,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -12061,6 +12204,7 @@ export const Constants = {
         "damage_documentation",
         "other",
         "walkthrough_final",
+        "admin_upload",
       ],
       tracking_status: [
         "not_started",
