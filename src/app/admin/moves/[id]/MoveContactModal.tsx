@@ -132,7 +132,7 @@ export default function MoveContactModal({
         updated_at,
       });
 
-    if (sendTrackingLink && emailTrimmed) {
+    if (sendTrackingLink && (emailTrimmed || normalizePhone(phone))) {
       try {
         const res = await fetch(`/api/moves/${moveId}/send-tracking-link`, {
           method: "POST",
@@ -140,7 +140,7 @@ export default function MoveContactModal({
         const json = await res.json();
         if (!res.ok)
           throw new Error(json.error || "Failed to send tracking link");
-        toast("Tracking link email sent", "mail");
+        toast("Tracking link sent", "mail");
       } catch (e) {
         toast(
           e instanceof Error ? e.message : "Failed to send tracking link",
