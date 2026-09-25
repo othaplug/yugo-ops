@@ -6541,10 +6541,8 @@ export default function QuoteFormClient({
           base.office_moving_sqft = officeQuoteContext.movingSqft ?? undefined;
           if (officeQuoteContext.afterHours) base.office_after_hours = true;
           if (officeQuoteContext.weekend) base.office_weekend = true;
-          if (officeQuoteContext.originAccess)
-            base.office_origin_access = officeQuoteContext.originAccess;
-          if (officeQuoteContext.destAccess)
-            base.office_dest_access = officeQuoteContext.destAccess;
+          // Origin/destination building-access capture was removed from the office
+          // quote form (added no value); no longer sent, so it never surcharges.
         }
         if (multiPickupInventoryMode && perPickupInventory.length > 0) {
           base.inventory_items = perPickupInventory.flatMap((items, idx) =>

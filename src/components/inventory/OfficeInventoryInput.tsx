@@ -20,13 +20,6 @@ import {
 } from "@/lib/quotes/office-inventory-labour";
 import { parseOfficeBulkInventory } from "@/lib/quotes/office-inventory-parse";
 import { type OfficeQuoteContext } from "@/lib/quotes/office-quote-engine";
-import {
-  type OfficeSiteAccess,
-  type OfficeElevator,
-  type OfficeFloorBand,
-  type OfficeLoading,
-  type OfficeCarry,
-} from "@/lib/quotes/office-access-model";
 
 /* ── Preset templates ──
  * One-click prefills for typical office sizes. Operator picks the closest
@@ -148,137 +141,6 @@ const CUSTOM_SIZE_LABELS: Record<OfficeCustomSizeSlug, string> = {
   custom_large: "Large",
   custom_xlarge: "Extra-large",
 };
-
-/* ── Building access (commercial) ──
- * Per-site access drivers that price the tier-agnostic access surcharge:
- * elevator topology, floor, loading position, dock-to-suite carry, plus the
- * after-hours / COI building rules that surface as ops flags. */
-const ELEVATOR_OPTS: { value: OfficeElevator; label: string }[] = [
-  { value: "freight", label: "Freight elevator" },
-  { value: "passenger", label: "Passenger only" },
-  { value: "none", label: "No elevator (stairs)" },
-];
-const FLOOR_OPTS: { value: OfficeFloorBand; label: string }[] = [
-  { value: "ground", label: "Ground / dock level" },
-  { value: "low", label: "Low (1 to 6)" },
-  { value: "mid", label: "Mid (7 to 15)" },
-  { value: "high", label: "High (16 to 30)" },
-  { value: "tower", label: "Tower (30+)" },
-];
-const LOADING_OPTS: { value: OfficeLoading; label: string }[] = [
-  { value: "dock", label: "Dedicated dock" },
-  { value: "street", label: "Street / curb" },
-  { value: "underground", label: "Underground (P1)" },
-];
-const CARRY_OPTS: { value: OfficeCarry; label: string }[] = [
-  { value: "short", label: "Short" },
-  { value: "medium", label: "Medium" },
-  { value: "long", label: "Long" },
-  { value: "very_long", label: "Very long" },
-];
-
-function SiteAccessFields({
-  title,
-  value,
-  onChange,
-}: {
-  title: string;
-  value: OfficeSiteAccess;
-  onChange: (next: OfficeSiteAccess) => void;
-}) {
-  const patch = (p: Partial<OfficeSiteAccess>) => onChange({ ...value, ...p });
-  const selCls =
-    "h-7 rounded border border-[var(--brd)] bg-[var(--card)] px-1.5 text-[11px] text-[var(--tx)]";
-  const labCls =
-    "text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--tx3)]";
-  return (
-    <div className="rounded-lg border border-[var(--brd)]/60 bg-[var(--card)] px-3 py-2.5 space-y-2.5 flex-1 min-w-[240px]">
-      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tx)]">
-        {title}
-      </p>
-      <div className="grid grid-cols-2 gap-2">
-        <label className="flex flex-col gap-1">
-          <span className={labCls}>Floor</span>
-          <select
-            className={selCls}
-            value={value.floorBand ?? "ground"}
-            onChange={(e) => patch({ floorBand: e.target.value as OfficeFloorBand })}
-          >
-            {FLOOR_OPTS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className={labCls}>Elevator</span>
-          <select
-            className={selCls}
-            value={value.elevator ?? "freight"}
-            onChange={(e) => patch({ elevator: e.target.value as OfficeElevator })}
-          >
-            {ELEVATOR_OPTS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className={labCls}>Loading</span>
-          <select
-            className={selCls}
-            value={value.loading ?? "dock"}
-            onChange={(e) => patch({ loading: e.target.value as OfficeLoading })}
-          >
-            {LOADING_OPTS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className={labCls}>Carry to suite</span>
-          <select
-            className={selCls}
-            value={value.carry ?? "short"}
-            onChange={(e) => patch({ carry: e.target.value as OfficeCarry })}
-          >
-            {CARRY_OPTS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className={labCls}>Elevator window (min)</span>
-          <input
-            type="number"
-            min={0}
-            value={value.elevatorWindowMin ?? ""}
-            placeholder="none"
-            onChange={(e) =>
-              patch({ elevatorWindowMin: e.target.value ? Number(e.target.value) : null })
-            }
-            className="h-7 rounded border border-[var(--brd)] bg-[var(--card)] px-1.5 text-[11px] text-[var(--tx)] tabular-nums"
-          />
-        </label>
-      </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1.5 pt-0.5">
-        {([
-          ["multiLevel", "Multi-level suite"],
-          ["afterHoursRequired", "After-hours required"],
-          ["coiRequired", "COI required"],
-        ] as const).map(([key, label]) => (
-          <label key={key} className="flex items-center gap-1.5 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              className="rounded border-[var(--brd)]"
-              checked={value[key] === true}
-              onChange={(e) => patch({ [key]: e.target.checked })}
-            />
-            <span className="text-[10px] text-[var(--tx)]">{label}</span>
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export interface OfficeInventoryInputProps {
   inventory: OfficeInventoryLine[];
@@ -870,31 +732,6 @@ export default function OfficeInventoryInput({
               className="h-7 w-28 rounded border border-[var(--brd)] bg-[var(--card)] px-2 text-[11px] text-[var(--tx)] tabular-nums"
             />
           </label>
-        </div>
-      </div>
-
-      {/* ── Building access (origin + destination) ── */}
-      <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] px-3 py-3 space-y-3">
-        <div>
-          <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--tx3)]">
-            Building access
-          </p>
-          <p className="text-[10px] text-[var(--tx3)] mt-0.5 leading-snug max-w-xl">
-            Floors, elevators, docks, and carries at each end. Priced as a
-            surcharge added equally to all three tiers, plus scheduling flags.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <SiteAccessFields
-            title="Origin building"
-            value={context.originAccess ?? {}}
-            onChange={(next) => patchCtx({ originAccess: next })}
-          />
-          <SiteAccessFields
-            title="Destination building"
-            value={context.destAccess ?? {}}
-            onChange={(next) => patchCtx({ destAccess: next })}
-          />
         </div>
       </div>
 
