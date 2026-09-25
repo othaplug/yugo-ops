@@ -571,12 +571,24 @@ export async function GET(req: NextRequest) {
         [...legs].sort((a, b) => b.revenue - a.revenue)[0];
       const sum = (pick: (r: (typeof legs)[number]) => number | null | undefined) =>
         legs.reduce((s, l) => s + (Number(pick(l)) || 0), 0);
+      // Cost overrides attach to the primary (delivery) leg, but the merged row
+      // is the ONLY cell the operator can edit — so an override represents the
+      // WHOLE event's cost for that field. If we still summed the return leg on
+      // top, the operator's number never sticks: every refresh shows
+      // (override + return-leg computed cost), which reads as "it reverted".
+      // Overridden fields therefore use the primary (already-overridden) value
+      // as the event total; non-overridden fields still sum both legs.
+      const ovPrimary = costOverridesMap[primary.id as string];
+      const fieldVal = (
+        key: "labour" | "fuel" | "truck" | "supplies" | "processing",
+        pick: (r: (typeof legs)[number]) => number | null | undefined,
+      ) => (ovPrimary && ovPrimary[key] != null ? Number(pick(primary)) || 0 : sum(pick));
       const revenue = sum((l) => l.revenue);
-      const labour = sum((l) => l.labour);
-      const fuel = Math.round(sum((l) => l.fuel) * 100) / 100;
-      const truck = sum((l) => l.truck);
-      const supplies = sum((l) => l.supplies);
-      const processing = Math.round(sum((l) => l.processing) * 100) / 100;
+      const labour = fieldVal("labour", (l) => l.labour);
+      const fuel = Math.round(fieldVal("fuel", (l) => l.fuel) * 100) / 100;
+      const truck = fieldVal("truck", (l) => l.truck);
+      const supplies = fieldVal("supplies", (l) => l.supplies);
+      const processing = Math.round(fieldVal("processing", (l) => l.processing) * 100) / 100;
       const totalDirect = labour + fuel + truck + supplies;
       const allocatedOverhead = sum((l) => l.allocatedOverhead);
       const claimsReserve = Math.round(sum((l) => l.claimsReserve) * 100) / 100;
