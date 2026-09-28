@@ -130,7 +130,14 @@ function loadRateConfig(config: ConfigLike): CabinetryRateConfig {
   try {
     const raw = cfgGet(config, "b2b_cabinetry_rate");
     if (!raw) return DEFAULTS;
-    const parsed = JSON.parse(raw) as Partial<CabinetryRateConfig>;
+    // Unwrap double-encoded JSON (a value stored as a JSON string of a JSON
+    // string) up to a few layers so a mis-stored rate card doesn't silently
+    // fall through to DEFAULTS and mis-price. Mirrors parseRateCard's hardening.
+    let decoded: unknown = raw;
+    for (let i = 0; i < 4 && typeof decoded === "string"; i++) {
+      decoded = JSON.parse(decoded);
+    }
+    const parsed = (decoded ?? {}) as Partial<CabinetryRateConfig>;
     return {
       ...DEFAULTS,
       ...parsed,

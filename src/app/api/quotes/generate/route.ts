@@ -3681,7 +3681,10 @@ async function calcB2bOneoff(
               };
             })();
 
-      const engineSubtotal = fb.roundedPreTax;
+      // Floor a missing / mis-seeded rate card (engine returns $0) to a minimum so
+      // a $0 flat-band quote can never be generated. An override bypasses the floor.
+      const minB2bCharge = cfgNum(config, "b2b_min_charge", 200);
+      const engineSubtotal = fb.roundedPreTax > 0 ? fb.roundedPreTax : minB2bCharge;
       const subOvr = parsePositivePreTaxOverride(input.b2b_subtotal_override);
       const useSubtotalOverride = subOvr !== undefined;
       // Use the operator's override pre-tax price RAW — do NOT re-apply CC
@@ -5903,6 +5906,10 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
           price: newPrice,
           tax: newTax,
           total: newPrice + newTax,
+          // Recompute the B2B deposit on the surcharged price: a job pushed over
+          // $300 by the job-scope surcharge should drop to the $150 flat deposit,
+          // not keep the full-price deposit set before the surcharge was added.
+          deposit: newPrice < 300 ? newPrice : 150,
         };
         const f = factors as Record<string, unknown>;
         if (Array.isArray(f.b2b_price_breakdown)) {
