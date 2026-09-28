@@ -3684,8 +3684,13 @@ async function calcB2bOneoff(
       const engineSubtotal = fb.roundedPreTax;
       const subOvr = parsePositivePreTaxOverride(input.b2b_subtotal_override);
       const useSubtotalOverride = subOvr !== undefined;
+      // Use the operator's override pre-tax price RAW — do NOT re-apply CC
+      // processing recovery. It was re-grossing here (adding ~3.3% + rounding up
+      // to $50) while the dimensional branch (L3863) and the create-delivery path
+      // use it raw, so "Send quote" and the booked delivery priced differently
+      // for the same override. Now all three agree on the number the operator typed.
       let price = useSubtotalOverride
-        ? applyProcessingRecoveryAndRound(Math.round(subOvr as number), config, 50)
+        ? Math.round(subOvr as number)
         : engineSubtotal;
       const calculatedPreTaxBeforeFullOverride = price;
       const fullOv = parsePositivePreTaxOverride(input.b2b_full_pre_tax_override);
@@ -3696,7 +3701,23 @@ async function calcB2bOneoff(
       const tax = Math.round(price * taxRate);
       const deposit = price < 300 ? price : 150;
 
-      const truckKeyCab = normalizeTruckType(fb.truck);
+      // Honor the operator's crew/truck override in the DISPLAYED crew/truck for
+      // ALL flat-band verticals. Cabinetry's engine ignores overrides entirely;
+      // flooring/appliance already reflect them via fb. Flat-band PRICE is
+      // count-based by design, so an override moves crew/truck (dispatch +
+      // labour), not the price. Both are also stamped as factors so they
+      // round-trip on edit (the edit loader reads b2b_crew_override /
+      // b2b_truck_override).
+      const truckOverrideCab =
+        input.truck_type && input.truck_type.trim() ? input.truck_type.trim() : null;
+      const crewOverrideCab =
+        typeof input.b2b_crew_override === "number" &&
+        Number.isFinite(input.b2b_crew_override) &&
+        input.b2b_crew_override >= 1
+          ? Math.round(input.b2b_crew_override)
+          : null;
+      const effectiveCrewCab = crewOverrideCab ?? fb.crew;
+      const truckKeyCab = normalizeTruckType(truckOverrideCab ?? fb.truck);
       const b2bFeaturesCab = await fetchTierFeatures(sb, "b2b_delivery", "custom");
       const includesCab = [
         ...fb.includes,
@@ -3745,7 +3766,9 @@ async function calcB2bOneoff(
             "estimatedHours" in fb && typeof fb.estimatedHours === "number"
               ? fb.estimatedHours
               : null,
-          b2b_crew: fb.crew,
+          b2b_crew: effectiveCrewCab,
+          b2b_crew_override: crewOverrideCab,
+          b2b_truck_override: truckOverrideCab,
           b2b_business_name: input.b2b_business_name || null,
       b2b_scope: input.b2b_scope?.trim() || null,
           b2b_items: input.b2b_items || null,
@@ -3929,6 +3952,15 @@ async function calcB2bOneoff(
         truck_surcharge: truckSurchargeDim,
         b2b_estimated_hours: dim.estimatedHours,
         b2b_crew: dim.crew,
+        // Persist overrides so they round-trip on edit (loader reads these keys).
+        b2b_crew_override:
+          typeof input.b2b_crew_override === "number" &&
+          Number.isFinite(input.b2b_crew_override) &&
+          input.b2b_crew_override >= 1
+            ? Math.round(input.b2b_crew_override)
+            : null,
+        b2b_truck_override:
+          input.truck_type && input.truck_type.trim() ? input.truck_type.trim() : null,
         b2b_business_name: input.b2b_business_name || null,
       b2b_scope: input.b2b_scope?.trim() || null,
         b2b_items: input.b2b_items || null,
