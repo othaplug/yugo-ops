@@ -1575,9 +1575,19 @@ export default function ProfitabilityClient() {
           <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-1.5">
             Finance
           </p>
-          <h1 className="admin-page-hero text-[var(--tx)]">Profitability</h1>
+          <h1 className="admin-page-hero text-[var(--tx)]">
+            Profitability
+            {preset === "this_month" && (
+              <span className="ml-2 align-middle text-[12px] font-medium text-[var(--tx3)]">
+                (month-to-date)
+              </span>
+            )}
+          </h1>
           <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
             Cost, profit, and margin across labour, truck, fuel, and supplies.
+            {preset === "this_month"
+              ? " Counts jobs performed through today, so it can read lower than the dashboard's full-month revenue (which includes booked upcoming jobs)."
+              : ""}
           </p>
           <Link
             href="/admin/finance/forecast"

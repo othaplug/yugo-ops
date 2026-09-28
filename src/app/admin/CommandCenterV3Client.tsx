@@ -284,13 +284,13 @@ export default function CommandCenterV3Client({
     () => [
       {
         id: "revenue",
-        label: "Revenue this month",
+        label: "Revenue this month (full month)",
         value: formatCompactCurrency(currentMonthRevenue),
         trendPct: Number.isFinite(revenuePctChange) ? revenuePctChange : null,
         hint: (
           <>
             Moves {formatCompactCurrency(revenueBreakdown.moves)} · Partner{" "}
-            {formatCompactCurrency(revenueBreakdown.partner)}
+            {formatCompactCurrency(revenueBreakdown.partner)} · incl. booked upcoming
           </>
         ),
         spark: revenueSeries.slice(-12),
