@@ -401,6 +401,12 @@ export const DEFAULT_SIGNATURE_ADDITIONS: TierFeature[] = [
   },
   {
     key: "wrapping",
+    // Genuine upgrade over Essential's "up to 3 pieces", which shares the
+    // `wrapping` merge key. filterTierCardAdditions drops a same-key addition
+    // unless it is highlighted (same reason `valuation` above is highlighted),
+    // so without this the Signature card silently omitted complete wrapping even
+    // though "Your Move Includes" listed it.
+    highlight: true,
     card: "Complete furniture wrapping: every piece, no exceptions",
     title: "Complete furniture wrapping: every piece, no exceptions",
     desc: "Every item wrapped in quilted moving blankets. No exceptions.",

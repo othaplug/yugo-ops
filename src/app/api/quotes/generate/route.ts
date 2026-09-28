@@ -1663,6 +1663,27 @@ async function calcResidential(
   const minCrew = br?.min_crew ?? 3;
   const estHours = br?.estimated_hours ?? 5;
 
+  // When the operator explicitly overrides crew size, honour that exact number
+  // on EVERY tier (no per-tier reduction) so the client-facing crew matches what
+  // the coordinator set in the admin form. Without an override, Essential and
+  // Signature run one lighter than Estate (residentialTierCrew). Crew never
+  // affects price; this only changes the crew shown/staffed and the margin model.
+  const explicitCrewOverride =
+    typeof input.crew_size_override === "number" &&
+    Number.isFinite(input.crew_size_override) &&
+    input.crew_size_override >= 1 &&
+    input.crew_size_override <= 8
+      ? Math.max(2, Math.round(input.crew_size_override))
+      : null;
+  const computeTierCrew = (baseCrew: number) =>
+    explicitCrewOverride != null
+      ? {
+          essential: explicitCrewOverride,
+          signature: explicitCrewOverride,
+          estate: explicitCrewOverride,
+        }
+      : residentialTierCrew(baseCrew, config);
+
   // ── Section 4A/4B: Distance modifier (replaces flat per-km surcharge) ──────
   const distKm = distInfo?.distance_km ?? 0;
   let distanceModifier = 1.0;
@@ -2352,7 +2373,7 @@ async function calcResidential(
   {
     const loadedRateFloor = crewLoadedHourlyRate(config);
     const baseCrewFloor = labour?.crewSize ?? minCrew;
-    const tierCrewFloor = residentialTierCrew(baseCrewFloor, config);
+    const tierCrewFloor = computeTierCrew(baseCrewFloor);
     const minHoursFloorsClamp = parseJsonConfig<Record<string, number>>(
       config,
       "minimum_hours_by_size",
@@ -2440,7 +2461,7 @@ async function calcResidential(
   // needs the most hands); Essential/Signature run one lighter (floored at 2).
   // Drives the client-facing crew line, the margin/labour model, and staffing.
   // Does NOT change tier price. See residentialTierCrew.
-  const tierCrew = residentialTierCrew(labour?.crewSize ?? minCrew, config);
+  const tierCrew = computeTierCrew(labour?.crewSize ?? minCrew);
   const inc = await residentialIncludes(
     sb,
     tierCrew,
