@@ -644,7 +644,56 @@ export default function QuotePageClient({
   const [furthestStepReached, setFurthestStepReached] = useState(1);
   const [selectedAddons, setSelectedAddons] = useState<
     Map<string, AddonSelection>
-  >(new Map());
+  >(() => {
+    // Seed the coordinator-preselected insurance rider (enhanced_insurance) as a
+    // pre-checked LIVE add-on on residential local moves, so the client sees it
+    // selected and can REMOVE it to drop the price. It is intentionally not baked
+    // into basePrice (see generate/route.ts); every other admin add-on stays
+    // baked and read-only in the "Included in your quote" block.
+    const seed = new Map<string, AddonSelection>();
+    if (quote.service_type !== "local_move") return seed;
+    const raw = (quote as { selected_addons?: unknown }).selected_addons;
+    if (!Array.isArray(raw)) return seed;
+    for (const r of raw) {
+      const row = (r ?? {}) as {
+        slug?: unknown;
+        addon_id?: unknown;
+        tier_index?: unknown;
+        quantity?: unknown;
+        price?: unknown;
+        subtotal?: unknown;
+      };
+      if (String(row.slug ?? "") !== "enhanced_insurance") continue;
+      const addon =
+        allAddons.find((a) => a.id === String(row.addon_id ?? "")) ??
+        allAddons.find((a) => a.slug === "enhanced_insurance");
+      if (!addon) continue;
+      // The stored breakdown drops tier_index, so recover the coverage tier by
+      // matching the stored price to the catalog tier (mirrors coordinatorInsurance).
+      let tierIndex =
+        typeof row.tier_index === "number" ? row.tier_index : 0;
+      const storedPrice =
+        typeof row.price === "number"
+          ? row.price
+          : typeof row.subtotal === "number"
+            ? row.subtotal
+            : null;
+      if (storedPrice != null && Array.isArray(addon.tiers)) {
+        const idx = addon.tiers.findIndex((t) => t.price === storedPrice);
+        if (idx >= 0) tierIndex = idx;
+      }
+      seed.set(addon.id, {
+        addon_id: addon.id,
+        slug: addon.slug,
+        quantity:
+          typeof row.quantity === "number" && row.quantity > 0
+            ? row.quantity
+            : 1,
+        tier_index: tierIndex,
+      });
+    }
+    return seed;
+  });
   const [signedName, setSignedName] = useState("");
   const [contractSigned, setContractSigned] = useState(false);
   const [booked, setBooked] = useState(quote.status === "accepted");

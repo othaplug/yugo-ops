@@ -265,3 +265,29 @@ export function addonAmountForTier(
   }
   return Math.max(0, result.total - excluded);
 }
+
+/**
+ * Insurance rider slug that must flow as a LIVE (client-removable) add-on rather
+ * than baked into the tier/base price. A coordinator can pre-add extra coverage
+ * for a client who requests it, but the client keeps the option to REMOVE the
+ * rider on the quote page, and move-creation re-pricing only adds deltas, it
+ * never subtracts a baked amount, so a baked rider could never be removed. Keep
+ * it out of the bake so the quote page counts it in the live add-on total.
+ */
+export const LIVE_RIDER_SLUG = "enhanced_insurance";
+
+/**
+ * Dollar total of live insurance riders in this result for the given service
+ * type. Residential (local_move) treats the enhanced insurance rider as live;
+ * every other service type (notably white_glove, where it is baked into
+ * custom_price and reflected read-only) returns 0 so its behaviour is unchanged.
+ */
+export function liveRiderTotal(
+  result: AddonPriceResult,
+  serviceType?: string | null,
+): number {
+  if (serviceType !== "local_move") return 0;
+  return (result.breakdown || [])
+    .filter((b) => b.slug === LIVE_RIDER_SLUG)
+    .reduce((sum, b) => sum + (b.subtotal || 0), 0);
+}

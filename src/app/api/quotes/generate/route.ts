@@ -40,6 +40,7 @@ import {
 import { resolveSingleItemLines, type SingleItemLine } from "@/lib/quotes/single-item-types";
 import {
   calculateAddons,
+  liveRiderTotal,
   type AddonSelection,
   type AddonBreakdownItem,
 } from "@/lib/quotes/price-addons";
@@ -2273,9 +2274,16 @@ async function calcResidential(
     estBase_after: estBase,
   });
 
-  const addonForCur = addonResult.total - (addonResult.byTierExclusion.get("essential") ?? (addonResult.byTierExclusion.get("curated") ?? (addonResult.byTierExclusion.get("essentials") ?? 0)));
-  const addonForSig = addonResult.total - (addonResult.byTierExclusion.get("signature") ?? (addonResult.byTierExclusion.get("premier") ?? 0));
-  const addonForEst = addonResult.total - (addonResult.byTierExclusion.get("estate") ?? 0);
+  // Insurance riders (enhanced_insurance) are NOT baked into the residential
+  // tier price: the client can remove the rider on the quote page, and baked
+  // amounts can never be removed (create-move-from-quote only adds deltas). The
+  // rider stays in addonResult.breakdown -> selected_addons so the quote page
+  // seeds it as a pre-checked, removable live add-on. addon_baked_total is
+  // reduced by the same amount below so booking re-pricing treats it as live.
+  const liveRider = liveRiderTotal(addonResult, input.service_type);
+  const addonForCur = addonResult.total - liveRider - (addonResult.byTierExclusion.get("essential") ?? (addonResult.byTierExclusion.get("curated") ?? (addonResult.byTierExclusion.get("essentials") ?? 0)));
+  const addonForSig = addonResult.total - liveRider - (addonResult.byTierExclusion.get("signature") ?? (addonResult.byTierExclusion.get("premier") ?? 0));
+  const addonForEst = addonResult.total - liveRider - (addonResult.byTierExclusion.get("estate") ?? 0);
 
   // Tier spread caps operate on the add-on-FREE bases; per-tier add-ons are
   // layered on AFTER. Previously add-ons were added first and the caps then
@@ -7233,7 +7241,14 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       // double-charging the ones the operator already baked in. Without this the
       // move was created at the bare tier price and every client-added add-on
       // went uncharged (see MV-30378).
-      factors_applied: { ...factors, addon_baked_total: addonResult.total },
+      // Live insurance riders are excluded from the baked total (residential):
+      // they flow as client-removable add-ons, so booking re-pricing must treat
+      // them as a delta, not as already baked into basePrice.
+      factors_applied: {
+        ...factors,
+        addon_baked_total:
+          addonResult.total - liveRiderTotal(addonResult, input.service_type),
+      },
       selected_addons: addonResult.breakdown,
       expires_at: new Date(Date.now() + expiryDays * 86_400_000).toISOString(),
       // Strip em/en dashes from item names at the write boundary so no dash can
