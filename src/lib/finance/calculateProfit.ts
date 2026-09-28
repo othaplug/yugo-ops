@@ -13,6 +13,51 @@
  * an opaque $25/$28 magic number.
  */
 import { getAverageCrewLoadedRate } from "./payroll-burden";
+import { haversineKm } from "@/lib/pricing/three-leg-fuel";
+import { fuelCostCadForDistanceKm, normalizeCrewTruckType } from "@/lib/routing/truck-profile";
+import { resolveNavigationFuelPriceCadPerLitre } from "@/lib/routing/fuel-config";
+
+/**
+ * Single fuel-cost model shared by moves, deliveries, quotes, and crew nav:
+ *   fuel = round-trip distance (km) × vehicle L/100km × weekly gas $/L
+ * Distance comes from real pickup/dropoff coordinates when present, else the
+ * caller's fallback km. Gas price is the operator-tunable
+ * `fuel_price_gas_cad_per_litre` (weekly-updatable), consumption is the
+ * per-vehicle FUEL_L_PER_100KM table. Replaces the old flat
+ * `distance × 2 × fuel_cost_per_km` heuristic that got stuck at a constant $18
+ * for deliveries (no distance column → 20km fallback).
+ */
+function estimateFuelCostCad(args: {
+  truckType: string | null | undefined;
+  fromLat?: unknown;
+  fromLng?: unknown;
+  toLat?: unknown;
+  toLng?: unknown;
+  fallbackKm: number;
+  config: Record<string, string>;
+}): number {
+  const num = (v: unknown): number | null => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  const fLat = num(args.fromLat);
+  const fLng = num(args.fromLng);
+  const tLat = num(args.toLat);
+  const tLng = num(args.toLng);
+  const haveCoords =
+    fLat != null && fLng != null && tLat != null && tLng != null &&
+    !(fLat === 0 && fLng === 0) && !(tLat === 0 && tLng === 0);
+  const oneWayKm = haveCoords
+    ? haversineKm(fLat, fLng, tLat, tLng)
+    : Math.max(0, args.fallbackKm || 0);
+  // Round trip: crew drives to the job and the truck returns to base.
+  const roundTripKm = Math.max(oneWayKm, 1) * 2;
+  const pricePerL = resolveNavigationFuelPriceCadPerLitre(args.config);
+  return Math.round(
+    fuelCostCadForDistanceKm(normalizeCrewTruckType(args.truckType), roundTripKm, pricePerL),
+  );
+}
+
 export interface MoveCosts {
   labour: number;
   fuel: number;
@@ -200,8 +245,16 @@ export function calculateMoveProfitability(
     explicitLoaded > 0 ? explicitLoaded : getAverageCrewLoadedRate(config);
   const derivedLabour = crewSize * hours * loadedPerMoverHour;
 
-  const distanceKm = Number(move.distance_km ?? 20) || 20;
-  const fuel = distanceKm * 2 * cfg(config, "fuel_cost_per_km", 0.35);
+  const moveCoords = move as Record<string, unknown>;
+  const fuel = estimateFuelCostCad({
+    truckType: (move.truck_primary as string | null | undefined) ?? "sprinter",
+    fromLat: moveCoords.from_lat,
+    fromLng: moveCoords.from_lng,
+    toLat: moveCoords.to_lat,
+    toLng: moveCoords.to_lng,
+    fallbackKm: Number(move.distance_km ?? 20) || 20,
+    config,
+  });
 
   const truckDailyRate = (type: string): number => {
     // Owned-vehicle exception (2026-06-11): when `truck_monthly_cost_<type>`
@@ -310,17 +363,28 @@ export function calculateDeliveryProfitability(
   const labour = crewSize * hours * loadedPerMoverHour;
 
   const zoneKm = d.zone != null ? (Number(d.zone) === 1 ? 15 : Number(d.zone) === 2 ? 35 : 50) : 20;
-  const distanceKm = Number(d.distance_km ?? zoneKm) || zoneKm;
-  const fuel = distanceKm * 2 * cfg(config, "fuel_cost_per_km", 0.35);
+  const fuel = estimateFuelCostCad({
+    truckType: (d.vehicle_type as string | null | undefined) ?? "sprinter",
+    fromLat: d.pickup_lat,
+    fromLng: d.pickup_lng,
+    toLat: d.delivery_lat,
+    toLng: d.delivery_lng,
+    fallbackKm: Number(d.distance_km ?? zoneKm) || zoneKm,
+    config,
+  });
 
-  const workingDays2 = cfg(config, "truck_working_days_per_month", 22);
+  // Owned-vehicle exception (matches calculateMoveProfitability + the quote
+  // engine's estimateTruckCostPerMove): when `truck_monthly_cost_<type>` > 0 the
+  // truck is OWNED — its lease is already in Monthly Overhead, so per-job direct
+  // cost is $0. Sprinter is $0 by operator decision. Previously this charged the
+  // owned Sprinter (monthly ÷ 22 ≈ $61) and double-counted it against overhead.
   const delivTruckDaily = (type: string): number => {
+    const monthly = parseFloat(config[`truck_monthly_cost_${type}`] ?? "");
+    if (monthly > 0) return 0; // owned → lease in OH, no per-job charge
     const explicit = parseFloat(config[`truck_daily_cost_${type}`] ?? "");
     if (explicit > 0) return explicit;
-    const monthly = parseFloat(config[`truck_monthly_cost_${type}`] ?? "");
-    if (monthly > 0) return Math.round((monthly / workingDays2) * 100) / 100;
-    const defaults: Record<string, number> = { sprinter: 65, "16ft": 70, "20ft": 80, "26ft": 295 };
-    return defaults[type] ?? 75;
+    const defaults: Record<string, number> = { sprinter: 0, "16ft": 80, "20ft": 120, "24ft": 150, "26ft": 295 };
+    return defaults[type] ?? 100;
   };
   const truckType = String(d.vehicle_type || "sprinter").toLowerCase().replace(/[^a-z0-9]/g, "");
   const insuranceDaily = cfg(config, "daily_truck_insurance_cad", 0);

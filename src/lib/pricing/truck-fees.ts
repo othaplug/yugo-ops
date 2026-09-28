@@ -48,6 +48,15 @@ export function getTruckFeeSync(
 ): number {
   const normalized = normalizeTruckTypeForFee(truckType)
   if (normalized === "none") return 0
+  // Owned Sprinter (truck_monthly_cost_sprinter > 0) is a fixed overhead asset,
+  // not a per-job allocation — never add a truck fee for it. This is what fixed
+  // B2B sprinter jobs getting a spurious ~$80 "truck allocation" line. Mirrors
+  // the owned-vehicle carve-out in estimateTruckCostPerMove (finance model:
+  // owned Sprinter per-job cost = $0).
+  if (normalized === "sprinter") {
+    const ownedRaw = readConfigValue(config, "truck_monthly_cost_sprinter")
+    if (ownedRaw !== undefined && ownedRaw !== "" && Number(ownedRaw) > 0) return 0
+  }
   const key = platformKeyForTruck(normalized)
   const raw = readConfigValue(config, key)
   if (raw !== undefined && raw !== "") {
