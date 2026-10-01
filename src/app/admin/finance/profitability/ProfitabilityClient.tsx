@@ -28,6 +28,7 @@ import {
   X,
   PencilSimple as Pencil,
   Warning,
+  CalendarBlank as Calendar,
 } from "@phosphor-icons/react";
 import { useToast } from "@/app/admin/components/Toast";
 import {
@@ -141,6 +142,33 @@ function getRange(preset: string): { from: string; to: string; label: string } {
         label: "This Month",
       };
   }
+}
+
+/** Custom date selection (by month / single day / date range). YYYY-MM-DD
+ *  strings are passed straight to the API, so no toISOString timezone shift. */
+type CustomRange = { from: string; to: string; label: string };
+
+/** First + last day of a "YYYY-MM" month, with a "Month YYYY" label. */
+function monthToRange(ym: string): CustomRange | null {
+  const [y, m] = ym.split("-").map(Number);
+  if (!y || !m) return null;
+  const last = new Date(y, m, 0).getDate(); // m is 1-based → last day of that month
+  const label = new Date(y, m - 1, 1).toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+  return { from: `${ym}-01`, to: `${ym}-${String(last).padStart(2, "0")}`, label };
+}
+
+/** Pretty "Mon D, YYYY" for a YYYY-MM-DD string (parsed as local, no TZ shift). */
+function prettyDay(ymd: string): string {
+  const [y, m, d] = ymd.split("-").map(Number);
+  if (!y || !m || !d) return ymd;
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 const PRESETS = [
@@ -1126,6 +1154,14 @@ export default function ProfitabilityClient() {
   );
 
   const [preset, setPreset] = useState("this_month");
+  // Custom date selection (month / single day / range). When set, it overrides
+  // the preset pills until a preset is picked again.
+  const [customRange, setCustomRange] = useState<CustomRange | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement | null>(null);
+  // Draft inputs for the range sub-picker (applied on "Apply").
+  const [rangeFrom, setRangeFrom] = useState("");
+  const [rangeTo, setRangeTo] = useState("");
   const [rows, setRows] = useState<ProfitRow[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [overhead, setOverhead] = useState<OverheadData | null>(null);
@@ -1194,7 +1230,7 @@ export default function ProfitabilityClient() {
   const fetchData = useCallback(
     async (silent = false) => {
       if (!silent) setLoading(true);
-      const { from, to } = getRange(preset);
+      const { from, to } = customRange ?? getRange(preset);
       try {
         const [profRes, cfgRes] = await Promise.all([
           fetch(`/api/admin/profitability?from=${from}&to=${to}`),
@@ -1215,8 +1251,56 @@ export default function ProfitabilityClient() {
       }
       if (!silent) setLoading(false);
     },
-    [preset],
+    [preset, customRange],
   );
+
+  // Active range = custom selection when present, else the preset pill.
+  const activeRange = customRange ?? getRange(preset);
+  const activeLabel = activeRange.label;
+  // The month-to-date P&L card only makes sense for the live "This Month" view.
+  const isThisMonthView = !customRange && preset === "this_month";
+
+  // Apply helpers for the three custom modes.
+  const applyMonth = useCallback((ym: string) => {
+    const r = monthToRange(ym);
+    if (!r) return;
+    setCustomRange(r);
+    setVisibleCount(20);
+    setPickerOpen(false);
+  }, []);
+  const applyDay = useCallback((ymd: string) => {
+    if (!ymd) return;
+    setCustomRange({ from: ymd, to: ymd, label: prettyDay(ymd) });
+    setVisibleCount(20);
+    setPickerOpen(false);
+  }, []);
+  const applyRange = useCallback(() => {
+    if (!rangeFrom || !rangeTo) return;
+    const from = rangeFrom <= rangeTo ? rangeFrom : rangeTo;
+    const to = rangeFrom <= rangeTo ? rangeTo : rangeFrom;
+    setCustomRange({ from, to, label: `${prettyDay(from)} to ${prettyDay(to)}` });
+    setVisibleCount(20);
+    setPickerOpen(false);
+  }, [rangeFrom, rangeTo]);
+
+  // Close the custom date popover on outside click / Escape.
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPickerOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [pickerOpen]);
 
   // Always hold a ref to the latest fetchData so subscriptions never re-run
   const fetchDataRef = useRef(fetchData);
@@ -1491,7 +1575,7 @@ export default function ProfitabilityClient() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `profitability-${preset}.csv`;
+    a.download = `profitability-${customRange ? "custom" : preset}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -1577,7 +1661,7 @@ export default function ProfitabilityClient() {
           </p>
           <h1 className="admin-page-hero text-[var(--tx)]">
             Profitability
-            {preset === "this_month" && (
+            {isThisMonthView && (
               <span className="ml-2 align-middle text-[12px] font-medium text-[var(--tx3)]">
                 (month-to-date)
               </span>
@@ -1585,7 +1669,7 @@ export default function ProfitabilityClient() {
           </h1>
           <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
             Cost, profit, and margin across labour, truck, fuel, and supplies.
-            {preset === "this_month"
+            {isThisMonthView
               ? " Counts jobs performed through today, so it can read lower than the dashboard's full-month revenue (which includes booked upcoming jobs)."
               : ""}
           </p>
@@ -1609,14 +1693,116 @@ export default function ProfitabilityClient() {
                 key={p.id}
                 onClick={() => {
                   setPreset(p.id);
+                  setCustomRange(null);
                   setVisibleCount(20);
                 }}
-                className={`text-[10px] px-2.5 py-1 rounded-md font-medium transition-colors ${preset === p.id ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)]"}`}
+                className={`text-[10px] px-2.5 py-1 rounded-md font-medium transition-colors ${!customRange && preset === p.id ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)]"}`}
               >
                 {p.label}
               </button>
             ))}
           </div>
+
+          {/* ─── Custom date selection: by month, single day, or date range ─── */}
+          <div className="relative" ref={pickerRef}>
+            <button
+              type="button"
+              onClick={() => {
+                // Seed the range inputs from the active window when opening.
+                if (!pickerOpen) {
+                  setRangeFrom(activeRange.from);
+                  setRangeTo(activeRange.to);
+                }
+                setPickerOpen((o) => !o);
+              }}
+              className={`flex items-center gap-1.5 text-[10px] px-2.5 py-[7px] rounded-lg font-medium border transition-colors ${
+                customRange
+                  ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                  : "bg-[var(--card)] text-[var(--tx3)] border-[var(--brd)] hover:text-[var(--tx)]"
+              }`}
+              aria-haspopup="dialog"
+              aria-expanded={pickerOpen}
+            >
+              <Calendar weight="regular" className="w-3.5 h-3.5" />
+              {customRange ? activeLabel : "Custom"}
+              <ChevronDown weight="regular" className="w-3 h-3" />
+            </button>
+            {pickerOpen && (
+              <div
+                className="absolute right-0 top-full mt-1.5 z-30 w-[260px] rounded-xl border border-[var(--brd)] bg-[var(--card)] p-3 shadow-lg"
+                role="dialog"
+                aria-label="Custom date range"
+              >
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--tx3)] mb-1">
+                      By month
+                    </label>
+                    <input
+                      type="month"
+                      defaultValue={activeRange.from.slice(0, 7)}
+                      onChange={(e) => e.target.value && applyMonth(e.target.value)}
+                      className="w-full text-[12px] rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-2.5 py-1.5 text-[var(--tx)]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--tx3)] mb-1">
+                      By day
+                    </label>
+                    <input
+                      type="date"
+                      onChange={(e) => e.target.value && applyDay(e.target.value)}
+                      className="w-full text-[12px] rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-2.5 py-1.5 text-[var(--tx)]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--tx3)] mb-1">
+                      Date range
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="date"
+                        value={rangeFrom}
+                        max={rangeTo || undefined}
+                        onChange={(e) => setRangeFrom(e.target.value)}
+                        className="w-full text-[12px] rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-2 py-1.5 text-[var(--tx)]"
+                      />
+                      <span className="text-[11px] text-[var(--tx3)]">to</span>
+                      <input
+                        type="date"
+                        value={rangeTo}
+                        min={rangeFrom || undefined}
+                        onChange={(e) => setRangeTo(e.target.value)}
+                        className="w-full text-[12px] rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-2 py-1.5 text-[var(--tx)]"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={applyRange}
+                      disabled={!rangeFrom || !rangeTo}
+                      className="admin-btn admin-btn-sm admin-btn-primary w-full mt-2 justify-center disabled:opacity-50"
+                    >
+                      Apply range
+                    </button>
+                  </div>
+                  {customRange && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomRange(null);
+                        setPickerOpen(false);
+                        setVisibleCount(20);
+                      }}
+                      className="w-full text-[11px] text-[var(--tx3)] hover:text-[var(--tx)] pt-1"
+                    >
+                      Clear and use presets
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={exportCSV}
@@ -1639,7 +1825,7 @@ export default function ProfitabilityClient() {
       ) : (
         <>
           {/* ─── Month-to-date P&L card (only on this_month preset) ─── */}
-          {preset === "this_month" && summary && overhead && (() => {
+          {isThisMonthView && summary && overhead && (() => {
             // Pure Option B view — the "are we making money this month" number.
             // No allocation games: revenue MTD − direct costs MTD − full monthly
             // OH = net profit. On-pace extrapolates linearly through end of
@@ -1816,7 +2002,7 @@ export default function ProfitabilityClient() {
             <StatCard
               label="Gross Margin"
               value={pct(summary?.avgGrossMargin ?? 0)}
-              sub={getRange(preset).label}
+              sub={activeLabel}
               className={marginColor(summary?.avgGrossMargin ?? 0, target)}
               bgClass={marginBg(summary?.avgGrossMargin ?? 0, target)}
               icon={
@@ -1830,7 +2016,7 @@ export default function ProfitabilityClient() {
             <StatCard
               label="Total Revenue"
               value={formatCurrency(summary?.totalRevenue ?? 0)}
-              sub={`${summary?.moveCount ?? 0} completed jobs · ${getRange(preset).label}`}
+              sub={`${summary?.moveCount ?? 0} completed jobs · ${activeLabel}`}
               className="text-[var(--tx)]"
               bgClass="bg-[var(--card)] border-[var(--brd)]/40"
               icon={null}
@@ -1851,7 +2037,7 @@ export default function ProfitabilityClient() {
             <StatCard
               label="Total Profit"
               value={formatCurrency(summary?.totalGrossProfit ?? 0)}
-              sub={`${summary?.moveCount ?? 0} completed jobs · ${getRange(preset).label}`}
+              sub={`${summary?.moveCount ?? 0} completed jobs · ${activeLabel}`}
               className={marginColor(summary?.avgGrossMargin ?? 0, target)}
               bgClass={marginBg(summary?.avgGrossMargin ?? 0, target)}
               icon={
