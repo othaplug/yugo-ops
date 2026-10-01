@@ -272,6 +272,59 @@ export async function GET(req: NextRequest) {
     return performedDeliveryStatuses.has(status) && billed > 0;
   });
 
+  // ── Pull sibling event legs so a 2-leg event is never split by the window ──
+  // An event is delivery + return (+teardown) sharing an event_group_id. Revenue
+  // and P&L belong to the DELIVERY date, but the return leg runs a different day
+  // (often just after) with its OWN crew and tracked hours. If the window only
+  // contains one leg, the merge below can't pair them: the return cost gets
+  // dropped (overstated margin) or shows as a phantom $0-revenue loss. Fetch
+  // every completed sibling of any in-window event leg so the merge can pair
+  // them; the merge then attributes the whole event to the delivery leg's period
+  // and skips any group whose delivery leg is out of range. Siblings are
+  // cost-only inputs — they never produce a standalone row.
+  const eventGroupIds = [
+    ...new Set(
+      completedMoves
+        .map((m) => (m as AnyRow).event_group_id)
+        .filter((g): g is string => typeof g === "string" && g.length > 0),
+    ),
+  ];
+  let siblingMoves: AnyRow[] = [];
+  if (eventGroupIds.length > 0) {
+    const haveMoveIds = new Set(completedMoves.map((m) => m.id));
+    const { data: sibs } = await sb
+      .from("moves")
+      .select("*")
+      .in("event_group_id", eventGroupIds);
+    siblingMoves = ((sibs ?? []) as AnyRow[]).filter(
+      (s) =>
+        s?.id &&
+        !haveMoveIds.has(s.id) &&
+        performedMoveStatuses.has(String(s.status ?? "").toLowerCase()),
+    );
+    // Tracked hours for the sibling legs so a return leg fetched here still costs
+    // at its OWN tracked time, not the estimate (sessionHoursMap was built from
+    // the window's sessions, which may not include an out-of-window return leg).
+    if (siblingMoves.length > 0) {
+      const sibIds = siblingMoves.map((m) => m.id as string);
+      const { data: sibSessions } = await sb
+        .from("tracking_sessions")
+        .select(sessionSelect)
+        .eq("job_type", "move")
+        .eq("status", "completed")
+        .in("job_id", sibIds);
+      for (const s of sibSessions ?? []) {
+        if (!s.job_id || !s.started_at) continue;
+        if (sessionHoursMap[s.job_id] != null) continue;
+        const hours = Math.round((sessionJobDurationMinutes(s, tz) / 60) * 100) / 100;
+        if (hours > 0) sessionHoursMap[s.job_id] = hours;
+      }
+    }
+  }
+  // All move legs to cost (in-window + fetched siblings). The merge decides which
+  // events actually surface as rows and attributes each to its delivery period.
+  const costLegMoves: AnyRow[] = [...completedMoves, ...siblingMoves];
+
   // Invoice amounts for deliveries
   const deliveryIds = completedDeliveries.map((d) => d.id);
   const invoiceBilledByDelivery: Record<string, number> = {};
@@ -283,7 +336,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Per-job cost overrides
-  const allJobIds = [...completedMoves.map((m) => m.id), ...completedDeliveries.map((d) => d.id)];
+  const allJobIds = [...costLegMoves.map((m) => m.id), ...completedDeliveries.map((d) => d.id)];
   const costOverridesMap: Record<string, Record<string, number | null>> = {};
   if (allJobIds.length > 0) {
     const { data: overrideRows } = await sb
@@ -307,7 +360,7 @@ export async function GET(req: NextRequest) {
   };
 
   const uniqueScheduledDays = new Set<string>();
-  for (const m of completedMoves) {
+  for (const m of costLegMoves) {
     const d = scheduledDayKey(m);
     if (d) uniqueScheduledDays.add(d);
   }
@@ -364,13 +417,22 @@ export async function GET(req: NextRequest) {
     return m2 ? m2[1].toUpperCase() : null;
   }
 
-  const moveRows = completedMoves.map((m) => {
+  const moveRows = costLegMoves.map((m) => {
     // Prefer live session hours → stored actual_hours → est_hours
     const trackedHours = sessionHoursMap[m.id] ?? null;
+    // Actual crew from the real assignment (moves.assigned_members), not the
+    // stale est_crew_size. An event's return leg is frequently assigned a
+    // smaller crew than the delivery (and than the quote-time estimate), so
+    // costing it at est_crew_size overstates it. Falls back to est_crew_size
+    // only when a leg has no assignment.
+    const assignedCrew = Array.isArray((m as AnyRow).assigned_members)
+      ? ((m as AnyRow).assigned_members as unknown[]).filter(Boolean).length
+      : 0;
     const moveCostInput = {
       estimate: Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0) || 0,
       actual_hours: trackedHours ?? null,
       est_hours: m.est_hours ?? m.quoted_hours ?? null,
+      actual_crew_count: assignedCrew > 0 ? assignedCrew : null,
       est_crew_size: m.est_crew_size ?? m.crew_size ?? null,
       estimated_duration_minutes: m.estimated_duration_minutes ?? null,
       distance_km: m.distance_km ?? null,
@@ -443,6 +505,10 @@ export async function GET(req: NextRequest) {
       // labour, so left un-merged it shows as a phantom money-losing job.
       event_group_id: (m.event_group_id as string | null) ?? null,
       event_phase: (m.event_phase as string | null) ?? null,
+      // Whether this leg's own recognition date is inside the report window.
+      // The merge emits an event only when its DELIVERY leg is in range, so a
+      // sibling fetched from outside the window never surfaces on its own.
+      recognition_in_range: inRecognitionRange(m),
       neighbourhood,
       actual_hours: trackedHours ?? m.actual_hours ?? null,
       est_hours: m.est_hours ?? m.quoted_hours ?? null,
@@ -560,15 +626,29 @@ export async function GET(req: NextRequest) {
       groups.set(gid, arr);
     }
     for (const legs of groups.values()) {
-      if (legs.length === 1) {
-        out.push(legs[0]);
-        continue;
-      }
       // Primary = the delivery leg (holds the code/date/revenue); fall back to
       // the highest-revenue leg if phase labels are missing.
       const primary =
         legs.find((l) => l.event_phase === "delivery") ??
         [...legs].sort((a, b) => b.revenue - a.revenue)[0];
+      // The event is recognized in its DELIVERY leg's period. If the delivery
+      // leg is out of the window (e.g. only a return/teardown leg fell in range,
+      // or the delivery sits in a prior month), skip the whole group: it's
+      // counted in the delivery's own report, never here. This is what removes
+      // both the dropped-return-cost case and the phantom lone-return-leg loss.
+      if (!primary || !primary.recognition_in_range) {
+        continue;
+      }
+      // Orphan guard: if the only in-range anchor is a non-delivery leg carrying
+      // no revenue (e.g. the delivery was cancelled), don't surface a phantom
+      // $0-revenue return/teardown leg as a standalone money-losing row.
+      if (primary.event_phase !== "delivery" && !(primary.revenue > 0)) {
+        continue;
+      }
+      if (legs.length === 1) {
+        out.push(primary);
+        continue;
+      }
       const sum = (pick: (r: (typeof legs)[number]) => number | null | undefined) =>
         legs.reduce((s, l) => s + (Number(pick(l)) || 0), 0);
       // Cost overrides attach to the primary (delivery) leg, but the merged row
