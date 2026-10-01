@@ -4137,11 +4137,16 @@ function eventItemMinutesPerUnit(item: EventQuoteItemInput, config: Map<string, 
     return cfgNum(config, "event_wrapping_handling_minutes_per", 15);
   }
   const kind = inferEventItemKind(item);
+  // Boxes: handling time tracks the item's WEIGHT, not the handling-type label.
+  // A box marked "Light (<50 lb)" must never bill at the heavy rate just because
+  // the operator picked the "Heavy boxes" type (the two dropdowns are separate).
+  if (kind === "box_light" || kind === "box_heavy") {
+    const cat = normalizeB2bWeightCategory(item.weight_category);
+    if (cat === "light") return cfgNum(config, "event_box_light_minutes_per", 1);
+    if (cat === "standard") return cfgNum(config, "event_box_medium_minutes_per", 2);
+    return cfgNum(config, "event_box_heavy_minutes_per", 3);
+  }
   switch (kind) {
-    case "box_light":
-      return cfgNum(config, "event_box_light_minutes_per", 1);
-    case "box_heavy":
-      return cfgNum(config, "event_box_heavy_minutes_per", 3);
     case "fragile":
       return cfgNum(config, "event_fragile_minutes_per", 15);
     case "equipment":
@@ -4163,20 +4168,56 @@ function eventWrappingSurchargeForItems(items: EventQuoteItemInput[] | undefined
   return sum;
 }
 
+/**
+ * Compact event item list persisted to factors so the client quote and ops can
+ * show exactly what was quoted. Events historically never stored their items
+ * (they were used transiently for pricing then discarded), so the client quote
+ * page had no inventory to render.
+ */
+function normalizeEventItemsForDisplay(
+  items: EventQuoteItemInput[] | undefined,
+): Array<{
+  name: string;
+  quantity: number;
+  item_type: string | null;
+  weight_category: string | null;
+  requires_wrapping: boolean;
+}> {
+  return (items ?? [])
+    .filter((it) => it && (it.name?.trim() || (Number(it.quantity) || 0) > 0))
+    .map((it) => ({
+      name: it.name?.trim() || "Item",
+      quantity: Math.max(1, Math.round(Number(it.quantity) || 1)),
+      item_type: it.item_type || null,
+      weight_category: it.weight_category || null,
+      requires_wrapping: !!it.requires_wrapping,
+    }));
+}
+
 function estimateEventSystemHours(
   items: EventQuoteItemInput[] | undefined,
   distInfo: { distance_km: number; drive_time_min: number } | null,
   venueSetupComplex: boolean,
   config: Map<string, string>,
+  crewSize: number,
 ): number {
+  // Item handling is PERSON-time (load + unload). A larger crew works it in
+  // parallel, so wall-clock duration is the handling person-time divided by the
+  // crew. Previously this was NOT divided, so the "hours" were really one person's
+  // total labour, and then deliveryLabour multiplied by crew again — inflating a
+  // 150-box event to 18h and ~3x the real labour. Drive and setup are wall-clock
+  // (the whole crew rides / works together) and are not divided.
+  const crew = Math.max(1, Math.round(crewSize || 2));
   const driveMin = distInfo?.drive_time_min != null && distInfo.drive_time_min > 0 ? distInfo.drive_time_min : 15;
   let hours = (driveMin / 60) * 2;
 
+  let handlingMinutes = 0;
   for (const item of items ?? []) {
     const q = Math.max(1, item.quantity || 1);
     const minPer = eventItemMinutesPerUnit(item, config);
-    hours += ((q * minPer * 2) / 60);
+    handlingMinutes += q * minPer * 2;
   }
+  hours += handlingMinutes / crew / 60;
 
   hours += venueSetupComplex ? 1 : 0.5;
 
@@ -4313,7 +4354,6 @@ async function computeEventLegPrice(
   },
 ) {
   const distKm = input.distInfo?.distance_km ?? 0;
-  const itemHours = estimateEventSystemHours(input.eventItems, input.distInfo, input.venueSetupComplex, input.config);
 
   // Palletized freight + gear. A pallet is jack-moved 2-person freight, not a
   // hand-carried box, so it adds its own handling time and (liftgate/jack) gear
@@ -4324,24 +4364,14 @@ async function computeEventLegPrice(
   const wantsLiftgate = !!equip?.liftgate_required;
   const wantsPalletJack = !!equip?.pallet_jack || palletCount > 0;
   const palletMinPer = cfgNum(input.config, "event_pallet_minutes_per", 12);
-  // Load + unload → x2, same convention as item handling.
-  const equipmentHours = Math.round(((palletCount * palletMinPer * 2) / 60) * 2) / 2;
-  const systemHours = Math.round((itemHours + equipmentHours) * 2) / 2;
-
-  const minHours = input.isLuxury
-    ? cfgNum(input.config, "event_min_hours_luxury", 2)
-    : cfgNum(input.config, "event_min_hours_standard", 2);
-  let billableHours = systemHours;
-  if (input.hoursOverride != null && Number.isFinite(input.hoursOverride) && input.hoursOverride > 0) {
-    billableHours = Math.round(input.hoursOverride * 2) / 2;
-  }
-  billableHours = Math.max(billableHours, minHours);
 
   // Fleet: N trucks of the selected size. Multi-truck events (e.g. 2 x 26ft
   // to load/unload simultaneously) were impossible — a single truck was
   // assumed everywhere. Clamp 1-4.
   const truckCount = Math.min(4, Math.max(1, Math.round(input.truckCount ?? 1) || 1));
 
+  // Crew is resolved BEFORE hours: hours = wall-clock duration = handling
+  // person-time / crew + drive + setup, so a larger crew shortens the day.
   let crewSize = recommendEventCrewForEvent(input.eventItems, input.fromAccess, input.toAccess);
   // With more than one truck the floor is 2 movers per truck (load + unload
   // simultaneously), matching how event crews actually run.
@@ -4352,6 +4382,28 @@ async function computeEventLegPrice(
     // Cap raised 6 -> 12: a 2-truck event routinely runs 6 movers.
     crewSize = Math.min(12, Math.max(2, Math.round(input.crewOverride)));
   }
+
+  const itemHours = estimateEventSystemHours(
+    input.eventItems,
+    input.distInfo,
+    input.venueSetupComplex,
+    input.config,
+    crewSize,
+  );
+  // Pallet handling is person-time (load + unload), parallelized across the crew
+  // like item handling, so divide by crew for wall-clock contribution.
+  const equipmentHours =
+    Math.round(((palletCount * palletMinPer * 2) / Math.max(1, crewSize) / 60) * 2) / 2;
+  const systemHours = Math.round((itemHours + equipmentHours) * 2) / 2;
+
+  const minHours = input.isLuxury
+    ? cfgNum(input.config, "event_min_hours_luxury", 2)
+    : cfgNum(input.config, "event_min_hours_standard", 2);
+  let billableHours = systemHours;
+  if (input.hoursOverride != null && Number.isFinite(input.hoursOverride) && input.hoursOverride > 0) {
+    billableHours = Math.round(input.hoursOverride * 2) / 2;
+  }
+  billableHours = Math.max(billableHours, minHours);
 
   const moverRate = input.isLuxury
     ? cfgNum(input.config, "event_crew_rate_luxury", 95)
@@ -4556,6 +4608,7 @@ async function calcEvent(
     factors: {
       event_mode: "single",
       event_name: input.event_name || null,
+      event_items: normalizeEventItemsForDisplay(input.event_items),
       b2b_business_name: input.b2b_business_name || null,
       b2b_scope: input.b2b_scope?.trim() || null,
       b2b_payment_method: input.b2b_business_name ? (input.b2b_payment_method ?? "card") : null,
@@ -4767,6 +4820,7 @@ async function calcMultiEvent(
     factors: {
       event_mode: "multi",
       event_name: input.event_name || null,
+      event_items: normalizeEventItemsForDisplay(input.event_items),
       b2b_business_name: input.b2b_business_name || null,
       b2b_scope: input.b2b_scope?.trim() || null,
       b2b_payment_method: input.b2b_business_name ? (input.b2b_payment_method ?? "card") : null,

@@ -146,6 +146,23 @@ export default function EventLayout({
   const arrivalWindow = (f.event_arrival_window as string) ?? null;
   const hardCutoff = (f.event_hard_cutoff as string) ?? null;
 
+  // Items quoted for the event (persisted to factors at generation). Older event
+  // quotes generated before item persistence have none; they show no list until
+  // regenerated.
+  const eventItems: Array<{
+    name: string;
+    quantity: number;
+    requires_wrapping?: boolean;
+  }> = Array.isArray(f.event_items)
+    ? (f.event_items as Array<Record<string, unknown>>)
+        .map((it) => ({
+          name: typeof it?.name === "string" && it.name.trim() ? it.name.trim() : "Item",
+          quantity: Math.max(1, Math.round(Number(it?.quantity) || 1)),
+          requires_wrapping: !!it?.requires_wrapping,
+        }))
+        .filter((it) => it.name)
+    : [];
+
   const hasSetup = setupFee > 0;
   const hasReturn = returnCharge > 0;
   const isMulti = f.event_mode === "multi" && Array.isArray(f.event_legs);
@@ -392,6 +409,43 @@ export default function EventLayout({
             >
               {eventScopeDetails}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Items quoted for the event, so the client sees what they are booking. */}
+      {eventItems.length > 0 && (
+        <div
+          className="rounded-2xl overflow-hidden mb-4"
+          style={{ border: `1px solid ${C.rule}` }}
+        >
+          <div className="px-5 py-4">
+            <p
+              className="text-[11px] font-bold tracking-[0.14em] uppercase"
+              style={{ color: C.strong }}
+            >
+              Items for your event
+            </p>
+            <ul className="mt-3 space-y-1.5">
+              {eventItems.map((it, i) => (
+                <li
+                  key={i}
+                  className="flex items-start justify-between text-[12px]"
+                  style={{ color: C.muted }}
+                >
+                  <span>
+                    {it.name}
+                    {it.requires_wrapping ? " (wrapped)" : ""}
+                  </span>
+                  <span
+                    className="shrink-0 ml-3 tabular-nums"
+                    style={{ color: C.body }}
+                  >
+                    &times;{it.quantity}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       )}
