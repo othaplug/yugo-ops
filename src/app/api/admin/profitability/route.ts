@@ -325,6 +325,39 @@ export async function GET(req: NextRequest) {
   // events actually surface as rows and attributes each to its delivery period.
   const costLegMoves: AnyRow[] = [...completedMoves, ...siblingMoves];
 
+  // ── Tracked hours for the DISPLAYED "Hours" column, looked up by job_id ──
+  // The windowed sessionHoursMap above filters sessions by UTC `completed_at`,
+  // but a job is selected by its LOCAL scheduled_date. A crew that clocks out
+  // after ~8pm local finishes past UTC midnight, so its session falls outside a
+  // month-end window and the Hours column goes blank even though the job is in
+  // range (MV-30410: a real 13h session completing 9:19pm Toronto = 01:19 UTC
+  // next day was dropped). This by-job_id lookup is TZ-independent so the real
+  // tracked hours always show. It feeds ONLY the display column — every cost
+  // input still uses the existing values, so labour and other costs (including
+  // manual overrides) are left exactly as they are.
+  const displayTrackedHours: Record<string, number> = {};
+  {
+    const hoursJobIds = [
+      ...costLegMoves.map((m) => m.id as string),
+      ...completedDeliveries.map((d) => d.id as string),
+    ];
+    if (hoursJobIds.length > 0) {
+      const { data: hoursSessions } = await sb
+        .from("tracking_sessions")
+        .select(sessionSelect)
+        .eq("status", "completed")
+        .in("job_id", hoursJobIds);
+      for (const s of hoursSessions ?? []) {
+        if (!s.job_id || !s.started_at) continue;
+        const hours = Math.round((sessionJobDurationMinutes(s, tz) / 60) * 100) / 100;
+        if (hours > 0) {
+          // Sum multiple sessions on one job (pause/resume) for the display total.
+          displayTrackedHours[s.job_id] = Math.round(((displayTrackedHours[s.job_id] ?? 0) + hours) * 100) / 100;
+        }
+      }
+    }
+  }
+
   // Invoice amounts for deliveries
   const deliveryIds = completedDeliveries.map((d) => d.id);
   const invoiceBilledByDelivery: Record<string, number> = {};
@@ -510,7 +543,9 @@ export async function GET(req: NextRequest) {
       // sibling fetched from outside the window never surfaces on its own.
       recognition_in_range: inRecognitionRange(m),
       neighbourhood,
-      actual_hours: trackedHours ?? m.actual_hours ?? null,
+      // Display column: TZ-safe by-job_id hours first, so a late clock-out near a
+      // month boundary never blanks the column. Does not affect cost.
+      actual_hours: displayTrackedHours[m.id] ?? trackedHours ?? m.actual_hours ?? null,
       est_hours: m.est_hours ?? m.quoted_hours ?? null,
       hasOverride: !!ov,
       paid_with_card: movePaysCardProcessingFee({
@@ -592,7 +627,8 @@ export async function GET(req: NextRequest) {
       tier: null,
       revenue,
       neighbourhood,
-      actual_hours: trackedHoursD ?? d.actual_hours ?? null,
+      // Display column: TZ-safe by-job_id hours first (see displayTrackedHours).
+      actual_hours: displayTrackedHours[d.id] ?? trackedHoursD ?? d.actual_hours ?? null,
       hasOverride: !!ov,
       paid_with_card: deliveryPaysCardProcessingFee({
         payment_method: d.payment_method ?? null,
