@@ -4215,6 +4215,7 @@ interface InvItem {
   name: string;
   quantity: number;
   isSpecialty: boolean;
+  note?: string;
 }
 interface InvRoom {
   room: string;
@@ -4270,22 +4271,32 @@ function RoomSection({
           {visible.map((item, i) => (
             <div
               key={i}
-              className="flex items-center justify-between py-0.5 pl-2"
+              className="flex items-start justify-between py-0.5 pl-2"
             >
-              <span
-                className="text-[12px] flex-1 leading-snug"
-                style={{ color: item.isSpecialty ? p.strong : p.body }}
-              >
-                {cleanItemName(item.name)}
-                {item.isSpecialty && (
-                  <span
-                    className="ml-1 text-[11px] font-semibold"
-                    style={{ color: p.strong }}
+              <div className="flex-1 min-w-0">
+                <span
+                  className="text-[12px] leading-snug"
+                  style={{ color: item.isSpecialty ? p.strong : p.body }}
+                >
+                  {cleanItemName(item.name)}
+                  {item.isSpecialty && (
+                    <span
+                      className="ml-1 text-[11px] font-semibold"
+                      style={{ color: p.strong }}
+                    >
+                      (specialty handling)
+                    </span>
+                  )}
+                </span>
+                {item.note && (
+                  <div
+                    className="text-[11px] italic leading-snug mt-0.5"
+                    style={{ color: p.muted }}
                   >
-                    (specialty handling)
-                  </span>
+                    {item.note}
+                  </div>
                 )}
-              </span>
+              </div>
               <span
                 className="text-[12px] font-semibold shrink-0 ml-4"
                 style={{ color: p.strong }}
@@ -4423,6 +4434,7 @@ function InventoryCollapsible({
     quantity?: number;
     room?: string;
     weight_score?: number;
+    weightNote?: string;
   }[];
   const boxCount = quote.client_box_count ?? 0;
   const itemCount = rawItems.reduce((s, i) => s + (i.quantity ?? 1), 0);
@@ -4458,8 +4470,17 @@ function InventoryCollapsible({
     const room = item.room || "other";
     const name = cleanItemName((item.name || item.slug || "Item").trim());
     const isSpecialty = room === "specialty" || (item.weight_score ?? 0) >= 10;
+    const note =
+      typeof item.weightNote === "string" && item.weightNote.trim()
+        ? item.weightNote.trim()
+        : undefined;
     if (!roomMap[room]) roomMap[room] = [];
-    roomMap[room]!.push({ name, quantity: item.quantity ?? 1, isSpecialty });
+    roomMap[room]!.push({
+      name,
+      quantity: item.quantity ?? 1,
+      isSpecialty,
+      ...(note ? { note } : {}),
+    });
   }
 
   // Sort rooms by ROOM_ORDER

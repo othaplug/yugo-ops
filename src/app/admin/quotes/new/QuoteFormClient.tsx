@@ -875,6 +875,9 @@ function inventoryItemToPayload(i: InventoryItemEntry, originIndex?: number) {
     ...(i.actual_weight_lbs != null && i.actual_weight_lbs > 0
       ? { actual_weight_lbs: Math.round(i.actual_weight_lbs) }
       : {}),
+    ...(typeof i.weightNote === "string" && i.weightNote.trim()
+      ? { weightNote: i.weightNote.trim() }
+      : {}),
   };
 }
 

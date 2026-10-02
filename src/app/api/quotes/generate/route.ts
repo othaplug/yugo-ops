@@ -154,6 +154,8 @@ interface InventoryItem {
   fragile?: boolean;
   /** Multi-pickup quote: pickup index (0-based) */
   origin_index?: number;
+  /** Free-text per-item note set in the wizard (e.g. "400 lbs, Travertine marble") */
+  weightNote?: string;
 }
 
 /** DB `quotes_recommended_tier_check` allows essential | signature | estate | priority.

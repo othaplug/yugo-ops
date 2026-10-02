@@ -2056,20 +2056,31 @@ export default function QuoteDetailClient({
                   const name =
                     String(it.name ?? it.slug ?? "Item").replace(/_/g, " ") ||
                     "Item";
+                  const note =
+                    typeof it.weightNote === "string"
+                      ? it.weightNote.trim()
+                      : "";
                   return (
                     <div
                       key={i}
-                      className="flex items-center justify-between gap-3 py-2 border-b border-[var(--brd)]/50 text-[13px]"
+                      className="flex items-start justify-between gap-3 py-2 border-b border-[var(--brd)]/50 text-[13px]"
                     >
-                      <span className="text-[var(--tx2)] capitalize flex items-center gap-2 min-w-0">
-                        <span className="truncate">{name}</span>
-                        {Boolean(it.fragile) && (
-                          <span className="shrink-0 text-[9.5px] font-bold uppercase tracking-wider text-[var(--org)] bg-[var(--ordim)] rounded px-1.5 py-0.5">
-                            Fragile
-                          </span>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[var(--tx2)] capitalize flex items-center gap-2 min-w-0">
+                          <span className="truncate">{name}</span>
+                          {Boolean(it.fragile) && (
+                            <span className="shrink-0 text-[9.5px] font-bold uppercase tracking-wider text-[var(--org)] bg-[var(--ordim)] rounded px-1.5 py-0.5">
+                              Fragile
+                            </span>
+                          )}
+                        </span>
+                        {note && (
+                          <div className="mt-0.5 text-[11.5px] italic text-[var(--tx3)] leading-snug">
+                            {note}
+                          </div>
                         )}
-                      </span>
-                      <span className="tabular-nums text-[var(--tx)] font-semibold shrink-0">
+                      </div>
+                      <span className="tabular-nums text-[var(--tx)] font-semibold shrink-0 pt-0.5">
                         ×{Number(it.quantity) || 1}
                       </span>
                     </div>
