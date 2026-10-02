@@ -156,6 +156,8 @@ interface InventoryItem {
   origin_index?: number;
   /** Free-text per-item note set in the wizard (e.g. "400 lbs, Travertine marble") */
   weightNote?: string;
+  /** Operator-set tags (sentimental, crating_required, …) — see item-tags.ts */
+  tags?: string[];
 }
 
 /** DB `quotes_recommended_tier_check` allows essential | signature | estate | priority.

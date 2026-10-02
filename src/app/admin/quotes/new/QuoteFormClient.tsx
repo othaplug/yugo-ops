@@ -158,6 +158,7 @@ import {
 import InventoryInput, {
   type InventoryItemEntry,
 } from "@/components/inventory/InventoryInput";
+import { normalizeItemTags } from "@/lib/inventory/item-tags";
 import {
   mapSpecialtyToQuoteTypes,
   type SpecialtyDetected,
@@ -878,6 +879,7 @@ function inventoryItemToPayload(i: InventoryItemEntry, originIndex?: number) {
     ...(typeof i.weightNote === "string" && i.weightNote.trim()
       ? { weightNote: i.weightNote.trim() }
       : {}),
+    ...(Array.isArray(i.tags) && i.tags.length > 0 ? { tags: i.tags } : {}),
   };
 }
 
@@ -4450,6 +4452,7 @@ export default function QuoteFormClient({
                     : undefined,
                 weightNote:
                   typeof x.weightNote === "string" ? x.weightNote : undefined,
+                tags: normalizeItemTags(x.tags),
                 room: typeof x.room === "string" ? x.room : undefined,
                 isCustom: !!x.isCustom,
                 fragile: !!x.fragile,

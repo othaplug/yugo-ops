@@ -57,6 +57,7 @@ import YugoLogo from "@/components/YugoLogo";
 import YugoMarketingFooter from "@/components/YugoMarketingFooter";
 import { isQuoteExpiredForBooking } from "@/lib/quote-expiry";
 import { cleanItemName } from "@/lib/text/dedash";
+import { itemTagLabel, normalizeItemTags } from "@/lib/inventory/item-tags";
 import { formatMoveDate, formatPlatformDisplay } from "@/lib/date-format";
 import { DEFAULT_GOOGLE_REVIEW_COUNT_LABEL } from "@/lib/google-review-url";
 
@@ -4216,6 +4217,7 @@ interface InvItem {
   quantity: number;
   isSpecialty: boolean;
   note?: string;
+  tags?: string[];
 }
 interface InvRoom {
   room: string;
@@ -4274,20 +4276,35 @@ function RoomSection({
               className="flex items-start justify-between py-0.5 pl-2"
             >
               <div className="flex-1 min-w-0">
-                <span
-                  className="text-[12px] leading-snug"
-                  style={{ color: item.isSpecialty ? p.strong : p.body }}
-                >
-                  {cleanItemName(item.name)}
-                  {item.isSpecialty && (
+                <div className="flex items-center flex-wrap gap-1">
+                  <span
+                    className="text-[12px] leading-snug"
+                    style={{ color: item.isSpecialty ? p.strong : p.body }}
+                  >
+                    {cleanItemName(item.name)}
+                    {item.isSpecialty && (
+                      <span
+                        className="ml-1 text-[11px] font-semibold"
+                        style={{ color: p.strong }}
+                      >
+                        (specialty handling)
+                      </span>
+                    )}
+                  </span>
+                  {item.tags?.map((code) => (
                     <span
-                      className="ml-1 text-[11px] font-semibold"
-                      style={{ color: p.strong }}
+                      key={code}
+                      className="text-[9.5px] font-semibold uppercase tracking-wider rounded px-1.5 py-0.5"
+                      style={{
+                        color: p.strong,
+                        border: `1px solid ${p.borderSubtle}`,
+                        backgroundColor: `${p.strong}08`,
+                      }}
                     >
-                      (specialty handling)
+                      {itemTagLabel(code)}
                     </span>
-                  )}
-                </span>
+                  ))}
+                </div>
                 {item.note && (
                   <div
                     className="text-[11px] italic leading-snug mt-0.5"
@@ -4435,6 +4452,7 @@ function InventoryCollapsible({
     room?: string;
     weight_score?: number;
     weightNote?: string;
+    tags?: unknown;
   }[];
   const boxCount = quote.client_box_count ?? 0;
   const itemCount = rawItems.reduce((s, i) => s + (i.quantity ?? 1), 0);
@@ -4474,12 +4492,14 @@ function InventoryCollapsible({
       typeof item.weightNote === "string" && item.weightNote.trim()
         ? item.weightNote.trim()
         : undefined;
+    const tags = normalizeItemTags(item.tags);
     if (!roomMap[room]) roomMap[room] = [];
     roomMap[room]!.push({
       name,
       quantity: item.quantity ?? 1,
       isSpecialty,
       ...(note ? { note } : {}),
+      ...(tags.length > 0 ? { tags } : {}),
     });
   }
 

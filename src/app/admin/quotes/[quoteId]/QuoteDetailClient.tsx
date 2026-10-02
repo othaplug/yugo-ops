@@ -31,6 +31,7 @@ import {
   ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS,
 } from "../../components/admin-toolbar-action-classes";
 import { formatPlatformDisplay } from "@/lib/date-format";
+import { itemTagLabel, normalizeItemTags } from "@/lib/inventory/item-tags";
 import { QuotesFollowupAutomationHint } from "@/components/admin/AdminContextHints";
 import { toTitleCase } from "@/lib/format-text";
 import { displayLabel, serviceTypeDisplayLabel, moveSizeDisplayLabel, getDisplayLabel } from "@/lib/displayLabels";
@@ -2060,19 +2061,33 @@ export default function QuoteDetailClient({
                     typeof it.weightNote === "string"
                       ? it.weightNote.trim()
                       : "";
+                  const userTags = normalizeItemTags(it.tags);
+                  // Dedupe: catalog "fragile" is shown as its own badge, so drop a
+                  // user-set "fragile" tag from the chip list.
+                  const extraTags = userTags.filter(
+                    (t) => !(t === "fragile" && Boolean(it.fragile)),
+                  );
                   return (
                     <div
                       key={i}
                       className="flex items-start justify-between gap-3 py-2 border-b border-[var(--brd)]/50 text-[13px]"
                     >
                       <div className="min-w-0 flex-1">
-                        <span className="text-[var(--tx2)] capitalize flex items-center gap-2 min-w-0">
+                        <span className="text-[var(--tx2)] capitalize flex items-center flex-wrap gap-1.5 min-w-0">
                           <span className="truncate">{name}</span>
                           {Boolean(it.fragile) && (
                             <span className="shrink-0 text-[9.5px] font-bold uppercase tracking-wider text-[var(--org)] bg-[var(--ordim)] rounded px-1.5 py-0.5">
                               Fragile
                             </span>
                           )}
+                          {extraTags.map((code) => (
+                            <span
+                              key={code}
+                              className="shrink-0 text-[9.5px] font-bold uppercase tracking-wider text-[var(--tx2)] bg-[var(--bg)] border border-[var(--brd)] rounded px-1.5 py-0.5"
+                            >
+                              {itemTagLabel(code)}
+                            </span>
+                          ))}
                         </span>
                         {note && (
                           <div className="mt-0.5 text-[11.5px] italic text-[var(--tx3)] leading-snug">

@@ -1149,6 +1149,7 @@ export default function CreateMoveForm({
                 weight_score: i.weight_score,
                 room: i.room || "other",
                 ...(i.weightNote ? { weightNote: i.weightNote } : {}),
+                ...(Array.isArray(i.tags) && i.tags.length > 0 ? { tags: i.tags } : {}),
               })),
         ),
       );

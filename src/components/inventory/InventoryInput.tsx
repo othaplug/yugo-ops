@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { MagnifyingGlass as Search, Plus, Minus, CaretDown as ChevronDown, Note as StickyNote } from "@phosphor-icons/react";
+import { MagnifyingGlass as Search, Plus, Minus, CaretDown as ChevronDown, Note as StickyNote, Tag } from "@phosphor-icons/react";
+import { ITEM_TAG_OPTIONS, itemTagLabel, normalizeItemTags, type ItemTagCode } from "@/lib/inventory/item-tags";
 import {
   catalogMinCrewFromInventorySlugs,
   estimateLabourFromScore,
@@ -36,6 +37,8 @@ export interface InventoryItemEntry {
   weight_tier_code?: string;
   actual_weight_lbs?: number;
   weightNote?: string;      // free-text note, e.g. "400 lbs, baby grand"
+  /** Operator-set tags (sentimental, crating required, …). Additive to catalog Heavy/Fragile. */
+  tags?: ItemTagCode[];
   room?: string;
   isCustom?: boolean;
   /** Coordinator / auto: high-care handling */
@@ -178,6 +181,7 @@ export default function InventoryInput({
   const [customTier, setCustomTier] = useState<string>("standard");
   const [editingWeightKey, setEditingWeightKey] = useState<string | null>(null);
   const [editingNoteKey, setEditingNoteKey] = useState<string | null>(null);
+  const [editingTagsKey, setEditingTagsKey] = useState<string | null>(null);
   const [customBoxInput, setCustomBoxInput] = useState("");
   const [showCustomBox, setShowCustomBox] = useState(false);
   const [quantityOverriddenKeys, setQuantityOverriddenKeys] = useState<Set<string>>(new Set());
@@ -377,13 +381,30 @@ export default function InventoryInput({
     [value, onChange]
   );
 
+  const toggleTag = useCallback(
+    (key: string, code: ItemTagCode) => {
+      onChange(
+        value.map((i) => {
+          if (itemKey(i) !== key) return i;
+          const current = normalizeItemTags(i.tags);
+          const next = current.includes(code)
+            ? current.filter((t) => t !== code)
+            : [...current, code];
+          return { ...i, tags: next };
+        })
+      );
+    },
+    [value, onChange]
+  );
+
   const removeItem = useCallback(
     (key: string) => {
       onChange(value.filter((i) => itemKey(i) !== key));
       if (editingWeightKey === key) setEditingWeightKey(null);
       if (editingNoteKey === key) setEditingNoteKey(null);
+      if (editingTagsKey === key) setEditingTagsKey(null);
     },
-    [value, onChange, editingWeightKey, editingNoteKey]
+    [value, onChange, editingWeightKey, editingNoteKey, editingTagsKey]
   );
 
   const inventoryScore = useMemo(
@@ -854,6 +875,8 @@ export default function InventoryInput({
               item.name,
             );
             const showQtyWarning = !qtyValidation.valid && !quantityOverriddenKeys.has(key);
+            const activeTags = normalizeItemTags(item.tags);
+            const isTagsEditing = editingTagsKey === key;
 
             return (
               <div key={key} className="space-y-0.5">
@@ -965,6 +988,20 @@ export default function InventoryInput({
                     <StickyNote className="w-3 h-3" />
                   </button>
 
+                  {/* Tag icon */}
+                  <button
+                    type="button"
+                    title={activeTags.length > 0 ? activeTags.map(itemTagLabel).join(", ") : "Add tags (sentimental, crating, …)"}
+                    onClick={() => setEditingTagsKey(isTagsEditing ? null : key)}
+                    className={`shrink-0 transition-colors ${
+                      activeTags.length > 0
+                        ? "text-[var(--accent-text)]"
+                        : "text-[var(--tx3)] opacity-0 group-hover:opacity-100"
+                    }`}
+                  >
+                    <Tag className="w-3 h-3" />
+                  </button>
+
                   {/* Remove */}
                   <button
                     type="button"
@@ -1004,6 +1041,60 @@ export default function InventoryInput({
                       placeholder="e.g. 400 lbs marble, baby grand piano…"
                       className="w-full text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none"
                     />
+                  </div>
+                )}
+
+                {/* Active tag chips (always visible when any are set) */}
+                {activeTags.length > 0 && !isTagsEditing && (
+                  <div className="pl-4 flex flex-wrap gap-1 pb-0.5">
+                    {activeTags.map((code) => (
+                      <span
+                        key={code}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-[var(--brd)] bg-[var(--bg)] text-[9px] font-semibold text-[var(--tx2)]"
+                      >
+                        {itemTagLabel(code)}
+                        <button
+                          type="button"
+                          onClick={() => toggleTag(key, code)}
+                          className="text-[var(--tx3)] hover:text-[var(--tx)]"
+                          title={`Remove ${itemTagLabel(code)}`}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Tag picker */}
+                {isTagsEditing && (
+                  <div className="pl-4 pb-1 pt-0.5">
+                    <div className="flex flex-wrap gap-1 p-2 rounded border border-[var(--brd)] bg-[var(--bg)]">
+                      {ITEM_TAG_OPTIONS.map((opt) => {
+                        const on = activeTags.includes(opt.code);
+                        return (
+                          <button
+                            key={opt.code}
+                            type="button"
+                            onClick={() => toggleTag(key, opt.code)}
+                            className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold transition-colors ${
+                              on
+                                ? "border-[var(--accent-text)] bg-[var(--accent-text)]/15 text-[var(--accent-text)]"
+                                : "border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--tx3)]"
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                      <button
+                        type="button"
+                        onClick={() => setEditingTagsKey(null)}
+                        className="ml-auto text-[10px] text-[var(--tx3)] hover:text-[var(--tx)] px-1.5 py-0.5"
+                      >
+                        Done
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
