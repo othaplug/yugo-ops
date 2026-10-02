@@ -54,6 +54,15 @@ type Props = {
    * price.
    */
   savedPrices?: Partial<Record<TierKey, number>>;
+  /**
+   * Per-tier floor clamp: present when the true-margin floor bumped that tier's
+   * override UP to the floor target, so the operator's typed price can't be
+   * reached without the super-admin "Price below margin floor" escape. Lets the
+   * row show a clear "clamped by the floor" explanation instead of a perpetual
+   * "Pending · regenerate" that never clears (because the saved price is the
+   * floor, not the typed number).
+   */
+  floorClamps?: Partial<Record<TierKey, { clampedTo: number; floorPct: number }>>;
   disabled?: boolean;
 };
 
@@ -75,6 +84,7 @@ export default function TierPriceOverrideEditor({
   tierLabels,
   enginePrices,
   savedPrices,
+  floorClamps,
   disabled = false,
 }: Props) {
   const labelFor = (tier: TierKey) =>
@@ -132,7 +142,20 @@ export default function TierPriceOverrideEditor({
           // shows the override (previewTiers overlay) and the operator
           // assumes the quote is saved, then sends the stale price.
           const savedTier = savedPrices?.[tier];
+          // Floor clamp: the engine bumped this tier UP to its true-margin floor
+          // because the typed override is below it. Shown INSTEAD of "pending",
+          // because regenerating again will never reach the typed number — only
+          // the super-admin "Price below margin floor" escape will.
+          const clamp = floorClamps?.[tier];
+          const isClamped =
+            !!entry &&
+            valid &&
+            Number.isFinite(priceNum) &&
+            priceNum > 0 &&
+            !!clamp &&
+            priceNum < clamp.clampedTo - 0.5;
           const pendingRegenerate =
+            !isClamped &&
             !!entry &&
             valid &&
             Number.isFinite(priceNum) &&
@@ -163,6 +186,14 @@ export default function TierPriceOverrideEditor({
                   {entry && Number.isFinite(priceNum) && priceNum > 0 && (
                     <span className="text-[11px] font-semibold text-[var(--wine)]">
                       → {fmt(priceNum)}
+                    </span>
+                  )}
+                  {isClamped && clamp && (
+                    <span
+                      className="shrink-0 text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5 bg-rose-100 text-rose-800 border border-rose-300"
+                      title={`${fmt(priceNum)} is below the ${clamp.floorPct}% true-margin floor, so ${labelFor(tier)} is held at ${fmt(clamp.clampedTo)}. Enable "Price below margin floor" to sell at your price.`}
+                    >
+                      Clamped · {clamp.floorPct}% floor
                     </span>
                   )}
                   {pendingRegenerate && (
@@ -205,6 +236,17 @@ export default function TierPriceOverrideEditor({
                   </button>
                 </div>
               </div>
+
+              {isClamped && clamp && (
+                <p className="text-[10px] text-rose-700 mt-2 leading-snug">
+                  Your {fmt(priceNum)} is below the {clamp.floorPct}% true-margin
+                  floor, so {labelFor(tier)} is held at{" "}
+                  <strong>{fmt(clamp.clampedTo)}</strong> (the lowest price that
+                  still clears the floor). Regenerating will not change this. To
+                  sell at your price, enable &ldquo;Price below margin floor&rdquo;
+                  in the margin panel, then Regenerate.
+                </p>
+              )}
 
               {entry && isExpanded && (
                 <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr] gap-2 mt-3">

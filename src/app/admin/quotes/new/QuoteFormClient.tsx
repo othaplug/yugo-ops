@@ -13753,6 +13753,40 @@ export default function QuoteFormClient({
                 const p = resultTiers?.[tk]?.price;
                 if (typeof p === "number") tierPrices[tk] = p;
               }
+              // When the true-margin floor bumped a tier's override UP to the
+              // floor, surface it on the row so the operator sees why their
+              // number didn't stick (instead of a "pending" badge that never
+              // clears). Read the engine's own floor record.
+              const tmf = (
+                quoteResult?.factors as Record<string, unknown> | undefined
+              )?.true_margin_floor as
+                | {
+                    after?: Record<string, number>;
+                    before?: Record<string, number>;
+                    floors?: Record<string, number>;
+                    forced?: boolean;
+                    applied?: boolean;
+                  }
+                | undefined;
+              const floorClamps: Partial<
+                Record<string, { clampedTo: number; floorPct: number }>
+              > = {};
+              if (tmf?.applied && !tmf.forced) {
+                for (const tk of activeTierKeys) {
+                  const after = tmf.after?.[tk];
+                  const before = tmf.before?.[tk];
+                  if (
+                    typeof after === "number" &&
+                    typeof before === "number" &&
+                    after - before > 0.5
+                  ) {
+                    floorClamps[tk] = {
+                      clampedTo: after,
+                      floorPct: Math.round((tmf.floors?.[tk] ?? 0) * 100),
+                    };
+                  }
+                }
+              }
               return (
                 <div className="px-0 sm:px-0 pb-1 pt-4 mt-2">
                   <TierPriceOverrideEditor
@@ -13761,6 +13795,7 @@ export default function QuoteFormClient({
                     tierOrder={[...activeTierKeys]}
                     enginePrices={tierPrices}
                     savedPrices={tierPrices}
+                    floorClamps={floorClamps}
                   />
                 </div>
               );
