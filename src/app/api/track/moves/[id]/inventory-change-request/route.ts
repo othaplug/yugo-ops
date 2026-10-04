@@ -18,6 +18,7 @@ import { inventoryChangeRequestAdminEmail } from "@/lib/email-templates";
 import { parseDateOnly } from "@/lib/date-format";
 import { getMoveCode, formatJobId } from "@/lib/move-code";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
+import { notifyAllAdmins } from "@/lib/notifications";
 
 const PENDING_STATUSES = ["pending", "admin_reviewing", "client_confirming"];
 
@@ -190,6 +191,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const moveCode = formatJobId(getMoveCode(move), "move");
   const adminUrl = `${getEmailBaseUrl()}/admin/moves/${encodeURIComponent(moveCode)}`;
+
+  // In-app admin notification (the notification bell) so a client inventory
+  // change is visible even if email/SMS silently fail or go unmonitored.
+  // Mirrors the client change-request / photo-upload pattern.
+  try {
+    await notifyAllAdmins({
+      title: `Inventory change, ${moveCode}`,
+      body: `${move.client_name || "Client"} requested +${parsed.added.length} / -${parsed.removed.length} item(s), net ${autoDelta >= 0 ? "+" : ""}$${autoDelta}. Pending review.`,
+      icon: "clipboard",
+      link: `/admin/moves/${moveId}`,
+      eventSlug: "client_inventory_change",
+      sourceType: "move",
+      sourceId: moveId,
+    });
+  } catch {
+    /* non-fatal */
+  }
 
   // Notify admin email
   if (process.env.RESEND_API_KEY) {

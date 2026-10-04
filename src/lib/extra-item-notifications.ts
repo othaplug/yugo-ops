@@ -7,6 +7,7 @@ import { emailNestedKvRow } from "@/lib/email/email-kv-layout";
 import { escapeHtmlEmail } from "@/lib/email/email-link-utils";
 import { emailLayout, PREMIUM_FONT } from "@/lib/email-templates";
 import { getAdminNotificationEmail } from "@/lib/config";
+import { notifyAllAdmins } from "@/lib/notifications";
 
 interface ExtraItemNotifyPayload {
   jobId: string;
@@ -40,6 +41,27 @@ export async function notifyExtraItemRequest(payload: ExtraItemNotifyPayload): P
     description: eventDescription,
     icon: "clipboard",
   }).then(() => {}, () => {});
+
+  // In-app admin notification (the notification bell). This was the missing
+  // channel: previously a client-added extra item only wrote a passive
+  // status_events row and attempted one email, so a client could add an item
+  // (e.g. a 6ft mirror) and no admin was alerted in-app. Mirrors how client
+  // change-requests and photo uploads already notify every admin. The pending
+  // extra item also persists on the move with Approve/Reject, so the alert plus
+  // that row together act as the review task.
+  try {
+    await notifyAllAdmins({
+      title: `${byLabel} added an item, ${formatJobId(entityCode, jobType)}`,
+      body: `${description}${qtyLabel}, pending your approval`,
+      icon: "clipboard",
+      link: `/admin/${jobType === "move" ? "moves" : "deliveries"}/${entityCode}`,
+      eventSlug: "extra_item_requested",
+      sourceType: jobType,
+      sourceId: jobId,
+    });
+  } catch {
+    /* non-fatal */
+  }
 
   if (!process.env.RESEND_API_KEY) return;
 
