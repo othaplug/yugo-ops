@@ -122,5 +122,9 @@ export async function notifyExtraItemRequest(payload: ExtraItemNotifyPayload): P
       html: emailLayout(inner, undefined, "generic"),
       headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
     });
-  } catch {}
+  } catch (err) {
+    // Log instead of swallowing: a silent failure here is exactly how client
+    // item adds went unseen. The in-app alert above still fires regardless.
+    console.error("[extra-item-notifications] admin email failed", err);
+  }
 }
