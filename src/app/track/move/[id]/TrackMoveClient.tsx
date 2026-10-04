@@ -703,6 +703,10 @@ export default function TrackMoveClient({
   const [changeType, setChangeType] = useState(CHANGE_TYPES[0]);
   const [changeDesc, setChangeDesc] = useState("");
   const [changeAddress, setChangeAddress] = useState("");
+  // Structured requested date for "Change move date" (YYYY-MM-DD). Sent as a
+  // "Requested date:" line so approval can apply it reliably instead of parsing
+  // free text (which silently missed "the 22nd" style phrasing).
+  const [changeDate, setChangeDate] = useState("");
   const [changeUrgent, setChangeUrgent] = useState(false);
   const [changeSubmitting, setChangeSubmitting] = useState(false);
   const [changeSubmitted, setChangeSubmitted] = useState(false);
@@ -1129,10 +1133,20 @@ export default function TrackMoveClient({
 
   const handleSubmitChange = async () => {
     const isAddressChange = changeType === "Change destination address";
+    const isDateChange = changeType === "Change move date";
     if (isAddressChange && !changeAddress.trim()) return;
+    // A date change must carry a real date so approval can apply it. The picked
+    // date is prepended as "Requested date: YYYY-MM-DD" (same convention as the
+    // address change), with any free-text notes after it.
+    if (isDateChange && !changeDate) {
+      toast("Please pick the new move date.", "x");
+      return;
+    }
     const desc = isAddressChange
       ? `New address: ${changeAddress.trim()}${changeDesc.trim() ? `\n\n${changeDesc.trim()}` : ""}`
-      : changeDesc.trim();
+      : isDateChange
+        ? `Requested date: ${changeDate}${changeDesc.trim() ? `\n\n${changeDesc.trim()}` : ""}`
+        : changeDesc.trim();
     if (!desc) return;
     setChangeSubmitting(true);
     try {
@@ -1157,6 +1171,7 @@ export default function TrackMoveClient({
       setChangeModalOpen(false);
       setChangeDesc("");
       setChangeAddress("");
+      setChangeDate("");
     } catch (e) {
       toast(
         e instanceof Error ? e.message : "Failed to submit change request",
@@ -5451,6 +5466,28 @@ export default function TrackMoveClient({
                       onChange={(r) => setChangeAddress(r.fullAddress)}
                       placeholder="Enter new destination address"
                       className="w-full rounded-lg border border-[#2C3E2D38] px-3 py-2 text-[12px] sm:text-[13px] leading-tight text-[var(--tx)] outline-none focus:ring-2 focus:ring-[#2C3E2D]/20 focus:ring-offset-0 bg-[#F9EDE4] [font-family:var(--font-body)]"
+                    />
+                  </div>
+                )}
+                {changeType === "Change move date" && (
+                  <div>
+                    <label
+                      className={`${TRACK_EYEBROW_CLASS} mb-1 block`}
+                      style={{ color: FOREST }}
+                    >
+                      New move date
+                    </label>
+                    <input
+                      type="date"
+                      value={changeDate}
+                      min={new Date().toISOString().slice(0, 10)}
+                      onChange={(e) => setChangeDate(e.target.value)}
+                      className="w-full rounded-none border px-3 py-2.5 text-[12px] sm:text-[13px] leading-tight outline-none focus:ring-2 focus:ring-[#2C3E2D]/20 focus:ring-offset-0 [font-family:var(--font-body)]"
+                      style={{
+                        borderColor: `${FOREST}22`,
+                        backgroundColor: "#F9EDE4",
+                        color: FOREST,
+                      }}
                     />
                   </div>
                 )}

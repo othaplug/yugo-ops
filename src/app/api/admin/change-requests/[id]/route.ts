@@ -65,23 +65,36 @@ async function applyApprovedChange(
   }
 
   if (type === "Change move date") {
-    const dateMatch = desc.match(
-      /(\d{4})-(\d{2})-(\d{2})|(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{1,2})(?:,?\s*(\d{4}))?/i
-    );
-    if (dateMatch) {
-      let dateStr: string;
-      if (dateMatch[1]) {
-        dateStr = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
-      } else {
-        const months: Record<string, string> = {
-          jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
-          jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
-        };
-        const m = months[(dateMatch[4] || "").toLowerCase().slice(0, 3)] || "01";
-        const d = (dateMatch[5] || "1").padStart(2, "0");
-        const y = dateMatch[7] || new Date().getFullYear();
-        dateStr = `${y}-${m}-${d}`;
+    // Prefer the structured "Requested date: YYYY-MM-DD" the client portal now
+    // sends (reliable). Fall back to fuzzy parsing of free text for legacy /
+    // manually-worded requests. The old free-text path silently missed phrasings
+    // with no month name (e.g. "a week later on the 22nd"), so an approved
+    // request left the move on its original date (MV-30441).
+    let dateStr: string | null = null;
+    const structured = desc.match(/Requested date:\s*(\d{4})-(\d{2})-(\d{2})/i);
+    if (structured) {
+      dateStr = `${structured[1]}-${structured[2]}-${structured[3]}`;
+    } else {
+      const dateMatch = desc.match(
+        /(\d{4})-(\d{2})-(\d{2})|(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{1,2})(?:,?\s*(\d{4}))?/i
+      );
+      if (dateMatch) {
+        if (dateMatch[1]) {
+          dateStr = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+        } else {
+          const months: Record<string, string> = {
+            jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
+            jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
+          };
+          const m = months[(dateMatch[4] || "").toLowerCase().slice(0, 3)] || "01";
+          const d = (dateMatch[5] || "1").padStart(2, "0");
+          const y = dateMatch[7] || new Date().getFullYear();
+          dateStr = `${y}-${m}-${d}`;
+        }
       }
+    }
+    // Only apply a valid calendar date; never write garbage to scheduled_date.
+    if (dateStr && !Number.isNaN(new Date(`${dateStr}T00:00:00`).getTime())) {
       await admin.from("moves").update({ scheduled_date: dateStr }).eq("id", moveId);
       triggerMoveGCalSync(moveId);
     }
