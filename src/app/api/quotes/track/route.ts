@@ -86,6 +86,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, skipped: "staff_session" });
     }
 
+    // A genuine client view promotes a SENT (or reactivated) quote to VIEWED
+    // and stamps viewed_at, so the pipeline list badge — which reads
+    // quotes.status — reflects engagement. Previously engagement was only
+    // logged to quote_engagement (powering the detail page) and the status was
+    // never advanced, so a viewed quote kept reading "Sent" forever (YG-30446).
+    // Guarded via the status filter so it is idempotent (a later page_view is a
+    // no-op once viewed) and never clobbers a further lifecycle state
+    // (accepted / expired / lost) or a draft / staff preview (handled above).
+    // The expiry cron already treats "viewed" like "sent", so a viewed quote
+    // still expires on schedule.
+    if (event_type === "page_view" || event_type === "quote_viewed") {
+      const cur = String(quoteRow.status || "").toLowerCase();
+      if (cur === "sent" || cur === "reactivated") {
+        await supabase
+          .from("quotes")
+          .update({ status: "viewed", viewed_at: new Date().toISOString() })
+          .eq("id", quoteRow.id)
+          .in("status", ["sent", "reactivated"]);
+      }
+    }
+
     const cfg = await getFeatureConfig(["quote_engagement_tracking"]);
     const trackingEnabled = cfg.quote_engagement_tracking === "true";
 
