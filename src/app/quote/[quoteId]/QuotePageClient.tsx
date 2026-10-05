@@ -61,24 +61,11 @@ import { itemTagLabel, normalizeItemTags } from "@/lib/inventory/item-tags";
 import { formatMoveDate, formatPlatformDisplay } from "@/lib/date-format";
 import { DEFAULT_GOOGLE_REVIEW_COUNT_LABEL } from "@/lib/google-review-url";
 
-/* ── Packing kit: move-size → tier index → contents ────────────────────── */
-const PACKING_KIT_TIER_IDX: Record<string, number> = {
-  studio: 0,
-  "1br": 1,
-  "2br": 2,
-  "3br": 3,
-  "4br": 4,
-  "5br_plus": 5,
-  partial: 0,
-};
-const PACKING_KIT_CONTENTS: Record<number, string> = {
-  0: "5 small, 5 medium, 5 large boxes · 2 wardrobe boxes (rental) · 4 tape rolls · 12.5 lbs packing paper",
-  1: "8 small, 15 medium, 7 large boxes · 3 wardrobe boxes (rental) · 6 tape rolls · 12.5 lbs packing paper",
-  2: "15 small, 25 medium, 10 large boxes · 4 wardrobe boxes (rental) · 6 tape rolls · 12.5 lbs packing paper",
-  3: "25 small, 40 medium, 15 large boxes · 6 wardrobe boxes (rental) · 6 tape rolls · 12.5 lbs packing paper",
-  4: "35 small, 55 medium, 20 large boxes · 8 wardrobe boxes (rental) · 8 tape rolls · 25 lbs packing paper",
-  5: "45 small, 70 medium, 25 large boxes · 10 wardrobe boxes (rental) · 10 tape rolls · 25 lbs packing paper",
-};
+/* ── Packing kit contents: centralized in @/lib/quotes/packing-kit-contents ── */
+import {
+  PACKING_KIT_TIER_INDEX_BY_SIZE as PACKING_KIT_TIER_IDX,
+  packingKitContentsByIndex,
+} from "@/lib/quotes/packing-kit-contents";
 
 /** Slugs for tiered packing kit, surfaced first when the list is collapsed (mobile + desktop). */
 const PACKING_KIT_ADDON_SLUGS = new Set([
@@ -7130,8 +7117,7 @@ function AddOnsSection({
                                     }
                               }
                             >
-                              {PACKING_KIT_CONTENTS[packingKitContentsIdx] ??
-                                PACKING_KIT_CONTENTS[0]}
+                              {packingKitContentsByIndex(packingKitContentsIdx)}
                             </p>
                           )}
                         </div>

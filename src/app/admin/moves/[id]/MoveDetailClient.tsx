@@ -330,6 +330,7 @@ import {
   splitOntarioTaxInclusive,
 } from "@/lib/format-currency";
 import { portfolioPmMoveServiceLabel, serviceTypeDisplayLabel, moveSizeDisplayLabel } from "@/lib/displayLabels";
+import { packingKitContentsForSize } from "@/lib/quotes/packing-kit-contents";
 import { serviceTypeHasTiers } from "@/lib/quote-service-types";
 import { portfolioPmStatementInvoiceDueIso } from "@/lib/partners/portfolio-pm-statement-due-date";
 import { formatAccessForDisplay, toTitleCase } from "@/lib/format-text";
@@ -3471,6 +3472,12 @@ export default function MoveDetailClient({
                   {a.detail ? (
                     <span className="block text-xs text-[var(--yu3-ink-muted)] mt-0.5">
                       {a.detail}
+                    </span>
+                  ) : null}
+                  {/* Packing kit: show exactly what the client gets for this move size. */}
+                  {a.name?.toLowerCase().includes("packing material") ? (
+                    <span className="block text-xs text-[var(--yu3-ink-muted)] mt-0.5">
+                      {packingKitContentsForSize(move.move_size)}
                     </span>
                   ) : null}
                 </span>
