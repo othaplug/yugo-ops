@@ -39,9 +39,18 @@ export async function PATCH(
   const body = await req.json();
   // Admin "approve" now means "stage and ask the client to accept".
   const isReject = body.status === "rejected";
-  const nextStatus: "awaiting_client" | "rejected" = isReject
+  // No-charge approval: add the item to the move for the crew WITHOUT charging
+  // the client. Safe under the client-consent policy because no money moves, so
+  // it skips the awaiting_client step and goes straight to approved. This is the
+  // only way to surface a legitimate item the crew must handle but that doesn't
+  // warrant a fee (previously such items were stuck pending and invisible to the
+  // crew, since staging required a fee > 0).
+  const noCharge = !isReject && body.no_charge === true;
+  const nextStatus: "approved" | "awaiting_client" | "rejected" = isReject
     ? "rejected"
-    : "awaiting_client";
+    : noCharge
+      ? "approved"
+      : "awaiting_client";
   const feeCents =
     typeof body.fee_cents === "number" && body.fee_cents >= 0
       ? Math.round(body.fee_cents)
@@ -51,12 +60,12 @@ export async function PATCH(
   // A $0 fee makes the approval email look broken ("Accept & charge
   // $0.00", "Amount $0.00") and lets the client "approve" a phantom
   // charge that bills nothing. If the coordinator meant to remove a
-  // fee they should reject the item, not stage it at $0.
+  // fee they should reject the item, or approve it with no charge.
   if (nextStatus === "awaiting_client" && feeCents <= 0) {
     return NextResponse.json(
       {
         error:
-          "A fee is required to send an extra item for client approval. Enter a dollar amount above $0.",
+          "A fee is required to send an extra item for client approval. Enter a dollar amount above $0, or approve it with no charge.",
       },
       { status: 400 },
     );

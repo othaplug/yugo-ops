@@ -21,6 +21,9 @@ interface ExtraItem {
   room?: string | null;
   quantity?: number;
   added_at?: string;
+  /** approved = final; pending / awaiting_client = client request not yet confirmed. */
+  status?: string;
+  requested_by?: string;
 }
 
 const DEFAULT_ROOMS = [
@@ -40,6 +43,9 @@ interface JobInventoryProps {
   moveType?: string;
   inventory: InventoryRoom[];
   extraItems: ExtraItem[];
+  /** Not-yet-confirmed client requests (pending / awaiting_client). Heads-up
+   *  only: shown badged, not part of the verification count. */
+  pendingExtraItems?: ExtraItem[];
   currentStatus: string;
   onRefresh?: () => void;
   onCountChange?: (verified: number, total: number) => void;
@@ -55,6 +61,7 @@ export default function JobInventory({
   moveType,
   inventory,
   extraItems,
+  pendingExtraItems = [],
   currentStatus,
   onRefresh,
   onCountChange,
@@ -640,6 +647,26 @@ export default function JobInventory({
                   {e.description ?? "-"}{" "}
                   {(e.quantity ?? 1) > 1 && `×${e.quantity}`}{" "}
                   {e.room && `(${e.room})`}
+                </div>
+              ))}
+            </div>
+          )}
+          {pendingExtraItems.length > 0 && (
+            <div className="mb-3">
+              <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.14em] leading-none text-amber-600 [font-family:var(--font-body)]">
+                Client requested, not yet confirmed
+              </div>
+              {pendingExtraItems.map((e) => (
+                <div
+                  key={e.id}
+                  className="border-l-2 border-amber-500 bg-amber-500/10 px-3 py-2 text-[12px] text-[var(--yu3-ink)] [font-family:var(--font-body)]"
+                >
+                  {e.description ?? "-"}{" "}
+                  {(e.quantity ?? 1) > 1 && `×${e.quantity}`}{" "}
+                  {e.room && `(${e.room})`}
+                  <span className="ml-2 inline-block text-[9px] font-bold uppercase tracking-wide text-amber-600">
+                    Pending, confirm with office
+                  </span>
                 </div>
               ))}
             </div>

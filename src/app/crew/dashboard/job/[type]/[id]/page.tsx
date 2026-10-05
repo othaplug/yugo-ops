@@ -248,6 +248,18 @@ interface JobDetail {
     room?: string;
     quantity?: number;
     added_at?: string;
+    status?: string;
+    requested_by?: string;
+  }[];
+  /** Unconfirmed client requests (pending / awaiting_client) shown as a heads-up. */
+  pendingExtraItems?: {
+    id: string;
+    description?: string;
+    room?: string;
+    quantity?: number;
+    added_at?: string;
+    status?: string;
+    requested_by?: string;
   }[];
   internalNotes: string | null;
   scheduledTime: string | null;
@@ -2593,6 +2605,7 @@ export default function CrewJobPage({
             moveType={job.moveType}
             inventory={job.inventory || []}
             extraItems={job.extraItems || []}
+            pendingExtraItems={job.pendingExtraItems || []}
             currentStatus={currentStatus}
             onRefresh={fetchJob}
             onCountChange={(v, t) => {

@@ -144,13 +144,18 @@ export default function MoveInventorySection({
     [moveId, toast],
   );
 
-  const handleExtraApprove = async (itemId: string, feeCents?: number) => {
+  const handleExtraApprove = async (
+    itemId: string,
+    feeCents?: number,
+    noCharge?: boolean,
+  ) => {
     setExtraActioning(itemId);
     try {
-      const body: { status: string; fee_cents?: number } = {
+      const body: { status: string; fee_cents?: number; no_charge?: boolean } = {
         status: "approved",
       };
-      if (typeof feeCents === "number" && feeCents > 0)
+      if (noCharge) body.no_charge = true;
+      else if (typeof feeCents === "number" && feeCents > 0)
         body.fee_cents = feeCents;
       const r = await fetch(
         `/api/admin/moves/${moveId}/extra-items/${itemId}`,
@@ -165,7 +170,12 @@ export default function MoveInventorySection({
         toast(data.error || "Failed to approve", "x");
         return;
       }
-      toast("Extra item approved", "check");
+      // No-charge approvals are added straight to the move (and so the crew)
+      // without the client-accept step; fee approvals go to the client first.
+      toast(
+        noCharge ? "Added to move, no charge" : "Sent to client for approval",
+        "check",
+      );
       setApproveExtraModal(null);
       setApproveExtraFeeDollars("");
       fetchExtraItems();
@@ -710,7 +720,16 @@ export default function MoveInventorySection({
                             disabled={extraActioning === e.id}
                             className="px-2 py-1 rounded-md text-[10px] font-semibold bg-[var(--grn)] text-white hover:opacity-90 disabled:opacity-50"
                           >
-                            Approve
+                            Approve + charge
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleExtraApprove(e.id, undefined, true)}
+                            disabled={extraActioning === e.id}
+                            title="Add this item to the move (and the crew list) without charging the client."
+                            className="px-2 py-1 rounded-md text-[10px] font-semibold border border-[var(--grn)] text-[var(--grn)] hover:bg-[var(--grn)]/10 disabled:opacity-50"
+                          >
+                            No charge
                           </button>
                           <button
                             type="button"

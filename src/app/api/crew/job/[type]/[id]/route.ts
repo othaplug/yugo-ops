@@ -127,12 +127,16 @@ export async function GET(
       const { name, qty } = normalizeDeliveryItem(raw);
       return { id: `noid-${i}`, item_name: name, quantity: qty };
     });
-    const { data: extra } = await admin
+    // Approved = final; pending / awaiting_client = unconfirmed heads-up (split
+    // out so they don't count toward verification).
+    const { data: extraAllD } = await admin
       .from("extra_items")
-      .select("id, description, room, quantity, added_at")
+      .select("id, description, room, quantity, added_at, status, requested_by")
       .eq("job_id", d.id)
-      .eq("status", "approved")
+      .in("status", ["approved", "pending", "awaiting_client"])
       .order("added_at");
+    const extra = (extraAllD || []).filter((x) => x.status === "approved");
+    const pendingExtraD = (extraAllD || []).filter((x) => x.status !== "approved");
     const { data: crewRow } = await admin
       .from("crews")
       .select("id, name, members")
@@ -439,6 +443,7 @@ export async function GET(
       })),
       inventory: [{ room: "Items", items: rawItems, itemsWithId: items }],
       extraItems: extra || [],
+      pendingExtraItems: pendingExtraD || [],
       internalNotes: d.instructions || d.next_action || null,
       scheduledTime: d.time_slot || null,
       crewId: d.crew_id,
@@ -557,12 +562,18 @@ export async function GET(
     itemsWithId: items,
   }));
 
-  const { data: extra } = await admin
+  // Approved items are final (the crew verifies them). Not-yet-confirmed client
+  // requests (pending / awaiting_client) are returned separately as a heads-up,
+  // badged in the UI and NOT counted toward verification, so an unconfirmed item
+  // never blocks the crew from reaching 100%.
+  const { data: extraAll } = await admin
     .from("extra_items")
-    .select("id, description, room, quantity, added_at")
+    .select("id, description, room, quantity, added_at, status, requested_by")
     .eq("job_id", m.id)
-    .eq("status", "approved")
+    .in("status", ["approved", "pending", "awaiting_client"])
     .order("added_at");
+  const extra = (extraAll || []).filter((x) => x.status === "approved");
+  const pendingExtra = (extraAll || []).filter((x) => x.status !== "approved");
 
   // Multi-stop addresses. The authoritative source is the linked quote's
   // factors_applied.pickup_locations / dropoff_locations (set when extra
@@ -976,6 +987,7 @@ export async function GET(
     tier: (m as { tier_selected?: string | null }).tier_selected ?? null,
     inventory,
     extraItems: extra || [],
+    pendingExtraItems: pendingExtra || [],
     internalNotes: m.internal_notes || m.next_action || null,
     scheduledTime: m.scheduled_time || null,
     crewId: m.crew_id,
