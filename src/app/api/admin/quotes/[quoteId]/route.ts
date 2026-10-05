@@ -6,6 +6,7 @@ import { isSuperAdminEmail, requireStaff } from "@/lib/api-auth";
 import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { scheduleWinBackEmail } from "@/lib/quotes/win-back";
+import { QUOTE_VALIDITY_DAYS } from "@/lib/quotes/quote-validity";
 
 const PIPELINE_STATUSES = new Set([
   "draft",
@@ -88,7 +89,13 @@ export async function PATCH(
         { status: 400 },
       );
     }
-    patch.expires_at = next.toISOString();
+    // Policy ceiling: a quote is never valid more than QUOTE_VALIDITY_DAYS (7)
+    // from now, even via extend or reactivate. Clamp so no client (or stale UI)
+    // can push the window past 7 days.
+    const ceilMs = Date.now() + QUOTE_VALIDITY_DAYS * 86_400_000;
+    patch.expires_at = new Date(
+      Math.min(next.getTime(), ceilMs),
+    ).toISOString();
     if (prevStatus === "expired") {
       patch.status = "sent";
       didReactivate = true;

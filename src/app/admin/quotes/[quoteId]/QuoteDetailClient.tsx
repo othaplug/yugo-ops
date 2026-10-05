@@ -38,6 +38,7 @@ import { displayLabel, serviceTypeDisplayLabel, moveSizeDisplayLabel, getDisplay
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { formatPhone } from "@/lib/phone";
 import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
+import { QUOTE_VALIDITY_DAYS } from "@/lib/quotes/quote-validity";
 import { quoteDetailDateLabel } from "@/lib/quotes/quote-field-labels";
 import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
 import type { QuoteEngagementMetrics } from "@/lib/quotes/comparison-intelligence";
@@ -613,7 +614,13 @@ export default function QuoteDetailClient({
       const baseMs = base.getTime();
       const nowMs = Date.now();
       const start = baseMs > nowMs ? baseMs : nowMs;
-      const next = new Date(start + days * 86_400_000).toISOString();
+      // Policy: a quote is never valid more than QUOTE_VALIDITY_DAYS (7) from
+      // now, even on an extension. Cap the new expiry at now + 7 days. The
+      // server enforces the same ceiling independently.
+      const ceilMs = nowMs + QUOTE_VALIDITY_DAYS * 86_400_000;
+      const next = new Date(
+        Math.min(start + days * 86_400_000, ceilMs),
+      ).toISOString();
       const res = await fetch(`/api/admin/quotes/${quote.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -858,12 +865,12 @@ export default function QuoteDetailClient({
       // Reactivating must ALSO push the expiry forward. The client quote page
       // gates on expires_at (isQuoteExpiredForBooking), not just status, so a
       // status flip alone still renders "This Quote Has Expired" and blocks
-      // booking. Give the quote a fresh 14-day validity window from now (or
-      // from its current expiry if that's somehow still in the future).
-      const days = 14;
-      const baseMs = quote.expires_at ? new Date(quote.expires_at).getTime() : Date.now();
-      const startMs = baseMs > Date.now() ? baseMs : Date.now();
-      const nextExpiry = new Date(startMs + days * 86_400_000).toISOString();
+      // booking. Policy: reactivation gives another QUOTE_VALIDITY_DAYS (7) only,
+      // never more than 7 days from now.
+      const nowMs = Date.now();
+      const nextExpiry = new Date(
+        nowMs + QUOTE_VALIDITY_DAYS * 86_400_000,
+      ).toISOString();
       await patchQuote({ status: "reactivated", expires_at: nextExpiry });
       return;
     }
@@ -2218,7 +2225,7 @@ export default function QuoteDetailClient({
                   </p>
                   <button
                     type="button"
-                    onClick={() => extendExpiryDays(14)}
+                    onClick={() => extendExpiryDays(QUOTE_VALIDITY_DAYS)}
                     disabled={extendingExpiry}
                     className={`mt-2 inline-flex items-center text-[11px] font-semibold ${
                       isExpired ? "text-red-500" : "text-amber-700"
@@ -2226,7 +2233,7 @@ export default function QuoteDetailClient({
                   >
                     {extendingExpiry
                       ? "Extending…"
-                      : `${isExpired ? "Reopen" : "Extend"} by 14 days →`}
+                      : `${isExpired ? "Reopen" : "Extend"} by 7 days →`}
                   </button>
                   {extendExpiryMsg && (
                     <p className="text-[10px] text-[var(--tx2)] mt-1">
