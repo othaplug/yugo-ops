@@ -37,8 +37,31 @@ function addressFromExtraItem(item: unknown): string {
   return "";
 }
 
+/**
+ * A leading unit/suite prefix that `formatAddressWithUnit` folds onto the street
+ * address for display, e.g. "Suite 625 - ", "Unit 4 - ", "#12 - ", "PH - ".
+ * Matches the unit vocabulary in `unitLabel` (address-format.ts) up to the " - "
+ * separator (first dash only, so "Unit 5 - 10-12 King St" still strips cleanly).
+ */
+const UNIT_PREFIX_RE =
+  /^\s*(?:suite|unit|apt\.?|apartment|ph|penthouse|no\.?|#)\b[^-]*-\s*/i;
+
+/**
+ * Comparison key for route-stop dedup. Lower-cases, collapses whitespace, AND
+ * strips a folded unit prefix so the same pickup written two ways — the
+ * unit-folded primary ("Suite 625 - 270 Wellington St") vs the raw
+ * `pickup_locations` row ("270 Wellington St") — matches as one stop. Without
+ * this, a single-pickup quote whose client page folds the unit into
+ * `from_address` rendered a phantom second pickup (the raw copy from
+ * `pickup_locations`) — YG-30450 showed "Pickup 1 / Pickup 2" for one address.
+ */
 function normAddrKey(s: string): string {
-  return s.toLowerCase().replace(/\s+/g, " ").trim();
+  return s
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(UNIT_PREFIX_RE, "")
+    .trim();
 }
 
 /**

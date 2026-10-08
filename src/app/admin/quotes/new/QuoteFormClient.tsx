@@ -3662,6 +3662,26 @@ export default function QuoteFormClient({
         if (cStr(Q.move_date)) setMoveDate(cStr(Q.move_date).slice(0, 10));
         if (cStr(Q.from_access)) setFromAccess(cStr(Q.from_access));
         if (cStr(Q.to_access)) setToAccess(cStr(Q.to_access));
+        // Structured access profiles + preferred time: restore from the source
+        // quote so an edit/regenerate preserves them. These were NOT prefilled
+        // here before, so editing an existing quote silently nulled them on save
+        // (part of the YG-30448 incident — from_access_profile and preferred_time
+        // both dropped to null when only the date was changed). The access
+        // profile feeds the surcharge/complexity model, so losing it can also
+        // move the price. Guard on shape so a legacy string can't crash the UI.
+        {
+          const fap = (Q as { from_access_profile?: unknown }).from_access_profile;
+          if (fap && typeof fap === "object" && !Array.isArray(fap)) {
+            setFromAccessProfile(fap as AccessProfile);
+          }
+          const tap = (Q as { to_access_profile?: unknown }).to_access_profile;
+          if (tap && typeof tap === "object" && !Array.isArray(tap)) {
+            setToAccessProfile(tap as AccessProfile);
+          }
+        }
+        if (cStr((Q as { preferred_time?: unknown }).preferred_time)) {
+          setPreferredTime(cStr((Q as { preferred_time?: unknown }).preferred_time));
+        }
 
         // Multi-stop: seed the 2nd+ pickup/dropoff addresses so an edited quote
         // keeps every stop instead of collapsing to a single from/to. The shared
@@ -3727,11 +3747,37 @@ export default function QuoteFormClient({
               }
               continue;
             }
+            // Recover the chosen tier for a `tiered` add-on. Newer quotes store
+            // `tier_index` directly on the breakdown; older ones (pre round-trip
+            // fix) stored only the computed `detail`/`price`. Without recovery,
+            // an un-indexed row restores as tier 0 and regeneration silently
+            // reprices the add-on to the cheapest size — the YG-30448 bug where
+            // Full packing fell 2BR ($1,000) -> Studio ($400) on a date-only
+            // edit, dropping the whole quote $600. Match the stored detail label
+            // first, then the stored price, against the live addon's tiers.
+            let recoveredTierIndex: number | undefined =
+              typeof r.tier_index === "number" ? r.tier_index : undefined;
+            if (recoveredTierIndex === undefined) {
+              const addonDef = allAddons.find((a) => a.id === id);
+              const tiers = addonDef?.tiers ?? null;
+              if (Array.isArray(tiers) && tiers.length > 0) {
+                const storedDetail = cStr(r.detail).trim().toLowerCase();
+                const storedPrice = Number(r.price ?? r.subtotal ?? NaN);
+                let idx = storedDetail
+                  ? tiers.findIndex(
+                      (t) => (t.label ?? "").trim().toLowerCase() === storedDetail,
+                    )
+                  : -1;
+                if (idx < 0 && Number.isFinite(storedPrice)) {
+                  idx = tiers.findIndex((t) => t.price === storedPrice);
+                }
+                if (idx >= 0) recoveredTierIndex = idx;
+              }
+            }
             restored.set(id, {
               addon_id: id,
               quantity: qty,
-              tier_index:
-                typeof r.tier_index === "number" ? r.tier_index : undefined,
+              tier_index: recoveredTierIndex,
               slug: typeof r.slug === "string" ? r.slug : undefined,
               ...(variantRow ? { variants: [variantRow] } : {}),
             } as AddonSelection);

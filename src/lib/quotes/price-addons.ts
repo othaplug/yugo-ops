@@ -64,6 +64,16 @@ export interface AddonBreakdownItem {
    * add-ons were added" — this closes that.
    */
   detail?: string;
+  /**
+   * The selected tier row for a `tiered` add-on (e.g. Full packing: Studio=0 …
+   * 2BR=2). Persisted on the stored breakdown so an edit/regenerate restores the
+   * EXACT size the operator chose. Without it, the stored line kept only the
+   * computed `price`/`detail`, the edit-form prefill had no index to restore, and
+   * regeneration silently fell back to tier 0 (the cheapest size) — e.g. YG-30448
+   * reverted Full packing 2BR ($1,000) to Studio ($400), dropping the whole quote
+   * $600 after the operator only changed the move date. Always round-trip it.
+   */
+  tier_index?: number;
   /** Preserved on variant_matrix rows so the client display can label the line. */
   variant?: {
     size: string;
@@ -112,6 +122,7 @@ export async function calculateAddons(
     let cost = 0;
     const qty = sel.quantity || 1;
     let detail: string | undefined;
+    let tierIndexOut: number | undefined;
     let variantOut: AddonBreakdownItem["variant"] | undefined;
     let variantsOut:
       | Array<{ size: string; type: string; mount_model?: string; quantity: number }>
@@ -135,11 +146,15 @@ export async function calculateAddons(
         const tiers = addon.tiers as
           | { label?: string; price: number; bins?: number; bundle?: string }[]
           | null;
-        const t = tiers?.[sel.tier_index ?? 0];
+        const resolvedTierIndex = sel.tier_index ?? 0;
+        const t = tiers?.[resolvedTierIndex];
         cost = t?.price ?? 0;
         // e.g. "1 Bedroom (30 bins)" or "30 bins" — so the crew and admin know
         // exactly how many bins / which bundle the client chose.
         detail = t?.label ?? (t?.bins != null ? `${t.bins} bins` : undefined);
+        // Round-trip the chosen size so an edit/regenerate restores it instead
+        // of collapsing to tier 0. See AddonBreakdownItem.tier_index.
+        tierIndexOut = resolvedTierIndex;
         break;
       }
       case "percent":
@@ -217,6 +232,7 @@ export async function calculateAddons(
       quantity: qty,
       subtotal: cost,
       ...(detail ? { detail } : {}),
+      ...(tierIndexOut !== undefined ? { tier_index: tierIndexOut } : {}),
       ...(variantOut ? { variant: variantOut } : {}),
       ...(variantsOut ? { variants: variantsOut } : {}),
     });
