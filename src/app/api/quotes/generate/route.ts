@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TIER_DEFINITIONS } from "@/lib/tiers/tier-definitions";
 import { QUOTE_VALIDITY_DAYS } from "@/lib/quotes/quote-validity";
+import { quoteDealFinancials } from "@/lib/quotes/quote-headline-amount";
 import {
   residentialTierDeposit,
   LONG_DISTANCE_DEPOSIT_PCT,
@@ -7487,10 +7488,14 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         (existingQuoteSnapshot?.hubspot_deal_id as string | null)?.trim() || null;
       if (existingHsDealId && hubspotAccessToken) {
         try {
-          const curatedPriceForHs =
-            typeof (quotePayload as { custom_price?: { price?: number } }).custom_price?.price === "number"
-              ? (quotePayload as { custom_price?: { price?: number } }).custom_price!.price!
-              : ((quotePayload as { tiers?: Record<string, { price?: number }> | null }).tiers?.essential?.price ?? null);
+          // Canonical Ops-list figures (tax-incl amount + pre-tax subtotal) so
+          // the deal mirrors exactly what the operator sees. The old inline
+          // logic read custom_price.price (custom_price is a bare number ->
+          // undefined, so white_glove amounts never re-synced: YG-30450 stuck at
+          // $660) and fell back to tiers.essential.price (wrong tier + pre-tax:
+          // YG-30441).
+          const { amount: curatedPriceForHs, subtotal: curatedSubtotalForHs } =
+            quoteDealFinancials(quotePayload as Parameters<typeof quoteDealFinancials>[0]);
           const fromAddr = (quotePayload as { from_address?: string | null }).from_address ?? null;
           const toAddr = (quotePayload as { to_address?: string | null }).to_address ?? null;
           const fromAcc = (quotePayload as { from_access?: string | null }).from_access ?? null;
@@ -7532,7 +7537,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
               serviceType: svcForHs ?? undefined,
               moveDate: moveDateForHs ?? undefined,
               moveSize: moveSizeForHs ?? undefined,
-              subtotal: typeof curatedPriceForHs === "number" ? curatedPriceForHs : null,
+              subtotal: typeof curatedSubtotalForHs === "number" ? curatedSubtotalForHs : null,
               tierSelected: recTierForHs ?? undefined,
               isPmMove: false,
               businessName: businessNm ?? undefined,

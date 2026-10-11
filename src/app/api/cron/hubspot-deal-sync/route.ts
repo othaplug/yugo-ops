@@ -9,6 +9,7 @@ import { autoCreateHubSpotDealForNewMove } from "@/lib/hubspot/auto-create-deal-
 import { getEmailBaseUrl } from "@/lib/email-base-url"
 import { getDeliveryDetailPath, getMoveDetailPath } from "@/lib/move-code"
 import { HS_DEAL_PENDING } from "@/lib/hubspot/auto-create-deal-for-quote"
+import { quoteDealFinancials } from "@/lib/quotes/quote-headline-amount"
 
 /**
  * Hourly self-healing HubSpot deal sync.
@@ -156,28 +157,15 @@ export async function GET(req: NextRequest) {
 
   for (const q of quotes ?? []) {
     try {
-      const tiers = q.tiers as Record<string, { price?: number }> | null
-      // Use the RECOMMENDED tier's price for the HubSpot deal amount,
-      // not Essential. Previously every Signature- or Estate-quoted
-      // deal showed up on the pipeline at the Essential price, which
-      // threw off forecasts and made the sales team chase the wrong
-      // number. Mirrors the recommendedTierPrice() helper in
-      // auto-create-deal-for-quote.ts.
-      const recRaw = String(q.recommended_tier ?? "")
-        .trim()
-        .toLowerCase()
-      const recKey =
-        recRaw === "signature" || recRaw === "estate" || recRaw === "essential"
-          ? recRaw
-          : recRaw === "curated" || recRaw === "essentials"
-            ? "essential"
-            : null
-      const price =
-        (recKey ? tiers?.[recKey]?.price : undefined) ??
-        tiers?.essential?.price ??
-        tiers?.curated?.price ??
-        Number(q.custom_price ?? 0) ??
-        null
+      // Canonical Ops-list figures. This hourly pass is the AUTHORITATIVE
+      // self-healer for the deal's Amount: it re-asserts amount = the tax-incl
+      // Ops-list headline every run, so drift from any write-path (booking,
+      // a legacy edit, a manual HubSpot change) is corrected within the hour.
+      // The old logic here pushed the pre-tax tier .price (or Essential), which
+      // is exactly what kept HubSpot ~13% below the Ops list / on the wrong tier.
+      const { amount: dealAmount, subtotal: price } = quoteDealFinancials(
+        q as Parameters<typeof quoteDealFinancials>[0],
+      )
       const contactRaw = (q as { contacts?: { name?: string | null } | { name?: string | null }[] | null }).contacts
       const contact = Array.isArray(contactRaw) ? contactRaw[0] ?? null : contactRaw
       const fullName = String(contact?.name ?? "").trim()
@@ -222,6 +210,10 @@ export async function GET(req: NextRequest) {
           businessName,
         }),
       }
+      // Main deal Amount field — buildAllDealProperties only writes the
+      // secondary sub_total/taxes/total_price props, never `amount`, so set it
+      // explicitly here or the cron would never heal a drifted Amount.
+      if (typeof dealAmount === "number") props.amount = String(dealAmount)
 
       const res = await safePatchDeal(token, q.hubspot_deal_id, props)
       if (res.ok || res.status === 204) {

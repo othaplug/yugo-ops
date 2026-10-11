@@ -9,6 +9,7 @@ import { buildAllYugoProperties } from "@/lib/hubspot/deal-properties-builder";
 import { safeCreateDeal } from "@/lib/hubspot/safe-deal-write";
 import { resolveStageFromStatus } from "@/lib/hubspot/stage-mapping";
 import type { HubSpotAutoCreateDealResult } from "@/lib/hubspot/auto-create-deal-types";
+import { quoteDealFinancials } from "@/lib/quotes/quote-headline-amount";
 
 /**
  * Sentinel written to quotes.hubspot_deal_id to atomically claim a quote for
@@ -31,58 +32,6 @@ function dealToContactAssociationTypeId(): number {
   return Number.isFinite(n) && n > 0 ? n : 3;
 }
 
-/**
- * Price used for the HubSpot deal's `amount` field at quote-send time.
- *
- * Previously this hardcoded Essential's price for every quote — so a
- * Signature- or Estate-recommended $5,628 quote showed as "Amount
- * $2,200" on the HubSpot pipeline, throwing off every forecast and
- * making the sales team chase the wrong number. The deal amount now
- * reflects the actual RECOMMENDED tier the operator quoted.
- *
- * Priority:
- *   1. tiers[recommended_tier].price — the tier the operator pointed
- *      the client at
- *   2. essential / curated / essentials — fallback for legacy quotes
- *      without a recommended_tier set
- *   3. custom_price — non-tiered quote types (single_item, white_glove,
- *      labour_only, etc.)
- *
- * When the move is booked and the client picks a specific tier, the
- * move-create flow updates the deal amount to the chosen tier price —
- * see hubspotMoveDealAfterInsert. So pipeline rows track the
- * recommended price during the sales cycle and the actual sale once
- * the move materializes.
- */
-function recommendedTierPrice(quote: Record<string, unknown>): number | null {
-  const tiers = quote.tiers as Record<string, { price?: number }> | null | undefined;
-  const recRaw = String(quote.recommended_tier ?? "")
-    .trim()
-    .toLowerCase();
-  const recKey =
-    recRaw === "signature" || recRaw === "estate" || recRaw === "essential"
-      ? recRaw
-      : recRaw === "curated" || recRaw === "essentials"
-        ? "essential"
-        : null;
-  if (recKey && tiers) {
-    const fromRec = tiers[recKey]?.price;
-    if (typeof fromRec === "number" && !Number.isNaN(fromRec)) return fromRec;
-  }
-  // Legacy fallback — no recommended_tier set on the quote.
-  const t =
-    tiers?.essential?.price ??
-    tiers?.curated?.price ??
-    tiers?.essentials?.price ??
-    null;
-  if (typeof t === "number" && !Number.isNaN(t)) return t;
-  const cp = quote.custom_price;
-  if (cp != null) {
-    const n = Number(cp);
-    if (!Number.isNaN(n)) return n;
-  }
-  return null;
-}
 
 /**
  * Find or create HubSpot contact by email; returns HubSpot contact id.
@@ -227,7 +176,9 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
 
   const prefix = await getQuoteIdPrefix(sb);
   const jobNo = quoteNumericSuffixForHubSpot(quoteIdText, prefix);
-  const price = recommendedTierPrice(quote);
+  // Canonical deal figures: amount = tax-incl Ops-list headline, subtotal =
+  // pre-tax basis for the secondary OPS+ props.
+  const { amount: price, subtotal: dealSubtotal } = quoteDealFinancials(quote);
 
   // formatTier in buildHubSpotDealName handles the slug → label mapping
   // ("essential" → "Essential", "signature" → "Signature"), so don't
@@ -289,7 +240,7 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
       serviceType: svcType,
       moveDate: quote.move_date as string | null | undefined,
       moveSize: quote.move_size as string | null | undefined,
-      subtotal: price,
+      subtotal: dealSubtotal,
       tierSelected: quote.recommended_tier as string | null | undefined,
       crewSize: quote.est_crew_size as number | null | undefined,
       estimatedHours: quote.est_hours as number | null | undefined,

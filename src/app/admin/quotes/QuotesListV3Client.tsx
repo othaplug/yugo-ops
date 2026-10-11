@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format-currency";
+import { quoteHeadlineAmount } from "@/lib/quotes/quote-headline-amount";
 import { formatAdminCreatedAt } from "@/lib/date-format";
 import { toTitleCase } from "@/lib/format-text";
 import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
@@ -59,20 +60,10 @@ interface Quote {
 
 /* ── Helpers ───────────────────────────────────────────────────────────── */
 
+// The Ops-list Amount and every HubSpot deal amount come from ONE function so
+// they can never drift. See src/lib/quotes/quote-headline-amount.ts.
 function quoteAmountRaw(q: Quote): number | null {
-  if (q.custom_price) return q.custom_price;
-  if (q.tiers && typeof q.tiers === "object") {
-    const tiers = q.tiers as Record<string, { total?: number }>;
-    const recKey = (q.recommended_tier ?? "signature")
-      .toString()
-      .toLowerCase()
-      .trim();
-    const recommended = tiers[recKey]?.total;
-    if (recommended != null) return recommended;
-    const first = Object.values(tiers).find((t) => t?.total);
-    if (first?.total) return first.total;
-  }
-  return null;
+  return quoteHeadlineAmount(q as Parameters<typeof quoteHeadlineAmount>[0]);
 }
 
 function quoteAmount(q: Quote): string {
