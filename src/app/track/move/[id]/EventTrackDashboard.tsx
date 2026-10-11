@@ -289,7 +289,7 @@ export default function EventTrackDashboard({
         </h1>
         <p style={{ margin: "8px 0 0", fontSize: 15, color: INK }}>
           {clientFirstName ? `${clientFirstName}, ` : ""}
-          your delivery, setup and return
+          {returnDate ? "your delivery, setup and return" : "your delivery and setup"}
           {venueName ? (
             <>
               {" "}
@@ -436,7 +436,7 @@ export default function EventTrackDashboard({
             <li style={{ position: "relative", padding: "0 0 0 34px" }}>
               {tlDot(returnDone || (settled && deliveryDone && !returnDate) ? "done" : "next")}
               <div style={{ fontWeight: 650, color: INK, fontSize: 14.5 }}>Complete</div>
-              <div style={{ fontSize: 12.5, color: MUTED, marginTop: 1 }}>Final receipt and recap after return</div>
+              <div style={{ fontSize: 12.5, color: MUTED, marginTop: 1 }}>{returnDate ? "Final receipt and recap after return" : "Final receipt and recap after your event"}</div>
             </li>
           </ol>
         </Card>
@@ -647,7 +647,7 @@ export default function EventTrackDashboard({
               Live tracking
             </div>
             <div style={{ fontSize: 12, color: MUTED, marginTop: 3, lineHeight: 1.45 }}>
-              Follow the crew on the map on delivery &amp; return day
+              Follow the crew on the map on {returnDate ? "delivery & return day" : "delivery day"}
             </div>
             <div style={{ fontSize: 12, fontWeight: 700, color: ROSE, marginTop: 10 }}>
               {daysUntil != null && daysUntil <= 1 ? "Track now →" : "View tracking →"}
