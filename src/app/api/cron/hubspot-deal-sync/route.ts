@@ -44,7 +44,13 @@ function quoteStageFromStatus(status: string | null | undefined): string | null 
   if (s === "cold") return "cold"
   if (s === "superseded") return "cancelled"
   if (s === "payment_failed") return "lost"
-  // sent / viewed / draft / reactivated — already handled by live hooks on the way in; skip
+  // Pre-booking states: also re-assert them so the stage self-heals if a live
+  // hook ever missed (sent/viewed resolve to the SAME HubSpot stage, so this is
+  // a no-op PATCH when already correct). A quote in these states has no booked
+  // move/delivery competing for the deal, so there's no downgrade risk.
+  if (s === "sent" || s === "reactivated") return "sent"
+  if (s === "viewed") return "viewed"
+  if (s === "draft") return "draft"
   return null
 }
 
