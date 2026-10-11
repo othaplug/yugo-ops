@@ -669,6 +669,15 @@ export async function createMoveFromQuote(
       hardCutoff?: string | null | undefined;
       afterHours?: boolean | null | undefined;
       isFirstOverall: boolean;
+      /**
+       * Whether this event is booked for a teardown/return leg. An event is
+       * delivery-ONLY unless the quote explicitly says otherwise, so the return
+       * row is created only when true. Previously pushEventPair always inserted
+       * a return leg, so single-delivery events (event_has_return_leg=false)
+       * still got a phantom MV-xxxx-E1 return that showed "teardown & return"
+       * across client/admin/crew/calendar (MV-30442, MV-30402).
+       */
+      includeReturn: boolean;
     },
   ) {
     const distKm = opts.distanceKm ?? null;
@@ -727,26 +736,30 @@ export async function createMoveFromQuote(
         : buildFinancialSibling()),
     });
 
-    rows.push({
-      ...sharedStatic,
-      move_type: moveType,
-      ...eventQuoteMeta,
-      event_group_id: opts.eventGroupId,
-      event_phase: "return",
-      from_address: opts.toA,
-      to_address: opts.fromA,
-      delivery_address: opts.fromA,
-      scheduled_date: opts.returnDate,
-      distance_km: distKm,
-      drive_time_min: dt,
-      truck_primary: truck,
-      truck_info: fleetInfo,
-      arrival_window: arrivalWindow,
-      est_crew_size: opts.crew ?? null,
-      est_hours: opts.hours ?? null,
-      internal_notes: mkInternal("return"),
-      ...buildFinancialSibling(),
-    });
+    // Return/teardown leg: only when the event is actually booked for it.
+    // Delivery-only events skip this entirely (no phantom -E1 return row).
+    if (opts.includeReturn) {
+      rows.push({
+        ...sharedStatic,
+        move_type: moveType,
+        ...eventQuoteMeta,
+        event_group_id: opts.eventGroupId,
+        event_phase: "return",
+        from_address: opts.toA,
+        to_address: opts.fromA,
+        delivery_address: opts.fromA,
+        scheduled_date: opts.returnDate,
+        distance_km: distKm,
+        drive_time_min: dt,
+        truck_primary: truck,
+        truck_info: fleetInfo,
+        arrival_window: arrivalWindow,
+        est_crew_size: opts.crew ?? null,
+        est_hours: opts.hours ?? null,
+        internal_notes: mkInternal("return"),
+        ...buildFinancialSibling(),
+      });
+    }
   }
 
   let rowsToInsert: RowInsert[] = [];
@@ -755,6 +768,11 @@ export async function createMoveFromQuote(
   if (quote.service_type === "event") {
     const legs = parseEventLegs(factors);
     const isMulti = factors.event_mode === "multi" && legs.length >= 2;
+    // An event is delivery-only unless the quote explicitly booked a return.
+    // Strict === true: a missing/legacy flag means single leg (the rule is
+    // "first leg only unless directly indicated"). Pricing already honors this
+    // (return_charge=0 when false), so move creation must match.
+    const includeReturn = factors.event_has_return_leg === true;
 
     eventGroupId = randomUUID();
     let isFirstOverall = true;
@@ -792,6 +810,7 @@ export async function createMoveFromQuote(
             leg.event_leg_after_hours ??
             (factors.event_after_hours as boolean | undefined),
           isFirstOverall,
+          includeReturn,
         });
         isFirstOverall = false;
       }
@@ -829,6 +848,7 @@ export async function createMoveFromQuote(
           hardCutoff: factors.event_hard_cutoff as string | undefined,
           afterHours: factors.event_after_hours as boolean | undefined,
           isFirstOverall: true,
+          includeReturn,
         });
       }
     }
