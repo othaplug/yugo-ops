@@ -12,6 +12,7 @@ import {
 import { sessionJobDurationMinutes } from "@/lib/crew/session-job-duration-minutes";
 import { getAppTimezone } from "@/lib/business-timezone";
 import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
+import { contractTaxFromMove } from "@/lib/format-currency";
 
 // Statuses that count toward "jobs sharing this calendar day" — used to divide
 // per-day truck + overhead. Must be identical in the single-move and range
@@ -92,7 +93,7 @@ export async function GET(req: NextRequest) {
     }
     const m = move as Record<string, unknown> & { id: string };
     const moveCostInput = {
-      estimate: Number((m as { final_amount?: number; total_price?: number; estimate?: number; amount?: number }).final_amount ?? (m as { total_price?: number }).total_price ?? (m as { estimate?: number }).estimate ?? (m as { amount?: number }).amount ?? 0) || 0,
+      estimate: Math.round(contractTaxFromMove(m as Parameters<typeof contractTaxFromMove>[0]).preTax),
       actual_hours: trackedHours ?? (m as { actual_hours?: number | null }).actual_hours ?? null,
       est_hours: (m as { est_hours?: number | null }).est_hours ?? null,
       est_crew_size: (m as { est_crew_size?: number | null }).est_crew_size ?? null,
@@ -462,7 +463,7 @@ export async function GET(req: NextRequest) {
       ? ((m as AnyRow).assigned_members as unknown[]).filter(Boolean).length
       : 0;
     const moveCostInput = {
-      estimate: Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0) || 0,
+      estimate: Math.round(contractTaxFromMove(m).preTax),
       actual_hours: trackedHours ?? null,
       est_hours: m.est_hours ?? m.quoted_hours ?? null,
       actual_crew_count: assignedCrew > 0 ? assignedCrew : null,

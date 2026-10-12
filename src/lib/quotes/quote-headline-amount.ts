@@ -1,3 +1,4 @@
+import { contractTaxFromMove } from "@/lib/format-currency";
 /**
  * THE canonical "what this quote is worth" number — the single figure shown in
  * the Ops Quotes list and the one every HubSpot deal `amount` must mirror, so
@@ -101,22 +102,33 @@ export function quotePreTaxAmount(
 }
 
 /**
- * A BOOKED move's current PRE-TAX amount — the source of truth once a quote is
- * booked, so HubSpot reflects re-prices and extra charges. Mirrors the Ops
- * moves-list figure exactly: `final_amount ?? total_price ?? estimate`.
- *   - additional-charge bumps `estimate`
- *   - adjust-final-price sets `final_amount` + `total_price`
- * All three are pre-tax. `move.amount` is deliberately NOT used (stored
- * inconsistently, sometimes tax-inclusive).
+ * A BOOKED move's current PRE-TAX contract amount — the ONE authoritative
+ * figure once a quote is booked (HubSpot, moves list, profitability, revenue
+ * all read this). Delegates to `contractTaxFromMove` so there is a single
+ * definition of a move's contract total across the whole app.
+ *
+ * IMPORTANT: `final_amount` / `total_price` are stored TAX-INCLUSIVE (that's how
+ * the charge routes write them), and `estimate` is the pre-tax base; contractTax
+ * FromMove handles that correctly (anchors on estimate+HST, splits HST out of an
+ * edited final_amount/total_price). A naive `final_amount ?? total_price ??
+ * estimate` would treat a tax-inclusive edited total as pre-tax and overstate.
+ * The pre-tax contract must include add-ons — `estimate` is bumped by the
+ * add-on fold at booking and by every charge route.
  */
 export function movePreTaxAmount(
-  move: { final_amount?: unknown; total_price?: unknown; estimate?: unknown } | null | undefined,
+  move:
+    | { final_amount?: unknown; total_price?: unknown; estimate?: unknown; amount?: unknown }
+    | null
+    | undefined,
 ): number | null {
   if (!move) return null;
-  for (const v of [move.final_amount, move.total_price, move.estimate]) {
-    if (typeof v === "number" && Number.isFinite(v) && v > 0) return Math.round(v);
-  }
-  return null;
+  const { preTax } = contractTaxFromMove({
+    estimate: move.estimate as number | string | null | undefined,
+    final_amount: move.final_amount as number | string | null | undefined,
+    total_price: move.total_price as number | string | null | undefined,
+    amount: move.amount as number | string | null | undefined,
+  });
+  return preTax > 0 ? Math.round(preTax) : null;
 }
 
 /**

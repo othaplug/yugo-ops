@@ -700,13 +700,11 @@ export default function MoveDetailClient({
   // while the same page's Profitability Revenue read $989 (which
   // already used the right priority). Same conceptual value, two
   // different displays — a guaranteed double-take from operators.
-  const estimate = Number(
-    move.final_amount ??
-      move.total_price ??
-      move.amount ??
-      move.estimate ??
-      0,
-  );
+  // ONE contract number for the whole page — the tax-inclusive total the client
+  // owes, via the canonical helper (handles estimate=pre-tax base + HST and an
+  // edited final_amount/total_price stored tax-inclusive). Replaces the old raw
+  // ladder that mixed pre-tax `estimate` with tax-inclusive `amount`.
+  const estimate = Math.round(contractTaxFromMove(move).inclusive);
   // Only treat money as collected when the admin has explicitly recorded it.
   // Never infer a 25% deposit — if deposit_amount is null, nothing is collected yet.
   const depositPaid = Number(move.deposit_amount ?? 0);
@@ -992,15 +990,7 @@ export default function MoveDetailClient({
         // estimate (original booking value). Previously this pill read
         // estimate first and showed $1,189 on MV-30284 while the rest
         // of the page showed the adjusted $989.
-        value: formatCurrency(
-          Number(
-            move.final_amount ??
-              move.total_price ??
-              move.amount ??
-              move.estimate ??
-              0,
-          ) || 0,
-        ),
+        value: formatCurrency(Math.round(contractTaxFromMove(move).inclusive)),
       },
     ],
     [
@@ -1857,7 +1847,7 @@ export default function MoveDetailClient({
                   Revenue
                 </p>
                 <p className="text-[var(--yu3-ink)] font-medium">
-                  {formatCurrency(Number(move.final_amount ?? move.amount ?? move.estimate ?? 0))}
+                  {formatCurrency(Math.round(contractTaxFromMove(move).preTax))}
                 </p>
               </div>
               <div>

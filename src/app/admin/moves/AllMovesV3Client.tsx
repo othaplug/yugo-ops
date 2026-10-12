@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatMoveDate, formatAdminCreatedAt } from "@/lib/date-format";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatCurrency, contractTaxFromMove } from "@/lib/format-currency";
 import { serviceTypeDisplayLabel, portfolioPmMoveServiceLabel } from "@/lib/displayLabels";
 import { TIERED_SERVICE_TYPES, QUOTE_SERVICE_TYPE_DEFINITIONS } from "@/lib/quote-service-types";
 import { formatJobId, getMoveCode, getMoveDetailPath } from "@/lib/move-code";
@@ -39,6 +39,7 @@ interface Move {
   estimate?: number;
   final_amount?: number | null;
   total_price?: number | null;
+  amount?: number | null;
   status?: string;
   move_type?: string;
   service_type?: string;
@@ -231,7 +232,7 @@ export default function AllMovesV3Client({
     const countableMoves = moves.filter(
       (m) => String(m.event_phase ?? "") !== "return",
     );
-    const totalEstimate = countableMoves.reduce((a, m) => a + (Number(m.final_amount ?? m.total_price ?? m.estimate) || 0), 0);
+    const totalEstimate = countableMoves.reduce((a, m) => a + (Math.round(contractTaxFromMove(m).preTax)), 0);
     const confirmed = countableMoves.filter((m) =>
       ["confirmed", "scheduled", "in_progress"].includes(
         effective(m).toLowerCase(),
@@ -448,13 +449,13 @@ export default function AllMovesV3Client({
         id: "estimate",
         shortLabel: "Estimate",
         header: "Estimate",
-        accessor: (m) => Number(m.final_amount ?? m.total_price ?? m.estimate ?? 0),
+        accessor: (m) => Math.round(contractTaxFromMove(m).preTax),
         align: "right",
         sortable: true,
         numeric: true,
         width: 120,
         cell: (m) => {
-          const price = m.final_amount ?? m.total_price ?? m.estimate;
+          const price = contractTaxFromMove(m).preTax || null;
           return (
             <span className="yu3-num text-[13px] font-semibold text-[var(--yu3-ink-strong)]">
               {price ? formatCurrency(price) : ""}
@@ -513,7 +514,7 @@ export default function AllMovesV3Client({
                 r.client_name,
                 effective(r),
                 r.scheduled_date,
-                r.final_amount ?? r.total_price ?? r.estimate,
+                Math.round(contractTaxFromMove(r).preTax),
               ]
                 .map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`)
                 .join(","),
@@ -666,7 +667,7 @@ export default function AllMovesV3Client({
                   {m.scheduled_date ? formatMoveDate(m.scheduled_date) : "-"}
                 </span>
                 <span className="font-semibold text-[var(--yu3-ink)] tabular-nums">
-                  {formatCurrency(Number(m.estimate ?? m.final_amount ?? 0))}
+                  {formatCurrency(Math.round(contractTaxFromMove(m).preTax))}
                 </span>
               </div>
             </div>

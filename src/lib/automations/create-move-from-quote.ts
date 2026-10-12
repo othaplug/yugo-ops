@@ -332,7 +332,18 @@ export async function createMoveFromQuote(
     }
   }
 
-  const balanceAmount = totalWithTax - input.depositAmount;
+  // Safety net for the add-on fold: if the client actually paid MORE than the
+  // computed contract (add-ons charged at checkout but not folded in — e.g. a
+  // stale `addon_baked_total` zeroed the delta, MV-30448), trust the charge as
+  // the contract so the stored total always equals what was collected. Only
+  // fires on over-payment (full-payment moves); a normal deposit is < total and
+  // never triggers this.
+  const chargedInclusive = Math.round(Number(input.depositAmount) || 0);
+  let contractTotalWithTax = totalWithTax;
+  if (chargedInclusive > Math.round(totalWithTax) + 1) {
+    contractTotalWithTax = chargedInclusive;
+  }
+  const balanceAmount = Math.max(0, contractTotalWithTax - input.depositAmount);
 
   let contractSignedAt = input.contractSignedAt;
   if (!contractSignedAt) {
@@ -616,8 +627,14 @@ export async function createMoveFromQuote(
   const safeTier = selectedTier && VALID_MOVE_TIERS.has(selectedTier) ? selectedTier : null;
 
   const buildFinancialPrimary = (): RowInsert => ({
-    amount: totalWithTax,
+    amount: contractTotalWithTax,
     estimate: basePrice,
+    // When the charge exceeded the computed total (add-ons not folded), record
+    // the true tax-inclusive contract so contractTaxFromMove / every reader uses
+    // it. Null when they match (keeps the normal estimate+HST path).
+    ...(contractTotalWithTax > Math.round(totalWithTax) + 1
+      ? { total_price: contractTotalWithTax }
+      : {}),
     tier_selected: safeTier,
     deposit_amount: input.depositAmount,
     deposit_paid_at: new Date().toISOString(),
