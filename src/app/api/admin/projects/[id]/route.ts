@@ -111,9 +111,39 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   const db = createAdminClient();
 
-  // Unlink deliveries first
-  await db.from("deliveries").update({ project_id: null, phase_id: null }).eq("project_id", id);
+  // Full cascade: a project owns its deliveries + phases/inventory/timeline/log,
+  // and each delivery has its own Google Calendar event. The old handler only
+  // UNLINKED deliveries (project_id=null), orphaning 12 deliveries + their GCal
+  // events + all child rows — so "Delete" left ghosts on the jobs list and
+  // Google Calendar (the THERMEA dry run). Delete everything the project owns.
+  const { data: projDeliveries } = await db
+    .from("deliveries")
+    .select("id, gcal_event_id")
+    .eq("project_id", id);
+  const gcalIds = (projDeliveries ?? [])
+    .map((d) => (d as { gcal_event_id?: string | null }).gcal_event_id)
+    .filter((g): g is string => !!g && g.trim().length > 0);
+
+  // Delivery line items live in the deliveries row (JSONB), so only the linked
+  // invoices need removing before the delivery rows themselves.
+  for (const d of projDeliveries ?? []) {
+    await db.from("invoices").delete().eq("delivery_id", (d as { id: string }).id);
+  }
+  await db.from("deliveries").delete().eq("project_id", id);
+
+  await db.from("project_phases").delete().eq("project_id", id);
+  await db.from("project_inventory").delete().eq("project_id", id);
+  await db.from("project_timeline").delete().eq("project_id", id);
+  await db.from("project_status_log").delete().eq("project_id", id);
+
   const { error } = await db.from("projects").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+
+  // Drop each delivery's Google Calendar event so nothing lingers on crew
+  // calendars. Fire-and-forget: a GCal outage must not fail the Ops delete.
+  if (gcalIds.length > 0) {
+    const { deleteGCalEvent } = await import("@/lib/google-calendar/sync-job");
+    for (const g of gcalIds) deleteGCalEvent(g).catch(() => {});
+  }
+  return NextResponse.json({ ok: true, deleted: { deliveries: projDeliveries?.length ?? 0, gcalEvents: gcalIds.length } });
 }

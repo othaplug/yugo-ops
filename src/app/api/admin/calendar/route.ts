@@ -133,7 +133,7 @@ export async function GET(req: NextRequest) {
       db
         .from("deliveries")
         .select(
-          "id, delivery_number, client_name, customer_name, customer_phone, customer_email, contact_phone, contact_email, end_customer_phone, end_customer_email, end_client_name, delivery_type, category, status, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_hours, estimated_duration_minutes, crew_id, pickup_address, delivery_address, items, is_multi_stop, total_stops, project_name",
+          "id, delivery_number, client_name, customer_name, customer_phone, customer_email, contact_phone, contact_email, end_customer_phone, end_customer_email, end_client_name, delivery_type, category, status, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_hours, estimated_duration_minutes, crew_id, pickup_address, delivery_address, items, is_multi_stop, total_stops, project_name, project_id",
         )
         .gte("scheduled_date", startDate)
         .lte("scheduled_date", endDate)
@@ -658,19 +658,40 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Projects as date-range events (start_date → target_end_date)
+    // A project's real schedule is the days it actually has a delivery or a
+    // phase — NOT every day between start_date and target_end_date. Painting a
+    // strip on every day (the old behaviour) buried the calendar under a solid
+    // project bar for 7 weeks. Build the set of active days per project.
+    const projectActiveDates = new Map<string, Set<string>>();
+    const addProjDate = (pid: unknown, dk: string | null) => {
+      const id = String(pid ?? "").trim();
+      if (!id || !dk) return;
+      if (!projectActiveDates.has(id)) projectActiveDates.set(id, new Set());
+      projectActiveDates.get(id)!.add(dk);
+    };
+    for (const d of deliveries || []) {
+      addProjDate((d as { project_id?: string | null }).project_id, toDateKey(d.scheduled_date as string | Date | null));
+    }
+    for (const ph of phases || []) {
+      addProjDate((ph as { project_id?: string | null }).project_id, toDateKey(ph.scheduled_date as string | Date | null));
+    }
+
+    // Projects: one entry per ACTIVE day (delivery/phase). Fall back to the
+    // start date when a project has no scheduled activity yet, so it still
+    // appears once rather than vanishing.
     for (const proj of projects || []) {
       if (crewFilter) continue;
       if (typeFilter && typeFilter !== "project_phase" && typeFilter !== "project") continue;
       const pStart = toDateKey(proj.start_date as string | Date | null);
       if (!pStart) continue;
-      const pEnd = toDateKey(proj.target_end_date as string | Date | null) || pStart;
-      const rangeStart = pStart < startDate ? startDate : pStart;
-      const rangeEnd = pEnd > endDate ? endDate : pEnd;
-      const d = new Date(rangeStart + "T12:00:00");
-      const endD = new Date(rangeEnd + "T12:00:00");
-      while (d <= endD) {
-        const dk = d.toISOString().slice(0, 10);
+      const active = projectActiveDates.get(String(proj.id));
+      const days =
+        active && active.size > 0
+          ? [...active].filter((dk) => dk >= startDate && dk <= endDate)
+          : pStart >= startDate && pStart <= endDate
+            ? [pStart]
+            : [];
+      for (const dk of days) {
         events.push({
           id: `project-${proj.id}-${dk}`,
           type: "project",
@@ -698,7 +719,6 @@ export async function GET(req: NextRequest) {
           itemCount: null,
           scheduleBlockId: null,
         });
-        d.setDate(d.getDate() + 1);
       }
     }
 
