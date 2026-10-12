@@ -214,6 +214,14 @@ export async function PATCH(
             charged_at: new Date().toISOString(),
           })
           .eq("id", id);
+        // Always fold the approved change-request fee into the one contract
+        // number. Skip on an idempotent retry or it double-counts.
+        if (!result.alreadyRecorded) {
+          const { foldFeeIntoMoveContract } = await import("@/lib/payments/fold-fee-into-contract");
+          const { splitOntarioTaxInclusive } = await import("@/lib/format-currency");
+          const { preTax, inclusive } = splitOntarioTaxInclusive(Number(requestWithFee?.fee_cents ?? 0) / 100);
+          await foldFeeIntoMoveContract(admin, request.move_id, { preTax, inclusive });
+        }
       }
     }
 

@@ -121,6 +121,16 @@ export async function GET(
     })
     .eq("id", itemId);
 
+  // Always fold the approved extra item into the move's one contract number so
+  // revenue / profitability / moves list / HubSpot reflect it. Skip on an
+  // idempotent retry (already recorded) or the total double-counts.
+  if (!result.alreadyRecorded) {
+    const { foldFeeIntoMoveContract } = await import("@/lib/payments/fold-fee-into-contract");
+    const { splitOntarioTaxInclusive } = await import("@/lib/format-currency");
+    const { preTax, inclusive } = splitOntarioTaxInclusive(feeCents / 100);
+    await foldFeeIntoMoveContract(admin, moveId, { preTax, inclusive });
+  }
+
   const ok = encodeURIComponent(
     `Thanks, $${(feeCents / 100).toFixed(2)} was charged to your card on file.`,
   );
