@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { squareClient } from "@/lib/square";
+import { resolveCardOnFile } from "@/lib/square/resolve-card-on-file";
 import { squareIdem } from "@/lib/square-idempotency";
 import { sendEmail } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
@@ -156,8 +157,27 @@ export async function GET(req: NextRequest) {
       const { locationId } = await getSquarePaymentConfig();
       if (!locationId) throw new Error("Square location not configured");
 
+      // Resolve the card LIVE from Square — the stored square_card_id may be a
+      // card the client deleted (then added a new one), which Square rejects
+      // with NOT_FOUND. Always charge whatever enabled card is on file now.
+      const resolved = await resolveCardOnFile(
+        move.square_customer_id,
+        move.square_card_id,
+      );
+      if (!resolved) {
+        throw new Error("No card on file for this customer");
+      }
+      if (resolved.changed) {
+        // Self-heal: point the move at the current card so the UI and future
+        // charges track it.
+        await supabase
+          .from("moves")
+          .update({ square_card_id: resolved.cardId })
+          .eq("id", move.id);
+      }
+
       const paymentRes = await squareClient.payments.create({
-        sourceId: move.square_card_id,
+        sourceId: resolved.cardId,
         amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
         customerId: move.square_customer_id || undefined,
         buyerEmailAddress: move.client_email || undefined,

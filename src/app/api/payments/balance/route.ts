@@ -122,6 +122,12 @@ export async function POST(req: Request) {
 
     const receiptUrl = readSquareReceiptUrl(paymentRes.payment);
 
+    // Self-heal: if a card was saved to the customer, point the move at it so
+    // any future charge (and the UI) tracks the card the client just used.
+    if (cardId && cardId !== move.square_card_id) {
+      await supabase.from("moves").update({ square_card_id: cardId }).eq("id", moveId).then(() => {}, () => {});
+    }
+
     await finalizeBalancePaymentSettlement({
       admin: supabase,
       moveId,

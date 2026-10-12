@@ -4,6 +4,7 @@ import { squareIdem } from "@/lib/square-idempotency";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { splitOntarioTaxInclusive } from "@/lib/format-currency";
 import { readSquareReceiptUrl } from "@/lib/square/payment-response";
+import { resolveCardOnFile } from "@/lib/square/resolve-card-on-file";
 import {
   squarePaymentErrorsToMessage,
   squareThrownErrorMessage,
@@ -57,17 +58,16 @@ export async function chargeApprovedFeeOnCard(opts: {
     .single();
   if (!move) return { charged: false, reason: "Move not found" };
 
-  let cardId: string | null = move.square_card_id ?? null;
+  // Resolve the card LIVE — the stored square_card_id may be a deleted card
+  // (client swapped cards), which Square rejects with NOT_FOUND. Always charge
+  // the enabled card on file now.
   const customerId: string | null = move.square_customer_id ?? null;
-  if (!cardId && customerId) {
-    try {
-      const listRes = await squareClient.cards.list({ customerId, sortOrder: "ASC" });
-      cardId = listRes.data?.[0]?.id ?? null;
-    } catch {
-      /* fall through to no-card */
-    }
+  const resolved = await resolveCardOnFile(customerId, move.square_card_id);
+  if (!resolved) return { charged: false, reason: "No card on file" };
+  const cardId = resolved.cardId;
+  if (resolved.changed) {
+    await admin.from("moves").update({ square_card_id: resolved.cardId }).eq("id", moveId);
   }
-  if (!cardId) return { charged: false, reason: "No card on file" };
 
   const { locationId } = await getSquarePaymentConfig();
   if (!locationId) return { charged: false, reason: "Payment is not configured" };
@@ -138,7 +138,7 @@ export async function chargeApprovedFeeOnCard(opts: {
     // Any other insert failure: the money was captured but not recorded. Surface
     // it so it can be reconciled rather than silently double-charging later.
     console.error("[charge-approved-fee] ledger insert failed:", ledgerErr.message, paymentId);
-    return { charged: false, reason: "Charge captured but not recorded — check Square/ledger." };
+    return { charged: false, reason: "Charge captured but not recorded. Check Square/ledger." };
   }
 
   return { charged: true, squarePaymentId: paymentId, receiptUrl, alreadyRecorded: false };

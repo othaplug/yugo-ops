@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { squareClient } from "@/lib/square";
+import { resolveCardOnFile } from "@/lib/square/resolve-card-on-file";
 import { squareIdem } from "@/lib/square-idempotency";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment";
@@ -44,8 +45,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (balanceAmount <= 0) {
       return NextResponse.json({ error: "No balance to charge" }, { status: 400 });
     }
-    if (!move.square_card_id) {
+    // Resolve the card LIVE — the stored id may be a card the client deleted
+    // (then added a new one), which Square rejects with NOT_FOUND. Charge the
+    // enabled card on file now, and self-heal the stored id.
+    const resolvedCard = await resolveCardOnFile(move.square_customer_id, move.square_card_id);
+    if (!resolvedCard) {
       return NextResponse.json({ error: "No card on file for this move" }, { status: 400 });
+    }
+    if (resolvedCard.changed) {
+      await admin.from("moves").update({ square_card_id: resolvedCard.cardId }).eq("id", moveId);
     }
 
     // Card processing is already absorbed in the quoted price (same policy as
@@ -69,7 +77,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const paymentRes = await squareClient.payments.create({
-      sourceId: move.square_card_id,
+      sourceId: resolvedCard.cardId,
       amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
       customerId: move.square_customer_id || undefined,
       buyerEmailAddress: move.client_email || undefined,
