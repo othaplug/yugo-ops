@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveCardOnFile } from "@/lib/square/resolve-card-on-file";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { cancelOrDeleteSquareInvoice } from "@/lib/square-invoice";
 import { requireAdmin } from "@/lib/api-auth";
@@ -254,33 +255,23 @@ export async function PATCH(
         return NextResponse.json({ error: "Move not found" }, { status: 404 });
       }
 
-      // Resolve a Square source_id to charge.
-      // 1) Prefer the explicit square_card_id stored on the move.
-      // 2) Fall back to looking up the customer's saved cards via Square's
-      //    cards.list — many moves (e.g. MV-30211) end up with only the
-      //    square_customer_id when the deposit went through Square's hosted
-      //    flow, never persisting the specific card id locally.
-      //    Same pattern used by the tip endpoint at
-      //    src/app/api/track/moves/[id]/tip/route.ts.
-      let resolvedCardId: string | null = (move.square_card_id as string | null) ?? null;
-      const customerId = (move.square_customer_id as string | null) ?? null;
-      if (!resolvedCardId && customerId) {
-        try {
-          const listRes = await squareClient.cards.list({
-            customerId,
-            sortOrder: "ASC",
-          });
-          const cards = listRes.data ?? [];
-          resolvedCardId = cards.length > 0 ? (cards[0].id ?? null) : null;
-        } catch (e) {
-          console.warn("[charge_card_now] cards.list failed:", e);
-        }
-      }
-      if (!resolvedCardId) {
+      // Resolve the card LIVE from Square: keep the stored square_card_id if
+      // it's still enabled, else charge the most recently added enabled card
+      // (the client may have deleted the stored card and added a new one, which
+      // Square otherwise rejects with NOT_FOUND). Self-heals the stored id.
+      const resolvedCard = await resolveCardOnFile(
+        (move.square_customer_id as string | null) ?? null,
+        (move.square_card_id as string | null) ?? null,
+      );
+      if (!resolvedCard) {
         return NextResponse.json(
           { error: "No card on file for this move" },
           { status: 400 },
         );
+      }
+      const resolvedCardId = resolvedCard.cardId;
+      if (resolvedCard.changed) {
+        await admin.from("moves").update({ square_card_id: resolvedCardId }).eq("id", id);
       }
 
       // Include approved change-request and extra-item fees, matching the client-side balanceDue calculation
