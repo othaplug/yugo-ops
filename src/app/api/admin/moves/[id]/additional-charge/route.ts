@@ -175,6 +175,13 @@ export async function POST(
       // The money is already collected and ledgered — never fail the request
       // here, just surface it so the total can be reconciled.
       console.error("[additional-charge] move total bump failed:", bumpErr.message);
+    } else {
+      // Push the new pre-tax total to HubSpot now (not just on the hourly
+      // reconcile) so the deal reflects the extra charge immediately.
+      const { syncMoveDealAmountNow } = await import(
+        "@/lib/hubspot/sync-move-deal-amount"
+      );
+      void syncMoveDealAmountNow(moveId);
     }
   }
 

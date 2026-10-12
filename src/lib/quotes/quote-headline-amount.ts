@@ -57,16 +57,72 @@ export function quoteHeadlineAmount(
 }
 
 /**
- * The two figures a HubSpot deal needs, derived from ONE source so Ops and
- * HubSpot never diverge:
- *   - `amount`   — the main deal value field = the Ops-list, tax-INCLUSIVE
- *     headline (quoteHeadlineAmount). This is the number the operator compares.
- *   - `subtotal` — the PRE-tax basis for the secondary OPS+ props
- *     (sub_total/taxes/total_price, which buildAllDealProperties derives by
- *     ×1.13). Uses the recommended tier's pre-tax `.price` when present, else
- *     backs it out of the tax-inclusive amount (HST 13%).
- * Every deal-amount write path (quote send, regenerate, hourly reconcile cron,
- * one-off sweep) uses this, so the main Amount field always equals the Ops list.
+ * A quote's PRE-TAX (HST-exclusive) deal value, for the HubSpot deal `amount`.
+ * Operator directive (2026-10-11): HubSpot is HST-exclusive and consistent.
+ *   - tiered  -> tiers[recommended_tier].price  (pre-tax; `.total` is tax-incl)
+ *   - custom  -> custom_price (white_glove/event/single_item — already pre-tax)
+ * This is DIFFERENT from quoteHeadlineAmount (tax-inclusive, Ops-list display).
+ * Used only for quotes that are NOT yet booked; once a move exists the move is
+ * the source of truth — see movePreTaxAmount.
+ */
+export function quotePreTaxAmount(
+  quote: {
+    custom_price?: unknown;
+    tiers?: unknown;
+    recommended_tier?: unknown;
+  } | null | undefined,
+): number | null {
+  if (!quote) return null;
+  const cp = quote.custom_price;
+  if (typeof cp === "number" && Number.isFinite(cp) && cp > 0) return Math.round(cp);
+  if (cp && typeof cp === "object") {
+    const o = cp as { price?: unknown; total?: unknown };
+    // custom_price objects carry a pre-tax `price`; `total` is tax-inclusive.
+    const v = [o.price, o.total].find((x) => typeof x === "number" && Number.isFinite(x) && (x as number) > 0);
+    if (typeof v === "number") return Math.round(v);
+  }
+  const tiers = quote.tiers;
+  if (tiers && typeof tiers === "object" && !Array.isArray(tiers)) {
+    const map = tiers as Record<string, { price?: unknown; total?: unknown } | undefined>;
+    const rec = String(quote.recommended_tier ?? "signature").toLowerCase().trim();
+    const pick = (t: { price?: unknown; total?: unknown } | undefined): number | null => {
+      if (!t) return null;
+      const v = typeof t.price === "number" && t.price > 0 ? t.price : undefined;
+      return typeof v === "number" ? Math.round(v) : null;
+    };
+    const fromRec = pick(map[rec]);
+    if (fromRec != null) return fromRec;
+    for (const k of Object.keys(map)) {
+      const v = pick(map[k]);
+      if (v != null) return v;
+    }
+  }
+  return null;
+}
+
+/**
+ * A BOOKED move's current PRE-TAX amount — the source of truth once a quote is
+ * booked, so HubSpot reflects re-prices and extra charges. Mirrors the Ops
+ * moves-list figure exactly: `final_amount ?? total_price ?? estimate`.
+ *   - additional-charge bumps `estimate`
+ *   - adjust-final-price sets `final_amount` + `total_price`
+ * All three are pre-tax. `move.amount` is deliberately NOT used (stored
+ * inconsistently, sometimes tax-inclusive).
+ */
+export function movePreTaxAmount(
+  move: { final_amount?: unknown; total_price?: unknown; estimate?: unknown } | null | undefined,
+): number | null {
+  if (!move) return null;
+  for (const v of [move.final_amount, move.total_price, move.estimate]) {
+    if (typeof v === "number" && Number.isFinite(v) && v > 0) return Math.round(v);
+  }
+  return null;
+}
+
+/**
+ * The two figures a HubSpot deal needs for a QUOTE (not yet booked), both
+ * PRE-TAX: `amount` is the main deal value, `subtotal` is the same pre-tax basis
+ * that buildAllDealProperties uses to derive sub_total/taxes/total_price (×1.13).
  */
 export function quoteDealFinancials(
   quote: {
@@ -75,18 +131,6 @@ export function quoteDealFinancials(
     recommended_tier?: unknown;
   } | null | undefined,
 ): { amount: number | null; subtotal: number | null } {
-  const amount = quoteHeadlineAmount(quote);
-  if (amount == null) return { amount: null, subtotal: null };
-
-  let subtotal = Math.round(amount / 1.13); // default: back HST out of the total
-  const tiers = quote?.tiers;
-  if (tiers && typeof tiers === "object" && !Array.isArray(tiers)) {
-    const map = tiers as Record<string, { price?: unknown } | undefined>;
-    const rec = String(quote?.recommended_tier ?? "signature").toLowerCase().trim();
-    const recPrice = map[rec]?.price;
-    if (typeof recPrice === "number" && Number.isFinite(recPrice) && recPrice > 0) {
-      subtotal = Math.round(recPrice);
-    }
-  }
-  return { amount, subtotal };
+  const amount = quotePreTaxAmount(quote);
+  return { amount, subtotal: amount };
 }

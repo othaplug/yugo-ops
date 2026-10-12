@@ -9,7 +9,8 @@ import { autoCreateHubSpotDealForNewMove } from "@/lib/hubspot/auto-create-deal-
 import { getEmailBaseUrl } from "@/lib/email-base-url"
 import { getDeliveryDetailPath, getMoveDetailPath } from "@/lib/move-code"
 import { HS_DEAL_PENDING } from "@/lib/hubspot/auto-create-deal-for-quote"
-import { quoteDealFinancials } from "@/lib/quotes/quote-headline-amount"
+import { quoteDealFinancials, movePreTaxAmount } from "@/lib/quotes/quote-headline-amount"
+import { deliveryPreTaxForAdminList } from "@/lib/delivery-pricing"
 
 /**
  * Hourly self-healing HubSpot deal sync.
@@ -268,7 +269,7 @@ export async function GET(req: NextRequest) {
   const { data: moves, error: mErr } = await sb
     .from("moves")
     .select(
-      "move_code, status, hubspot_deal_id, client_name, tenant_name, from_address, to_address, from_access, to_access, service_type, scheduled_date, move_size, estimate, amount, total_price, tier_selected, est_crew_size, est_hours, truck_primary, is_pm_move",
+      "move_code, status, hubspot_deal_id, client_name, tenant_name, from_address, to_address, from_access, to_access, service_type, scheduled_date, move_size, estimate, amount, total_price, final_amount, tier_selected, est_crew_size, est_hours, truck_primary, is_pm_move",
     )
     .not("hubspot_deal_id", "is", null)
 
@@ -282,21 +283,11 @@ export async function GET(req: NextRequest) {
       const parts = name.split(/\s+/)
       const fn = parts.shift() || ""
       const ln = parts.join(" ")
-      // Match MoveDetailClient's contract priority (commit 4a9d74b7):
-      // total_price → amount → estimate. A move that was booked with
-      // the client picking Signature/Estate sees total_price reflect
-      // THAT choice (set by the move-create route). estimate is the
-      // original booking value, used only as a legacy fallback. Was:
-      // m.estimate first, which on a post-completion-adjusted move
-      // would push the STALE original to HubSpot.
-      const subtotal =
-        typeof m.total_price === "number"
-          ? m.total_price
-          : typeof m.amount === "number"
-            ? m.amount
-            : typeof m.estimate === "number"
-              ? m.estimate
-              : null
+      // Booked move = source of truth. PRE-TAX current amount, mirroring the
+      // Ops moves-list figure (final_amount ?? total_price ?? estimate), so a
+      // re-price or extra charge flows to HubSpot. NEVER m.amount (stored
+      // inconsistently, sometimes tax-inclusive).
+      const subtotal = movePreTaxAmount(m)
       const dealName = buildHubSpotDealName({
         serviceType: m.service_type as string | null | undefined,
         isPmMove: !!m.is_pm_move,
@@ -329,6 +320,7 @@ export async function GET(req: NextRequest) {
           isPmMove: !!m.is_pm_move,
         }),
       }
+      if (typeof subtotal === "number") props.amount = String(subtotal)
 
       const res = await safePatchDeal(token, m.hubspot_deal_id, props)
       if (res.ok || res.status === 204) {
@@ -373,7 +365,7 @@ export async function GET(req: NextRequest) {
   const { data: movesNoDeal } = await sb
     .from("moves")
     .select(
-      "id, move_code, status, scheduled_date, client_name, client_email, tenant_name, from_address, to_address, from_access, to_access, service_type, move_size, estimate, amount, total_price, tier_selected, is_pm_move, contract_id",
+      "id, move_code, status, scheduled_date, client_name, client_email, tenant_name, from_address, to_address, from_access, to_access, service_type, move_size, estimate, amount, total_price, final_amount, tier_selected, is_pm_move, contract_id",
     )
     .is("hubspot_deal_id", null)
     .not("scheduled_date", "is", null)
@@ -440,19 +432,10 @@ export async function GET(req: NextRequest) {
       const fn = nameParts[0] || (isPm ? "Portfolio" : "Client")
       const ln = nameParts.slice(1).join(" ") || (isPm ? "move" : "")
 
-      // Match the moves Path A subtotal priority above and
-      // MoveDetailClient (commit 4a9d74b7): prefer total_price (current
-      // effective) over estimate (original booking). Picks the SELECTED
-      // tier price on bookings that came from a recommended-Estate
-      // quote → client-chose-Signature flow.
-      const estimate =
-        typeof m.total_price === "number"
-          ? m.total_price
-          : typeof m.amount === "number"
-            ? m.amount
-            : typeof m.estimate === "number"
-              ? m.estimate
-              : null
+      // Booked move = source of truth; PRE-TAX current amount
+      // (final_amount ?? total_price ?? estimate). Feeds the deal `amount` when
+      // this path CREATES a deal for a move that has none yet.
+      const estimate = movePreTaxAmount(m)
 
       const detailPath = getMoveDetailPath({
         move_code: (m.move_code as string | null) ?? null,
@@ -537,7 +520,7 @@ export async function GET(req: NextRequest) {
   const { data: deliveriesAll, error: dErr } = await sb
     .from("deliveries")
     .select(
-      "id, delivery_number, status, hubspot_deal_id, client_name, business_name, contact_name, customer_name, contact_email, customer_email, end_customer_email, contact_phone, customer_phone, pickup_address, delivery_address, pickup_access, delivery_access, scheduled_date, calculated_price, quoted_price, total_price, booking_type, vertical_code, recommended_vehicle, estimated_duration_hours, crew_id",
+      "id, delivery_number, status, hubspot_deal_id, client_name, business_name, contact_name, customer_name, contact_email, customer_email, end_customer_email, contact_phone, customer_phone, pickup_address, delivery_address, pickup_access, delivery_access, scheduled_date, calculated_price, quoted_price, total_price, final_price, override_price, admin_adjusted_price, booking_type, vertical_code, recommended_vehicle, estimated_duration_hours, crew_id",
     )
 
   if (dErr) {
@@ -557,14 +540,11 @@ export async function GET(req: NextRequest) {
       const nameParts = primaryContactLabel.split(/\s+/)
       const fn = nameParts[0] ?? ""
       const ln = nameParts.slice(1).join(" ")
-      const subtotal =
-        d.calculated_price != null && Number.isFinite(Number(d.calculated_price))
-          ? Number(d.calculated_price)
-          : d.quoted_price != null && Number.isFinite(Number(d.quoted_price))
-            ? Number(d.quoted_price)
-            : d.total_price != null && Number.isFinite(Number(d.total_price))
-              ? Number(d.total_price)
-              : null
+      // Pre-tax figure EXACTLY as the Jobs → All Deliveries list shows it
+      // (handles the field priority + tax-inclusive stored totals). The old
+      // naive calculated_price?? priority disagreed with the jobs list.
+      const dpt = deliveryPreTaxForAdminList(d as Parameters<typeof deliveryPreTaxForAdminList>[0])
+      const subtotal = dpt > 0 ? Math.round(dpt) : null
       const serviceTypeLabel =
         String(d.booking_type ?? "").toLowerCase() === "one_off"
           ? "b2b_one_off_delivery"
@@ -607,6 +587,8 @@ export async function GET(req: NextRequest) {
             isPmMove: false,
           }),
         }
+        // B2B delivery price is pre-tax (the "$X + HST" shown on the jobs list).
+        if (typeof subtotal === "number") props.amount = String(Math.round(subtotal))
         const res = await safePatchDeal(token, d.hubspot_deal_id, props)
         if (res.ok || res.status === 204) {
           results.deliveries_synced++

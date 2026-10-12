@@ -300,6 +300,8 @@ export async function POST(
   if (hsToken && hid) {
     const hst = Math.round(newSubtotal * 0.13 * 100) / 100;
     safePatchDeal(hsToken, hid, {
+      // Main deal value = pre-tax (HST-exclusive), matching every other path.
+      amount: String(Math.round(newSubtotal)),
       sub_total: String(Math.round(newSubtotal * 100) / 100),
       taxes: String(hst),
       total_price: String(Math.round((newSubtotal + hst) * 100) / 100),

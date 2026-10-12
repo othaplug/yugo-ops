@@ -11,6 +11,8 @@ function patchHsDealPrice(dealId: string, preTaxAmount: number) {
   if (!hsToken || !dealId.trim()) return;
   const hst = Math.round(preTaxAmount * 0.13 * 100) / 100;
   safePatchDeal(hsToken, dealId, {
+    // Main deal value = pre-tax (HST-exclusive), matching every other path.
+    amount: String(Math.round(preTaxAmount)),
     sub_total: String(Math.round(preTaxAmount * 100) / 100),
     taxes: String(hst),
     total_price: String(Math.round((preTaxAmount + hst) * 100) / 100),
