@@ -148,9 +148,6 @@ export async function POST(req: NextRequest) {
   };
   const pricing = priceOutboundStagingShipment(pricingInputs);
 
-  // Each row carries an HMAC token so the partner can view it without auth.
-  // We reuse the existing track-token machinery; the entity tag for outbound
-  // shipments doesn't exist in the union type yet, so we cast at the call.
   const insertPayload: Record<string, unknown> = {
     organization_id: organizationId,
     partner_id: body.partner_id || null,
