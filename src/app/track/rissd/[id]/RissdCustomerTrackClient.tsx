@@ -9,6 +9,7 @@ import {
 import YugoLogo from "@/components/YugoLogo";
 
 type Shipment = {
+  id: string;
   shipment_number: string;
   partner_name: string | null;
   business_name: string | null;
@@ -46,8 +47,10 @@ function primaryItemName(items: unknown): string {
 
 export default function RissdCustomerTrackClient({
   shipment,
+  token,
 }: {
   shipment: Shipment;
+  token: string;
 }) {
   const brand =
     shipment.partner_name || shipment.business_name || "Your retailer";
@@ -85,7 +88,11 @@ export default function RissdCustomerTrackClient({
 
   return (
     <div className="min-h-screen px-4 py-12" style={{ backgroundColor: BG, color: INK }}>
-      <TrackingAgreementModal />
+      <TrackingAgreementModal
+        entityType="inbound_shipment"
+        entityId={shipment.id}
+        token={token}
+      />
       <div className="max-w-lg mx-auto">
         <div className="flex flex-col items-center text-center mb-7">
           <YugoLogo size={28} variant="black" />

@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from "react";
 import YugoLogo from "@/components/YugoLogo";
+import {
+  trackingTermsCookieName,
+  type AgreementEntityType,
+} from "@/lib/tracking-agreement";
 
-const COOKIE_NAME = "yugo-tracking-terms-accepted";
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
 
 const WINE = "#2B0416";
@@ -40,16 +43,84 @@ function setCookie(name: string, value: string, maxAge: number) {
  *     & LIABILITY" wall is not a welcome, it's a barrier. Move the
  *     detail to /terms + /cookies (already linked).
  */
-export default function TrackingAgreementModal() {
+export default function TrackingAgreementModal({
+  entityType,
+  entityId,
+  token,
+}: {
+  /** Entity context enables the durable, device-independent server record.
+   *  When any is missing (e.g. a legacy surface), the modal falls back to the
+   *  per-browser cookie behaviour. */
+  entityType?: AgreementEntityType;
+  entityId?: string;
+  token?: string;
+} = {}) {
   const [show, setShow] = useState(false);
+  const [recording, setRecording] = useState(false);
+
+  const cookieName = trackingTermsCookieName();
+  const hasServer = !!(entityType && entityId && token);
 
   useEffect(() => {
-    const accepted = getCookie(COOKIE_NAME);
-    if (!accepted) setShow(true);
-  }, []);
+    let cancelled = false;
+    // Fast path: this browser already accepted the current terms version.
+    if (getCookie(cookieName)) return;
 
-  const handleAccept = () => {
-    setCookie(COOKIE_NAME, "1", COOKIE_MAX_AGE);
+    // No entity context → legacy cookie-only gate.
+    if (!hasServer) {
+      setShow(true);
+      return;
+    }
+
+    // Source of truth is the server record, so acceptance follows the client
+    // across devices and survives a cookie clear.
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/track/agreement?entityType=${entityType}&entityId=${entityId}&token=${encodeURIComponent(token!)}`,
+        );
+        if (cancelled) return;
+        if (res.ok) {
+          const { accepted } = (await res.json()) as { accepted?: boolean };
+          if (accepted) {
+            setCookie(cookieName, "1", COOKIE_MAX_AGE);
+            return;
+          }
+        }
+        setShow(true);
+      } catch {
+        // Network failure: still gate (cookie-only) so the client isn't blocked
+        // from a record we simply couldn't read.
+        if (!cancelled) setShow(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [cookieName, hasServer, entityType, entityId, token]);
+
+  const handleAccept = async () => {
+    if (recording) return;
+    // Record server-side first so we have the durable, auditable acceptance.
+    // Dismiss regardless of the result — a logged client should never be
+    // trapped behind a transient write failure.
+    if (hasServer) {
+      setRecording(true);
+      try {
+        await fetch("/api/track/agreement", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ entityType, entityId }),
+        });
+      } catch {
+        /* non-fatal: fall through to dismiss */
+      }
+      setRecording(false);
+    }
+    setCookie(cookieName, "1", COOKIE_MAX_AGE);
     setShow(false);
   };
 
@@ -203,7 +274,8 @@ export default function TrackingAgreementModal() {
           <button
             type="button"
             onClick={handleAccept}
-            className="w-full transition-opacity hover:opacity-90 active:scale-[0.99]"
+            disabled={recording}
+            className="w-full transition-opacity hover:opacity-90 active:scale-[0.99] disabled:opacity-60"
             style={{
               backgroundColor: WINE,
               color: OFF_WHITE,
@@ -213,11 +285,11 @@ export default function TrackingAgreementModal() {
               letterSpacing: "0.28em",
               textTransform: "uppercase",
               fontWeight: 500,
-              cursor: "pointer",
+              cursor: recording ? "default" : "pointer",
               borderRadius: 2,
             }}
           >
-            Enter the portal
+            {recording ? "One moment" : "Enter the portal"}
           </button>
 
           <p

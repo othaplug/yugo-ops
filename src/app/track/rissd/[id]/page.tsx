@@ -30,5 +30,5 @@ export default async function RissdCustomerTrackPage({
     redirect(`/track/delivery/${shipment.delivery_id}?token=${encodeURIComponent(dt)}`);
   }
 
-  return <RissdCustomerTrackClient shipment={shipment} />;
+  return <RissdCustomerTrackClient shipment={shipment} token={token} />;
 }

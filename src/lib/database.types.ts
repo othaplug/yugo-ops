@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.1"
   }
   graphql_public: {
     Tables: {
@@ -11438,6 +11438,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tracking_agreement_acceptances: {
+        Row: {
+          accepted_at: string
+          client_email: string | null
+          client_name: string | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          ip: string | null
+          terms_version: string
+          user_agent: string | null
+        }
+        Insert: {
+          accepted_at?: string
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          ip?: string | null
+          terms_version: string
+          user_agent?: string | null
+        }
+        Update: {
+          accepted_at?: string
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          ip?: string | null
+          terms_version?: string
+          user_agent?: string | null
+        }
+        Relationships: []
       }
       tracking_sessions: {
         Row: {

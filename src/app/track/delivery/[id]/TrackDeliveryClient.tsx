@@ -604,7 +604,7 @@ export default function TrackDeliveryClient({
       style={{ backgroundColor: CREAM, color: FOREST }}
       data-theme="light"
     >
-      <TrackingAgreementModal />
+      <TrackingAgreementModal entityType="delivery" entityId={delivery.id} token={token} />
       {/* ── CONTENT ── */}
       <div className="flex-1 max-w-[520px] w-full mx-auto px-4 sm:px-5 py-5 md:py-6">
         {/* Logo */}

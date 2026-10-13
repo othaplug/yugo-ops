@@ -1728,7 +1728,7 @@ export default function TrackMoveClient({
       data-theme="light"
       style={{ backgroundColor: trackPageBg, color: trackPageInk }}
     >
-      <TrackingAgreementModal />
+      <TrackingAgreementModal entityType="move" entityId={move.id} token={token} />
       {/* Header, outside scroll container; always visible on mobile */}
       <header
         className="shrink-0 z-50"
