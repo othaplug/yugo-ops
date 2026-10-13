@@ -40,19 +40,32 @@ export async function GET(req: NextRequest) {
   }
 
   const calId = encodeURIComponent(getGCalId());
+  const mode = req.nextUrl.searchParams.get("mode"); // "list" = dump, no delete
   const params = new URLSearchParams({
     timeMin: "2026-11-01T00:00:00Z",
     timeMax: "2026-12-31T23:59:59Z",
-    q: "DLV-QA",
-    maxResults: "50",
+    maxResults: "250",
     singleEvents: "true",
+    orderBy: "startTime",
   });
   const list = await callGCal<{ items?: GCalEvent[] }>(`/calendars/${calId}/events?${params.toString()}`, "GET");
   if (!list.ok) {
     return NextResponse.json({ error: `List failed: ${list.error}` }, { status: 502 });
   }
 
-  const items = (list.data?.items ?? []).filter((e) => (e.summary ?? "").startsWith("DLV-QA-"));
+  const all = list.data?.items ?? [];
+  if (mode === "list") {
+    return NextResponse.json({
+      ok: true,
+      calendarId: getGCalId(),
+      total: all.length,
+      events: all.map((e) => ({ id: e.id, summary: e.summary ?? "", date: e.start?.date ?? e.start?.dateTime ?? null })),
+    });
+  }
+
+  // Delete QA sample events: title prefix OR a clear QA/Sample marker in title.
+  const isQa = (s: string) => s.startsWith("DLV-QA-") || /DLV-QA|QA Sample|Sample Client/i.test(s);
+  const items = all.filter((e) => isQa(e.summary ?? ""));
   const deleted: { id: string; summary: string; date: string | null }[] = [];
   const errors: string[] = [];
   for (const e of items) {
