@@ -72,6 +72,7 @@ import {
   ArrowRight,
 } from "@phosphor-icons/react";
 import PreMoveChecklist from "@/components/tracking/PreMoveChecklist";
+import ClientRoomPhotoCapture from "@/components/tracking/ClientRoomPhotoCapture";
 import EstateServiceChecklist from "@/components/tracking/EstateServiceChecklist";
 import LiveMoveTimeline from "@/components/tracking/LiveMoveTimeline";
 import TrackYourCrewSection from "@/components/tracking/TrackYourCrewSection";
@@ -4823,6 +4824,22 @@ export default function TrackMoveClient({
                       }
                       projectManagerName={officeProjectManagerName ?? null}
                     />
+                  </div>
+                )}
+
+              {/* ── Room photos (client-captured, residential/local only) ──
+                 A quick pre-move capture of each room so the crew can plan the
+                 truck load. Optional; mirrors the pre-move checklist gate but
+                 excludes office/delivery/non-move product tracks where a
+                 room-by-room photo makes no sense. */}
+              {!isEstateTier &&
+                !isNonMoveProductTrack &&
+                !isLogisticsDeliveryTrack &&
+                serviceType !== "office_move" &&
+                !isCompleted &&
+                showClientPreMoveChecklist && (
+                  <div className="mt-5">
+                    <ClientRoomPhotoCapture moveId={move.id} token={token} />
                   </div>
                 )}
 

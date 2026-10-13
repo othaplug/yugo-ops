@@ -1,16 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyAllAdmins } from "@/lib/notifications";
-
-const ROOMS = [
-  "living_room",
-  "kitchen",
-  "primary_bedroom",
-  "bedroom_2",
-  "bedroom_3",
-  "basement",
-  "other",
-] as const;
+import { SURVEY_ROOM_KEYS } from "@/lib/photo-survey/rooms";
 
 /** POST multipart: file, room, notes — upload pre-move survey photo */
 export async function POST(
@@ -31,7 +22,7 @@ export async function POST(
   if (!file || !room) {
     return NextResponse.json({ error: "file and room required" }, { status: 400 });
   }
-  if (!ROOMS.includes(room as (typeof ROOMS)[number])) {
+  if (!SURVEY_ROOM_KEYS.includes(room)) {
     return NextResponse.json({ error: "Invalid room" }, { status: 400 });
   }
   if (file.size > 12 * 1024 * 1024) {

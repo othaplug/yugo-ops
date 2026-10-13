@@ -101,6 +101,8 @@ export default function TrackInventory({
   const [extraDesc, setExtraDesc] = useState("");
   const [extraRoom, setExtraRoom] = useState("");
   const [extraQty, setExtraQty] = useState(1);
+  const [extraPhoto, setExtraPhoto] = useState<File | null>(null);
+  const [extraPhotoPreview, setExtraPhotoPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -125,6 +127,30 @@ export default function TrackInventory({
     if (!extraDesc.trim()) return;
     setSubmitting(true);
     try {
+      // A photo is optional but encouraged. When attached, upload it first (to
+      // the shared pre-move photo store, tagged with the item description) so
+      // the coordinator can size and price the item before approving. A photo
+      // failure must not block the request itself.
+      if (extraPhoto) {
+        try {
+          const photoForm = new FormData();
+          photoForm.append("file", extraPhoto);
+          photoForm.append("room", "other");
+          photoForm.append("notes", `Added item: ${extraDesc.trim()}`);
+          const photoRes = await fetch(`/api/track/moves/${moveId}/room-photos`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: photoForm,
+          });
+          if (!photoRes.ok) {
+            const data = await photoRes.json().catch(() => ({}));
+            toast((data as { error?: string }).error || "Photo didn't upload, sending request without it", "x");
+          }
+        } catch {
+          toast("Photo didn't upload, sending request without it", "x");
+        }
+      }
+
       const res = await fetch(`/api/track/moves/${moveId}/extra-item?token=${encodeURIComponent(token)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -142,6 +168,8 @@ export default function TrackInventory({
       setExtraDesc("");
       setExtraRoom("");
       setExtraQty(1);
+      setExtraPhoto(null);
+      setExtraPhotoPreview(null);
       toast("Request submitted for approval", "check");
       fetch(`/api/track/moves/${moveId}/inventory?token=${encodeURIComponent(token)}`)
         .then((r) => r.json())
@@ -274,6 +302,52 @@ export default function TrackInventory({
                 className="w-full px-3.5 py-2.5 border border-[#E7E5E4] bg-[#FAFAF8] text-[#1A1A1A] text-[14px] placeholder:text-[#BBB] focus:outline-none focus:border-[#2C3E2D] focus:bg-white transition-colors"
               />
             </div>
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4F4B47] mb-1.5">Photo</label>
+            {extraPhotoPreview ? (
+              <div className="relative overflow-hidden border border-[#E7E5E4]" style={{ aspectRatio: "4/3" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={extraPhotoPreview} alt="Item" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => { setExtraPhoto(null); setExtraPhotoPreview(null); }}
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center"
+                  style={{ background: "rgba(0,0,0,0.55)" }}
+                  aria-label="Remove photo"
+                >
+                  <X size={11} weight="bold" className="text-white" />
+                </button>
+              </div>
+            ) : (
+              <label
+                className="flex flex-col items-center justify-center w-full cursor-pointer border border-dashed border-[#CFC9C4] bg-[#FAFAF8] py-6 hover:bg-white transition-colors"
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] ?? null;
+                    if (!f) return;
+                    if (f.size > 12 * 1024 * 1024) {
+                      toast("Photo too large (max 12 MB)", "x");
+                      return;
+                    }
+                    setExtraPhoto(f);
+                    setExtraPhotoPreview(URL.createObjectURL(f));
+                  }}
+                />
+                <Plus size={18} weight="bold" style={{ color: FOREST }} className="opacity-70" />
+                <span className="text-[12px] font-semibold mt-1.5" style={{ color: FOREST }}>
+                  Add a photo of the item
+                </span>
+                <span className="text-[11px] mt-0.5" style={{ color: TEXT_MUTED_ON_LIGHT }}>
+                  Helps us price it accurately
+                </span>
+              </label>
+            )}
           </div>
           <div className="flex gap-2.5 pt-1">
             <button

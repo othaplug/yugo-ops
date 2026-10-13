@@ -77,3 +77,27 @@ export const PHOTO_ROOM_DEFS: RoomDef[] = [
 export const PHOTO_ROOM_LABELS: Record<string, string> = Object.fromEntries(
   PHOTO_ROOM_DEFS.map((r) => [r.id, r.label]),
 );
+
+/**
+ * Pre-move survey rooms for the BOOKED-MOVE flow (`move_survey_photos`): the
+ * post-payment "Help us prepare" survey (`/api/survey/[token]`, `/survey`), the
+ * in-portal room-photo card (`/track` → `/api/track/moves/[id]/room-photos`),
+ * and the admin "Pre-move photos" gallery.
+ *
+ * This is a DIFFERENT taxonomy from PHOTO_ROOM_DEFS above (the pre-booking LEAD
+ * survey): this one keys on `primary_bedroom` / `basement`, matching the
+ * storage paths and admin filters already in `move_survey_photos`. Keep the API
+ * keys stable — they are storage-path and filter keys; only labels are safe to
+ * reword.
+ */
+export const SURVEY_ROOMS: ReadonlyArray<{ key: string; label: string }> = [
+  { key: "living_room", label: "Living Room" },
+  { key: "kitchen", label: "Kitchen" },
+  { key: "primary_bedroom", label: "Primary Bedroom" },
+  { key: "bedroom_2", label: "Bedroom 2" },
+  { key: "bedroom_3", label: "Bedroom 3" },
+  { key: "basement", label: "Basement / Storage" },
+  { key: "other", label: "Other" },
+];
+
+export const SURVEY_ROOM_KEYS: string[] = SURVEY_ROOMS.map((r) => r.key);

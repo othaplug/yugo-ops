@@ -1,21 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Camera, Image as ImageIcon, X, Check, Plus, Warning } from "@phosphor-icons/react";
+import { useState, useRef, useEffect } from "react";
+import { Camera, X, Check, Plus } from "@phosphor-icons/react";
 import { WINE, FOREST } from "@/lib/client-theme";
+import { SURVEY_ROOMS } from "@/lib/photo-survey/rooms";
 
-const CREAM = "#F9EDE4";
-
-const ROOM_LABELS = [
-  { key: "living_room", label: "Living Room" },
-  { key: "kitchen", label: "Kitchen" },
-  { key: "primary_bedroom", label: "Primary Bedroom" },
-  { key: "bedroom_2", label: "Bedroom 2" },
-  { key: "basement", label: "Basement" },
-  { key: "garage", label: "Garage" },
-  { key: "hallway", label: "Hallway / Entrance" },
-  { key: "other", label: "Other" },
-];
+const ROOM_LABELS = SURVEY_ROOMS;
 
 interface RoomPhoto {
   key: string;
@@ -42,6 +32,37 @@ export default function ClientRoomPhotoCapture({ moveId, token, initialPhotos = 
   );
   const [collapsed, setCollapsed] = useState(false);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  // Seed from the server (any photos already uploaded here or via the
+  // post-payment "Help us prepare" survey email — one shared store) so the
+  // card reflects true state without the parent having to fetch it.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/track/moves/${moveId}/room-photos?token=${encodeURIComponent(token)}`,
+        );
+        if (!res.ok) return;
+        const { photos: server } = (await res.json()) as {
+          photos?: Record<string, { url: string; uploadedAt: string }>;
+        };
+        if (cancelled || !server) return;
+        setPhotos((prev) =>
+          prev.map((p) =>
+            server[p.key]
+              ? { ...p, dataUrl: p.dataUrl ?? server[p.key].url, uploaded: true }
+              : p,
+          ),
+        );
+      } catch {
+        /* non-fatal: card still works for new uploads */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [moveId, token]);
 
   const uploadedCount = photos.filter((p) => p.uploaded).length;
   const total = photos.length;
@@ -261,7 +282,7 @@ export default function ClientRoomPhotoCapture({ moveId, token, initialPhotos = 
                 className="mt-0.5 shrink-0"
               />
               <p className="text-[11px] leading-relaxed" style={{ color: FOREST }}>
-                Great job! Your crew has been notified and will review these before arrival.
+                Thank you. Your crew will review these before arrival to plan the load.
               </p>
             </div>
           )}
