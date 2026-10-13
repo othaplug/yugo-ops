@@ -28,7 +28,13 @@ export async function GET() {
        start_date, target_end_date, estimated_budget, created_at`
     )
     .in("partner_id", orgIds)
-    .not("status", "eq", "cancelled")
+    // Partners only see projects that have been surfaced to them. A draft is an
+    // internal work-in-progress (admin is still building phases/deliveries and
+    // hasn't proposed anything yet), and cancelled projects are hidden — so the
+    // partner portal shows proposed / active / completed (and any later states),
+    // never a half-built draft. Partner-created projects are inserted as
+    // "active", so this never hides their own.
+    .not("status", "in", "(draft,cancelled)")
     .order("created_at", { ascending: false });
 
   if (dbErr) return NextResponse.json({ error: dbErr.message }, { status: 500 });
