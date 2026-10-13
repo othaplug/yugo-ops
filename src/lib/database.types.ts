@@ -6992,7 +6992,6 @@ export type Database = {
           partner_id: string | null
           partner_name: string | null
           partner_paid_at: string | null
-          partner_tracking_token: string | null
           picked_up_at: string | null
           picked_up_by: string | null
           pickup_arrived_at: string | null
@@ -7077,7 +7076,6 @@ export type Database = {
           partner_id?: string | null
           partner_name?: string | null
           partner_paid_at?: string | null
-          partner_tracking_token?: string | null
           picked_up_at?: string | null
           picked_up_by?: string | null
           pickup_arrived_at?: string | null
@@ -7162,7 +7160,6 @@ export type Database = {
           partner_id?: string | null
           partner_name?: string | null
           partner_paid_at?: string | null
-          partner_tracking_token?: string | null
           picked_up_at?: string | null
           picked_up_by?: string | null
           pickup_arrived_at?: string | null

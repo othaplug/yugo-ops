@@ -14,7 +14,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { logAudit } from "@/lib/audit";
-import { signTrackToken } from "@/lib/track-token";
 import { priceOutboundStagingShipment } from "@/lib/outbound-staging/pricing";
 
 const ALLOWED_STATUS_FILTER = new Set([
@@ -218,17 +217,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Mint the partner-facing token AFTER insert so we can sign against the
-  // assigned id. signTrackToken's entity union doesn't list outbound yet,
-  // so we use "delivery" — semantically the partner is tracking a
-  // shipment-style entity, and verifyTrackToken handles the same shape.
-  // (When we extend the union, we'll migrate token storage cleanly.)
-  const token = signTrackToken("delivery", inserted.id);
-  await admin
-    .from("outbound_shipments")
-    .update({ partner_tracking_token: token })
-    .eq("id", inserted.id);
-
   await logAudit({
     userId: user?.id,
     userEmail: user?.email,
@@ -248,7 +236,6 @@ export async function POST(req: NextRequest) {
     id: inserted.id,
     shipment_number: inserted.shipment_number,
     status: inserted.status,
-    partner_tracking_token: token,
     pricing,
   });
 }

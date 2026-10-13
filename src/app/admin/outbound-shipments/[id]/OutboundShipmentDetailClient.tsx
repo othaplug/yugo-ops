@@ -25,7 +25,6 @@ type Shipment = Record<string, unknown> & {
   total_price: number | null;
   subtotal: number | null;
   tax_amount: number | null;
-  partner_tracking_token: string | null;
   carrier_name: string | null;
   carrier_pro_number: string | null;
   carrier_bol_number: string | null;

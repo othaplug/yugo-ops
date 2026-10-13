@@ -106,9 +106,8 @@ export async function PATCH(
   }
 
   // Whitelist filter: silently drop any client-supplied keys not in the
-  // editable set. Stops `status`, `created_at`, `partner_tracking_token`
-  // etc. from being clobbered via this route — those have dedicated
-  // transition / regenerate endpoints.
+  // editable set. Stops `status`, `created_at` etc. from being clobbered via
+  // this route — those have dedicated transition / regenerate endpoints.
   const patch: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(body)) {
     if (EDITABLE_FIELDS.has(k)) patch[k] = v;
