@@ -34,7 +34,6 @@ import {
 import { sendOutboundShipmentInvoice } from "@/lib/outbound-staging/invoice";
 import { getResend } from "@/lib/resend";
 import { getEmailFrom } from "@/lib/email/send";
-import { getEmailBaseUrl } from "@/lib/email-base-url";
 
 const TRANSITION_EDITABLE_FIELDS = new Set<string>([
   "scheduled_pickup_date",
@@ -160,9 +159,6 @@ export async function POST(
   const partnerEmail = String(merged.partner_contact_email ?? "").trim();
   if (emailKey && partnerEmail && process.env.RESEND_API_KEY) {
     try {
-      const baseUrl = getEmailBaseUrl().replace(/\/$/, "");
-      const token = String(merged.partner_tracking_token ?? "");
-      const trackingUrl = `${baseUrl}/outbound/track/${merged.id}?token=${encodeURIComponent(token)}`;
       const ctx: PartnerEmailContext = {
         shipmentNumber: String(merged.shipment_number ?? merged.id),
         partnerContactName: (merged.partner_contact_name as string | null) ?? null,
@@ -175,7 +171,6 @@ export async function POST(
           merged.total_price != null ? Number(merged.total_price) : null,
         declaredValue:
           merged.declared_value != null ? Number(merged.declared_value) : null,
-        trackingUrl,
       };
       let rendered: { subject: string; html: string };
       switch (emailKey) {

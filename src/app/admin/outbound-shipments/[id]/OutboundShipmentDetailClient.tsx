@@ -120,9 +120,6 @@ export default function OutboundShipmentDetailClient({ id }: { id: string }) {
   if (!shipment) return <div className="p-6 text-[12px] text-red-600">{error || "Not found"}</div>;
 
   const forwardSteps = FORWARD[shipment.status] ?? [];
-  const trackUrl = shipment.partner_tracking_token
-    ? `/outbound/track/${shipment.id}?token=${encodeURIComponent(shipment.partner_tracking_token)}`
-    : null;
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -143,13 +140,6 @@ export default function OutboundShipmentDetailClient({ id }: { id: string }) {
           <span className="inline-block px-3 py-1 rounded-md bg-[var(--bg)] border border-[var(--brd)] text-[11px] font-semibold">
             {OUTBOUND_STAGING_STATUS_LABELS[shipment.status]}
           </span>
-          {trackUrl && (
-            <div className="mt-2">
-              <Link href={trackUrl} target="_blank" className="text-[10px] text-[var(--wine)] hover:underline">
-                View partner tracking →
-              </Link>
-            </div>
-          )}
         </div>
       </div>
 

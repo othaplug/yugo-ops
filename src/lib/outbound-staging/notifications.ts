@@ -30,7 +30,6 @@ export type PartnerEmailContext = {
   scheduledPickupWindow: string | null;
   totalPrice: number | null;
   declaredValue: number | null;
-  trackingUrl: string;
 };
 
 const FOREST = "#2C3E2D";
@@ -59,16 +58,15 @@ function pricingTable(price: number | null): string {
 </div>`;
 }
 
-function footer(trackingUrl: string): string {
+function footer(): string {
   return `
 <table width="100%" style="margin-top:24px;${RULE}padding-top:16px;">
 <tr><td>
-<a href="${trackingUrl}" style="display:inline-block;background:${WINE};color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:12px 24px;border-radius:6px;">Track this shipment</a>
-</td></tr>
-</table>
-<p style="font-size:12px;color:${FOREST}99;margin-top:24px;">
+<p style="font-size:12px;color:${FOREST}99;margin:0;">
   Questions? Reply to this email or contact your coordinator at support@helloyugo.com.
-</p>`;
+</p>
+</td></tr>
+</table>`;
 }
 
 function header(eyebrow: string, headline: string): string {
@@ -99,11 +97,11 @@ export function renderConfirmationEmail(ctx: PartnerEmailContext): {
   ${header("Shipment confirmed", `Pickup booked for ${ctx.scheduledPickupDate ?? "your shipment"}`)}
   <p style="font-size:14px;line-height:1.6;">Hi ${greeting},</p>
   <p style="font-size:14px;line-height:1.6;">
-    We're confirmed for your outbound staging shipment. Below is the booking summary, you can track every step at the link at the bottom of this email.
+    We're confirmed for your outbound staging shipment. Below is the booking summary. We'll email you at every step.
   </p>
   ${detailsBlock(ctx)}
   ${pricingTable(ctx.totalPrice)}
-  ${footer(ctx.trackingUrl)}
+  ${footer()}
 </td></tr>`;
   return {
     subject: `Yugo shipment ${ctx.shipmentNumber} confirmed, pickup ${ctx.scheduledPickupDate ?? "scheduled"}`,
@@ -126,7 +124,7 @@ export function renderPickedUpEmail(ctx: PartnerEmailContext): {
   <p style="font-size:14px;line-height:1.6;">
     You'll get the next update once palletizing is complete and the shipment is ready for your carrier.
   </p>
-  ${footer(ctx.trackingUrl)}
+  ${footer()}
 </td></tr>`;
   return {
     subject: `Yugo shipment ${ctx.shipmentNumber} picked up`,
@@ -159,7 +157,7 @@ export function renderReadyForCarrierEmail(
     Palletizing is complete and the shipment is staged at the Yugo warehouse. Please coordinate a pickup appointment with your carrier, we'll release at the door once they arrive with a matching BOL.
   </p>
   ${palletSpec ? `<div style="margin:18px 0;padding:14px;background:${CREAM};border-radius:8px;font-size:13px;line-height:1.6;"><strong style="color:${FOREST};">Pallet specs:</strong> ${palletSpec}</div>` : ""}
-  ${footer(ctx.trackingUrl)}
+  ${footer()}
 </td></tr>`;
   return {
     subject: `Yugo shipment ${ctx.shipmentNumber} ready for carrier pickup`,
@@ -191,7 +189,7 @@ export function renderHandedOffEmail(
     ${ctx.carrierProNumber ? `<tr><td style="padding:6px 0;color:${FOREST}99;">PRO</td><td style="padding:6px 0;font-family:monospace;">${ctx.carrierProNumber}</td></tr>` : ""}
   </table>
   <p style="font-size:14px;line-height:1.6;">Thanks for shipping with Yugo. Reply if anything's off and we'll sort it.</p>
-  ${footer(ctx.trackingUrl)}
+  ${footer()}
 </td></tr>`;
   return {
     subject: `Yugo shipment ${ctx.shipmentNumber} handed off to ${ctx.carrierName ?? "carrier"}`,
