@@ -15608,6 +15608,31 @@ export default function QuoteFormClient({
                     </span>
                   </span>
                 </div>
+                {/* Per-tier crew breakdown so operators see exactly what the
+                    client sees per tier (Essential/Signature run lighter than
+                    Estate via tier_crew_reduction). Guards the recurring bug
+                    where operators thought the single "N-person crew" above
+                    was what the client would see on every tier. */}
+                {(() => {
+                  const fac = (quoteResult.factors ?? {}) as Record<string, unknown>;
+                  const raw = fac.crew_by_tier;
+                  if (!raw || typeof raw !== "object") return null;
+                  const map = raw as Record<string, unknown>;
+                  const parts: string[] = [];
+                  for (const key of ["essential", "signature", "estate"]) {
+                    const n = Number(map[key]);
+                    if (Number.isFinite(n)) {
+                      const label = key.charAt(0).toUpperCase() + key.slice(1);
+                      parts.push(`${label} ${n}`);
+                    }
+                  }
+                  if (parts.length < 2) return null;
+                  return (
+                    <div className="pl-5 text-[10px] text-[var(--tx3)]">
+                      Per tier: {parts.join(" · ")}
+                    </div>
+                  );
+                })()}
                 <div className="flex items-center gap-2">
                   <Clock className="w-3.5 h-3.5 text-[var(--gold)]" />
                   <span className="text-[var(--tx)]">

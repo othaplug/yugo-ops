@@ -6291,21 +6291,22 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  // When labour exists (inventory-based or base_rates fallback), use it for tier includes so the public quote page shows crew/hours that match the estimate
+  // Only the hours window line needs a post-residentialIncludes rewrite,
+  // because labour.estimatedHours is computed after residentialIncludes was
+  // called. Crew lines are NOT rewritten here: residentialIncludes already
+  // stamped the correct per-tier crew via tierCrew.{essential,signature,estate}
+  // (Estate carries the full crew; Essential/Signature run lighter via
+  // tier_crew_reduction). Clobbering every tier with the single labour.crewSize
+  // was the root cause of a multi-month recurring bug where the client page
+  // showed "Professional crew of 3" on all tiers and "crew of 2" in the
+  // "Your Move Includes" block — the stamped string disagreed with
+  // factors_applied.crew_by_tier. Client surfaces must read crew via
+  // getCrewForTier(quote, tier) from crew-and-truck-minimums.ts, which is the
+  // single source of truth. See getCrewForTier for the rationale.
   if (labour && tiers) {
-    const crewLineStandard = `Professional crew of ${labour.crewSize}`;
-    const crewLineEstate = `White glove specialist crew of ${labour.crewSize}`;
     const hoursLine = `${Math.round(labour.estimatedHours)}-hour window`;
     for (const tierName of Object.keys(tiers)) {
       const t = tiers[tierName];
-      const estateCrewIdx = t.includes.findIndex((s: string) => s.toLowerCase().includes("white glove specialist crew of"));
-      if (estateCrewIdx >= 0) t.includes[estateCrewIdx] = crewLineEstate;
-      else {
-        const crewIdx = t.includes.findIndex((s: string) =>
-          s.toLowerCase().includes("professional crew of") || s.toLowerCase().includes("professional movers")
-        );
-        if (crewIdx >= 0) t.includes[crewIdx] = crewLineStandard;
-      }
       const hoursIdx = t.includes.findIndex((s: string) => s.toLowerCase().includes("-hour window"));
       if (hoursIdx >= 0) t.includes[hoursIdx] = hoursLine;
     }

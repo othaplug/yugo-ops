@@ -208,6 +208,56 @@ export function validateTruckSelection(
 }
 
 /**
+ * Canonical per-tier crew resolver for every client-facing surface (tier
+ * cards, "Your Move Includes" block, confirmation copy, PDFs, SMS/email).
+ *
+ * Reads `factors_applied.crew_by_tier[tier]` first (the engine's authoritative
+ * per-tier output). Falls back to the scalar `est_crew_size` for pre-crew_by_tier
+ * quotes. Floored by MOVER_MINIMUMS so a lighter tier never advertises a crew
+ * smaller than the move physically requires.
+ *
+ * Every surface MUST call this function. Reading `tiers.<k>.includes[1]`
+ * directly or using the scalar `est_crew_size` across all tiers both reintroduce
+ * the "all tiers show the same crew" bug the engine was fixed to prevent.
+ */
+export function getCrewForTier(
+  quote: {
+    move_size?: string | null;
+    est_crew_size?: number | null;
+    factors_applied?: Record<string, unknown> | null;
+  },
+  tier: string | null | undefined,
+): number | null {
+  const tierKey = String(tier ?? "").toLowerCase();
+  const sizeKey = String(quote.move_size ?? "").toLowerCase();
+  const floor = MOVER_MINIMUMS[sizeKey];
+
+  const raw = quote.factors_applied?.crew_by_tier;
+  let perTier: number | undefined;
+  if (raw && typeof raw === "object") {
+    const map = raw as Record<string, unknown>;
+    const v = Number(map[tierKey]);
+    if (Number.isFinite(v)) perTier = v;
+  }
+
+  const stored = typeof perTier === "number" ? perTier : quote.est_crew_size;
+  if (typeof floor !== "number") {
+    return typeof stored === "number" && Number.isFinite(stored) ? stored : null;
+  }
+  if (typeof stored !== "number" || !Number.isFinite(stored)) return floor;
+  return Math.max(floor, stored);
+}
+
+/** Convenience: the "Professional crew of N" string every surface should render. */
+export function crewLineForTier(
+  quote: Parameters<typeof getCrewForTier>[0],
+  tier: string | null | undefined,
+): string {
+  const n = getCrewForTier(quote, tier);
+  return `Professional crew of ${n ?? 2}`;
+}
+
+/**
  * Validate a coordinator's crew override against the move-size floor.
  * dayType determines whether to check movers or packers.
  */

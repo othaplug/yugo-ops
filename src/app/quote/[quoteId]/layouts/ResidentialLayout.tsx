@@ -22,6 +22,7 @@ import {
   QUOTE_SECTION_H2_CLASS,
 } from "../quote-shared";
 import { formatPlatformDisplay } from "@/lib/date-format";
+import { crewLineForTier } from "@/lib/quotes/crew-and-truck-minimums";
 import type { PremiumSurfaceInk } from "../quote-premium-shell";
 import { ESTATE_ROSE } from "../estate-quote-ui";
 import {
@@ -488,11 +489,26 @@ export default function ResidentialLayout({
                           ? "Estate includes:"
                           : (meta.inclusionsIntro ?? "").trim();
 
+                        // Canonical per-tier crew bullet — never trust the
+                        // stamped string on the quote row for this (the engine
+                        // historically clobbered all three tiers with the same
+                        // scalar labour.crewSize). Always resolve via the
+                        // shared helper so a stale/wrong stored string cannot
+                        // leak into the card copy.
+                        const canonicalCrewBullet = crewLineForTier(
+                          quote as Parameters<typeof crewLineForTier>[0],
+                          tierKey,
+                        );
+
                         if (!configFeatures) {
                           const bullets = t.includes
                             .filter(Boolean)
                             .map((line, i) =>
-                              i === 0 ? tierCardTruckBullet(line) : line,
+                              i === 0
+                                ? tierCardTruckBullet(line)
+                                : i === 1
+                                  ? canonicalCrewBullet
+                                  : line,
                             );
                           return (
                             <div className="flex-1 min-h-0 flex flex-col mb-4">
@@ -523,11 +539,9 @@ export default function ResidentialLayout({
                           const truckRaw =
                             t.includes[0] ?? configFeatures?.[0]?.card ?? "";
                           const truck = tierCardTruckBullet(truckRaw);
-                          const crew =
-                            t.includes[1] ?? configFeatures?.[1]?.card ?? "";
                           const bullets: string[] = [
                             truck,
-                            crew,
+                            canonicalCrewBullet,
                             ...configFeatures.slice(2).map((f) => f.card),
                           ].filter(Boolean);
                           return (
