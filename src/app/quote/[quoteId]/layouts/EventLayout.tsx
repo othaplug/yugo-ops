@@ -54,19 +54,6 @@ type EventLegFactor = {
   event_type_label?: string;
 };
 
-/** Scale an array of amounts so they sum exactly to `target`, giving the remainder to the last item. */
-function scaleToTotal(amounts: number[], target: number): number[] {
-  const engineSum = amounts.reduce((a, b) => a + b, 0);
-  if (engineSum === 0 || Math.abs(engineSum - target) < 2) return amounts;
-  let remaining = target;
-  return amounts.map((amt, idx) => {
-    if (idx === amounts.length - 1) return remaining;
-    const scaled = Math.round((amt / engineSum) * target);
-    remaining -= scaled;
-    return scaled;
-  });
-}
-
 export default function EventLayout({
   quote,
   onConfirm,
@@ -171,39 +158,6 @@ export default function EventLayout({
     !!f.event_same_location_onsite ||
     !!f.event_has_on_site_leg ||
     (isMulti && eventLegs.some((l) => l.is_on_site));
-
-  // Per-leg display amounts: equal split when legs have identical scope (same
-  // crew, hours, same-day flag); proportional scaling otherwise.
-  const multiLegDisplayAmounts: number[] = [];
-  if (isMulti && eventLegs.length > 0) {
-    const subTotal = price - setupFee;
-    const ref = eventLegs[0];
-    const legsAreEqual =
-      eventLegs.length > 1 &&
-      eventLegs.every(
-        (l) =>
-          l.event_crew === ref.event_crew &&
-          l.event_hours === ref.event_hours &&
-          l.same_day === ref.same_day,
-      );
-
-    if (legsAreEqual) {
-      const perLeg = Math.floor(subTotal / eventLegs.length);
-      const remainder = subTotal - perLeg * eventLegs.length;
-      eventLegs.forEach((_, idx) =>
-        multiLegDisplayAmounts.push(
-          idx === eventLegs.length - 1 ? perLeg + remainder : perLeg,
-        ),
-      );
-    } else {
-      const engineAmounts = eventLegs.map(
-        (leg) => (leg.delivery_charge ?? 0) + (leg.return_charge ?? 0),
-      );
-      scaleToTotal(engineAmounts, subTotal).forEach((amt) =>
-        multiLegDisplayAmounts.push(amt),
-      );
-    }
-  }
 
   const chip = (label: string, filled = false) => (
     <span
@@ -468,30 +422,12 @@ export default function EventLayout({
           </h3>
         </div>
         <div className="p-5 md:p-6">
-          {isMulti && multiLegDisplayAmounts.length > 1 ? (
-            <table className="w-full text-[12px] mb-5">
-              <tbody>
-                {eventLegs.map((leg, idx) => {
-                  const displayAmt = multiLegDisplayAmounts[idx] ?? 0;
-                  return displayAmt > 0 ? (
-                    <tr key={idx} style={idx > 0 ? { borderTop: `1px solid ${C.rule}` } : undefined}>
-                      <td className="py-2" style={{ color: C.body }}>
-                        {leg.label || `Event ${idx + 1}`}, Delivery ({fmtShort(leg.delivery_date)})
-                        {leg.same_day ? <span className="ml-1 text-[10px] italic">+ same-day return</span> : null}
-                      </td>
-                      <td className="py-2 text-right font-medium" style={{ color: C.strong }}>{fmtPrice(displayAmt)}</td>
-                    </tr>
-                  ) : null;
-                })}
-                {hasSetup && (
-                  <tr style={{ borderTop: `1px solid ${C.rule}` }}>
-                    <td className="py-2" style={{ color: C.body }}>Setup (program)</td>
-                    <td className="py-2 text-right font-medium" style={{ color: C.strong }}>{fmtPrice(setupFee)}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          ) : null}
+          {/* Event quotes are intentionally headline-only on the client view
+              per project_quote_policies: no per-leg itemization, no setup line.
+              The grand total + deposit + balance below carry the full picture.
+              A previous build re-added a multi-leg breakdown table; removed
+              again here. If the operator needs the per-leg math, they see it
+              in the admin quote wizard, not on the client page. */}
           <div className="pt-2 text-center">
             <p className="text-[36px] md:text-[44px] [font-family:var(--font-body)]" style={{ color: C.priceColor }}>
               {fmtPrice(price)}
