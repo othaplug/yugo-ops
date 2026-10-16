@@ -58,6 +58,8 @@ export type CabinetryFlatBandInput = {
   deliveryKmFromOffice: number;
   /** Extra PICKUP stops beyond the first (the first pickup is included). */
   extraPickupStops: number;
+  /** Extra DROPOFF stops beyond the first (the first drop is included). */
+  extraDropoffStops?: number;
   /** curbside | threshold | room_of_choice | white_glove */
   handlingType: string;
   isPartner: boolean;
@@ -89,6 +91,12 @@ type CabinetryRateConfig = {
   units_included_in_base: number;
   per_unit_rate: number;
   extra_pickup_stop_fee: number;
+  /**
+   * Per extra DROP stop beyond the first. Defaults to the pickup fee so a
+   * multi-drop job prices the same as a multi-pickup job of equal stop count.
+   * Override in platform_config.b2b_cabinetry_rate.extra_dropoff_stop_fee.
+   */
+  extra_dropoff_stop_fee: number;
   /** Zone uplifts added to the base for delivery beyond the GTA core. */
   zone_uplift: { extended_gta: number; regional_ontario: number };
   /** Handling premiums. white_glove is a percentage with a dollar floor. */
@@ -112,6 +120,7 @@ const DEFAULTS: CabinetryRateConfig = {
   units_included_in_base: 8,
   per_unit_rate: 22,
   extra_pickup_stop_fee: 65,
+  extra_dropoff_stop_fee: 65,
   zone_uplift: { extended_gta: 75, regional_ontario: 150 },
   handling: {
     curbside: 0,
@@ -349,6 +358,17 @@ export function priceCabinetryFlatBand(
     addonsTotal += charge;
     breakdown.push({
       label: `Additional pickup stop${extraStops !== 1 ? "s" : ""} (${extraStops} × $${rc.extra_pickup_stop_fee})`,
+      amount: charge,
+    });
+  }
+
+  // ── Extra dropoff stops (same unit fee as pickups; first drop included) ────
+  const extraDrops = Math.max(0, Math.floor(input.extraDropoffStops || 0));
+  if (extraDrops > 0 && rc.extra_dropoff_stop_fee > 0) {
+    const charge = extraDrops * rc.extra_dropoff_stop_fee;
+    addonsTotal += charge;
+    breakdown.push({
+      label: `Additional dropoff stop${extraDrops !== 1 ? "s" : ""} (${extraDrops} × $${rc.extra_dropoff_stop_fee})`,
       amount: charge,
     });
   }

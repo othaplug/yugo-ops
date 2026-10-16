@@ -6087,6 +6087,10 @@ export default function QuoteFormClient({
         0,
         stops.filter((s) => s.type === "pickup").length - 1,
       );
+      const extraDropoffsCab = Math.max(
+        0,
+        stops.filter((s) => s.type === "delivery").length - 1,
+      );
       const fb = priceCabinetryFlatBand(
         {
           lines: rawItems.map((i) => ({
@@ -6098,6 +6102,7 @@ export default function QuoteFormClient({
           })),
           deliveryKmFromOffice: distKm,
           extraPickupStops: extraPickupsCab,
+          extraDropoffStops: extraDropoffsCab,
           handlingType: handlingForEngine,
           isPartner: false,
           weekend: isMoveDateWeekend(moveDate),

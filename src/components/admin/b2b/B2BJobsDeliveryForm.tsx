@@ -970,9 +970,28 @@ export default function B2BJobsDeliveryForm({
       routeMode === "multi"
         ? Math.max(
             0,
-            multiStops.filter((s) => !s.isFinalDestination).length - 1,
+            multiStops.filter((s) => s.stopType === "pickup").length - 1,
           )
         : 0;
+    // Multi-stop: pull extra pickup / drop addresses from the authoritative
+    // route (multiStops) so the price panel includes every drop beyond the
+    // first. Single-route mode continues to use the legacy per-field state.
+    const extraPickupAddressesForPreview =
+      routeMode === "multi"
+        ? multiStops
+            .filter((s) => s.stopType === "pickup")
+            .slice(1)
+            .map((s) => s.address.trim())
+            .filter(Boolean)
+        : extraPickupStops.map((s) => s.address).filter(Boolean);
+    const extraDeliveryAddressesForPreview =
+      routeMode === "multi"
+        ? multiStops
+            .filter((s) => s.stopType === "delivery")
+            .slice(0, -1) // exclude the final drop (passed as delAddr)
+            .map((s) => s.address.trim())
+            .filter(Boolean)
+        : extraDeliveryStops.map((s) => s.address).filter(Boolean);
     if (
       !verticalCode.trim() ||
       !pickAddr ||
@@ -994,12 +1013,8 @@ export default function B2BJobsDeliveryForm({
           delivery_address: delAddr,
           pickup_access: pickAcc,
           delivery_access: delAcc,
-          extra_pickup_addresses: extraPickupStops
-            .map((s) => s.address)
-            .filter(Boolean),
-          extra_delivery_addresses: extraDeliveryStops
-            .map((s) => s.address)
-            .filter(Boolean),
+          extra_pickup_addresses: extraPickupAddressesForPreview,
+          extra_delivery_addresses: extraDeliveryAddressesForPreview,
           ...(routeMode === "multi" && routeOrdered.length >= 2
             ? {
                 route_addresses_in_order: routeOrdered,
@@ -2061,8 +2076,24 @@ export default function B2BJobsDeliveryForm({
         : [];
     const sqExtraPu =
       routeMode === "multi"
-        ? Math.max(0, multiStops.filter((s) => !s.isFinalDestination).length - 1)
+        ? Math.max(0, multiStops.filter((s) => s.stopType === "pickup").length - 1)
         : 0;
+    const sqExtraPickupAddresses =
+      routeMode === "multi"
+        ? multiStops
+            .filter((s) => s.stopType === "pickup")
+            .slice(1)
+            .map((s) => s.address.trim())
+            .filter(Boolean)
+        : extraPickupStops.map((s) => s.address).filter(Boolean);
+    const sqExtraDeliveryAddresses =
+      routeMode === "multi"
+        ? multiStops
+            .filter((s) => s.stopType === "delivery")
+            .slice(0, -1)
+            .map((s) => s.address.trim())
+            .filter(Boolean)
+        : extraDeliveryStops.map((s) => s.address).filter(Boolean);
 
     try {
       const pv = await fetch("/api/admin/b2b-delivery/pricing-preview", {
@@ -2076,12 +2107,8 @@ export default function B2BJobsDeliveryForm({
           delivery_address: sqDel,
           pickup_access: sqPickAcc,
           delivery_access: sqDelAcc,
-          extra_pickup_addresses: extraPickupStops
-            .map((s) => s.address)
-            .filter(Boolean),
-          extra_delivery_addresses: extraDeliveryStops
-            .map((s) => s.address)
-            .filter(Boolean),
+          extra_pickup_addresses: sqExtraPickupAddresses,
+          extra_delivery_addresses: sqExtraDeliveryAddresses,
           ...(routeMode === "multi" && sqRoute.length >= 2
             ? {
                 route_addresses_in_order: sqRoute,

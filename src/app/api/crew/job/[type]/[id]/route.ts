@@ -207,16 +207,39 @@ export async function GET(
         ? await admin
             .from("delivery_stop_items")
             .select(
-              "id, stop_id, description, quantity, weight_range, is_fragile, is_high_value, requires_assembly, status, notes, photo_url, checked_by, checked_at",
+              "id, stop_id, destination_stop_id, description, quantity, weight_range, is_fragile, is_high_value, requires_assembly, status, notes, photo_url, checked_by, checked_at",
             )
             .in("stop_id", stopIds)
         : { data: null };
 
-    const itemsByStop: Record<string, NonNullable<typeof allStopItems>[number][]> = {};
+    // Pickup stops render items keyed by stop_id (what the crew LOADS here).
+    // Drop stops render items keyed by destination_stop_id (what the crew
+    // UNLOADS here). An item without a destination_stop_id falls back to the
+    // first drop in route order so legacy single-drop deliveries still show
+    // items at the delivery.
+    const firstDropId =
+      (stops || []).find(
+        (s) => String(s.stop_type || "").toLowerCase() === "delivery",
+      )?.id ?? null;
+    const itemsByPickupStop: Record<
+      string,
+      NonNullable<typeof allStopItems>[number][]
+    > = {};
+    const itemsByDropStop: Record<
+      string,
+      NonNullable<typeof allStopItems>[number][]
+    > = {};
     for (const row of allStopItems || []) {
       const sid = row.stop_id as string;
-      if (!itemsByStop[sid]) itemsByStop[sid] = [];
-      itemsByStop[sid].push(row);
+      if (sid) {
+        if (!itemsByPickupStop[sid]) itemsByPickupStop[sid] = [];
+        itemsByPickupStop[sid].push(row);
+      }
+      const dest = (row.destination_stop_id as string | null) ?? firstDropId;
+      if (dest) {
+        if (!itemsByDropStop[dest]) itemsByDropStop[dest] = [];
+        itemsByDropStop[dest].push(row);
+      }
     }
 
     let fromLat = d.pickup_lat != null ? Number(d.pickup_lat) : null;
@@ -422,25 +445,32 @@ export async function GET(
       recipientName: (d as { recipient_name?: string | null }).recipient_name || null,
       recipientPhone: (d as { recipient_phone?: string | null }).recipient_phone || null,
       recipientEmail: (d as { recipient_email?: string | null }).recipient_email || null,
-      stops: (stops || []).map((s) => ({
-        ...s,
-        stop_status: s.stop_status || s.status || "pending",
-        stop_type: s.stop_type || "delivery",
-        stopItems: (itemsByStop[s.id] || []).map((it) => ({
-          id: it.id,
-          description: it.description,
-          quantity: it.quantity,
-          weight_range: it.weight_range,
-          is_fragile: it.is_fragile,
-          is_high_value: it.is_high_value,
-          requires_assembly: it.requires_assembly,
-          status: it.status,
-          notes: it.notes,
-          photo_url: it.photo_url,
-          checked_by: it.checked_by,
-          checked_at: it.checked_at,
-        })),
-      })),
+      stops: (stops || []).map((s) => {
+        const stype = String(s.stop_type || "delivery").toLowerCase();
+        const bucket =
+          stype === "pickup"
+            ? itemsByPickupStop[s.id] || []
+            : itemsByDropStop[s.id] || [];
+        return {
+          ...s,
+          stop_status: s.stop_status || s.status || "pending",
+          stop_type: s.stop_type || "delivery",
+          stopItems: bucket.map((it) => ({
+            id: it.id,
+            description: it.description,
+            quantity: it.quantity,
+            weight_range: it.weight_range,
+            is_fragile: it.is_fragile,
+            is_high_value: it.is_high_value,
+            requires_assembly: it.requires_assembly,
+            status: it.status,
+            notes: it.notes,
+            photo_url: it.photo_url,
+            checked_by: it.checked_by,
+            checked_at: it.checked_at,
+          })),
+        };
+      }),
       inventory: [{ room: "Items", items: rawItems, itemsWithId: items }],
       extraItems: extra || [],
       pendingExtraItems: pendingExtraD || [],

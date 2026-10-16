@@ -3654,6 +3654,10 @@ async function calcB2bOneoff(
         0,
         stops.filter((s) => s.type === "pickup").length - 1,
       );
+      const extraDropoffStops = Math.max(
+        0,
+        stops.filter((s) => s.type === "delivery").length - 1,
+      );
       const fb =
         loaded.vertical.code === "cabinetry"
           ? priceCabinetryFlatBand(
@@ -3667,6 +3671,7 @@ async function calcB2bOneoff(
                 })),
                 deliveryKmFromOffice: b2bLocationExtras.deliveryKmFromGta ?? 0,
                 extraPickupStops,
+                extraDropoffStops,
                 handlingType: (input.b2b_handling_type || "threshold").toLowerCase(),
                 isPartner: !!partnerOrgIdCab,
                 weekend: isMoveDateWeekend(input.move_date),

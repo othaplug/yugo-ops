@@ -19,7 +19,12 @@ import type {
 } from "./b2b-multi-stop-types";
 import {
   createEmptyPickupStop,
+  createEmptyDropoffStop,
+  getDropStops,
+  getPickupStops,
   newLocalId,
+  reconcileItemDestinations,
+  stampFinalDestination,
 } from "./b2b-multi-stop-types";
 
 const fieldInput = "field-input-compact w-full";
@@ -96,17 +101,15 @@ export default function B2BMultiStopRouteSection({
   quickAddPresets: B2bQuickAddPreset[];
   onQuickAdd: (preset: B2bQuickAddPreset, stopLocalId: string) => void;
 }) {
-  const pickupCount = useMemo(
-    () => stops.filter((s) => !s.isFinalDestination).length,
-    [stops],
-  );
+  const pickups = useMemo(() => getPickupStops(stops), [stops]);
+  const drops = useMemo(() => getDropStops(stops), [stops]);
+  const pickupCount = pickups.length;
+  const dropCount = drops.length;
+  const hasMultipleDrops = dropCount > 1;
 
   const unconfirmedPickups = useMemo(
-    () =>
-      stops.filter(
-        (s) => !s.isFinalDestination && s.readiness !== "confirmed",
-      ).length,
-    [stops],
+    () => pickups.filter((s) => s.readiness !== "confirmed").length,
+    [pickups],
   );
 
   const patchStop = (localId: string, patch: Partial<MultiStopDraftStop>) => {
@@ -160,41 +163,63 @@ export default function B2BMultiStopRouteSection({
     );
   };
 
+  // Keep route order: all pickups first, then all drops. The LAST drop is
+  // the final destination (stampFinalDestination enforces this). Items on
+  // pickups carry a destinationStopLocalId pointing at one of the drops
+  // (reconcileItemDestinations repairs stale pointers after remove/reorder).
   const addPickup = () => {
     setStops((prev) => {
-      const rest = prev.filter((s) => !s.isFinalDestination);
-      const fin = prev.find((s) => s.isFinalDestination);
-      if (!fin) return prev;
+      const pks = prev.filter((s) => s.stopType === "pickup");
+      const dps = prev.filter((s) => s.stopType === "delivery");
       const insert = createEmptyPickupStop();
-      insert.collapsed = rest.length >= 2;
-      return [...rest, insert, fin];
+      insert.collapsed = pks.length >= 2;
+      const next = [...pks, insert, ...dps];
+      return reconcileItemDestinations(stampFinalDestination(next));
     });
   };
 
-  const removePickup = (localId: string) => {
+  const addDropoff = () => {
     setStops((prev) => {
-      const pickups = prev.filter((s) => !s.isFinalDestination);
-      if (pickups.length <= 1) return prev;
-      const fin = prev.find((s) => s.isFinalDestination);
-      if (!fin) return prev;
-      return [...pickups.filter((s) => s.localId !== localId), fin];
+      const pks = prev.filter((s) => s.stopType === "pickup");
+      const dps = prev.filter((s) => s.stopType === "delivery");
+      const insert = createEmptyDropoffStop();
+      insert.collapsed = dps.length >= 2;
+      const next = [...pks, ...dps, insert];
+      return reconcileItemDestinations(stampFinalDestination(next));
     });
   };
 
+  const removeStop = (localId: string) => {
+    setStops((prev) => {
+      const target = prev.find((s) => s.localId === localId);
+      if (!target) return prev;
+      const sameKind = prev.filter((s) => s.stopType === target.stopType);
+      // Must keep at least one of each kind.
+      if (sameKind.length <= 1) return prev;
+      const next = prev.filter((s) => s.localId !== localId);
+      return reconcileItemDestinations(stampFinalDestination(next));
+    });
+  };
+
+  // Move within the stop's own kind only (pickups among pickups, drops among
+  // drops) so the route order [pickups..., drops...] is preserved.
   const moveStop = (localId: string, dir: -1 | 1) => {
     setStops((prev) => {
-      const fin = prev.find((s) => s.isFinalDestination);
-      if (!fin) return prev;
-      const mids = prev.filter((s) => !s.isFinalDestination);
-      const i = mids.findIndex((s) => s.localId === localId);
+      const target = prev.find((s) => s.localId === localId);
+      if (!target) return prev;
+      const pks = prev.filter((s) => s.stopType === "pickup");
+      const dps = prev.filter((s) => s.stopType === "delivery");
+      const bucket = target.stopType === "pickup" ? [...pks] : [...dps];
+      const i = bucket.findIndex((s) => s.localId === localId);
       if (i < 0) return prev;
       const j = i + dir;
-      if (j < 0 || j >= mids.length) return prev;
-      const next = [...mids];
-      const t = next[i];
-      next[i] = next[j]!;
-      next[j] = t!;
-      return [...next, fin];
+      if (j < 0 || j >= bucket.length) return prev;
+      const t = bucket[i];
+      bucket[i] = bucket[j]!;
+      bucket[j] = t!;
+      const next =
+        target.stopType === "pickup" ? [...bucket, ...dps] : [...pks, ...bucket];
+      return reconcileItemDestinations(stampFinalDestination(next));
     });
   };
 
@@ -269,9 +294,13 @@ export default function B2BMultiStopRouteSection({
         <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]">
           Stops
         </p>
-        {stops.map((stop, idx) => {
+        {stops.map((stop) => {
+          const isPickup = stop.stopType === "pickup";
           const isFinal = stop.isFinalDestination;
-          const pickupIndex = isFinal ? null : idx + 1;
+          const pickupIndex = isPickup ? pickups.findIndex((p) => p.localId === stop.localId) + 1 : null;
+          const dropIndex = !isPickup ? drops.findIndex((d) => d.localId === stop.localId) + 1 : null;
+          const canRemove =
+            isPickup ? pickups.length > 1 : drops.length > 1;
           const expanded = !stop.collapsed;
           return (
             <div
@@ -296,11 +325,13 @@ export default function B2BMultiStopRouteSection({
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-[11px] font-bold text-[var(--tx)]">
-                        {isFinal
-                          ? "Final delivery"
-                          : `Stop ${pickupIndex} · Pickup`}
+                        {isPickup
+                          ? `Stop ${pickupIndex} · Pickup`
+                          : hasMultipleDrops
+                            ? `Drop ${dropIndex} · Delivery${isFinal ? " (final)" : ""}`
+                            : "Final delivery"}
                       </span>
-                      {!isFinal && (
+                      {isPickup && (
                         <span
                           className={`inline-flex h-2 w-2 rounded-full ${readinessDotClass(stop.readiness)}`}
                           title={stop.readiness}
@@ -319,53 +350,53 @@ export default function B2BMultiStopRouteSection({
                   </div>
                 </button>
                 <div className="flex shrink-0 flex-wrap items-center gap-1">
-                  {!isFinal && (
-                    <>
-                      <button
-                        type="button"
-                        aria-label="Move stop up"
-                        onClick={() => moveStop(stop.localId, -1)}
-                        className="rounded-lg border border-[var(--brd)] p-1 text-[var(--tx)] hover:bg-[var(--bg)]"
-                      >
-                        <CaretUp size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Move stop down"
-                        onClick={() => moveStop(stop.localId, 1)}
-                        className="rounded-lg border border-[var(--brd)] p-1 text-[var(--tx)] hover:bg-[var(--bg)]"
-                      >
-                        <CaretDown size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removePickup(stop.localId)}
-                        className="rounded-lg border border-[var(--brd)] p-1 text-[var(--red)] hover:bg-[var(--bg)]"
-                        aria-label="Remove stop"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </>
+                  <button
+                    type="button"
+                    aria-label="Move stop up"
+                    onClick={() => moveStop(stop.localId, -1)}
+                    className="rounded-lg border border-[var(--brd)] p-1 text-[var(--tx)] hover:bg-[var(--bg)]"
+                  >
+                    <CaretUp size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Move stop down"
+                    onClick={() => moveStop(stop.localId, 1)}
+                    className="rounded-lg border border-[var(--brd)] p-1 text-[var(--tx)] hover:bg-[var(--bg)]"
+                  >
+                    <CaretDown size={14} />
+                  </button>
+                  {canRemove && (
+                    <button
+                      type="button"
+                      onClick={() => removeStop(stop.localId)}
+                      className="rounded-lg border border-[var(--brd)] p-1 text-[var(--red)] hover:bg-[var(--bg)]"
+                      aria-label="Remove stop"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   )}
                 </div>
               </div>
 
               {expanded && (
                 <div className="mt-3 space-y-2 border-t border-[var(--brd)]/80 pt-3">
-                  {!isFinal && (
-                    <Field label="Vendor">
-                      <input
-                        value={stop.vendorName}
-                        onChange={(e) =>
-                          patchStop(stop.localId, {
-                            vendorName: e.target.value,
-                          })
-                        }
-                        className={fieldInput}
-                        placeholder="Vendor or location label"
-                      />
-                    </Field>
-                  )}
+                  <Field label={isPickup ? "Vendor" : "Location label"}>
+                    <input
+                      value={stop.vendorName}
+                      onChange={(e) =>
+                        patchStop(stop.localId, {
+                          vendorName: e.target.value,
+                        })
+                      }
+                      className={fieldInput}
+                      placeholder={
+                        isPickup
+                          ? "Vendor or location label"
+                          : "e.g. Suite 402, Warehouse B"
+                      }
+                    />
+                  </Field>
                   <Field label="Address">
                     <AddressAutocomplete
                       value={stop.address}
@@ -400,7 +431,7 @@ export default function B2BMultiStopRouteSection({
                         ))}
                       </select>
                     </Field>
-                    {!isFinal && (
+                    {isPickup && (
                       <Field label="Readiness">
                         <select
                           value={stop.readiness}
@@ -430,7 +461,7 @@ export default function B2BMultiStopRouteSection({
                       placeholder="Dock, buzzer, rear entrance…"
                     />
                   </Field>
-                  {!isFinal &&
+                  {isPickup &&
                     (stop.readiness === "partial" ||
                       stop.readiness === "delayed") && (
                       <Field label="Readiness note">
@@ -496,11 +527,11 @@ export default function B2BMultiStopRouteSection({
                     />
                   </Field>
 
-                  {!isFinal && (
+                  {isPickup && (
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">
-                          Items at this stop
+                          Items picked up here
                         </p>
                         <button
                           type="button"
@@ -594,6 +625,33 @@ export default function B2BMultiStopRouteSection({
                                 </Field>
                               </div>
                             </div>
+                            {hasMultipleDrops && (
+                              <div className="mt-2">
+                                <Field label="Deliver to">
+                                  <select
+                                    value={it.destinationStopLocalId ?? drops[0]?.localId ?? ""}
+                                    onChange={(e) =>
+                                      patchItem(stop.localId, it.localId, {
+                                        destinationStopLocalId: e.target.value,
+                                      })
+                                    }
+                                    className={fieldInput}
+                                  >
+                                    {drops.map((d, i) => {
+                                      const label =
+                                        d.vendorName.trim() ||
+                                        d.address.trim() ||
+                                        `Drop ${i + 1}`;
+                                      return (
+                                        <option key={d.localId} value={d.localId}>
+                                          Drop {i + 1} · {label}
+                                        </option>
+                                      );
+                                    })}
+                                  </select>
+                                </Field>
+                              </div>
+                            )}
                             <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] text-[var(--tx)]">
                               <label className="flex items-center gap-1.5">
                                 <input
@@ -656,16 +714,26 @@ export default function B2BMultiStopRouteSection({
         })}
       </div>
 
-      <button
-        type="button"
-        onClick={addPickup}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--brd)] px-3 py-2 text-[11px] font-semibold text-[var(--tx)] hover:border-[var(--gold)]"
-      >
-        <Plus size={14} /> Add pickup stop
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={addPickup}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--brd)] px-3 py-2 text-[11px] font-semibold text-[var(--tx)] hover:border-[var(--gold)]"
+        >
+          <Plus size={14} /> Add pickup stop
+        </button>
+        <button
+          type="button"
+          onClick={addDropoff}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--brd)] px-3 py-2 text-[11px] font-semibold text-[var(--tx)] hover:border-[var(--gold)]"
+        >
+          <Plus size={14} /> Add dropoff stop
+        </button>
+      </div>
       <p className="text-[10px] text-[var(--tx3)]">
         Total stops: {stops.length} ({pickupCount} pickup
-        {pickupCount !== 1 ? "s" : ""} + 1 delivery)
+        {pickupCount !== 1 ? "s" : ""} + {dropCount} delivery
+        {dropCount !== 1 ? " drops" : ""})
       </p>
     </div>
   );

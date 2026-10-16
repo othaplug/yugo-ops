@@ -185,6 +185,7 @@ export async function POST(req: NextRequest) {
           })),
           deliveryKmFromOffice: deliveryKmFromOffice ?? 0,
           extraPickupStops: extraP.length,
+          extraDropoffStops: extraD.length,
           handlingType,
           isPartner: !!orgId,
           weekend: scheduledDate ? isMoveDateWeekend(scheduledDate) : false,

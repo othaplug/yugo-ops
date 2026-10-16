@@ -2387,6 +2387,7 @@ export type Database = {
           checked_by: string | null
           created_at: string | null
           description: string
+          destination_stop_id: string | null
           id: string
           is_fragile: boolean | null
           is_high_value: boolean | null
@@ -2403,6 +2404,7 @@ export type Database = {
           checked_by?: string | null
           created_at?: string | null
           description: string
+          destination_stop_id?: string | null
           id?: string
           is_fragile?: boolean | null
           is_high_value?: boolean | null
@@ -2419,6 +2421,7 @@ export type Database = {
           checked_by?: string | null
           created_at?: string | null
           description?: string
+          destination_stop_id?: string | null
           id?: string
           is_fragile?: boolean | null
           is_high_value?: boolean | null
@@ -2431,6 +2434,13 @@ export type Database = {
           weight_range?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "delivery_stop_items_destination_stop_id_fkey"
+            columns: ["destination_stop_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_stops"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "delivery_stop_items_stop_id_fkey"
             columns: ["stop_id"]

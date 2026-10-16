@@ -350,6 +350,18 @@ export async function POST(req: NextRequest) {
       isMultiStopB2b &&
       multiRouteStops.length > 0
     ) {
+      // Two-pass insertion so each item can be routed to a specific drop:
+      // pass 1 inserts every stop and records local_id -> UUID mapping;
+      // pass 2 inserts items and resolves `destination_stop_local_id` to the
+      // UUID of the target drop. Items without a destination default to the
+      // first drop in route order (keeps single-drop behaviour unchanged).
+      const stopUuidByLocalId = new Map<string, string>();
+      const insertedStopInfo: Array<{
+        s: Record<string, unknown>;
+        uuid: string;
+        itemsSummary: string | null;
+      }> = [];
+
       for (let i = 0; i < multiRouteStops.length; i++) {
         const s = multiRouteStops[i];
         const addr = String(s.address || "").trim();
@@ -456,13 +468,38 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
+        const localId = typeof s.local_id === "string" ? s.local_id : "";
+        if (localId) stopUuidByLocalId.set(localId, insertedStop.id);
+        insertedStopInfo.push({ s, uuid: insertedStop.id, itemsSummary: linesSummary || null });
+      }
+
+      // Pass 2: items. Resolve each item's destination_stop_local_id to a UUID;
+      // if missing or stale, fall back to the first drop stop (so single-drop
+      // deliveries behave exactly as before).
+      const firstDropUuid =
+        insertedStopInfo.find(
+          (r) => String(r.s.stop_type || "").toLowerCase() === "delivery",
+        )?.uuid ?? null;
+
+      for (const row of insertedStopInfo) {
+        const itemArr = Array.isArray(row.s.items)
+          ? (row.s.items as Record<string, unknown>[])
+          : [];
         for (const it of itemArr) {
           const desc = String(it.description || "").trim();
           if (!desc) continue;
           const qty = Math.max(1, Number(it.quantity) || 1);
           const wrRaw = String(it.weight_range || it.weight_category || "standard").toLowerCase();
+          const destLocalId =
+            typeof it.destination_stop_local_id === "string"
+              ? it.destination_stop_local_id
+              : "";
+          const destinationStopId =
+            (destLocalId && stopUuidByLocalId.get(destLocalId)) ||
+            firstDropUuid;
           const { error: itemErr } = await admin.from("delivery_stop_items").insert({
-            stop_id: insertedStop.id,
+            stop_id: row.uuid,
+            destination_stop_id: destinationStopId,
             description: desc,
             quantity: qty,
             weight_range: wrRaw,
