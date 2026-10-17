@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/api-auth";
+import { requireStaff } from "@/lib/api-auth";
 import { dedupeHubSpotContact } from "@/lib/hubspot/contact-search";
 
 /**
@@ -15,7 +15,8 @@ import { dedupeHubSpotContact } from "@/lib/hubspot/contact-search";
  * Response: { contact: null | HubSpotContact, match_kind?: "email" | "phone" | "company_name" | "company" }
  */
 export async function POST(req: NextRequest) {
-  const { error: authErr } = await requireAuth();
+  // Staff only: this route exposes HubSpot CRM data. Partners, crew and clients get 403.
+  const { error: authErr } = await requireStaff();
   if (authErr) return authErr;
 
   const body = await req.json().catch(() => ({}));

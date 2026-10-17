@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHmac } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-function verifyV1Signature(secret: string, url: string, rawBody: string, signature: string): boolean {
-  const sourceString = secret + "POST" + url + rawBody;
-  const hash = createHmac("sha256", secret).update(sourceString).digest("hex");
-  return hash === signature;
-}
+import { hubSpotSignedUris, verifyHubSpotSignature } from "@/lib/hubspot/verify-webhook-signature";
 
 export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
@@ -20,36 +14,24 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Signature verification ──
+  // Fails closed: no secret configured or a bad signature means 401/503, in
+  // every environment. See src/lib/hubspot/verify-webhook-signature.ts.
   const secret = (process.env.HUBSPOT_CLIENT_SECRET || "").trim();
-  const signatureV2 = req.headers.get("x-hubspot-signature") || req.headers.get("x-hubspot-signature-v2");
-  const signatureVersion = req.headers.get("x-hubspot-signature-version") || "v2";
-  const isProduction = process.env.NODE_ENV === "production";
-
-  if (secret) {
-    let valid = false;
-
-    if (signatureVersion === "v2" || signatureVersion === "v1") {
-      // v2: HMAC-SHA256 of clientSecret + requestBody
-      const expected = createHmac("sha256", secret).update(secret + rawBody).digest("hex");
-      valid = expected === signatureV2;
-
-      if (!valid) {
-        // Fallback: try v1 style (secret + method + url + body)
-        const requestUrl = req.url || "";
-        valid = verifyV1Signature(secret, requestUrl, rawBody, signatureV2 || "");
-      }
-    }
-
-    if (!valid) {
-      console.warn("[hubspot-contact] Invalid HubSpot signature");
-      await logWebhook(supabase, "hubspot-contact", "signature_invalid", payload, "Invalid signature");
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-    }
-  } else if (isProduction) {
-    console.error("[hubspot-contact] HUBSPOT_CLIENT_SECRET not configured in production");
+  if (!secret) {
+    console.error("[hubspot-contact] HUBSPOT_CLIENT_SECRET not configured; rejecting webhook");
     return NextResponse.json({ error: "Webhook signing not configured" }, { status: 503 });
-  } else {
-    console.warn("[hubspot-contact] HUBSPOT_CLIENT_SECRET not set, signature not verified");
+  }
+  const check = verifyHubSpotSignature({
+    secret,
+    method: req.method,
+    uris: hubSpotSignedUris(req),
+    rawBody,
+    headers: req.headers,
+  });
+  if (!check.valid) {
+    console.warn(`[hubspot-contact] Invalid HubSpot signature (${check.reason})`);
+    await logWebhook(supabase, "hubspot-contact", "signature_invalid", { reason: check.reason }, "Invalid signature");
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
   // ── Extract contact properties ──

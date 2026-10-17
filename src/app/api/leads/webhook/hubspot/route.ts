@@ -1,5 +1,7 @@
+import { timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { hubSpotSignedUris, verifyHubSpotSignature } from "@/lib/hubspot/verify-webhook-signature";
 import { createLeadPipeline } from "@/lib/leads/inbound";
 import { mapInboundServiceType } from "@/lib/leads/webflow-parse";
 
@@ -7,23 +9,46 @@ export const dynamic = "force-dynamic";
 
 /**
  * HubSpot workflow / custom code can POST new contact payloads here to mirror into Yugo.
- * Set HUBSPOT_INBOUND_LEADS_SECRET and send Authorization: Bearer <secret>.
+ *
+ * Accepted when either check passes (both fail closed when their secret is unset):
+ *   1. A valid HubSpot request signature (v1, v2 or v3) made with HUBSPOT_CLIENT_SECRET.
+ *   2. Authorization: Bearer <HUBSPOT_INBOUND_LEADS_SECRET>, the existing workflow setup,
+ *      now compared in constant time.
  */
-function verify(req: NextRequest): boolean {
+function bearerMatches(req: NextRequest): boolean {
   const secret = process.env.HUBSPOT_INBOUND_LEADS_SECRET?.trim();
   if (!secret) return false;
   const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  return bearer === secret;
+  const a = Buffer.from(bearer, "utf8");
+  const b = Buffer.from(secret, "utf8");
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+function verify(req: NextRequest, rawBody: string): boolean {
+  const clientSecret = process.env.HUBSPOT_CLIENT_SECRET?.trim() ?? "";
+  if (clientSecret) {
+    const check = verifyHubSpotSignature({
+      secret: clientSecret,
+      method: req.method,
+      uris: hubSpotSignedUris(req),
+      rawBody,
+      headers: req.headers,
+    });
+    if (check.valid) return true;
+  }
+  return bearerMatches(req);
 }
 
 export async function POST(req: NextRequest) {
-  if (!verify(req)) {
+  // Read the raw body once: the signature covers the exact bytes HubSpot sent.
+  const rawBody = await req.text();
+  if (!verify(req, rawBody)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   let body: Record<string, unknown>;
   try {
-    body = (await req.json()) as Record<string, unknown>;
+    body = JSON.parse(rawBody || "{}") as Record<string, unknown>;
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }

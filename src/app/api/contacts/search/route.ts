@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/api-auth";
+import { requireStaff } from "@/lib/api-auth";
 
 interface CacheEntry {
   data: HubSpotContact[];
@@ -28,7 +28,8 @@ function pruneCache() {
 }
 
 export async function GET(req: NextRequest) {
-  const { error: authErr } = await requireAuth();
+  // Staff only: this route exposes HubSpot CRM data. Partners, crew and clients get 403.
+  const { error: authErr } = await requireStaff();
   if (authErr) return authErr;
 
   const q = (req.nextUrl.searchParams.get("q") || "").trim();

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/api-auth";
+import { requireStaff } from "@/lib/api-auth";
 
 const HS_BASE = "https://api.hubapi.com/crm/v3/objects";
 const CACHE_SECONDS = 300; // 5 minutes
@@ -43,7 +43,8 @@ function hsHeaders(): HeadersInit {
 }
 
 export async function GET(req: NextRequest) {
-  const { error: authErr } = await requireAuth();
+  // Staff only: this route exposes HubSpot CRM data. Partners, crew and clients get 403.
+  const { error: authErr } = await requireStaff();
   if (authErr) return authErr;
 
   const dealId = req.nextUrl.searchParams.get("dealId");

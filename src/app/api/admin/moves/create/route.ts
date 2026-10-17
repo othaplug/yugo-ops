@@ -8,7 +8,7 @@ import {
 } from "@/lib/email-templates";
 import { generateWelcomePackageToken } from "@/lib/welcome-package-token";
 import { signTrackToken } from "@/lib/track-token";
-import { requireAuth } from "@/lib/api-auth";
+import { requireStaff } from "@/lib/api-auth";
 import { getEmailFrom } from "@/lib/email/send";
 import { logAudit } from "@/lib/audit";
 import { logActivity } from "@/lib/activity";
@@ -86,7 +86,8 @@ async function resolveTruckPrimary(
 }
 
 export async function POST(req: NextRequest) {
-  const { user, error: authError } = await requireAuth();
+  // Staff only: admin route that also creates HubSpot deals. Partners, crew and clients get 403.
+  const { user, error: authError } = await requireStaff();
   if (authError) return authError;
 
   try {
