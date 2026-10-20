@@ -1,18 +1,6 @@
-import QuoteWidgetClient from "./QuoteWidgetClient";
-import "./quote-widget.css";
+import { notFound } from "next/navigation";
 
-export const metadata = {
-  title: "Instant Quote",
-  description: "Get a ballpark estimate for your move in under a minute.",
-};
-
-export default function QuoteWidgetPage() {
-  return (
-    <div
-      className="min-h-screen flex items-start justify-center p-4 sm:p-6 sm:pt-10"
-      style={{ background: "#FAF7F2" }}
-    >
-      <QuoteWidgetClient />
-    </div>
-  );
+// Switched off 2026-10-20 (Oché): the public quote widget is retired; the new build has no public pricing route.
+export default function RetiredQuoteWidget() {
+  notFound();
 }

@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
-export default function WidgetQuoteRedirect() {
-  redirect("/quote-widget");
+// Switched off 2026-10-20 (Oché): the public quote widget is retired; the new build has no public pricing route.
+export default function RetiredQuoteWidget() {
+  notFound();
 }
