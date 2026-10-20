@@ -173,36 +173,6 @@ export function newClaimAdminEmailHtml(params: {
   return adminNotificationLayout(inner, undefined);
 }
 
-/** New widget lead — admin notification. Uses shared admin layout; content in a clear info block. */
-export function widgetLeadAdminEmailHtml(params: {
-  name: string;
-  typeLabel: string;
-  sizeLabel: string;
-  priceStr: string;
-  fromPostal: string;
-  toPostal: string;
-  extras?: string;
-}): string {
-  const baseUrl = getEmailBaseUrl();
-  const viewUrl = `${baseUrl}/admin/widget-leads`;
-  const routeLine = `${escapeHtml(params.fromPostal.toUpperCase())} → ${escapeHtml(params.toPostal.toUpperCase())}`;
-  const inner = `
-    <div style="${ADMIN_KICKER}">New widget lead</div>
-    <h1 style="font-size:20px;font-weight:700;color:${TEXT};margin:0 0 4px;">${escapeHtml(params.name)}</h1>
-    <p style="font-size:13px;color:${TEXT_MUTED};margin:0 0 16px;">Quote request from the instant quote widget.</p>
-    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border:1px solid rgba(44,62,45,0.10);padding:16px 20px;margin-bottom:20px;">
-      <table style="width:100%;font-size:13px;border-collapse:collapse;font-family:${BTN_FONT};">
-        <tr><td style="${ADMIN_LABEL_TD};padding:4px 12px 6px 0;">Type</td><td style="color:${TEXT};font-weight:500;padding:4px 0 6px;">${escapeHtml(params.typeLabel)} · ${escapeHtml(params.sizeLabel)}</td></tr>
-        <tr><td style="${ADMIN_LABEL_TD};padding:4px 12px 6px 0;">Estimate</td><td style="color:${EMAIL_FOREST};font-weight:600;padding:4px 0 6px;">${escapeHtml(params.priceStr)}</td></tr>
-        <tr><td style="${ADMIN_LABEL_TD};padding:4px 12px 6px 0;">Route</td><td style="color:${TEXT};padding:4px 0 6px;">${routeLine}</td></tr>
-        ${params.extras ? `<tr><td style="${ADMIN_LABEL_TD};padding:4px 12px 0 0;vertical-align:top;">Details</td><td style="color:${TEXT};font-size:12px;padding:4px 0 0;line-height:1.5;">${escapeHtml(params.extras).replace(/\|/g, " · ")}</td></tr>` : ""}
-      </table>
-    </div>
-    <a class="yugo-admin-cta" href="${viewUrl}" style="${emailPrimaryCtaStyle(BTN_FONT, "inline-block")}">VIEW WIDGET LEADS</a>
-  `;
-  return adminNotificationLayout(inner, undefined);
-}
-
 /** New lead from capture or admin (all coordinators + in-app; also direct email in notify). */
 export function newLeadAdminEmailHtml(params: {
   leadNumber: string | null;

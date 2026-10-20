@@ -1020,50 +1020,13 @@ function FeatureTogglesSection() {
     }
   };
 
-  const [embedCopied, setEmbedCopied] = useState(false);
-
   const features = [
     { key: "tipping_enabled", label: "Tipping System", desc: "Allow clients to tip crew after move completion" },
     { key: "quote_engagement_tracking", label: "Quote Engagement Tracking", desc: "Track client behaviour on the quote page" },
-    { key: "instant_quote_widget", label: "Instant Quote Widget", desc: "Enable public quote calculator on website" },
     { key: "valuation_upgrades", label: "Valuation Upgrades", desc: "Show protection upgrade options on client quotes" },
     { key: "sms_eta_enabled", label: "SMS ETA Updates", desc: "Send SMS updates with crew ETA on move/delivery day (departure, 15-min, arrived, completed)" },
     { key: "quote_sms_enabled", label: "Quote link SMS", desc: "Text clients the quote link when a quote is sent or re-sent (requires Twilio)" },
   ];
-
-  const appUrl = typeof window !== "undefined" ? window.location.origin : "";
-  const widgetEnabled = config["instant_quote_widget"] === "true";
-
-  const embedCode = `<!-- Yugo Instant Quote Widget -->
-<div id="yugo-quote-widget"></div>
-<script>
-(function() {
-  var d = document, s = d.createElement('script');
-  s.src = '${appUrl}/widget/quote.js';
-  s.async = true;
-  s.setAttribute('data-origin', '${appUrl}');
-  d.getElementById('yugo-quote-widget').appendChild(s);
-})();
-</script>
-<!-- End Yugo Widget -->`;
-
-  const iframeCode = `<!-- Yugo Instant Quote (iframe) -->
-<iframe
-  src="${appUrl}/widget/quote"
-  width="100%"
-  height="720"
-  frameborder="0"
-  style="border:none;border-radius:12px;"
-  title="Get a Quote - Yugo"
-></iframe>`;
-
-  const copyEmbed = (code: string) => {
-    navigator.clipboard.writeText(code).then(() => {
-      setEmbedCopied(true);
-      toast("Copied to clipboard", "check");
-      setTimeout(() => setEmbedCopied(false), 2000);
-    });
-  };
 
   const featureBody = (
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
@@ -1086,47 +1049,6 @@ function FeatureTogglesSection() {
                 </button>
               </div>
 
-              {/* Embed code panel for Instant Quote Widget */}
-              {f.key === "instant_quote_widget" && isOn && (
-                <div className="py-4 px-1 border-b border-[var(--brd)] space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-[11px] font-bold text-[var(--tx2)]">Embed Code (JavaScript)</div>
-                      <button type="button" onClick={() => copyEmbed(embedCode)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
-                        {embedCopied ? "Copied!" : "Copy"}
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-[var(--tx3)] mb-2">
-                      Paste this into your website HTML where you want the quote calculator to appear. It loads asynchronously and matches your brand styling.
-                    </p>
-                    <pre className="text-[10px] leading-relaxed bg-[var(--bg)] border border-[var(--brd)] rounded-lg p-3 overflow-x-auto text-[var(--tx2)] font-mono whitespace-pre-wrap break-all select-all">
-                      {embedCode}
-                    </pre>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-[11px] font-bold text-[var(--tx2)]">Embed Code (iframe)</div>
-                      <button type="button" onClick={() => copyEmbed(iframeCode)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
-                        Copy
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-[var(--tx3)] mb-2">
-                      Simpler option: embeds the quote form in an iframe. No JavaScript required.
-                    </p>
-                    <pre className="text-[10px] leading-relaxed bg-[var(--bg)] border border-[var(--brd)] rounded-lg p-3 overflow-x-auto text-[var(--tx2)] font-mono whitespace-pre-wrap break-all select-all">
-                      {iframeCode}
-                    </pre>
-                  </div>
-
-                  <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2.5">
-                    <div className="text-[10px] font-semibold text-[var(--tx2)] mb-0.5">Tip</div>
-                    <div className="text-[10px] text-[var(--tx3)] leading-relaxed">
-                      The widget loads <span className="font-mono text-[var(--tx2)]">/widget/quote</span> on this app. Use the same site origin in <span className="font-mono">data-origin</span> as your public marketing domain if they differ.
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           );
         })}

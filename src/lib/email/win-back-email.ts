@@ -1,9 +1,8 @@
-import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { statusUpdateEmailHtml } from "@/lib/email-templates";
 
+// The public quote widget is retired (2026-10-20); a fresh quote starts from the contact page.
 export function winBackQuoteRequestUrl(): string {
-  const base = getEmailBaseUrl();
-  return `${base}/quote-widget?utm_source=email&utm_medium=win_back&utm_campaign=reengage`;
+  return "https://www.itsyugo.com/contact";
 }
 
 export function buildWinBackEmailHtml(params: { firstName: string }): string {

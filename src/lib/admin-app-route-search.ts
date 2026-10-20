@@ -350,12 +350,6 @@ const ENTRIES: AppSearchEntry[] = [
     k: ["perks", "referral", "program", "incentives", "credits", "rewards"],
   },
   {
-    name: "Widget leads",
-    href: "/admin/widget-leads",
-    type: "Page",
-    k: ["widget", "web", "form", "leads", "inbox"],
-  },
-  {
     name: "Drafts",
     href: "/admin/drafts",
     type: "Page",

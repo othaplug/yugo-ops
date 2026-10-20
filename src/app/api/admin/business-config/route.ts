@@ -25,7 +25,7 @@ const BUSINESS_KEYS = [
   "change_request_enabled", "change_request_per_score_rate",
   "change_request_min_hours_before_move", "change_request_max_items_per_request",
   // Feature toggles
-  "tipping_enabled", "quote_engagement_tracking", "instant_quote_widget", "valuation_upgrades", "sms_eta_enabled",
+  "tipping_enabled", "quote_engagement_tracking", "valuation_upgrades", "sms_eta_enabled",
   "quote_sms_enabled",
   "weather_alerts_enabled",
   // Review requests

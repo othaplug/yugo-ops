@@ -1,13 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { ChartBar, Lightning } from "@/design-system/admin/icons"
+import { ChartBar } from "@/design-system/admin/icons"
 import { Tabs, TabsList, TabsTrigger } from "@/design-system/admin/primitives"
 
 export function LeadsNavTabs({
   active,
 }: {
-  active: "dashboard" | "all" | "mine" | "widget"
+  active: "dashboard" | "all" | "mine"
 }) {
   return (
     <Tabs value={active}>
@@ -23,12 +23,6 @@ export function LeadsNavTabs({
         </TabsTrigger>
         <TabsTrigger value="mine" variant="pill" asChild>
           <Link href="/admin/leads/mine">My leads</Link>
-        </TabsTrigger>
-        <TabsTrigger value="widget" variant="pill" asChild>
-          <Link href="/admin/leads/widget">
-            <Lightning size={12} />
-            Widget
-          </Link>
         </TabsTrigger>
       </TabsList>
     </Tabs>

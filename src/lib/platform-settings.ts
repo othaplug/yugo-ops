@@ -59,7 +59,6 @@ export async function getOfficeLocation(): Promise<OfficeLocation> {
 const FEATURE_DEFAULTS: Record<string, string> = {
   tipping_enabled: "true",
   quote_engagement_tracking: "true",
-  instant_quote_widget: "false",
   valuation_upgrades: "true",
   auto_followup_enabled: "true",
   followup_max_attempts: "3",

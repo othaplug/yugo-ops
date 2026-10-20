@@ -44,7 +44,6 @@ const QUICK_NAV: { group: string; items: { name: string; href: string; Icon: () 
     items: [
       { name: "All Moves", href: "/admin/moves", Icon: Icons.path },
       { name: "Quotes", href: "/admin/quotes", Icon: Icons.quoteClipboard },
-      { name: "Widget leads", href: "/admin/leads/widget", Icon: Icons.zap },
     ],
   },
   {
