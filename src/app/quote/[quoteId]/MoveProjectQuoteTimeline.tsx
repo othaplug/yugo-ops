@@ -135,7 +135,6 @@ export default function MoveProjectQuoteTimeline({
                     <div className="flex flex-wrap gap-3 mt-2 text-[11px] opacity-55" style={{ color: "#2B0416" }}>
                       {typeof day.crew_size === "number" && <span>{day.crew_size} crew</span>}
                       {day.truck_type && <span>{truckSlugToLabel(String(day.truck_type))}</span>}
-                      {typeof day.estimated_hours === "number" && <span>~{day.estimated_hours} hours</span>}
                     </div>
                   </div>
                 </div>
@@ -325,7 +324,6 @@ export default function MoveProjectQuoteTimeline({
                   <div className="flex flex-wrap gap-4 mt-2 text-[11px] opacity-50" style={{ color: muted }}>
                     {typeof day.crew_size === "number" && <span>{day.crew_size} crew</span>}
                     {day.truck_type && <span>{String(day.truck_type)} truck</span>}
-                    {typeof day.estimated_hours === "number" && <span>~{day.estimated_hours} hours</span>}
                   </div>
                 </div>
               </div>

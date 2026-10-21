@@ -234,7 +234,7 @@ function serviceDisplay(
     return { label: "Single Item", caption: "Item-level delivery" };
   }
   if (s === "labour_only") {
-    return { label: "Labour Only", caption: "Crew hours, no transit" };
+    return { label: "Labour Only", caption: "Hands-on crew, no transit" };
   }
   if (s === "event") {
     return { label: "Event Logistics", caption: "Venue delivery + return" };
@@ -620,17 +620,12 @@ function _legacyGenerateMoveSummaryPDF(
       : crew?.name || "-";
   const crewCount = displayMembers.length;
   const moverWord = logistics ? "logistics professionals" : "movers";
-  const durationLine =
-    move.actual_hours != null
-      ? `${move.actual_hours} hours`
-      : move.est_hours != null
-        ? `${move.est_hours} hours (estimated)`
-        : "-";
+  // No duration line: Yugo prices per job, not per hour, so hours never appear
+  // on a client document.
   const pkgLines = [
     `Plan: ${tierLabel}`,
     `Crew: ${crewNames} (${crewCount || 0} ${moverWord})`,
     `${logistics ? "Vehicle" : "Truck"}: ${move.truck_primary || move.truck_secondary || "-"}`,
-    `Duration: ${durationLine}`,
   ];
   pkgLines.forEach((line) => {
     doc.text(line, margin, y);
@@ -740,14 +735,6 @@ function generateEditorialMoveSummaryPDF(
         )
       : [];
   const crewNames = assigned.length > 0 ? assigned : rosterMembers;
-
-  const durationText =
-    move.actual_hours != null
-      ? `${move.actual_hours} hours`
-      : move.est_hours != null
-        ? `${move.est_hours} hours`
-        : "-";
-  const durationCaption = move.actual_hours != null ? "As delivered" : "Estimated at survey";
 
   const dateStr = formatDate(move.completed_at || move.scheduled_date);
   // Editorial hero format: "10 JULY 2026" (day, then month, then year).
@@ -893,14 +880,16 @@ function generateEditorialMoveSummaryPDF(
   y += 62;
   drawRule();
 
-  // ─── STATS ROW (Service / Vehicle / Crew / On site) ─
+  // ─── STATS ROW (Service / Vehicle / Crew) ─
+  // No on-site / duration cell: Yugo prices per job, never per hour, so a time
+  // figure on a client document is both wrong and misleading. Keep it off every
+  // client-facing asset.
   const stats = [
     { label: "SERVICE", value: svcDisp.label, caption: svcDisp.caption },
     { label: "VEHICLE", value: vehicle, caption: "Dedicated" },
     { label: "CREW", value: crewCountToWord(crewNames.length || 0), caption: "Logistics professionals" },
-    { label: "ON SITE", value: durationText, caption: durationCaption },
   ];
-  const statColW = contentW / 4;
+  const statColW = contentW / stats.length;
   stats.forEach((s, i) => {
     const x = margin + statColW * i;
     let cy = y;
