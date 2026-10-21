@@ -1241,10 +1241,10 @@ function _legacyGenerateInvoicePDF(
   const depositDate = formatDate(move.deposit_paid_at);
   const balanceDate = formatDate(move.balance_paid_at);
   doc.text(`Deposit paid ${depositDate}`, margin, y);
-  doc.text(`-${formatCurrency(depositPaid)}`, pageWidth - margin, y, { align: "right" });
+  doc.text(`${formatCurrency(depositPaid)}`, pageWidth - margin, y, { align: "right" });
   y += BODY;
   doc.text(`Balance paid ${balanceDate}`, margin, y);
-  doc.text(`-${formatCurrency(balancePaid)}`, pageWidth - margin, y, { align: "right" });
+  doc.text(`${formatCurrency(balancePaid)}`, pageWidth - margin, y, { align: "right" });
   y += BODY;
   doc.setFont("helvetica", "bold");
   doc.text("Amount owing", margin, y);
@@ -1660,7 +1660,7 @@ function generateEditorialInvoicePDF(
     doc.text(label, margin, y);
     doc.setFont(SERIF, "normal");
     doc.setFontSize(13);
-    doc.text(`-${formatCurrency(amt)}`, pageW - margin, y, { align: "right" });
+    doc.text(`${formatCurrency(amt)}`, pageW - margin, y, { align: "right" });
     y += 16;
   };
   paidRow(`Deposit paid · ${formatEditorialDate(move.deposit_paid_at)}`, depositPaid);
