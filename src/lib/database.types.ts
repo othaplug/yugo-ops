@@ -5696,6 +5696,7 @@ export type Database = {
           actual_supplies_cost: number | null
           actual_truck_cost: number | null
           additional_contacts: Json | null
+          additional_stops: Json | null
           addons: Json | null
           amount: number | null
           anniversary_email_sent: string | null
@@ -5948,6 +5949,7 @@ export type Database = {
           actual_supplies_cost?: number | null
           actual_truck_cost?: number | null
           additional_contacts?: Json | null
+          additional_stops?: Json | null
           addons?: Json | null
           amount?: number | null
           anniversary_email_sent?: string | null
@@ -6200,6 +6202,7 @@ export type Database = {
           actual_supplies_cost?: number | null
           actual_truck_cost?: number | null
           additional_contacts?: Json | null
+          additional_stops?: Json | null
           addons?: Json | null
           amount?: number | null
           anniversary_email_sent?: string | null

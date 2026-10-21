@@ -56,6 +56,7 @@ type MoveRow = {
   client_phone: string | null;
   from_address: string | null;
   to_address: string | null;
+  additional_stops?: unknown;
   scheduled_date: string | null;
   completed_at: string | null;
   tier_selected: string | null;
@@ -437,6 +438,29 @@ function parseAddress(full: string | null | undefined): { street: string; cityLi
   const postal = postalMatch ? postalMatch[0].toUpperCase() : "";
   const cityLine = parts.slice(1).join(", ").replace(postal, "").trim().replace(/,\s*$/, "");
   return { street, cityLine, postal };
+}
+
+/** Onward route stops after to_address: ordered [{ label, address }]. */
+function parseAdditionalStops(raw: unknown): { label: string; address: string }[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((s) => {
+      const o = (s ?? {}) as { label?: unknown; address?: unknown };
+      return { label: String(o.label ?? "").trim(), address: String(o.address ?? "").trim() };
+    })
+    .filter((s) => s.address.length > 0);
+}
+
+/** Build the ordered route: COLLECTED FROM, DELIVERED TO, then any extra stops. */
+function buildRouteStops(move: { from_address: string | null; to_address: string | null; additional_stops?: unknown }) {
+  return [
+    { label: "COLLECTED FROM", parsed: parseAddress(move.from_address) },
+    { label: "DELIVERED TO", parsed: parseAddress(move.to_address) },
+    ...parseAdditionalStops(move.additional_stops).map((s) => ({
+      label: s.label.toUpperCase() || "THEN TO",
+      parsed: parseAddress(s.address),
+    })),
+  ];
 }
 
 /** Letter PDFs use points; default footer Y in pdf-brand targets mm layouts, so anchor to page bottom */
@@ -830,11 +854,12 @@ function generateEditorialMoveSummaryPDF(
   drawRule();
 
   // ─── ADDRESSES ──────────────────────────────────────
-  const colW = (contentW - 40) / 2;
-  const rightColX = margin + colW + 40;
-
-  const fromParsed = parseAddress(move.from_address);
-  const toParsed = parseAddress(move.to_address);
+  const routeStops = buildRouteStops(move);
+  const nCols = routeStops.length;
+  const gap = nCols >= 3 ? 24 : 40;
+  const stopColW = (contentW - gap * (nCols - 1)) / nCols;
+  const streetSize = nCols >= 3 ? 13 : 17;
+  const streetLH = nCols >= 3 ? 15 : 19;
 
   const drawAddressBlock = (x: number, label: string, parsed: ReturnType<typeof parseAddress>) => {
     let cy = y;
@@ -842,40 +867,39 @@ function generateEditorialMoveSummaryPDF(
     doc.setFont(SANS, "bold");
     doc.setFontSize(8);
     doc.text(label, x, cy);
-  
 
     cy += 22;
     doc.setTextColor(...INK);
     doc.setFont(SERIF, "normal");
-    doc.setFontSize(17);
-    const streetLines = doc.splitTextToSize(parsed.street, colW);
+    doc.setFontSize(streetSize);
+    const streetLines = doc.splitTextToSize(parsed.street, stopColW);
     streetLines.forEach((ln: string) => {
       doc.text(ln, x, cy);
-      cy += 19;
+      cy += streetLH;
     });
 
     if (parsed.cityLine || parsed.postal) {
       doc.setTextColor(...INK_MUTED);
       doc.setFont(SANS, "normal");
-      doc.setFontSize(10);
+      doc.setFontSize(nCols >= 3 ? 9 : 10);
       const sub = [parsed.cityLine, parsed.postal].filter(Boolean).join("   ");
-      doc.text(sub, x, cy + 2);
+      doc.splitTextToSize(sub, stopColW).forEach((ln: string, k: number) => doc.text(ln, x, cy + 2 + k * 11));
     }
   };
 
-  drawAddressBlock(margin, "COLLECTED FROM", fromParsed);
-  drawAddressBlock(rightColX, "DELIVERED TO", toParsed);
-
-  // Arrow between columns (wine)
   const arrowY = y + 12;
-  const arrowStartX = margin + colW + 6;
-  const arrowEndX = rightColX - 6;
-  doc.setDrawColor(...WINE_RGB);
-  doc.setLineWidth(0.8);
-  doc.line(arrowStartX, arrowY, arrowEndX - 4, arrowY);
-  // arrowhead
-  doc.line(arrowEndX - 6, arrowY - 3, arrowEndX, arrowY);
-  doc.line(arrowEndX - 6, arrowY + 3, arrowEndX, arrowY);
+  routeStops.forEach((s, i) => {
+    const x = margin + i * (stopColW + gap);
+    drawAddressBlock(x, s.label, s.parsed);
+    if (i > 0) {
+      const prevRight = margin + (i - 1) * (stopColW + gap) + stopColW;
+      doc.setDrawColor(...WINE_RGB);
+      doc.setLineWidth(0.8);
+      doc.line(prevRight + 6, arrowY, x - 10, arrowY);
+      doc.line(x - 12, arrowY - 3, x - 6, arrowY);
+      doc.line(x - 12, arrowY + 3, x - 6, arrowY);
+    }
+  });
 
   y += 62;
   drawRule();
@@ -1533,11 +1557,13 @@ function generateEditorialInvoicePDF(
   drawRule();
 
   // ─── ROUTE ──────────────────────────────────────────
-  const colW = (contentW - 40) / 2;
-  const rightColX = margin + colW + 40;
-  const fromParsed = parseAddress(move.from_address);
-  const toParsed = parseAddress(move.to_address);
-  const routeBlock = (x: number, label: string, parsed: ReturnType<typeof parseAddress>) => {
+  const routeStops = buildRouteStops(move);
+  const nCols = routeStops.length;
+  const gap = nCols >= 3 ? 24 : 40;
+  const stopColW = (contentW - gap * (nCols - 1)) / nCols;
+  const streetSize = nCols >= 3 ? 13 : 17;
+  const streetLH = nCols >= 3 ? 15 : 19;
+  const renderStop = (x: number, label: string, parsed: ReturnType<typeof parseAddress>) => {
     let cy = y;
     doc.setTextColor(...WINE_RGB);
     doc.setFont(SANS, "bold");
@@ -1546,27 +1572,32 @@ function generateEditorialInvoicePDF(
     cy += 22;
     doc.setTextColor(...INK);
     doc.setFont(SERIF, "normal");
-    doc.setFontSize(17);
-    doc.splitTextToSize(parsed.street, colW).forEach((ln: string) => {
+    doc.setFontSize(streetSize);
+    doc.splitTextToSize(parsed.street, stopColW).forEach((ln: string) => {
       doc.text(ln, x, cy);
-      cy += 19;
+      cy += streetLH;
     });
     if (parsed.cityLine || parsed.postal) {
       doc.setTextColor(...INK_MUTED);
       doc.setFont(SANS, "normal");
-      doc.setFontSize(10);
+      doc.setFontSize(nCols >= 3 ? 9 : 10);
       const sub = [parsed.cityLine, parsed.postal].filter(Boolean).join("   ");
-      doc.text(sub, x, cy + 2);
+      doc.splitTextToSize(sub, stopColW).forEach((ln: string, k: number) => doc.text(ln, x, cy + 2 + k * 11));
     }
   };
-  routeBlock(margin, "COLLECTED FROM", fromParsed);
-  routeBlock(rightColX, "DELIVERED TO", toParsed);
   const arrowY = y + 12;
-  doc.setDrawColor(...WINE_RGB);
-  doc.setLineWidth(0.8);
-  doc.line(margin + colW + 6, arrowY, rightColX - 10, arrowY);
-  doc.line(rightColX - 12, arrowY - 3, rightColX - 6, arrowY);
-  doc.line(rightColX - 12, arrowY + 3, rightColX - 6, arrowY);
+  routeStops.forEach((s, i) => {
+    const x = margin + i * (stopColW + gap);
+    renderStop(x, s.label, s.parsed);
+    if (i > 0) {
+      const prevRight = margin + (i - 1) * (stopColW + gap) + stopColW;
+      doc.setDrawColor(...WINE_RGB);
+      doc.setLineWidth(0.8);
+      doc.line(prevRight + 6, arrowY, x - 10, arrowY);
+      doc.line(x - 12, arrowY - 3, x - 6, arrowY);
+      doc.line(x - 12, arrowY + 3, x - 6, arrowY);
+    }
+  });
   y += 62;
   drawRule();
 
@@ -1850,11 +1881,13 @@ function generateEditorialReceiptPDF(
   drawRule();
 
   // Route
-  const colW = (contentW - 40) / 2;
-  const rightColX = margin + colW + 40;
-  const fromParsed = parseAddress(move.from_address);
-  const toParsed = parseAddress(move.to_address);
-  const routeBlock = (x: number, label: string, parsed: ReturnType<typeof parseAddress>) => {
+  const routeStops = buildRouteStops(move);
+  const nCols = routeStops.length;
+  const gap = nCols >= 3 ? 24 : 40;
+  const stopColW = (contentW - gap * (nCols - 1)) / nCols;
+  const streetSize = nCols >= 3 ? 13 : 17;
+  const streetLH = nCols >= 3 ? 15 : 19;
+  const renderStop = (x: number, label: string, parsed: ReturnType<typeof parseAddress>) => {
     let cy = y;
     doc.setTextColor(...WINE_RGB);
     doc.setFont(SANS, "bold");
@@ -1863,26 +1896,32 @@ function generateEditorialReceiptPDF(
     cy += 22;
     doc.setTextColor(...INK);
     doc.setFont(SERIF, "normal");
-    doc.setFontSize(17);
-    doc.splitTextToSize(parsed.street, colW).forEach((ln: string) => {
+    doc.setFontSize(streetSize);
+    doc.splitTextToSize(parsed.street, stopColW).forEach((ln: string) => {
       doc.text(ln, x, cy);
-      cy += 19;
+      cy += streetLH;
     });
     if (parsed.cityLine || parsed.postal) {
       doc.setTextColor(...INK_MUTED);
       doc.setFont(SANS, "normal");
-      doc.setFontSize(10);
-      doc.text([parsed.cityLine, parsed.postal].filter(Boolean).join("   "), x, cy + 2);
+      doc.setFontSize(nCols >= 3 ? 9 : 10);
+      const sub = [parsed.cityLine, parsed.postal].filter(Boolean).join("   ");
+      doc.splitTextToSize(sub, stopColW).forEach((ln: string, k: number) => doc.text(ln, x, cy + 2 + k * 11));
     }
   };
-  routeBlock(margin, "COLLECTED FROM", fromParsed);
-  routeBlock(rightColX, "DELIVERED TO", toParsed);
   const arrowY = y + 12;
-  doc.setDrawColor(...WINE_RGB);
-  doc.setLineWidth(0.8);
-  doc.line(margin + colW + 6, arrowY, rightColX - 10, arrowY);
-  doc.line(rightColX - 12, arrowY - 3, rightColX - 6, arrowY);
-  doc.line(rightColX - 12, arrowY + 3, rightColX - 6, arrowY);
+  routeStops.forEach((s, i) => {
+    const x = margin + i * (stopColW + gap);
+    renderStop(x, s.label, s.parsed);
+    if (i > 0) {
+      const prevRight = margin + (i - 1) * (stopColW + gap) + stopColW;
+      doc.setDrawColor(...WINE_RGB);
+      doc.setLineWidth(0.8);
+      doc.line(prevRight + 6, arrowY, x - 10, arrowY);
+      doc.line(x - 12, arrowY - 3, x - 6, arrowY);
+      doc.line(x - 12, arrowY + 3, x - 6, arrowY);
+    }
+  });
   y += 62;
   drawRule();
 
@@ -1949,6 +1988,8 @@ function generateEditorialReceiptPDF(
   drawRule();
 
   // Confirm note + signature
+  const colW = (contentW - 40) / 2;
+  const rightColX = margin + colW + 40;
   doc.setTextColor(...INK_MUTED);
   doc.setFont(SANS, "normal");
   doc.setFontSize(11.5);
