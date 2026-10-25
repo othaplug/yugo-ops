@@ -12,7 +12,7 @@ import {
   Legend,
 } from "recharts";
 import BackButton from "../components/BackButton";
-import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
+import { formatCurrency, formatCompactCurrency, contractTaxFromMove } from "@/lib/format-currency";
 import {
   TrendUp as TrendingUp,
   TrendDown as TrendingDown,
@@ -87,6 +87,23 @@ interface PaidMove {
   deposit_amount: number | null;
   balance_amount: number | null;
   payment_marked_paid_at: string | null;
+}
+
+/**
+ * Canonical pre-tax revenue for a move / PM move. Single source of truth so
+ * every tile on this page (Combined, YTD, monthly, by-client) uses the SAME
+ * dollar basis. Previously the page mixed `estimate`-first (pre-tax) in some
+ * tiles with `final_amount`-first (tax-inclusive, ~13% higher) in others, so
+ * its own "Combined" (lifetime) and "YTD" numbers could not tie out. See
+ * docs/finance-metrics.md.
+ */
+function movePreTax(m: {
+  estimate?: number | string | null;
+  final_amount?: number | string | null;
+  total_price?: number | string | null;
+  amount?: number | string | null;
+}): number {
+  return contractTaxFromMove(m).preTax;
 }
 
 interface SentPartnerInvoice {
@@ -364,14 +381,14 @@ export default function RevenueClient({
   // for many moves and mixing it into a pre-tax total would inflate the
   // figure by ~13%. `estimate` is the reliable pre-tax base.
   const moveRevenue = paidMovesList.reduce(
-    (s, m) => s + Number(m.estimate ?? m.final_amount ?? m.total_price ?? m.amount ?? 0),
+    (s, m) => s + movePreTax(m),
     0,
   );
   // PM (property-manager) move revenue — shown in the chart's third segment.
   // Pre-tax basis so it lines up with invoiceRevenue + moveRevenue in the
   // paidTotal reading. `estimate` first, fall back only when it is null.
   const pmRevenue = pmMovesAll.reduce(
-    (s, m) => s + Number(m.estimate ?? m.final_amount ?? m.total_price ?? m.amount ?? 0),
+    (s, m) => s + movePreTax(m),
     0,
   );
   // Partner job count (delivered jobs + paid invoices) for averages.
@@ -419,7 +436,7 @@ export default function RevenueClient({
 
   // Completed PM moves with no invoice sent yet
   const outstandingPMUnbilled = unbilledPMmoves.reduce((s, m) => {
-    return s + Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0);
+    return s + movePreTax(m);
   }, 0);
 
   // Outstanding = money actually owed now: unpaid sent/overdue invoices + PM
@@ -452,7 +469,7 @@ export default function RevenueClient({
     if (invoiceMoveIds.has(String(m.id))) return;
     const name = m.client_name || "-";
     byClient[name] =
-      (byClient[name] || 0) + Number(m.estimate ?? m.final_amount ?? m.total_price ?? m.amount ?? 0);
+      (byClient[name] || 0) + movePreTax(m);
   });
   // PM partners — aggregate under the PM partner (organization name),
   // NOT the individual tenant/unit. `client_name` on a PM move is the
@@ -465,7 +482,7 @@ export default function RevenueClient({
     const orgName = m.organization_id ? orgIdToName[m.organization_id] : null;
     const name = orgName || m.client_name || "PM partner";
     byClient[name] =
-      (byClient[name] || 0) + Number(m.estimate ?? m.final_amount ?? m.total_price ?? m.amount ?? 0);
+      (byClient[name] || 0) + movePreTax(m);
   });
   const topClients = Object.entries(byClient)
     .sort((a, b) => b[1] - a[1])
@@ -492,7 +509,7 @@ export default function RevenueClient({
       })
       .reduce(
         (s, m) =>
-          s + Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0),
+          s + movePreTax(m),
         0,
       );
 
@@ -507,7 +524,7 @@ export default function RevenueClient({
           const d = getMoveRevenueDate(move);
           return d.getFullYear() === y && d.getMonth() === mo;
         })
-        .reduce((s, move) => s + Number(move.final_amount ?? move.total_price ?? move.amount ?? move.estimate ?? 0), 0);
+        .reduce((s, move) => s + movePreTax(move), 0);
 
     const partnerInMonth = (y: number, mo: number) =>
       partnerRevenueTotalForMonth(
@@ -599,7 +616,7 @@ export default function RevenueClient({
           const day = d.getDate();
           byDayPM[day] =
             (byDayPM[day] || 0) +
-            Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0);
+            movePreTax(m);
         }
       });
       paidPartnerInvoices.forEach((inv) => {
@@ -615,7 +632,7 @@ export default function RevenueClient({
         if (d.getFullYear() === year && d.getMonth() === month) {
           const day = d.getDate();
           byDayMoves[day] =
-            (byDayMoves[day] || 0) + Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate ?? 0);
+            (byDayMoves[day] || 0) + movePreTax(m);
         }
       });
       const covered = deliveryIdsCoveredByAnyInvoice(all);
@@ -790,7 +807,7 @@ export default function RevenueClient({
         const d = getMoveRevenueDate(move);
         return d.getFullYear() === y && d.getMonth() === m;
       })
-      .reduce((s, mov) => s + Number(mov.final_amount ?? mov.total_price ?? mov.amount ?? mov.estimate ?? 0), 0);
+      .reduce((s, mov) => s + movePreTax(mov), 0);
     return partnerSum + moveSum + pmInMonth(y, m);
   }, [
     all,
@@ -821,7 +838,7 @@ export default function RevenueClient({
         const d = getMoveRevenueDate(move);
         return d.getFullYear() === y && d.getMonth() === m;
       })
-      .reduce((s, mov) => s + Number(mov.final_amount ?? mov.total_price ?? mov.amount ?? mov.estimate ?? 0), 0);
+      .reduce((s, mov) => s + movePreTax(mov), 0);
     return partnerSum + moveSum + pmInMonth(y, m);
   }, [
     all,
@@ -851,7 +868,7 @@ export default function RevenueClient({
     }
     const moveSum = paidMovesList
       .filter((move) => getMoveRevenueDate(move).getFullYear() === y)
-      .reduce((s, mov) => s + Number(mov.final_amount ?? mov.total_price ?? mov.amount ?? mov.estimate ?? 0), 0);
+      .reduce((s, mov) => s + movePreTax(mov), 0);
     let pmY = 0;
     for (let mo = 0; mo <= m; mo++) pmY += pmInMonth(y, mo);
     return partnerY + moveSum + pmY;
@@ -894,8 +911,9 @@ export default function RevenueClient({
           </p>
           <h1 className="admin-page-hero text-[var(--tx)]">Revenue</h1>
           <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
-            Booked revenue, paid invoices, and outstanding balances across every
-            source.
+            Cash collected (by payment date) and outstanding balances across
+            every source, before HST. For earned revenue recognized on the
+            service date, see Finance → Profitability.
           </p>
         </div>
         <Link
@@ -911,17 +929,17 @@ export default function RevenueClient({
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-8">
         <KpiCard
-          label={`${currentMonthLabel} Revenue`}
+          label={`${currentMonthLabel} Collected`}
           value={formatCompactCurrency(currentMonthRevenue)}
-          sub="Before HST"
+          sub="Cash collected this month · before HST"
           delta={pctChange}
           href="/admin/finance/invoices"
           accent
         />
         <KpiCard
-          label={`${now.getFullYear()} YTD`}
+          label={`${now.getFullYear()} Collected YTD`}
           value={formatCompactCurrency(ytdRevenue)}
-          sub="All services · before HST"
+          sub="Cash collected this year · before HST"
           href="/admin/finance/invoices"
         />
         {/* Outstanding — shows full breakdown across all sources */}
@@ -982,7 +1000,7 @@ export default function RevenueClient({
             </div>
             <div className="sm:pl-8 pt-4 sm:pt-0 flex flex-col justify-center">
               <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/82 mb-1">
-                Combined
+                Collected · lifetime
               </p>
               <p className="text-[32px] font-bold font-heading text-[var(--tx)] leading-none">
                 {formatCompactCurrency(paidTotal)}
