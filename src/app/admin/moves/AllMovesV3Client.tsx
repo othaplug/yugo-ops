@@ -6,6 +6,7 @@ import { formatMoveDate, formatAdminCreatedAt } from "@/lib/date-format";
 import { formatCurrency, contractTaxFromMove } from "@/lib/format-currency";
 import { serviceTypeDisplayLabel, portfolioPmMoveServiceLabel } from "@/lib/displayLabels";
 import { TIERED_SERVICE_TYPES, QUOTE_SERVICE_TYPE_DEFINITIONS } from "@/lib/quote-service-types";
+import { getCustomerSegment } from "@/lib/finance/customer-segment";
 import { formatJobId, getMoveCode, getMoveDetailPath } from "@/lib/move-code";
 import { getStatusLabel } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
@@ -294,6 +295,24 @@ export default function AllMovesV3Client({
     const topHoodEntry = Object.entries(hoodCounts).sort((a, b) => b[1] - a[1])[0];
     const topHood = topHoodEntry ? topHoodEntry[0] : "-";
 
+    // Customer segment split — who the move is for, independent of service tier.
+    // Keeps contract/PM accounts (e.g. Springfield) out of the private-client
+    // read. Uses the shared getCustomerSegment so the split matches finance.
+    const segOf = (m: Move) =>
+      getCustomerSegment(m, moveOrg(m)?.vertical ?? moveOrg(m)?.type ?? null).segment;
+    let privateCount = 0;
+    let contractPmCount = 0;
+    let privateEstimate = 0;
+    for (const m of countableMoves) {
+      const s = segOf(m);
+      if (s === "private_client") {
+        privateCount++;
+        privateEstimate += Math.round(contractTaxFromMove(m).preTax);
+      } else {
+        contractPmCount++;
+      }
+    }
+
     return [
       {
         id: "total",
@@ -320,12 +339,25 @@ export default function AllMovesV3Client({
         id: "revenue",
         label: "Booked estimate",
         value: formatCurrency(totalEstimate),
+        hint: "all segments incl. contract / PM",
+      },
+      {
+        id: "segment",
+        label: "Client mix",
+        value: `${privateCount} / ${contractPmCount}`,
+        hint: "private clients / contract + PM",
+      },
+      {
+        id: "private-revenue",
+        label: "Private client est.",
+        value: formatCurrency(privateEstimate),
+        hint: "booked estimate, private clients only",
       },
       {
         id: "top-tier",
         label: "Top tier",
         value: topTier,
-        hint: "most booked/completed tier",
+        hint: "most booked tier, private clients only",
       },
       {
         id: "best-hood",
