@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createLeadPipeline } from "@/lib/leads/inbound";
 import { sendMissedCallSms } from "@/lib/leads/acknowledgment";
+import { handleInboundReviewReply } from "@/lib/review/inbound-reply";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,32 @@ export async function POST(req: NextRequest) {
   const data = asRecord(body.data ?? body.object ?? body);
 
   const direction = String(data.direction || "").toLowerCase();
+  const isInbound = direction === "inbound" || direction === "incoming";
+
+  // Inbound SMS: if it's a reply from a client with a live review request, stop
+  // that cadence and route what they wrote to the coordinators, then we're done.
+  // Any other inbound text (no live review request) falls through untouched.
+  if (eventType.includes("message") && isInbound) {
+    const fromRawMsg =
+      (data.from as string) ||
+      (data.from_number as string) ||
+      (data.phone_number as string) ||
+      "";
+    const text = String(data.text || data.body || data.message || "");
+    if (fromRawMsg.replace(/\D/g, "").match(/\d{10}/)) {
+      try {
+        const sb = createAdminClient();
+        const res = await handleInboundReviewReply(sb, { fromPhone: fromRawMsg, text });
+        if (res.matched) {
+          return NextResponse.json({ success: true, review_reply: true, opted_out: !!res.optedOut });
+        }
+      } catch (e) {
+        console.error("[openphone review reply]", e);
+        // Fall through: a review-reply failure must not drop the webhook.
+      }
+    }
+    return NextResponse.json({ ok: true, skipped: "message, no live review request" });
+  }
   const status = String(data.status || data.call_status || data.state || "").toLowerCase();
   const fromRaw =
     (data.from as string) ||
