@@ -22,8 +22,10 @@ import {
   reviewRequestSignatureEmail,
   reviewRequestEstateEmail,
   reviewRequestReminderEmail,
+  reviewRequestGoogleEmail,
   ReviewRequestTierData,
   ReviewRequestReminderData,
+  ReviewRequestGoogleData,
   lowSatisfactionEmail,
   LowSatisfactionData,
   referralOfferEmail,
@@ -123,6 +125,7 @@ export type TemplateName =
   | "review-request-curated"
   | "review-request-signature"
   | "review-request-reminder"
+  | "review-request-google"
   | "partner-statement-due"
   | "partner-statement-paid"
   | "partner-statement-charge-failed"
@@ -179,6 +182,7 @@ type TemplateDataMap = {
   "review-request-curated": ReviewRequestTierData;
   "review-request-signature": ReviewRequestTierData;
   "review-request-reminder": ReviewRequestReminderData;
+  "review-request-google": ReviewRequestGoogleData;
   "partner-statement-due": Record<string, unknown>;
   "partner-statement-paid": Record<string, unknown>;
   "partner-statement-charge-failed": Record<string, unknown>;
@@ -292,6 +296,7 @@ function renderTemplate(template: string, data: unknown): string {
     "review-request-essentials": reviewRequestCuratedEmail,
     "review-request-premier": reviewRequestSignatureEmail,
     "review-request-reminder": reviewRequestReminderEmail,
+    "review-request-google": reviewRequestGoogleEmail,
 
     "partner-statement-due": partnerStatementDueEmail,
     "partner-statement-paid": partnerStatementPaidEmail,

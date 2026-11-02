@@ -47,6 +47,18 @@ export async function GET(req: NextRequest) {
       .eq("id", id);
   }
 
+  // Token without a 4–5 rating (e.g. an old /review?token link, now that the
+  // star gate is gone): mark the click so the cadence stops, then send to Google.
+  if (token && !id) {
+    const reviewRequestId = verifyReviewToken(token);
+    if (reviewRequestId) {
+      await admin
+        .from("review_requests")
+        .update({ review_clicked: true, review_clicked_at: new Date().toISOString() })
+        .eq("id", reviewRequestId);
+    }
+  }
+
   const { data: config } = await admin
     .from("platform_config")
     .select("value")

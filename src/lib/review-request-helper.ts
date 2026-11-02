@@ -4,11 +4,17 @@ import { isReviewOptedOut } from "@/lib/review/opt-out";
 import { sendEmail } from "@/lib/email/send";
 import { internalLowSatAlertEmail } from "@/lib/email/lifecycle-templates";
 
-// Unified cadence, measured from move completion. Touch 1 is an SMS (or email
-// when there is no phone); touches 2 and 3 are emails. The public star tap is
-// the gate, so we ask EVERY completed move regardless of the checklist rating.
+// Unified cadence, measured from move completion (or claim resolution for a
+// held request). No star gate: every ask links straight to Google.
+//   Touch 1  ~3h     SMS
+//   Touch 2  ~72h    SMS AND email
+//   Touch 3  ~day 6  email, then stop
+// The cadence stops the moment the client clicks the Google link, replies, or
+// opts out. A client with an OPEN damage claim is HELD (not skipped): the row
+// is created with status "held" and the cron starts the cadence once the claim
+// is resolved, clocked from the resolution.
 const TOUCH_1_MS = 3 * 60 * 60 * 1000; //  ~3 hours: crew gone, client settled
-const TOUCH_2_MS = 3 * 24 * 60 * 60 * 1000; //  day 3: email, new framing
+const TOUCH_2_MS = 3 * 24 * 60 * 60 * 1000; //  72 hours: SMS + email
 const TOUCH_3_MS = 6 * 24 * 60 * 60 * 1000; //  day 6: final email, then stop
 
 /** Short, unambiguous code (no l/1/o/0) for the /r/<code> review SMS link. */
@@ -44,8 +50,11 @@ export async function createReviewRequestIfEligible(
     .single();
   if (!move || move.status !== "completed") return false;
 
-  // Guard: never ask a client with an OPEN damage claim to review us. A resolved
-  // claim is fine; an unresolved one reads badly and invites a public 1-star.
+  // A client with an OPEN damage claim is HELD, not skipped. We still create the
+  // request so it isn't lost, but with status "held" and no send times; the cron
+  // starts the cadence once the claim resolves (clocked from the resolution). An
+  // unresolved claim reads badly and invites a public 1-star, so we never ask
+  // mid-claim — but a client whose issue we fix should still be asked.
   const { data: openClaims } = await supabase
     .from("claims")
     .select("id, status")
@@ -54,7 +63,6 @@ export async function createReviewRequestIfEligible(
     const s = String((c as { status?: string | null }).status ?? "").toLowerCase().trim();
     return s !== "resolved" && s !== "closed" && s !== "denied" && s !== "cancelled";
   });
-  if (hasOpenClaim) return false;
 
   const { data: existing } = await supabase
     .from("review_requests")
@@ -84,7 +92,7 @@ export async function createReviewRequestIfEligible(
     if (adminEmail) {
       sendEmail({
         to: adminEmail,
-        subject: `Low checklist ${podRating}★: ${move.client_name || "client"} ${move.move_code || ""} — reach out`,
+        subject: `Low checklist ${podRating} star: ${move.client_name || "client"} ${move.move_code || ""}, reach out`,
         html: internalLowSatAlertEmail({
           clientName: move.client_name || "",
           clientEmail: move.client_email || "",
@@ -114,6 +122,8 @@ export async function createReviewRequestIfEligible(
   const completedAt = move.completed_at ? new Date(move.completed_at) : new Date();
   const t = completedAt.getTime();
 
+  // Held requests (open claim) carry no send times; the cron fills them in and
+  // flips the row to "pending" once the claim is resolved.
   const { error } = await supabase.from("review_requests").insert({
     move_id: moveId,
     client_name: clientName,
@@ -122,10 +132,10 @@ export async function createReviewRequestIfEligible(
     tier: move.tier_selected || null,
     pod_rating: podRating,
     short_code: genReviewShortCode(),
-    scheduled_send_at: new Date(t + TOUCH_1_MS).toISOString(),
-    reminder_send_at: new Date(t + TOUCH_2_MS).toISOString(),
-    final_send_at: new Date(t + TOUCH_3_MS).toISOString(),
-    status: "pending",
+    scheduled_send_at: hasOpenClaim ? null : new Date(t + TOUCH_1_MS).toISOString(),
+    reminder_send_at: hasOpenClaim ? null : new Date(t + TOUCH_2_MS).toISOString(),
+    final_send_at: hasOpenClaim ? null : new Date(t + TOUCH_3_MS).toISOString(),
+    status: hasOpenClaim ? "held" : "pending",
   });
 
   return !error;

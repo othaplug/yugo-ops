@@ -674,6 +674,50 @@ export function reviewRequestEmail(d: ReviewRequestData): string {
   `);
 }
 
+/* ── Google-direct Review Request (no star gate) ── */
+
+export interface ReviewRequestGoogleData {
+  clientName: string;
+  /** /r/<code> link: logs the click, then 302s straight to Google. */
+  reviewUrl: string;
+  optOutUrl?: string | null;
+  coordinatorName?: string | null;
+}
+
+/** Straight-to-Google review ask. One button, the same voice as the SMS, a
+ *  reply line for private feedback. No star rating, no gate, no incentive. */
+export function reviewRequestGoogleEmail(d: ReviewRequestGoogleData): string {
+  const first = firstName(d.clientName);
+  return legacyEmailLayout(`
+    <div style="${FOREST_EYEBROW_UPPER}">A note of thanks</div>
+    <div role="heading" aria-level="1" style="${CREAM_REVIEW_H1}">Thank you${first ? `, ${first}` : ""}</div>
+    <p style="${CREAM_REVIEW_P}">
+      Thank you for trusting us with your home and the things that matter most to you. It was a privilege to move you, and it is a trust we hold with real care.
+    </p>
+    <p style="${CREAM_REVIEW_P}">
+      A moment to share your experience on Google would mean the world to our team, and help another family feel this same peace of mind.
+    </p>
+
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
+      <tr>
+        <td align="center">
+          <a href="${d.reviewUrl}" style="${emailPrimaryCtaStyle(PREMIUM_FONT, "inline-block")}">
+            Leave your review on Google
+          </a>
+        </td>
+      </tr>
+    </table>
+
+    <p style="${CREAM_REVIEW_SMALL}">
+      If anything could have been better, simply reply to this email. It comes straight to us.
+    </p>
+    <p style="${CREAM_REVIEW_SMALL}">
+      With gratitude,<br/>The Yugo Team
+    </p>
+    ${reviewUnsubscribeFooter(d.optOutUrl)}
+  `);
+}
+
 /* ── Tier-specific Review Request (2h after completion) ── */
 
 export interface ReviewRequestTierData {
