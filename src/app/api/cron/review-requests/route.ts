@@ -3,8 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
-import { signTrackToken, signReviewToken } from "@/lib/track-token";
-import { getTrackMoveSlug } from "@/lib/move-code";
+import { signReviewToken } from "@/lib/track-token";
 import { isReviewOptedOut } from "@/lib/review/opt-out";
 
 /**
@@ -37,12 +36,6 @@ type ReviewRow = {
   final_send_at: string | null;
 };
 
-const emailTemplateForTier = (tier: string | null): string => {
-  const t = (tier || "essential").toLowerCase();
-  if (t === "estate") return "review-request-estate";
-  if (t === "signature" || t === "premier") return "review-request-signature";
-  return "review-request-essential";
-};
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -65,6 +58,38 @@ export async function GET(req: NextRequest) {
   }
   const coordinatorName = config.coordinator_name || null;
 
+  // ── Activate held requests whose damage claim is now resolved ──
+  // A client with an open claim is held; once the claim clears we start the
+  // cadence clocked from NOW (the resolution), not the original completion.
+  let activated = 0;
+  const isClaimOpen = (s: string | null | undefined) => {
+    const v = String(s ?? "").toLowerCase().trim();
+    return v !== "resolved" && v !== "closed" && v !== "denied" && v !== "cancelled";
+  };
+  const { data: heldRows } = await admin
+    .from("review_requests")
+    .select("id, move_id")
+    .eq("status", "held")
+    .limit(50);
+  for (const h of heldRows ?? []) {
+    if (!h.move_id) continue;
+    const { data: claims } = await admin.from("claims").select("status").eq("move_id", h.move_id);
+    if ((claims ?? []).some((c) => isClaimOpen((c as { status?: string | null }).status))) continue;
+    const t = Date.now();
+    const { data: flipped } = await admin
+      .from("review_requests")
+      .update({
+        status: "pending",
+        scheduled_send_at: new Date(t + 3 * 60 * 60 * 1000).toISOString(),
+        reminder_send_at: new Date(t + 72 * 60 * 60 * 1000).toISOString(),
+        final_send_at: new Date(t + 6 * 24 * 60 * 60 * 1000).toISOString(),
+      })
+      .eq("id", h.id)
+      .eq("status", "held")
+      .select("id");
+    if (flipped?.length) activated++;
+  }
+
   // Rows with a touch due now: pending→t1, sent→t2, reminded→t3. Three typed
   // queries rather than an or(and(...)) string so ISO timestamps filter cleanly.
   const cols =
@@ -78,56 +103,55 @@ export async function GET(req: NextRequest) {
 
   const results = { sms: 0, email: 0, stopped: 0, suppressed: 0, errors: [] as string[] };
 
-  const buildLinks = (rr: ReviewRow) => {
-    const token = signReviewToken(rr.id);
-    const t = encodeURIComponent(token);
-    return {
-      reviewUrl: `${baseUrl}/review?token=${t}`,
-      reviewRedirectUrl: `${baseUrl}/api/review/redirect?token=${t}`,
-      optOutUrl: `${baseUrl}/api/review/opt-out?token=${t}`,
-    };
+  // The one link every touch uses: /r/<code> logs the click and 302s straight to
+  // Google. No star page, no gate. Falls back to a signed /review only if a row
+  // somehow has no short code.
+  const googleLink = (rr: ReviewRow): string =>
+    rr.short_code
+      ? `${baseUrl}/r/${rr.short_code}`
+      : `${baseUrl}/review?token=${encodeURIComponent(signReviewToken(rr.id))}`;
+  const optOutUrlFor = (rr: ReviewRow): string =>
+    `${baseUrl}/api/review/opt-out?token=${encodeURIComponent(signReviewToken(rr.id))}`;
+
+  const firstNameOf = (rr: ReviewRow) => (rr.client_name || "").trim().split(/\s+/)[0] || "";
+
+  // SMS copy — the ask goes to everyone, no condition, Google named twice, reply
+  // line for private feedback. No em dashes, no exclamation marks.
+  const smsBody = (rr: ReviewRow): string => {
+    const first = firstNameOf(rr) || "there";
+    return [
+      `Hi ${first},`,
+      `Thank you for trusting us with your home and the things that matter most to you. It was a privilege to move you, and it is a trust we hold with real care.`,
+      `A moment to share your experience on Google would mean the world to our team, and help another family feel this same peace of mind.`,
+      `Please click this link to leave your review on Google: ${googleLink(rr)}`,
+      `If anything could have been better, simply reply to this message. It comes straight to us.`,
+      `With gratitude,\nThe Yugo Team`,
+    ].join("\n\n");
   };
 
-  const trackingUrlFor = async (rr: ReviewRow): Promise<string> => {
-    if (!rr.move_id) return baseUrl;
-    const { data: move } = await admin
-      .from("moves")
-      .select("move_code, id")
-      .eq("id", rr.move_id)
-      .maybeSingle();
-    const slug = move ? getTrackMoveSlug({ move_code: move.move_code, id: move.id }) : rr.move_id;
-    const token = signTrackToken("move", rr.move_id);
-    return slug ? `${baseUrl}/track/move/${slug}?token=${token}` : baseUrl;
+  const sendReviewSms = async (rr: ReviewRow): Promise<boolean> => {
+    if (!rr.client_phone || !rr.client_phone.trim()) return false;
+    const sms = await sendSMS(rr.client_phone.replace(/\s/g, ""), smsBody(rr));
+    if (sms.success) { results.sms++; return true; }
+    results.errors.push(`sms:${rr.id}:${sms.error}`);
+    return false;
   };
 
-  const sendReviewEmail = async (rr: ReviewRow, template: string) => {
+  const sendReviewEmail = async (rr: ReviewRow): Promise<boolean> => {
     if (!rr.client_email) return false;
-    const { reviewUrl, reviewRedirectUrl, optOutUrl } = buildLinks(rr);
-    const trackingUrl = await trackingUrlFor(rr);
-    const firstName = (rr.client_name || "").trim().split(/\s+/)[0] || "";
-    const subject =
-      template === "review-request-reminder"
-        ? `One last note, ${firstName || "from Yugo"}`
-        : (rr.tier || "").toLowerCase() === "estate"
-          ? `${firstName}, it was our privilege — how did we do?`
-          : `How was your Yugo move${firstName ? `, ${firstName}` : ""}?`;
-    // The four review templates share a superset data shape; the discriminated
-    // union can't narrow on a runtime-chosen template, so cast the whole option.
+    const first = firstNameOf(rr);
     await sendEmail({
       to: rr.client_email,
-      subject,
-      template,
+      subject: `Thank you${first ? `, ${first}` : ""}`,
+      template: "review-request-google",
       data: {
         clientName: rr.client_name || "",
-        tier: rr.tier,
-        reviewUrl,
-        reviewRedirectUrl,
-        referralUrl: null,
-        trackingUrl,
+        reviewUrl: googleLink(rr),
+        optOutUrl: optOutUrlFor(rr),
         coordinatorName,
-        optOutUrl,
       },
     } as Parameters<typeof sendEmail>[0]);
+    results.email++;
     return true;
   };
 
@@ -139,8 +163,10 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
-    // Responded (clicked through, or left any rating) → stop the sequence.
-    if (rr.review_clicked === true || rr.client_rating != null) {
+    // Stop the moment the client acts: clicked the Google link, or replied
+    // (an SMS/email reply sets review_clicked via the inbound handler). No star
+    // rating exists any more, so there is nothing else to gate on.
+    if (rr.review_clicked === true) {
       await admin.from("review_requests").update({ status: "done" }).eq("id", rr.id);
       results.stopped++;
       continue;
@@ -148,43 +174,18 @@ export async function GET(req: NextRequest) {
 
     try {
       if (rr.status === "pending") {
-        // Touch 1: SMS if we have a phone, else fall back to the email.
-        if (rr.client_phone && rr.client_phone.trim()) {
-          const { data: claimed } = await admin
-            .from("review_requests")
-            .update({ status: "sent", sms_sent_at: nowIso })
-            .eq("id", rr.id)
-            .eq("status", "pending")
-            .select("id");
-          if (!claimed?.length) continue;
-          const { reviewUrl } = buildLinks(rr);
-          const link = rr.short_code ? `${baseUrl}/r/${rr.short_code}` : reviewUrl;
-          const firstName = (rr.client_name || "there").trim().split(/\s+/)[0] || "there";
-          // Heartfelt, restrained, and organized: greeting, gratitude, reason,
-          // then a clear call to action on its own line.
-          const body = [
-            `Hi ${firstName},`,
-            `Thank you for trusting us with your home and the things that matter most to you. It was a privilege to move you, and it is a trust we hold with real care.`,
-            `If we looked after you well, a moment to share your experience would mean the world to our team and help another family feel this same peace of mind.`,
-            `Please click this link to leave us a thoughtful review: ${link}`,
-            `With gratitude,\nThe Yugo Team`,
-          ].join("\n\n");
-          const sms = await sendSMS(rr.client_phone.replace(/\s/g, ""), body);
-          if (sms.success) results.sms++;
-          else results.errors.push(`t1-sms:${rr.id}:${sms.error}`);
-        } else {
-          const { data: claimed } = await admin
-            .from("review_requests")
-            .update({ status: "sent", email_sent_at: nowIso })
-            .eq("id", rr.id)
-            .eq("status", "pending")
-            .select("id");
-          if (!claimed?.length) continue;
-          if (await sendReviewEmail(rr, emailTemplateForTier(rr.tier))) results.email++;
-        }
+        // Touch 1 (~3h): SMS, or email when there is no phone.
+        const { data: claimed } = await admin
+          .from("review_requests")
+          .update({ status: "sent", sms_sent_at: nowIso })
+          .eq("id", rr.id)
+          .eq("status", "pending")
+          .select("id");
+        if (!claimed?.length) continue;
+        if (rr.client_phone && rr.client_phone.trim()) await sendReviewSms(rr);
+        else await sendReviewEmail(rr);
       } else if (rr.status === "sent") {
-        // Touch 2: email (embedded-star gate). Prefer email; only reachable-by-SMS
-        // clients with no email are skipped forward.
+        // Touch 2 (~72h): SMS AND email.
         const { data: claimed } = await admin
           .from("review_requests")
           .update({ status: "reminded", reminder_sent_at: nowIso })
@@ -192,10 +193,10 @@ export async function GET(req: NextRequest) {
           .eq("status", "sent")
           .select("id");
         if (!claimed?.length) continue;
-        if (await sendReviewEmail(rr, emailTemplateForTier(rr.tier))) results.email++;
+        await sendReviewSms(rr);
+        await sendReviewEmail(rr);
       } else if (rr.status === "reminded") {
-        // Touch 3: final email, different framing. Email-only so we never text
-        // a third time. Then the row is terminal.
+        // Touch 3 (~day 6): final email, then the row is terminal.
         const { data: claimed } = await admin
           .from("review_requests")
           .update({ status: "final", final_sent_at: nowIso })
@@ -203,12 +204,12 @@ export async function GET(req: NextRequest) {
           .eq("status", "reminded")
           .select("id");
         if (!claimed?.length) continue;
-        if (await sendReviewEmail(rr, "review-request-reminder")) results.email++;
+        await sendReviewEmail(rr);
       }
     } catch (e) {
       results.errors.push(`${rr.id}:${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
-  return NextResponse.json({ ok: true, ...results });
+  return NextResponse.json({ ok: true, activated, ...results });
 }
