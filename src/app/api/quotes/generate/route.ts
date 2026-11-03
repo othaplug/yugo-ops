@@ -6439,6 +6439,21 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   //   - each override price must be a positive finite number
   //   - reason must be ≥ 3 chars (mirrors global override rule)
   //   - unknown tier keys are ignored silently
+  //
+  // Snapshot the engine-natural tier prices BEFORE any per-tier override mutates
+  // them, and record which tiers get an absolute per-tier override. The global
+  // ratio override further below must anchor to a STABLE base: if it divided by
+  // the POST-override essential price, lowering the Essential per-tier override
+  // would shrink the ratio's denominator and inflate Signature/Estate (operator
+  // report: "every time I reduce Essential, Signature goes up"). Per-tier
+  // overrides are absolute and final, so the global scale skips them and anchors
+  // the ratio to the engine essential.
+  const engineTierPricesPreOverride: Record<string, number> = {
+    essential: tiers?.essential?.price ?? 0,
+    signature: tiers?.signature?.price ?? 0,
+    estate: tiers?.estate?.price ?? 0,
+  };
+  const perTierOverriddenKeys = new Set<string>();
   if (
     tiers &&
     input.tier_price_overrides &&
@@ -6544,6 +6559,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         override: newPrice,
         reason: ovReason,
       });
+      perTierOverriddenKeys.add(tk);
     }
     if (tierOverridesApplied.length > 0) {
       tiers = nextTiers;
@@ -6694,16 +6710,24 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         total: Math.round(grossedOvr * (1 + taxOvr)),
         deposit: depO,
       };
-    } else if (tiers?.essential && tiers.essential.price > 0) {
+    } else if (tiers?.essential && engineTierPricesPreOverride.essential > 0) {
       // Tier prices are already grossed up by the engine; gross up the
       // override target before computing the ratio so CC recovery is preserved.
+      // Anchor the ratio to the ENGINE essential (pre per-tier override), not the
+      // live essential price — otherwise a per-tier Essential override shifts the
+      // denominator and the other tiers swing inversely to Essential.
       const grossedOvr = grossUpForProcessing(quoteOvr, config);
-      const ratio = grossedOvr / tiers.essential.price;
+      const ratio = grossedOvr / engineTierPricesPreOverride.essential;
       const nextTiers: Record<string, TierResult> = { ...tiers };
       for (const tk of ["essential", "signature", "estate"] as const) {
         const t = tiers[tk];
         if (!t) continue;
-        const np = Math.max(0, Math.round(t.price * ratio));
+        // A per-tier override is an absolute, final price for that tier: the
+        // global scale leaves it untouched (and it never moves the ratio). This
+        // also preserves the documented "Estate at $6,000, scale the rest" flow
+        // that the old code silently clobbered by rescaling every tier.
+        if (perTierOverriddenKeys.has(tk)) continue;
+        const np = Math.max(0, Math.round(engineTierPricesPreOverride[tk] * ratio));
         // Recompute the deposit from policy on the new price — do NOT scale the
         // old deposit by the price ratio (scaling a min-floored deposit is what
         // produced the $181-instead-of-$150 booking block). Single source of
