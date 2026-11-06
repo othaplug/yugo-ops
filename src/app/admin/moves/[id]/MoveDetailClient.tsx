@@ -601,6 +601,13 @@ export default function MoveDetailClient({
     newStatus: string;
   } | null>(null);
   const [restartOverrideTyped, setRestartOverrideTyped] = useState("");
+  // Pre-move survey photos: a room group's full set, shown in a gallery modal.
+  // The inline "View" link used to open only photos[0], so a "4 photo(s)" room
+  // opened a single image.
+  const [surveyPhotoGroup, setSurveyPhotoGroup] = useState<{
+    room: string;
+    photos: NonNullable<typeof surveyPhotos>;
+  } | null>(null);
   const [overrideStatusModalOpen, setOverrideStatusModalOpen] = useState(false);
   const [overrideStatusNewStatus, setOverrideStatusNewStatus] =
     useState("confirmed");
@@ -3418,18 +3425,50 @@ export default function MoveDetailClient({
                 <p className="text-[10px] text-[var(--yu3-ink-muted)] mb-2">
                   {photos.length} photo(s)
                 </p>
-                <a
-                  href={photos[0]?.photo_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => setSurveyPhotoGroup({ room, photos })}
                   className="text-[10px] font-semibold text-[var(--yu3-ink)] underline"
                 >
-                  View
-                </a>
+                  View{photos.length > 1 ? ` all ${photos.length}` : ""}
+                </button>
               </div>
             ))}
           </div>
         </div>
+      )}
+
+      {surveyPhotoGroup && (
+        <ModalOverlay
+          open
+          onClose={() => setSurveyPhotoGroup(null)}
+          title={`${toTitleCase(surveyPhotoGroup.room.replace(/_/g, " "))} · ${surveyPhotoGroup.photos.length} photo(s)`}
+          maxWidth="3xl"
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            {surveyPhotoGroup.photos.map((p) => (
+              <a
+                key={p.id}
+                href={p.photo_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.photo_url}
+                  alt={p.notes || surveyPhotoGroup.room}
+                  className="w-full h-48 object-cover rounded-lg border border-[var(--yu3-line-subtle)]"
+                />
+                {p.notes ? (
+                  <p className="text-[10px] text-[var(--yu3-ink-muted)] mt-1">
+                    {p.notes}
+                  </p>
+                ) : null}
+              </a>
+            ))}
+          </div>
+        </ModalOverlay>
       )}
 
       {/* Single-item per-line list + junk-removal task — only renders when
