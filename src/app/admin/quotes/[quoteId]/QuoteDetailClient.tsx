@@ -556,6 +556,32 @@ export default function QuoteDetailClient({
   const [hubspotDuplicateDealId, setHubspotDuplicateDealId] = useState<string | null>(null);
   const [hubspotDuplicateDealName, setHubspotDuplicateDealName] = useState<string | null>(null);
   const [hubspotResolveBusy, setHubspotResolveBusy] = useState(false);
+  const [recTierBusy, setRecTierBusy] = useState<string | null>(null);
+  const [recTierError, setRecTierError] = useState<string | null>(null);
+  const setRecommendedTier = async (tier: string) => {
+    setRecTierError(null);
+    setRecTierBusy(tier);
+    try {
+      const res = await fetch(
+        `/api/admin/quotes/${encodeURIComponent(quote.quote_id)}/recommended-tier`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tier }),
+        },
+      );
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setRecTierError(data.error || "Could not update the recommended tier.");
+        return;
+      }
+      router.refresh();
+    } catch {
+      setRecTierError("Could not update the recommended tier.");
+    } finally {
+      setRecTierBusy(null);
+    }
+  };
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showRecoverConfirm, setShowRecoverConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -1613,10 +1639,23 @@ export default function QuoteDetailClient({
                       <div className="text-[11.5px] text-[var(--tx3)] mt-1.5">
                         +{formatCurrency(tax)} HST · {formatCurrency(total)}
                       </div>
+                      {!isRec && present.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setRecommendedTier(k)}
+                          disabled={recTierBusy !== null}
+                          className="mt-3 w-full rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--tx2)] hover:text-[var(--admin-primary-fill)] hover:border-[var(--admin-primary-fill)] transition disabled:opacity-50"
+                        >
+                          {recTierBusy === k ? "Saving…" : "Make recommended"}
+                        </button>
+                      )}
                     </div>
                   );
                 })}
               </div>
+              {recTierError && (
+                <p className="text-[11px] text-red-500 mt-3">{recTierError}</p>
+              )}
             </div>
           );
         })()}
