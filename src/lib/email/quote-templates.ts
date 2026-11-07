@@ -906,20 +906,36 @@ function longDistanceTemplate(d: QuoteTemplateData): string {
   void d.estHours;
   if (d.truckSize) rows.push(["Truck", formatTruckSize(d.truckSize)]);
 
-  const price =
-    d.customPrice ??
-    d.tiers?.essential?.price ??
-    d.tiers?.curated?.price ??
-    d.tiers?.essentials?.price;
+  // Long-distance suppresses the Essential tier (liability on the lightest crew
+  // over a multi-hundred-km haul). Defensively strip it (and its legacy aliases)
+  // so a stored tiers object that still carries Essential can never surface it on
+  // the client email. Signature is the long-distance floor.
+  const ldTiers = d.tiers
+    ? (Object.fromEntries(
+        Object.entries(d.tiers).filter(
+          ([k]) => k !== "essential" && k !== "curated" && k !== "essentials",
+        ),
+      ) as Record<string, QuoteTier>)
+    : undefined;
+  const hasLdTiers = !!ldTiers && Object.keys(ldTiers).length > 0;
+
+  // Flat-rate card only for a genuine single-price long-distance quote
+  // (custom_price). Never fall back to a tier price here — that used to pull the
+  // suppressed Essential price into the headline.
+  const price = d.customPrice ?? undefined;
+
+  const introCopy = hasLdTiers
+    ? "Your long distance quote is ready, with your route and inventory priced end to end. Everything is included, with nothing left to chance on moving day."
+    : "Your long distance quote is ready. We have prepared a single flat rate based on your route and inventory. Everything is included, with nothing left to chance on moving day.";
 
   return quoteEmailLayout(`
     ${subHeading("Long Distance Quote")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`)}
-    ${bodyText("Your long distance quote is ready. We have prepared a single flat rate based on your route and inventory. Everything is included, with nothing left to chance on moving day.")}
+    ${bodyText(introCopy)}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
     ${price ? priceCard("Flat Rate", price, "+ HST &middot; No hidden fees") : ""}
-    ${d.tiers ? tierCards(d.tiers, d.quoteUrl, d.recommendedTier) : ""}
+    ${hasLdTiers ? tierCards(ldTiers!, d.quoteUrl, d.recommendedTier === "essential" ? "signature" : d.recommendedTier) : ""}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
     ${ctaButton(d.quoteUrl, "View Full Quote & Book")}
     ${whyYugoBlock()}
