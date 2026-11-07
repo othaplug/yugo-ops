@@ -8,9 +8,11 @@
  *   - Fuel: loaded run + empty return at the truck's published per-km fuel cost
  *     (three-leg-fuel.ts: 26ft $0.52/km, empty legs ×0.73), cross-checked to
  *     Ontario diesel ~$1.97/L and a 26ft box truck ~25 L/100km.
- *   - Overnight (only when one-way drive exceeds the trigger): rooms × hotel +
- *     crew × per-diem, near pass-through. Hotel ~$140 (Ontario budget-mid),
- *     per-diem $69 (CRA simplified meal max), 2 crew per room.
+ *   - Overnight (only when one-way drive exceeds the trigger): nights = round-trip
+ *     drive hours ÷ a safe daily cap (ld_max_drive_hours_per_day, ~10h), so the
+ *     crew's drive OUT and BACK are both booked. rooms × hotel + crew × per-diem,
+ *     near pass-through. Hotel ~$140 (Ontario budget-mid), per-diem $69 (CRA
+ *     simplified meal max), 2 crew per room.
  *
  * Everything scales with crew, distance, truck, nights, and move size. Move
  * size enters two ways: (1) the caller passes the per-tier crew, which already
@@ -126,8 +128,13 @@ export function calcLongDistanceTransit(params: {
 
   // 3) Overnight — only when a one-day round trip isn't safe/legal. Near
   //    pass-through (not a service you'd mark up). Rooms scale with crew.
+  //    Nights scale with the ROUND TRIP: the crew drives out AND back, sleeping
+  //    on the road roughly every `ld_max_drive_hours_per_day`. Sizing nights off
+  //    the one-way leg (the old bug) under-booked lodging/per-diem on genuinely
+  //    far hauls — a ~14h one-way run billed 2 nights when the round trip needs ~3.
   const triggerH = cfgNum(config, "ld_overnight_trigger_hours", 5);
-  const nights = oneWayHours >= triggerH ? Math.max(1, Math.ceil(oneWayHours / 10)) : 0;
+  const maxDrivePerDay = Math.max(4, cfgNum(config, "ld_max_drive_hours_per_day", 10));
+  const nights = oneWayHours >= triggerH ? Math.max(1, Math.ceil(roundTripHours / maxDrivePerDay)) : 0;
   const crewPerRoom = Math.max(1, cfgNum(config, "ld_crew_per_room", 2));
   const rooms = Math.ceil(crew / crewPerRoom);
   const hotel = cfgNum(config, "ld_hotel_per_room_night", 140);
