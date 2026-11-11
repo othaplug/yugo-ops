@@ -29,6 +29,12 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const all = body?.all === true;
+  // Targeted re-push: pass { deliveryNumbers: ["DLV-30456", ...] } to re-sync
+  // just those deliveries (e.g. after correcting a scheduled time), instead of
+  // refreshing every delivery. Takes precedence over `all`.
+  const deliveryNumbers: string[] = Array.isArray(body?.deliveryNumbers)
+    ? body.deliveryNumbers.map((n: unknown) => String(n)).filter(Boolean)
+    : [];
 
   const db = createAdminClient();
   let query = db
@@ -36,7 +42,8 @@ export async function POST(req: NextRequest) {
     .select("id, delivery_number, status, gcal_event_id")
     .order("scheduled_date", { ascending: false })
     .limit(500);
-  if (!all) query = query.is("gcal_event_id", null);
+  if (deliveryNumbers.length > 0) query = query.in("delivery_number", deliveryNumbers);
+  else if (!all) query = query.is("gcal_event_id", null);
 
   const { data: rows, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
