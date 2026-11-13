@@ -397,6 +397,13 @@ export default function ClientSignOffPage({
 
   // Partner vertical (for delivery language)
   const [partnerVertical, setPartnerVertical] = useState<string | null>(null);
+  // Simple sign-off: name + signature only, no condition/items/experience steps.
+  // Used for experiential B2B installs (e.g. hospitality kiosk programs) where an
+  // item-by-item client walkthrough doesn't apply. Gated by vertical so no other
+  // partner's sign-off flow changes.
+  const simpleSignoff =
+    jobType === "delivery" &&
+    (partnerVertical || "").toLowerCase() === "hospitality";
 
   // Phase 3
   const [clientName, setClientName] = useState("");
@@ -426,6 +433,15 @@ export default function ClientSignOffPage({
     setImmersiveNav(true);
     return () => setImmersiveNav(false);
   }, [setImmersiveNav]);
+
+  // Simple sign-off jumps straight to the Sign step once the (hospitality)
+  // vertical is known, skipping Condition/Items/Experience. Only while the
+  // client flow is open (not loading, not an already-recorded/closed sign-off).
+  useEffect(() => {
+    if (simpleSignoff && !loading && phase === 1 && !existing && !signoffStickyClosed) {
+      setPhase(4);
+    }
+  }, [simpleSignoff, loading, phase, existing, signoffStickyClosed]);
 
   const refetchJobPhotos = useCallback(async () => {
     try {
@@ -647,7 +663,7 @@ export default function ClientSignOffPage({
       /* private mode / storage quota — non-fatal */
     }
 
-    const requestBody = JSON.stringify({
+    const basePayload = {
       jobType,
       signedBy: clientName.trim(),
       signatureDataUrl: dataUrl,
@@ -660,7 +676,7 @@ export default function ClientSignOffPage({
       preExistingConditionsNoted,
       photosReviewedByClient:
         jobPhotos.length > 0 ? photosReviewedByClient : true,
-      satisfactionRating: rating,
+      satisfactionRating: rating as number | null,
       noIssuesDuringMove,
       noDamages,
       walkthroughCompleted,
@@ -683,7 +699,34 @@ export default function ClientSignOffPage({
       itemConditions:
         itemConditions.length > 0 ? itemConditions : undefined,
       idempotencyKey: idempotencyKeyRef.current,
-    });
+    };
+    // Simple sign-off skipped the condition/items/experience steps, so submit a
+    // clean positive record (no false damage/issue escalations) with name +
+    // signature as the only captured client input.
+    const requestBody = JSON.stringify(
+      simpleSignoff
+        ? {
+            ...basePayload,
+            allItemsReceived: true,
+            conditionAccepted: true,
+            walkthroughConductedByClient: true,
+            clientPresentDuringUnloading: true,
+            preExistingConditionsNoted: false,
+            satisfactionRating: null,
+            noIssuesDuringMove: true,
+            noDamages: true,
+            walkthroughCompleted: true,
+            crewConductedProfessionally: true,
+            furnitureReassembled: null,
+            itemsPlacedCorrectly: true,
+            propertyLeftClean: true,
+            noPropertyDamage: true,
+            feedbackNote: null,
+            exceptions: null,
+            itemConditions: undefined,
+          }
+        : basePayload,
+    );
 
     // Retry-with-backoff for network-class failures only. Non-2xx
     // application errors (validation, schema) surface immediately —
@@ -732,7 +775,7 @@ export default function ClientSignOffPage({
     }
     console.warn("[signoff] all retries failed:", lastNetworkError);
     setError(
-      "Connection error. Your signature is saved on this device — reconnect and tap Submit again.",
+      "Connection error. Your signature is saved on this device. Reconnect and tap Submit again.",
     );
     setSubmitting(false);
   };
@@ -1020,7 +1063,7 @@ export default function ClientSignOffPage({
         </div>
 
         {/* Step progress (phases 1–4, client-facing sign-off only) */}
-        {phase >= 1 && phase <= 4 && (
+        {phase >= 1 && phase <= 4 && !simpleSignoff && (
           <div className="flex items-center gap-1.5 mb-8">
             {STEP_LABELS.map((label, i) => {
               const step = i + 1;
@@ -1632,7 +1675,11 @@ export default function ClientSignOffPage({
                 className="text-[9px] font-bold tracking-[0.14em] uppercase mb-2 [font-family:var(--font-body)] leading-none"
                 style={{ color: MUTED }}
               >
-                {jobType === "delivery" ? "Step 3 of 3" : "Step 4 of 4"}
+                {simpleSignoff
+                  ? "Sign-off"
+                  : jobType === "delivery"
+                    ? "Step 3 of 3"
+                    : "Step 4 of 4"}
               </p>
               <h1
                 className="font-hero text-[26px] sm:text-[28px] font-normal leading-tight tracking-tight"
