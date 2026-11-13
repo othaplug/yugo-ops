@@ -5700,7 +5700,15 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   // recommended tier follow suit, and the stored tiers omit Essential so every
   // client surface (page + email, which both render only present tiers) drops it.
   const isLdMove = svcType === "long_distance";
-  const headlineTierKey: "essential" | "signature" = isLdMove ? "signature" : "essential";
+  // Essential is suppressed (only Signature + Estate offered) on long-distance
+  // moves AND on 5BR+ homes — a full estate-scale relocation is never an
+  // Essential-tier job. Headline, offered tiers, stored tiers, the client quote
+  // page and the email all follow from this single flag.
+  const isLargeHome =
+    (svcType === "local_move" || svcType === "long_distance") &&
+    input.move_size === "5br_plus";
+  const suppressEssential = isLdMove || isLargeHome;
+  const headlineTierKey: "essential" | "signature" = suppressEssential ? "signature" : "essential";
   // Deposit is single-sourced for LD: 25% of each tier's FINAL price, applied as
   // the last step before persist so nothing upstream (move-scope recompute at
   // tier %, per-tier overrides) can leave the tier card, the row deposit, and the
@@ -6425,7 +6433,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   factors = {
     ...factors,
     system_price: enginePreTaxHeadline,
-    ...(isLdMove && tiers ? { offered_tiers: ["signature", "estate"] } : {}),
+    ...(suppressEssential && tiers ? { offered_tiers: ["signature", "estate"] } : {}),
   };
 
   // ── Per-tier price overrides ────────────────────────────────────────
@@ -7249,10 +7257,14 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       drive_time_min: distInfo?.drive_time_min ?? null,
       specialty_items: input.specialty_items ?? [],
       tiers: tiers
-        ? (isLdMove
+        ? (suppressEssential
             ? {
-                signature: { ...tiers.signature, deposit: Math.round(tiers.signature.price * ldDepPctFinal) },
-                estate: { ...tiers.estate, deposit: Math.round(tiers.estate.price * ldDepPctFinal) },
+                signature: isLdMove
+                  ? { ...tiers.signature, deposit: Math.round(tiers.signature.price * ldDepPctFinal) }
+                  : tiers.signature,
+                estate: isLdMove
+                  ? { ...tiers.estate, deposit: Math.round(tiers.estate.price * ldDepPctFinal) }
+                  : tiers.estate,
               }
             : tiers)
         : officeTiers ?? null,
@@ -7425,8 +7437,8 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       recommended_tier:
         svcType === "single_item"
           ? null
-          : isLdMove && normalizeRecommendedTierForDb(input.recommended_tier) === "essential"
-            ? "estate"
+          : suppressEssential && normalizeRecommendedTierForDb(input.recommended_tier) === "essential"
+            ? (isLdMove ? "estate" : "signature")
             : normalizeRecommendedTierForDb(input.recommended_tier),
       crating_pieces: input.crating_pieces ?? [],
       crating_total: cratingForDisplay,
