@@ -214,7 +214,19 @@ function flooredTruckLabel(
   const effective =
     truckIdx === -1 || truckIdx < floorIdx ? floor : (truckPrimary as string);
   const base = TRUCK_LUXURY[effective] ?? effective;
-  return truckSecondary ? `${base} + support van` : base;
+  if (!truckSecondary) return base;
+  // The second vehicle is shown for what it actually is. A sprinter/van is a
+  // support van; a full truck size is a second moving truck (operators add a
+  // 2nd 26ft on large/estate moves) — don't mislabel it as a "support van".
+  const sec = String(truckSecondary).toLowerCase();
+  if (sec === "sprinter" || sec === "van" || sec === "none" || sec === "") {
+    return `${base} + support van`;
+  }
+  if (sec === effective) {
+    // Two identical trucks, e.g. "Two 26ft maximum-capacity moving trucks".
+    return `Two ${base.replace(/\btruck\b/, "trucks")}`;
+  }
+  return `${base} + ${TRUCK_LUXURY[sec] ?? truckSecondary}`;
 }
 
 /** Client delivery / B2B, replaces residential "Your Move Includes" copy. */
