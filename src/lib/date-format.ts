@@ -65,7 +65,16 @@ export function formatPlatformDisplay(
   empty: string = "-",
 ): string {
   if (value == null || value === "") return empty;
-  const d = typeof value === "string" ? new Date(value) : value;
+  // Date-only strings ("YYYY-MM-DD") are parsed at UTC noon so the calendar day
+  // never shifts back a day when rendered in the app timezone — a Nov 23 delivery
+  // date was showing as Nov 22 in America/Toronto. Full timestamps keep their
+  // exact instant so times (e.g. "Nov 17, 12:08 p.m.") stay correct.
+  const d =
+    typeof value === "string"
+      ? (/^\d{4}-\d{2}-\d{2}$/.test(value.trim())
+          ? (parseDateOnly(value) ?? new Date(value))
+          : new Date(value))
+      : value;
   if (Number.isNaN(d.getTime())) return empty;
   const tz = getAppTimezone();
   const preset = getDisplayDateFormatPresetForFormatters();
