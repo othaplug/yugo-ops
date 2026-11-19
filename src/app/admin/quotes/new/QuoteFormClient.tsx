@@ -3364,7 +3364,13 @@ export default function QuoteFormClient({
   useEffect(() => {
     if (!multiPickupInventoryMode) {
       if (perPickupInventory.length > 0) {
-        const merged = perPickupInventory.flat();
+        // Collapsing the per-pickup structure back to a flat list must STAMP each
+        // item's origin_index from its pickup slot — otherwise every pickup's
+        // items silently become Pickup 1 (origin_index 0) and the split is lost on
+        // the next save/edit. This was the YG-30500 data bug.
+        const merged = perPickupInventory.flatMap((items, idx) =>
+          items.map((it) => ({ ...it, origin_index: idx })),
+        );
         if (merged.length > 0) setInventoryItems(merged);
         setPerPickupInventory([]);
       }
@@ -3372,12 +3378,23 @@ export default function QuoteFormClient({
     }
     setPerPickupInventory((prev) => {
       const n = pickupCount;
-      if (prev.length === n) return prev;
-      return Array.from({ length: n }, (_, i) => {
-        if (i < prev.length) return prev[i]!;
-        if (prev.length === 0 && i === 0) return inventoryItems;
-        return [];
-      });
+      // Keep the per-pickup lines once the operator has entered any (that's the
+      // live editing state); only (re)seed when empty or the count changed.
+      if (prev.length === n && prev.some((a) => a.length > 0)) return prev;
+      // Seed from the flat inventory GROUPED BY origin_index, so editing a saved
+      // multi-pickup quote restores each pickup's own items instead of dumping
+      // the whole list onto Pickup 1.
+      const grouped: InventoryItemEntry[][] = Array.from({ length: n }, () => []);
+      for (const it of inventoryItems) {
+        const raw = (it as { origin_index?: number }).origin_index;
+        const ix = typeof raw === "number" && raw >= 0 && raw < n ? raw : 0;
+        grouped[ix]!.push(it);
+      }
+      // Preserve any already-entered pickup arrays (don't clobber live edits).
+      for (let i = 0; i < n; i++) {
+        if (prev[i] && prev[i]!.length > 0) grouped[i] = prev[i]!;
+      }
+      return grouped;
     });
   }, [multiPickupInventoryMode, pickupCount, inventoryItems]);
 
