@@ -150,8 +150,25 @@ export async function POST(req: Request) {
           | Record<string, { price?: number | null; total?: number | null }>
           | null
           | undefined;
+        // Validate against the tier the client ACTUALLY chose in checkout
+        // (sent in the request body), not the quote's recommended tier. This
+        // quote is frequently sent as a RANGE with no selected_tier persisted,
+        // so falling straight through to recommended_tier checked the deposit
+        // against the wrong tier: a client who picked Essential and paid its
+        // $175 deposit was rejected because the server demanded the recommended
+        // Signature deposit ($250). The body tier must be one of the offered
+        // tiers; stored selected_tier / recommended_tier remain fallbacks for
+        // any client that doesn't send it.
+        const bodyTier =
+          typeof selectedTier === "string" &&
+          selectedTier &&
+          selectedTier !== "custom" &&
+          tiersForCheck?.[selectedTier]
+            ? selectedTier
+            : null;
         const tierKey = String(
-          (quote as { selected_tier?: string | null }).selected_tier ??
+          bodyTier ??
+            (quote as { selected_tier?: string | null }).selected_tier ??
             (quote as { recommended_tier?: string | null }).recommended_tier ??
             "essential",
         );
