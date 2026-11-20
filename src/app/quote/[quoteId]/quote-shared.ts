@@ -9,7 +9,8 @@ import {
   EVENT_FULL_PAYMENT_UNDER,
 } from "@/lib/quotes/residential-deposit";
 
-export { ONTARIO_HST_RATE as TAX_RATE } from "@/lib/format-currency";
+import { ONTARIO_HST_RATE } from "@/lib/format-currency";
+export { ONTARIO_HST_RATE as TAX_RATE };
 export const WINE = "#5C1A33";
 export const FOREST = "#2C3E2D";
 export const GOLD = "#B8962E";
@@ -527,7 +528,17 @@ export function calculateDeposit(
   if (dUntil < 4) return total;
 
   if (serviceType === "local_move" && tier) {
-    return calculateTieredDeposit(tier, total);
+    // The residential deposit policy is a percentage of the PRE-TAX tier
+    // price (see residentialTierDeposit). `total` here is the TAX-INCLUSIVE
+    // grand total, so convert back to pre-tax before applying the policy.
+    // Passing the tax-inclusive total straight through grossed the deposit up
+    // by the HST, so the tier card (which already feeds the pre-tax price into
+    // calculateTieredDeposit) showed e.g. $155 while this payment path demanded
+    // $175 — and the client was told their correct deposit was "too low".
+    // De-taxing here keeps the card, the checkout, and the server check on one
+    // basis. HST is a fixed rate (ONTARIO_HST_RATE); tier.total is
+    // price + round(price*rate), so round(total/(1+rate)) recovers price exactly.
+    return calculateTieredDeposit(tier, Math.round(total / (1 + ONTARIO_HST_RATE)));
   }
   // Non-residential deposit policy (operator-confirmed 2026-09-15), pinned to
   // the shared constants in @/lib/quotes/residential-deposit so the client, the
@@ -538,8 +549,8 @@ export function calculateDeposit(
   switch (serviceType) {
     case "local_move":
       // Reached only when tier is not supplied; the tier-aware path above is
-      // the normal residential call.
-      return calculateTieredDeposit("essential", total);
+      // the normal residential call. De-tax for the same pre-tax-basis reason.
+      return calculateTieredDeposit("essential", Math.round(total / (1 + ONTARIO_HST_RATE)));
     case "long_distance":
       return Math.round(total * LONG_DISTANCE_DEPOSIT_PCT);
     case "office_move":
