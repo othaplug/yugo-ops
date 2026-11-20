@@ -519,9 +519,17 @@ export async function createMoveFromQuote(
 
   const fromLabel = formatAccessForDisplay(quote.from_access);
   const toLabel = formatAccessForDisplay(quote.to_access);
+  // Operator's free-text quote note (factors_applied.quote_notes) rides along
+  // into the move's access notes so the crew sees it (e.g. extra items at the
+  // drop-off that need to go to the pickup).
+  const quoteNote =
+    typeof (factors as { quote_notes?: unknown }).quote_notes === "string"
+      ? (factors as { quote_notes: string }).quote_notes.trim()
+      : "";
   const accessParts = [
     fromLabel && `From: ${fromLabel}`,
     toLabel && `To: ${toLabel}`,
+    quoteNote && `Note: ${quoteNote}`,
   ].filter(Boolean);
   const accessNotes = accessParts.length > 0 ? accessParts.join("\n") : null;
 

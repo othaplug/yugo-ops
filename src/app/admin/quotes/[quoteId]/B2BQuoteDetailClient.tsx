@@ -391,6 +391,12 @@ export default function B2BQuoteDetailClient({
                 }
               />
               <Row k="Delivery date" v={fmtDate(quote.move_date)} />
+              {typeof factors.quote_notes === "string" && factors.quote_notes.trim() ? (
+                <Row
+                  k="Note"
+                  v={<span className="whitespace-pre-wrap">{factors.quote_notes.trim()}</span>}
+                />
+              ) : null}
             </dl>
 
             {/* route */}

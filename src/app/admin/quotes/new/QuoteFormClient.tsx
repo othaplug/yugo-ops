@@ -1428,6 +1428,11 @@ export default function QuoteFormClient({
   // copied to moves.coordinator_name when the move is created from the
   // quote (createMoveFromQuote).
   const [coordinatorName, setCoordinatorName] = useState(operatorName ?? "");
+  // Free-text note the operator can attach to the quote (e.g. "client has
+  // additional items at the drop-off that need to go to the pickup"). Stored
+  // in factors_applied.quote_notes, shown on the client quote page and the
+  // admin quote detail, and copied into the move's access notes for the crew.
+  const [quoteNotes, setQuoteNotes] = useState("");
   // Editing an existing quote skips the service-type step entirely (the service
   // type of a quote cannot change) and opens straight on Job details.
   const [quoteFlowStep, setQuoteFlowStep] = useState(editMode ? 2 : 0);
@@ -2344,6 +2349,7 @@ export default function QuoteFormClient({
       email,
       phone,
       coordinatorName,
+      quoteNotes,
       quoteFlowStep,
       clientSquareId,
       clientSquareCardId,
@@ -2587,6 +2593,7 @@ export default function QuoteFormClient({
       if (s.email !== undefined) setEmail(s.email as Parameters<typeof setEmail>[0]);
       if (s.phone !== undefined) setPhone(s.phone as Parameters<typeof setPhone>[0]);
       if (s.coordinatorName !== undefined) setCoordinatorName(s.coordinatorName as Parameters<typeof setCoordinatorName>[0]);
+      if (s.quoteNotes !== undefined) setQuoteNotes(s.quoteNotes as Parameters<typeof setQuoteNotes>[0]);
       if (s.clientSquareId !== undefined) setClientSquareId(s.clientSquareId as Parameters<typeof setClientSquareId>[0]);
       if (s.clientSquareCardId !== undefined) setClientSquareCardId(s.clientSquareCardId as Parameters<typeof setClientSquareCardId>[0]);
       if (s.clientHubspotId !== undefined) setClientHubspotId(s.clientHubspotId as Parameters<typeof setClientHubspotId>[0]);
@@ -3546,6 +3553,8 @@ export default function QuoteFormClient({
             ? (Q.factors_applied as Record<string, unknown>)
             : null;
         if (fa) {
+          const qn = cStr(fa.quote_notes);
+          if (qn) setQuoteNotes(qn);
           const vc = cStr(fa.b2b_vertical_code);
           if (vc) setB2bVerticalCode(vc);
           const linesRaw = fa.b2b_line_items;
@@ -6491,6 +6500,7 @@ export default function QuoteFormClient({
         client_email: email || undefined,
         client_phone: phone ? normalizePhone(phone) : undefined,
         coordinator_name: coordinatorName.trim() || undefined,
+        quote_notes: quoteNotes.trim() || undefined,
         referral_id: referralId || undefined,
         from_parking: fromParking,
         to_parking: toParking,
@@ -8717,6 +8727,22 @@ export default function QuoteFormClient({
                           onChange={(e) => setCoordinatorName(e.target.value)}
                           placeholder="e.g. Jon"
                           className={fieldInput}
+                        />
+                      </Field>
+                    </div>
+                    {/* Additional information — a free-text note the client sees
+                        on their quote and that carries to the crew's move notes.
+                        Use it for anything the structured fields do not capture,
+                        e.g. extra items at the drop-off that need to go to the
+                        pickup. */}
+                    <div className="col-span-2">
+                      <Field label="Additional information (optional)">
+                        <textarea
+                          value={quoteNotes}
+                          onChange={(e) => setQuoteNotes(e.target.value)}
+                          placeholder="Notes for this move. Shown to the client and passed to the crew."
+                          rows={3}
+                          className={`${fieldInput} resize-y`}
                         />
                       </Field>
                     </div>

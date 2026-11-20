@@ -2470,6 +2470,43 @@ export default function QuotePageClient({
           )}
 
 
+          {/* Coordinator's note for this quote (factors_applied.quote_notes).
+             Shown to the client across every service type so anything the
+             structured fields do not capture still reaches them. */}
+          {(() => {
+            const note =
+              typeof factorsApplied?.quote_notes === "string"
+                ? factorsApplied.quote_notes.trim()
+                : "";
+            if (!note) return null;
+            return (
+              <div className="mb-6">
+                <div
+                  className={`rounded-2xl border p-5 ${
+                    premiumShell
+                      ? "border-white/15 bg-white/[0.04]"
+                      : "border-[var(--brd)] bg-[var(--card)]"
+                  }`}
+                >
+                  <p
+                    className={`mb-1 text-[11px] font-medium uppercase tracking-wide ${
+                      premiumShell ? "text-white/60" : "text-[var(--tx3)]"
+                    }`}
+                  >
+                    A note for you
+                  </p>
+                  <p
+                    className={`whitespace-pre-wrap text-[length:var(--text-base)] leading-relaxed ${
+                      premiumShell ? "text-white/90" : "text-[var(--tx)]"
+                    }`}
+                  >
+                    {note}
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* ═══ Tier cards (residential) or service-type layouts ═══ */}
           {/* Fix #8: ClientBuildingIntelCard moved out of this section
              and rendered above the seasonal pricing banner, keep this

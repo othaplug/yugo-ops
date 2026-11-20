@@ -590,6 +590,10 @@ interface QuoteInput {
    *  when the move is created from the quote. Surfaced on the client
    *  tracking page so the client knows who to call. */
   coordinator_name?: string;
+  /** Free-text note attached to the quote. Stored in factors_applied.quote_notes,
+   *  shown on the client quote page + admin quote detail, and copied into the
+   *  created move's access notes for the crew. */
+  quote_notes?: string;
   /** Multi-day move project planner payload (validated with moveProjectPayloadSchema). */
   move_project?: unknown;
   /** When true, detach and delete linked move_projects row for this quote. */
@@ -7021,6 +7025,23 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       if (puName) coord = puName;
     }
     factorsBag.coordinator_name = coord;
+  }
+
+  // Operator's free-text note for this quote. Shown to the client on their
+  // quote page and carried into the move's access notes for the crew. Falls
+  // back to any note already on the quote so a regenerate never drops it.
+  {
+    const factorsBag = factors as Record<string, unknown>;
+    let note: string | null = null;
+    if (typeof input.quote_notes === "string") {
+      const trimmed = input.quote_notes.trim();
+      if (trimmed.length > 0) note = trimmed;
+    }
+    if (!note && typeof factorsBag.quote_notes === "string") {
+      const existing = (factorsBag.quote_notes as string).trim();
+      if (existing.length > 0) note = existing;
+    }
+    factorsBag.quote_notes = note;
   }
 
   const factorsRecord = factors as Record<string, unknown>

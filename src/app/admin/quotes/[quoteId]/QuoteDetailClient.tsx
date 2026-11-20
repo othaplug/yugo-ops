@@ -2810,6 +2810,25 @@ export default function QuoteDetailClient({
                   })()}
                 </div>
               </div>
+              {/* Coordinator's note for this quote (factors_applied.quote_notes).
+                  Also shown to the client and carried into the move's crew notes. */}
+              {(() => {
+                const note =
+                  typeof factors?.quote_notes === "string"
+                    ? factors.quote_notes.trim()
+                    : "";
+                if (!note) return null;
+                return (
+                  <div className="mt-4">
+                    <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)] mb-1.5">
+                      Additional information
+                    </p>
+                    <p className="whitespace-pre-wrap text-[12px] text-[var(--tx)] leading-snug">
+                      {note}
+                    </p>
+                  </div>
+                );
+              })()}
               {/* Essential + assembly warning */}
               {(() => {
                 const activeTier = normalizeTierKey(
