@@ -695,13 +695,16 @@ export default function ResidentialLayout({
                       >
                         {/* Deposit shown on the card is computed by the SAME
                             function the booking step charges with
-                            (calculateTieredDeposit), from the tier's pre-tax
-                            price — never the stored t.deposit, which could be a
-                            stale write from an older config (e.g. a 20%
-                            deposit_amount lingering after the policy moved to
-                            10%). This guarantees the card and the payment step
-                            always show the same number. */}
-                        {fmtPrice(calculateTieredDeposit(tierKey, Number(t.price ?? 0)))}{" "}
+                            (calculateTieredDeposit), from the tier's TAX-
+                            INCLUSIVE total — the deposit policy is a percentage
+                            of the post-tax total, so this must pass t.total, not
+                            the pre-tax t.price. Passing the pre-tax price
+                            under-showed the deposit (e.g. $155 on the card while
+                            the booking step correctly charged $175), and the
+                            client was told their deposit was "too low". Never
+                            the stored t.deposit, which could be a stale write
+                            from an older config. */}
+                        {fmtPrice(calculateTieredDeposit(tierKey, Number(t.total ?? 0)))}{" "}
                         deposit to book
                       </p>
                     )}

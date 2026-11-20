@@ -215,22 +215,26 @@ for (const s of SERVICES) {
   );
 }
 
-// ── Residential deposit BASIS parity (the YG-30500 / Barry reproduction) ──
-// The tier CARD (ResidentialLayout) computes the deposit from the PRE-TAX tier
-// price via calculateTieredDeposit, while the checkout + server compute it via
-// calculateDeposit from the TAX-INCLUSIVE total. Those must land on the SAME
-// number. They diverged once (card $155 vs checkout/server $175 on Essential),
-// so the client was told their correct deposit was "too low". Lock the basis:
-// across a price range, residentialTierDeposit(tier, preTax) must equal
-// calculateDeposit("local_move", incl(preTax), tier) for every residential tier.
+// ── Residential deposit BASIS parity (the YG-30500 reproduction) ──
+// The residential deposit is a percentage of the TAX-INCLUSIVE (post-tax)
+// total, with a per-tier minimum. The tier CARD (ResidentialLayout) must feed
+// the tier's tax-inclusive total (t.total) into calculateTieredDeposit, and the
+// checkout + server compute it via calculateDeposit from the same tax-inclusive
+// total. Those must land on the SAME number. They diverged once (card fed the
+// PRE-TAX price and showed $155 while checkout/server correctly charged $175 on
+// Essential), so the client was told their correct deposit was "too low". Lock
+// the basis: across a price range, the card's calc from the tax-inclusive total
+// must equal calculateDeposit from that same total, for every residential tier.
 for (const tier of ["essential", "signature", "estate"] as const) {
   for (const preTax of [600, 900, 1381, 1546, 1650, 1845, 2500, 3700, 3925, 5200]) {
     const taxIncl = incl(preTax);
-    const cardDeposit = residentialTierDeposit(tier, preTax);
+    // residentialTierDeposit is the primitive calculateTieredDeposit delegates
+    // to; the card passes the tax-inclusive total (t.total) into it.
+    const cardDeposit = residentialTierDeposit(tier, taxIncl);
     const checkoutServerDeposit = calculateDeposit("local_move", taxIncl, tier, dateInDays(30));
     assert(
       cardDeposit === checkoutServerDeposit,
-      `[deposit-basis] ${tier} $${preTax}: card $${cardDeposit} != checkout/server $${checkoutServerDeposit} (pre-tax vs tax-inclusive basis drift)`,
+      `[deposit-basis] ${tier} incl $${taxIncl}: card $${cardDeposit} != checkout/server $${checkoutServerDeposit} (deposit basis drift)`,
     );
   }
 }
