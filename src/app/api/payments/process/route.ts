@@ -198,34 +198,39 @@ export async function POST(req: Request) {
       // 2% tolerance covers HST rounding / cents-precision differences
       // between the client's client_price arithmetic and the server's.
       const minRequired = Math.floor(policy.amountAtBooking * 0.98);
-      if (minRequired > 0 && Number(amount) < minRequired) {
-        console.warn("[payments/process] payment below policy minimum", {
+      // Deposit floor REMOVED (owner decision, 2026-11-20). We no longer reject
+      // a deposit payment for being "below the minimum". A client may pay the
+      // deposit shown on their quote page for whichever tier they chose — the
+      // app was always meant to let the client pick any tier, and the anti-
+      // tamper floor added in 890468e6 (2026-09-03) was blocking legitimate
+      // payments (a client who chose a cheaper tier than the recommended one
+      // got the "deposit is too low / refresh the page" rejection on a range
+      // quote). The ONLY thing still enforced here is FULL PAYMENT: short-notice
+      // (<4 day) bookings and full-payment-at-booking services must collect the
+      // full amount, because the balance auto-charge cron runs too late to catch
+      // them — skipping that would leave the balance uncollected before dispatch.
+      if (
+        minRequired > 0 &&
+        Number(amount) < minRequired &&
+        policy.requiresFullPayment
+      ) {
+        console.warn("[payments/process] full payment required, amount below full", {
           quoteId,
           submittedAmount: amount,
           policy_required: policy.amountAtBooking,
           policy_reason: policy.reason,
           grand_total: grandTotalForCheck,
         });
-        if (policy.requiresFullPayment) {
-          const errMsg =
-            policy.reason === "service_policy" || policy.reason === "small_job_under_550"
-              ? `${svc.replace(/_/g, " ")} bookings collect the full amount at booking, no deposit split. Refresh the page and the form will switch to full payment automatically.`
-              : `Your move is inside the short-notice window, so the full balance is collected at booking. Refresh the page, the form will switch to full payment automatically.`;
-          return NextResponse.json(
-            {
-              error: errMsg,
-              code: "FULL_PAYMENT_REQUIRED",
-              grand_total: grandTotalForCheck,
-              reason: policy.reason,
-            },
-            { status: 400 },
-          );
-        }
+        const errMsg =
+          policy.reason === "service_policy" || policy.reason === "small_job_under_550"
+            ? `${svc.replace(/_/g, " ")} bookings collect the full amount at booking, no deposit split. Refresh the page and the form will switch to full payment automatically.`
+            : `Your move is inside the short-notice window, so the full balance is collected at booking. Refresh the page, the form will switch to full payment automatically.`;
         return NextResponse.json(
           {
-            error: "Payment is below the deposit required to confirm this booking. Refresh the page and try again.",
-            code: "DEPOSIT_BELOW_MINIMUM",
-            required_deposit: policy.amountAtBooking,
+            error: errMsg,
+            code: "FULL_PAYMENT_REQUIRED",
+            grand_total: grandTotalForCheck,
+            reason: policy.reason,
           },
           { status: 400 },
         );
