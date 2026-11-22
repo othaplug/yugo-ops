@@ -14,6 +14,7 @@ import QuoteEngagementFeed, {
   type EngagementEvent,
   type LegacyEvent,
 } from "./QuoteEngagementFeed";
+import { QUOTE_VALIDITY_DAYS } from "@/lib/quotes/quote-validity";
 
 /**
  * Admin detail page for a B2B commercial-delivery quote (b2b_oneoff /
@@ -109,6 +110,7 @@ export default function B2BQuoteDetailClient({
   const [crewId, setCrewId] = useState("");
   const [onsiteName, setOnsiteName] = useState("");
   const [onsitePhone, setOnsitePhone] = useState("");
+  const [pipelineBusy, setPipelineBusy] = useState(false);
 
   const business = typeof factors.b2b_business_name === "string" ? factors.b2b_business_name : null;
   const vertical =
@@ -208,6 +210,52 @@ export default function B2BQuoteDetailClient({
     } finally {
       setConfirmBusy(false);
     }
+  }
+
+  // Coordinator pipeline controls — expire / reactivate / extend. These post to
+  // the SAME generic PATCH endpoint the residential QuoteDetailClient uses
+  // (/api/admin/quotes/[uuid]); the B2B detail view just never surfaced them,
+  // so an operator could not expire or reopen a B2B quote from the UI the way
+  // they can a move quote. The endpoint keys by quotes.id (UUID).
+  async function patchPipeline(payload: Record<string, unknown>, failLabel: string) {
+    if (pipelineBusy) return;
+    setPipelineBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/admin/quotes/${quote.id}`, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? failLabel);
+      router.refresh();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : failLabel);
+    } finally {
+      setPipelineBusy(false);
+    }
+  }
+
+  function handleExpire() {
+    void patchPipeline({ status: "expired" }, "Could not expire the quote");
+  }
+  function handleReactivate() {
+    // Reactivation must push the expiry forward too — the client quote page
+    // gates on expires_at, so a status flip alone would still render expired.
+    // Policy mirrors the move quote: another QUOTE_VALIDITY_DAYS from now.
+    const next = new Date(Date.now() + QUOTE_VALIDITY_DAYS * 86_400_000).toISOString();
+    void patchPipeline({ status: "reactivated", expires_at: next }, "Could not reactivate the quote");
+  }
+  function handleExtend() {
+    // Add QUOTE_VALIDITY_DAYS onto the later of (current expiry, now).
+    const base =
+      quote.expires_at && new Date(quote.expires_at) > new Date()
+        ? new Date(quote.expires_at)
+        : new Date();
+    const next = new Date(base.getTime() + QUOTE_VALIDITY_DAYS * 86_400_000).toISOString();
+    void patchPipeline({ expires_at: next }, "Could not extend the quote");
   }
 
   const btnBase =
@@ -367,6 +415,47 @@ export default function B2BQuoteDetailClient({
           <div className="px-4 pb-4 -mt-1 text-[12px] text-red-500">{err}</div>
         )}
       </section>
+
+      {/* Quote status — expire / reactivate / extend. Parity with the move
+          quote detail (QuoteDetailClient), which had these controls while the
+          B2B view did not. Hidden once the quote is booked or accepted. */}
+      {!booked && status !== "accepted" && (() => {
+        const expiredLike = ["expired", "declined", "lost", "cold", "superseded"].includes(status);
+        const expWhen = quote.expires_at ? fmtDate(quote.expires_at) : null;
+        const expiresInPast = quote.expires_at ? new Date(quote.expires_at) < new Date() : false;
+        return (
+          <section className={`${card} mt-5`} aria-label="Quote status">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="min-w-0">
+                <h2 className="admin-section-h2 !mb-1">Quote status</h2>
+                <p className="text-[12px] text-[var(--tx3)] leading-relaxed">
+                  {expiredLike
+                    ? `This quote is ${badge.label.toLowerCase()}. Reactivate to give the client another ${QUOTE_VALIDITY_DAYS} days.`
+                    : expWhen
+                      ? `Active · ${expiresInPast ? "expired" : "expires"} ${expWhen}. Expire it to close it out, or extend it ${QUOTE_VALIDITY_DAYS} more days.`
+                      : `Active. Expire it to close it out, or extend it ${QUOTE_VALIDITY_DAYS} more days.`}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {expiredLike ? (
+                  <button type="button" onClick={handleReactivate} disabled={pipelineBusy} className={btnPrimary}>
+                    {pipelineBusy ? "Working…" : `Reactivate · ${QUOTE_VALIDITY_DAYS} days`}
+                  </button>
+                ) : (
+                  <>
+                    <button type="button" onClick={handleExtend} disabled={pipelineBusy} className={btnGhost}>
+                      {pipelineBusy ? "Working…" : `Extend ${QUOTE_VALIDITY_DAYS} days`}
+                    </button>
+                    <button type="button" onClick={handleExpire} disabled={pipelineBusy} className={btnGhost}>
+                      {pipelineBusy ? "Working…" : "Mark expired"}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       {/* Grid */}
       <div className="grid lg:grid-cols-[1.5fr_1fr] gap-5 mt-5 items-start">
