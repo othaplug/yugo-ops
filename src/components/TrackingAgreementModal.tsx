@@ -6,6 +6,7 @@ import {
   trackingTermsCookieName,
   type AgreementEntityType,
 } from "@/lib/tracking-agreement";
+import { YUGO_TERMS_URL } from "@/lib/legal-links";
 
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
 
@@ -215,7 +216,7 @@ export default function TrackingAgreementModal({
               }}
             >
               By continuing, you agree to Yugo&rsquo;s{" "}
-              <a href="/terms" target="_blank" rel="noopener noreferrer" style={linkStyle}>
+              <a href={YUGO_TERMS_URL} target="_blank" rel="noopener noreferrer" style={linkStyle}>
                 Terms of Service
               </a>{" "}
               and{" "}
@@ -260,7 +261,7 @@ export default function TrackingAgreementModal({
               }}
             >
               Your details are processed to deliver the service, nothing more. Cookies remember your preferences and keep you signed in. You may review the{" "}
-              <a href="/terms" target="_blank" rel="noopener noreferrer" style={linkStyle}>
+              <a href={YUGO_TERMS_URL} target="_blank" rel="noopener noreferrer" style={linkStyle}>
                 full terms
               </a>{" "}
               or the{" "}

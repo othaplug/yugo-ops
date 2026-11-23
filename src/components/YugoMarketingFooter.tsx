@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import YugoLogo from "@/components/YugoLogo";
+import { YUGO_TERMS_URL } from "@/lib/legal-links";
 
 type YugoLogoVariant = "cream" | "black" | "wine" | "gold";
 
@@ -42,13 +43,15 @@ export default function YugoMarketingFooter({
         className={`text-[11px] mt-0 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 ${navClassName}`.trim()}
         aria-label="Legal and contact"
       >
-        <Link
-          href="/terms"
+        <a
+          href={YUGO_TERMS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
           className="underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 rounded-sm"
           style={linkStyle}
         >
           Terms of Service
-        </Link>
+        </a>
         <span style={{ color: mutedColor }} className="opacity-50" aria-hidden>
           ·
         </span>

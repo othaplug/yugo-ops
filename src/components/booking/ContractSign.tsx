@@ -7,6 +7,7 @@ import {
   CaretUp as ChevronUp,
 } from "@phosphor-icons/react";
 import { isClientLogisticsDeliveryServiceType } from "@/lib/quotes/b2b-quote-copy";
+import { YUGO_TERMS_URL } from "@/lib/legal-links";
 import {
   agreementCheckboxLabel,
   agreementDocumentTitle,
@@ -580,13 +581,13 @@ export default function ContractSign({
           address constitutes a valid electronic signature. For our complete
           Terms of Service and Privacy Policy, visit{" "}
           <a
-            href="https://helloyugo.com/terms"
+            href={YUGO_TERMS_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="underline hover:opacity-80 transition-opacity"
             style={{ color: WINE }}
           >
-            helloyugo.com/terms
+            itsyugo.com/terms
           </a>
           .
         </p>

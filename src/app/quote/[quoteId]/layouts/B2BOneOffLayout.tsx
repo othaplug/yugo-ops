@@ -11,6 +11,7 @@ import {
 import { toTitleCase } from "@/lib/format-text";
 import { getB2BDeliveryFeatureList } from "@/lib/quotes/b2b-quote-copy";
 import { B2B_TERMS_SHORT } from "@/lib/quotes/b2b-coverage-and-terms";
+import { YUGO_TERMS_URL } from "@/lib/legal-links";
 import {
   pickupLocationsFromQuote,
   dropoffLocationsFromQuote,
@@ -449,13 +450,13 @@ export default function B2BOneOffLayout({
         <p className="text-[10.5px] mt-4" style={{ color: `${FOREST}90` }}>
           Full{" "}
           <a
-            href="/terms"
+            href={YUGO_TERMS_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="underline"
             style={{ color: FOREST }}
           >
-            Commercial Terms &amp; Conditions
+            Terms &amp; Conditions
           </a>{" "}
           govern this quote.
         </p>

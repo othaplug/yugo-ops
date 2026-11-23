@@ -15,6 +15,7 @@ import {
 import { formatOfficeFleetLabel } from "@/lib/office/fleet-label";
 import Script from "next/script";
 import { getMoveCode, formatJobId } from "@/lib/move-code";
+import { YUGO_TERMS_URL } from "@/lib/legal-links";
 import TrackInventory from "./TrackInventory";
 import TrackPhotos from "./TrackPhotos";
 import TrackDocuments from "./TrackDocuments";
@@ -3533,13 +3534,15 @@ export default function TrackMoveClient({
                             style={{ color: `${FOREST}55` }}
                           >
                             Terms and conditions apply.{" "}
-                            <Link
-                              href="/terms"
+                            <a
+                              href={YUGO_TERMS_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
                               className="underline hover:opacity-80"
                               style={{ color: FOREST }}
                             >
                               Read more.
-                            </Link>
+                            </a>
                           </p>
                         </>
                       )}
@@ -5235,13 +5238,15 @@ export default function TrackMoveClient({
                             style={{ color: FOREST }}
                           >
                             Terms and conditions apply.{" "}
-                            <Link
-                              href="/terms"
+                            <a
+                              href={YUGO_TERMS_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
                               className="underline hover:opacity-80"
                               style={{ color: FOREST }}
                             >
                               Click here to read more.
-                            </Link>
+                            </a>
                           </p>
                           <div className="flex gap-2 flex-wrap">
                             <button
