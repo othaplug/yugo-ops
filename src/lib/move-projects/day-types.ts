@@ -37,6 +37,15 @@ export const MOVE_DAY_STAGE_FLOW: Record<
     stages: ["arrived", "loading", "complete"],
     requiresPoD: false,
   },
+  // Long-distance transit day: the loaded truck drives from origin to
+  // destination. No proof-of-delivery here — nothing is delivered on a drive
+  // day (delivery/unload is a separate day). The "in_transit" stage drives the
+  // live GPS map so the client can watch the truck en route.
+  drive: {
+    label: "Drive day",
+    stages: ["departed_origin", "in_transit", "arrived_destination"],
+    requiresPoD: false,
+  },
 };
 
 /**
@@ -186,6 +195,7 @@ export const MOVE_DAY_FORM_DEFAULTS: Record<
   unpack: { hours: 8, crewSize: 3, truckLabel: "", startTime: "08:00" },
   crating: { hours: 6, crewSize: 2, truckLabel: "", startTime: "08:00" },
   volume: { hours: 10, crewSize: 4, truckLabel: "26ft", startTime: "07:00" },
+  drive: { hours: 10, crewSize: 2, truckLabel: "26ft", startTime: "07:00" },
 }
 
 /** Crew and calendar copy: human label for a move_project_days.current_stage value */

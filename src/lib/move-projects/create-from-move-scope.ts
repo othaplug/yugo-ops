@@ -69,6 +69,50 @@ function packingRoomsDescription(room: Record<string, boolean>): string | null {
 }
 
 const isCargoServiceDay = (t: string) => t === "move" || t === "volume";
+/** Days that carry a truck + crew and route to the destination. Includes the
+ *  long-distance "drive" day (truck in transit) on top of the cargo days.
+ *  NOT the same as isCargoServiceDay, which gates proof-of-delivery (a drive
+ *  day delivers nothing). */
+const dayUsesVehicle = (t: string) => isCargoServiceDay(t) || t === "drive";
+
+export type ExpandableDayRow = { day?: number; type?: string; rate?: number; ldLabel?: string };
+
+/**
+ * Long-distance structure: a single combined "move" day cannot physically load
+ * at the origin, drive 1,000+ km, and unload at the destination on one calendar
+ * day. Split the last cargo day into three real days — Load (at origin, no POD)
+ * → Drive (transit, live GPS, no POD) → Delivery & unload (at destination, POD)
+ * — so the crew app, the client timeline, and the POD gate all match reality.
+ *
+ * Only runs for long_distance, and only when the plan doesn't already contain a
+ * drive day (idempotent). Pure function so it can be unit-tested without a DB.
+ */
+export function expandLongDistanceDayRows(
+  rows: { day?: number; type?: string; rate?: number }[],
+  serviceType?: string | null,
+): ExpandableDayRow[] {
+  const st = String(serviceType || "").toLowerCase().trim();
+  if (st !== "long_distance") return rows.map((r) => ({ ...r }));
+  const alreadyHasDrive = rows.some((r) => String(r.type || "").toLowerCase() === "drive");
+  if (alreadyHasDrive) return rows.map((r) => ({ ...r }));
+  let lastCargo = -1;
+  rows.forEach((r, i) => {
+    const t = String(r.type || "").toLowerCase();
+    if (t === "move" || t === "volume") lastCargo = i;
+  });
+  if (lastCargo < 0) return rows.map((r) => ({ ...r }));
+  const out: ExpandableDayRow[] = [];
+  rows.forEach((r, i) => {
+    if (i !== lastCargo) {
+      out.push({ ...r });
+      return;
+    }
+    out.push({ type: "volume", rate: r.rate, ldLabel: "Load day" });
+    out.push({ type: "drive", ldLabel: "Drive day" });
+    out.push({ type: "move", rate: r.rate, ldLabel: "Delivery & unload" });
+  });
+  return out.map((r, i) => ({ ...r, day: i + 1 }));
+}
 
 /**
  * After a moves row exists: create move_projects + phases + days from quote scope or coordinator breakdown.
@@ -123,7 +167,7 @@ export async function attachMultiDayMoveProjectFromScope(
   const fleetCount = Math.max(1, fleet.length);
 
   const breakdown = normalizeBreakdown(args.dayBreakdown);
-  const rows =
+  const baseRows =
     breakdown.length > 0
       ? breakdown
       : Array.from({ length: daysNeeded }, (_, i) => ({
@@ -131,6 +175,9 @@ export async function attachMultiDayMoveProjectFromScope(
           type: i === daysNeeded - 1 ? "move" : "pack",
           rate: undefined as number | undefined,
         }));
+  // Long-distance: split the single cargo day into Load -> Drive -> Deliver so
+  // the structure matches a real multi-day haul (see expandLongDistanceDayRows).
+  const rows = expandLongDistanceDayRows(baseRows, args.serviceType);
 
 
 
@@ -202,7 +249,7 @@ export async function attachMultiDayMoveProjectFromScope(
 
   const projectId = project.id as string;
 
-  const ALLOWED_DT = new Set(["pack", "move", "unpack", "crating", "volume"]);
+  const ALLOWED_DT = new Set(["pack", "move", "unpack", "crating", "volume", "drive"]);
 
   const normalizedDayTypeFromInputs = (
     planTypeExplicit: unknown,
@@ -240,7 +287,7 @@ export async function attachMultiDayMoveProjectFromScope(
       tier: args.tierSelected ?? null,
       dayType,
     });
-    const label = flow.label || labelForDayType(dayType);
+    const label = (row as { ldLabel?: string }).ldLabel || flow.label || labelForDayType(dayType);
     const dateIso = dateIsoForIndex(i, planRow?.date ?? null);
 
     const { data: phaseRow, error: phErr } = await db
@@ -267,16 +314,17 @@ export async function attachMultiDayMoveProjectFromScope(
     }
 
     // Crew fallback: the move's real crew, then a service-shaped default.
-    const crewDefault = moveCrewFallback ?? (isCargoServiceDay(dayType) ? 4 : 3);
-    const hoursDefault = isCargoServiceDay(dayType) ? 10 : 8;
+    // Vehicle days (cargo + the long-distance drive day) carry a truck + crew.
+    const crewDefault = moveCrewFallback ?? (dayUsesVehicle(dayType) ? 4 : 3);
+    const hoursDefault = dayUsesVehicle(dayType) ? 10 : 8;
 
     // Truck fallback: inherit the move's actual fleet (size label + count) on
-    // cargo days; non-cargo (pack/unpack) days carry no truck unless the plan
-    // specifies one.
-    const truckDefault: string | null = isCargoServiceDay(dayType)
+    // vehicle days (cargo + drive); non-vehicle (pack/unpack) days carry no
+    // truck unless the plan specifies one.
+    const truckDefault: string | null = dayUsesVehicle(dayType)
       ? fleetLabel ?? "26ft"
       : null;
-    const truckCountDefault = isCargoServiceDay(dayType) ? fleetCount : 1;
+    const truckCountDefault = dayUsesVehicle(dayType) ? fleetCount : 1;
 
     const crewSize =
       typeof planRow?.crew_size === "number" && Number.isFinite(planRow.crew_size)
@@ -313,16 +361,26 @@ export async function attachMultiDayMoveProjectFromScope(
     const descParts = [planNotes, packingLine].filter((x) => x && x.length > 0);
     const descriptionOut = descParts.length > 0 ? descParts.join("\n\n") : null;
 
+    // Long-distance load day stays at the origin (truck isn't driven yet);
+    // the drive day routes origin -> destination; delivery/unpack are at the
+    // destination.
+    const ldLoadDay = (row as { ldLabel?: string }).ldLabel === "Load day";
     let destinationAddressRow = args.fromAddress;
-    if (dayType === "move" || dayType === "volume") destinationAddressRow = args.toAddress;
+    if (dayType === "drive") destinationAddressRow = args.toAddress;
+    else if (ldLoadDay) destinationAddressRow = args.fromAddress;
+    else if (dayType === "move" || dayType === "volume") destinationAddressRow = args.toAddress;
     if (dayType === "unpack") destinationAddressRow = args.toAddress;
 
     const locationResolved =
-      dayType === "move" || dayType === "volume"
+      dayType === "drive"
         ? `${args.fromAddress} to ${args.toAddress}`
-        : dayType === "unpack"
-          ? `${args.toAddress} (unpack and setup)`
-          : args.fromAddress;
+        : ldLoadDay
+          ? `${args.fromAddress} (load truck)`
+          : dayType === "move" || dayType === "volume"
+            ? `${args.fromAddress} to ${args.toAddress}`
+            : dayType === "unpack"
+              ? `${args.toAddress} (unpack and setup)`
+              : args.fromAddress;
 
     const requiresPod =
       (dayType === "move" || dayType === "volume") && i === lastCargoIndexSeen;
