@@ -232,6 +232,33 @@ export async function GET(req: NextRequest) {
     if (d?.id && !seenDeliveries.has(d.id as string)) { seenDeliveries.add(d.id as string); mergedDeliveries.push(d as AnyRow); }
   }
 
+  // Earliest SERVICE day per multi-day move (the pack/start day). Revenue is
+  // recognized when service STARTS, not on the delivery day: the client pays in
+  // full before the move begins, so the revenue is earned once the crew starts
+  // (packing). Without this, a long-distance move whose scheduled_date is the
+  // far-off delivery day (e.g. Sofia Castedo MV-30484, delivery Nov 30) stayed
+  // out of the month-to-date window even though packing + payment happened
+  // earlier that month. Cancelled days are ignored. Single-day moves and
+  // deliveries have no project days and fall back to scheduled_date below.
+  const earliestServiceDay = new Map<string, string>();
+  {
+    const moveIdsForDays = mergedMoves.map((m) => m.id).filter(Boolean) as string[];
+    if (moveIdsForDays.length > 0) {
+      const { data: pdays } = await sb
+        .from("move_project_days")
+        .select("move_id, date, status")
+        .in("move_id", moveIdsForDays);
+      for (const d of (pdays ?? []) as { move_id?: string | null; date?: string | null; status?: string | null }[]) {
+        const mid = d?.move_id ? String(d.move_id) : "";
+        const day = String(d?.date || "").slice(0, 10);
+        if (!mid || !/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
+        if (String(d?.status || "").toLowerCase() === "cancelled") continue;
+        const cur = earliestServiceDay.get(mid);
+        if (!cur || day < cur) earliestServiceDay.set(mid, day);
+      }
+    }
+  }
+
   // ── Single recognition date per job (revenue recognition = SERVICE date) ──
   // The three union queries above (scheduled_date / completed_at /
   // payment_marked_paid_at) cast a wide net so a job near a month boundary
@@ -245,7 +272,10 @@ export async function GET(req: NextRequest) {
   // YYYY-MM-DD day so they line up with the DATE-typed scheduled_date and dodge
   // the completed_at timezone-rollover entirely.
   const recognitionDayKey = (row: AnyRow): string | null => {
-    for (const v of [row.scheduled_date, row.completed_at, row.payment_marked_paid_at]) {
+    // Multi-day moves recognize on their first service (pack/start) day; every
+    // other job falls back to scheduled_date, then completed_at, then payment.
+    const firstServiceDay = row?.id ? earliestServiceDay.get(String(row.id)) : undefined;
+    for (const v of [firstServiceDay, row.scheduled_date, row.completed_at, row.payment_marked_paid_at]) {
       if (v == null) continue;
       const s = String(v).trim().slice(0, 10);
       if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
@@ -529,7 +559,9 @@ export async function GET(req: NextRequest) {
       id: m.id,
       jobKind: "move" as const,
       move_code: m.move_code,
-      date: m.scheduled_date || (m.completed_at ? String(m.completed_at).slice(0, 10) : null),
+      // Show the recognition day (first service/pack day for multi-day moves),
+      // so the per-job table date matches the month the P&L attributes it to.
+      date: recognitionDayKey(m) || m.scheduled_date || (m.completed_at ? String(m.completed_at).slice(0, 10) : null),
       client: m.client_name,
       type: m.move_type || m.service_type || "local_move",
       tier: m.tier_selected ?? null,
