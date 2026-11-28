@@ -32,6 +32,14 @@ import {
   ymForMonth,
   type PartnerRevenueInvoice,
 } from "@/lib/partner-revenue"
+import {
+  moveRecognizedRevenuePreTax,
+  isMoveRevenueRecognized,
+  moveRecognitionDay,
+  loadFirstServiceDays,
+  loadStartedMoveIds,
+  MOVE_PERFORMED_STATUSES,
+} from "@/lib/finance/move-revenue-recognition"
 
 const DATA_WINDOW_DAYS = 730
 const PAID_DLV_FOR_DAY = new Set(["delivered", "completed"])
@@ -481,6 +489,13 @@ export const loadCommandCenterData = async () => {
   // MOVE while a later project day is still open. See moveIdsWithOpenProjectDay.
   const openProjectDaySet = await moveIdsWithOpenProjectDay(admin, moveIdList)
 
+  // Shared revenue-recognition inputs (same module the Profitability P&L uses,
+  // so the dashboard and that page always agree on which moves count, the day
+  // they count on, and the amount). First service day = pack/start day;
+  // startedMoveIds = moves with a completed tracking session (work has begun).
+  const firstServiceDayById = await loadFirstServiceDays(admin, moveIdList)
+  const startedMoveIds = await loadStartedMoveIds(admin, moveIdList)
+
   const effectiveMoveListStatus = (m: Record<string, unknown>) =>
     resolveAdminMoveListDisplayStatus(
       String(m.status ?? ""),
@@ -695,22 +710,16 @@ export const loadCommandCenterData = async () => {
   const thisYear = now.getFullYear()
   const thisMonth = now.getMonth()
 
-  const movRev = (m: Record<string, unknown>) =>
-    Number(m.estimate || m.amount || 0)
+  // Pre-tax revenue, single source of truth (shared with the Profitability P&L).
+  const movRev = (m: Record<string, unknown>) => moveRecognizedRevenuePreTax(m)
 
-  const PAID_MOVE_STATUSES = new Set([
-    "completed",
-    "delivered",
-    "done",
-    "paid",
-  ])
   const PAID_DLV_STATUSES = new Set(["delivered", "completed"])
 
-  const paidMoves = allMoves.filter(
-    (m) =>
-      PAID_MOVE_STATUSES.has(effectiveMoveListStatus(m)) ||
-      m.payment_marked_paid === true,
-  )
+  // "Recognized" moves: service has started (completed tracking session), the
+  // move is paid, or it is completed. Same predicate the Profitability P&L uses,
+  // so a worked-but-unpaid move (e.g. a move finishing today whose balance is
+  // still being collected) appears on both surfaces, not just one.
+  const paidMoves = allMoves.filter((m) => isMoveRevenueRecognized(m, startedMoveIds))
   const paidInvoices = allInvoices.filter((i) => i.status === "paid")
   const allDeliveriesForPartner = allDeliveries as Parameters<
     typeof partnerRevenueTotalForMonth
@@ -734,17 +743,20 @@ export const loadCommandCenterData = async () => {
   // the figure no longer churns from background payment crons. (The total
   // still rises as jobs become paid — that part is real, realized revenue.)
   const getMoveDate = (m: Record<string, unknown>) => {
-    const ts = String(
-      m.scheduled_date || m.payment_marked_paid_at || m.created_at || "",
-    )
-    return ts ? new Date(ts) : new Date(0)
+    // Recognition day = first service (pack/start) day for multi-day moves,
+    // else scheduled_date. Parse at local noon so a date-only value never slips
+    // a calendar day in the daily series on a non-UTC server.
+    const d = moveRecognitionDay(m, firstServiceDayById)
+    return d ? new Date(`${d}T12:00:00`) : new Date(0)
   }
   // Month bucketing compares "YYYY-MM" substrings, not Date.getMonth(): a
   // date-only scheduled_date ("2026-09-01") parsed as UTC then read with the
   // server's local getMonth() slid 1st/last-of-month jobs into the wrong month
   // on any non-UTC server, so the "this month" total differed by environment.
-  const moveYm = (m: Record<string, unknown>) =>
-    ymOf(m.scheduled_date || m.payment_marked_paid_at || m.created_at)
+  const moveYm = (m: Record<string, unknown>) => {
+    const rec = moveRecognitionDay(m, firstServiceDayById)
+    return rec ? rec.slice(0, 7) : ymOf(m.scheduled_date || m.payment_marked_paid_at || m.created_at)
+  }
   const moveInMonth = (m: Record<string, unknown>, y: number, mo: number) =>
     moveYm(m) === ymForMonth(y, mo)
 
@@ -1070,8 +1082,10 @@ export const loadCommandCenterData = async () => {
   for (const m of todayMovesList) {
     const val = movRev(m)
     potentialEarnings += val
+    // Collected = money actually in (paid/completed), distinct from recognized
+    // revenue (which also counts started-but-unpaid work).
     if (
-      PAID_MOVE_STATUSES.has(effectiveMoveListStatus(m)) ||
+      MOVE_PERFORMED_STATUSES.has(effectiveMoveListStatus(m)) ||
       m.payment_marked_paid === true
     )
       collectedEarnings += val

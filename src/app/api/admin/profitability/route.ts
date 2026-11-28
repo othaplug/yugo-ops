@@ -13,6 +13,13 @@ import { sessionJobDurationMinutes } from "@/lib/crew/session-job-duration-minut
 import { getAppTimezone } from "@/lib/business-timezone";
 import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
 import { contractTaxFromMove } from "@/lib/format-currency";
+import {
+  moveRecognizedRevenuePreTax,
+  isMoveRevenueRecognized,
+  moveRecognitionDay,
+  loadFirstServiceDays,
+  loadStartedMoveIds,
+} from "@/lib/finance/move-revenue-recognition";
 
 // Statuses that count toward "jobs sharing this calendar day" — used to divide
 // per-day truck + overhead. Must be identical in the single-move and range
@@ -217,7 +224,6 @@ export async function GET(req: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   type AnyRow = Record<string, any>;
 
-  const trackingMoveIds = new Set(sessionMoveIds);
   const trackingDeliveryIds = new Set(sessionDeliveryIds);
 
   const seenMoves = new Set<string>();
@@ -232,32 +238,15 @@ export async function GET(req: NextRequest) {
     if (d?.id && !seenDeliveries.has(d.id as string)) { seenDeliveries.add(d.id as string); mergedDeliveries.push(d as AnyRow); }
   }
 
-  // Earliest SERVICE day per multi-day move (the pack/start day). Revenue is
-  // recognized when service STARTS, not on the delivery day: the client pays in
-  // full before the move begins, so the revenue is earned once the crew starts
-  // (packing). Without this, a long-distance move whose scheduled_date is the
-  // far-off delivery day (e.g. Sofia Castedo MV-30484, delivery Nov 30) stayed
-  // out of the month-to-date window even though packing + payment happened
-  // earlier that month. Cancelled days are ignored. Single-day moves and
-  // deliveries have no project days and fall back to scheduled_date below.
-  const earliestServiceDay = new Map<string, string>();
-  {
-    const moveIdsForDays = mergedMoves.map((m) => m.id).filter(Boolean) as string[];
-    if (moveIdsForDays.length > 0) {
-      const { data: pdays } = await sb
-        .from("move_project_days")
-        .select("move_id, date, status")
-        .in("move_id", moveIdsForDays);
-      for (const d of (pdays ?? []) as { move_id?: string | null; date?: string | null; status?: string | null }[]) {
-        const mid = d?.move_id ? String(d.move_id) : "";
-        const day = String(d?.date || "").slice(0, 10);
-        if (!mid || !/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
-        if (String(d?.status || "").toLowerCase() === "cancelled") continue;
-        const cur = earliestServiceDay.get(mid);
-        if (!cur || day < cur) earliestServiceDay.set(mid, day);
-      }
-    }
-  }
+  // Revenue recognition inputs — the SAME shared module the Command Center
+  // dashboard uses, so the two surfaces always agree on which moves count, the
+  // day they count on, and the amount. Revenue is recognized when service STARTS
+  // (the client pays in full before the move begins), attributed to the first
+  // service (pack/start) day. A long-distance move whose scheduled_date is the
+  // far-off delivery day therefore still lands in the month it was packed in.
+  const mergedMoveIds = mergedMoves.map((m) => m.id).filter(Boolean) as string[];
+  const earliestServiceDay = await loadFirstServiceDays(sb, mergedMoveIds);
+  const startedMoveIds = await loadStartedMoveIds(sb, mergedMoveIds);
 
   // ── Single recognition date per job (revenue recognition = SERVICE date) ──
   // The three union queries above (scheduled_date / completed_at /
@@ -271,25 +260,18 @@ export async function GET(req: NextRequest) {
   // payment date, only when scheduled_date is null. Comparisons are on the
   // YYYY-MM-DD day so they line up with the DATE-typed scheduled_date and dodge
   // the completed_at timezone-rollover entirely.
-  const recognitionDayKey = (row: AnyRow): string | null => {
-    // Multi-day moves recognize on their first service (pack/start) day; every
-    // other job falls back to scheduled_date, then completed_at, then payment.
-    const firstServiceDay = row?.id ? earliestServiceDay.get(String(row.id)) : undefined;
-    for (const v of [firstServiceDay, row.scheduled_date, row.completed_at, row.payment_marked_paid_at]) {
-      if (v == null) continue;
-      const s = String(v).trim().slice(0, 10);
-      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-    }
-    return null;
-  };
+  // Shared recognition day (first service/pack day for multi-day moves, else
+  // scheduled_date, then completed_at, then payment). Deliveries have no project
+  // days, so they fall through to scheduled_date — same as before.
+  const recognitionDayKey = (row: AnyRow): string | null =>
+    moveRecognitionDay(row, earliestServiceDay);
   const inRecognitionRange = (row: AnyRow): boolean => {
     const day = recognitionDayKey(row);
     return day != null && day >= fromDate && day <= toDate;
   };
 
-  const completedMoves = mergedMoves.filter((m) =>
-    inRecognitionRange(m) &&
-    (trackingMoveIds.has(m.id) || m.payment_marked_paid === true || performedMoveStatuses.has((m.status || "").toLowerCase()))
+  const completedMoves = mergedMoves.filter(
+    (m) => inRecognitionRange(m) && isMoveRevenueRecognized(m, startedMoveIds),
   );
   const completedDeliveries = mergedDeliveries.filter((d) => {
     if (!inRecognitionRange(d)) return false;
