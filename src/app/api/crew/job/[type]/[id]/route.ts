@@ -938,12 +938,22 @@ export async function GET(
             ? (rawCs as Record<string, unknown>)
             : {};
 
+        // "Day X of Y" must count only ACTIVE (non-cancelled) days. A cancelled
+        // day — e.g. a volume/pre-load day folded into another — must not
+        // inflate the total or bump the live day's number. Without this a
+        // 3-day move with one cancelled day read "Day 4 of 4" (YG/MV-30497).
+        const activeDays = (mpDays as { id?: string; status?: string | null }[]).filter(
+          (d) => String(d.status || "").toLowerCase() !== "cancelled",
+        );
+        const totalActiveDays = activeDays.length || mpDays.length;
+        const activeIdx = activeDays.findIndex((d) => d.id === active.id);
+
         moveProjectDay = {
           projectId: mpProj.id as string,
           projectName: String(mpProj.project_name || "Move project"),
-          totalDays: Number(mpProj.total_days) || mpDays.length,
+          totalDays: totalActiveDays,
           dayId: active.id as string,
-          dayNumber: Number(active.day_number) || 1,
+          dayNumber: activeIdx >= 0 ? activeIdx + 1 : Number(active.day_number) || 1,
           dayLabel: String(active.label || ""),
           dayType: String(active.day_type || "move"),
           date: active.date ? String(active.date).slice(0, 10) : null,

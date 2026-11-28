@@ -1439,10 +1439,15 @@ export default function TrackMoveClient({
         })),
       )
       .filter((d) => d.date)
+      // Drop cancelled days (e.g. a volume/pre-load day folded into another):
+      // the client must not see a phantom "Scheduled" row for a day that is not
+      // happening, and the day count must reflect only the real days.
+      .filter((d) => String((d as { status?: string }).status || "").toLowerCase() !== "cancelled")
       .sort((a, b) => String(a.date).localeCompare(String(b.date)));
     if (flat.length === 0) return null;
-    const total =
-      Number(moveProjectForTrack.project.total_days) || flat.length;
+    // Count only the real (non-cancelled) days, not the project's planned
+    // total_days which may still include a cancelled day.
+    const total = flat.length;
     const norm = (s?: string) => (s || "").toLowerCase().replace(/\s+/g, "_");
     const isCompleted = (s?: string) =>
       norm(s) === "completed" || norm(s) === "complete";
